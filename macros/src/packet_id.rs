@@ -3,8 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Lit, parse_macro_input};
 
-#[proc_macro_attribute]
-pub fn packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn expand_packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
     let lit = parse_macro_input!(attr as Lit);
     let input = parse_macro_input!(item as DeriveInput);
     let struct_name = &input.ident;

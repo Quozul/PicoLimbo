@@ -4,9 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-packet_in = { path = "../packet_in" }
-packet_out = { path = "../packet_out" }
-packet_id_macro = { path = "../packet_id_macro" }
+macros = { path = "../../macros" }
 thiserror = "2.0.4"
 uuid = { version = "1.11.0", features = ["v4"] }
 nbt = { path = "../nbt" }

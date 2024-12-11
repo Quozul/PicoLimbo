@@ -24,9 +24,9 @@ pub mod prelude {
     pub use crate::traits::decode_packet::DecodePacket;
     pub use crate::traits::encode_packet::EncodePacket;
     pub use crate::traits::packet_id::PacketId;
+    pub use macros::PacketIn;
+    pub use macros::PacketOut;
+    pub use macros::packet_id;
     pub use nbt::prelude::*;
-    pub use packet_id_macro::packet_id;
-    pub use packet_in::PacketIn;
-    pub use packet_out::PacketOut;
     pub use uuid::Uuid;
 }

@@ -1,10 +1,9 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
-#[proc_macro_derive(PacketOut)]
-pub fn parse_packet_derive(input: TokenStream) -> TokenStream {
+pub fn expand_parse_out_packet_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
