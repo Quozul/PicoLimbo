@@ -26,6 +26,12 @@ impl VarInt {
     }
 }
 
+impl From<i32> for VarInt {
+    fn from(value: i32) -> Self {
+        Self::new(value)
+    }
+}
+
 impl DeserializePacketData for VarInt {
     type Error = VarIntParseError;
 

@@ -40,6 +40,9 @@ pub enum Nbt {
         name: Option<String>,
         value: String,
     },
+    NamelessString {
+        value: String,
+    },
     List {
         name: Option<String>,
         value: Vec<Nbt>,
@@ -116,6 +119,7 @@ impl Nbt {
             Nbt::Double { .. } => 6,
             Nbt::ByteArray { .. } => 7,
             Nbt::String { .. } => 8,
+            Nbt::NamelessString { .. } => 8,
             Nbt::List { .. } => 9,
             Nbt::Compound { .. } => 10,
             Nbt::NamelessCompound { .. } => 10,
@@ -139,6 +143,7 @@ impl Nbt {
             Nbt::Double { name, .. } => name.clone(),
             Nbt::ByteArray { name, .. } => name.clone(),
             Nbt::String { name, .. } => name.clone(),
+            Nbt::NamelessString { .. } => None,
             Nbt::List { name, .. } => name.clone(),
             Nbt::Compound { name, .. } => name.clone(),
             Nbt::NamelessCompound { .. } => None,
@@ -190,6 +195,9 @@ impl Nbt {
                 base.extend(write_array_i8(value));
             }
             Nbt::String { value, .. } => {
+                base.extend(write_string(value.clone()));
+            }
+            Nbt::NamelessString { value, .. } => {
                 base.extend(write_string(value.clone()));
             }
             Nbt::List {

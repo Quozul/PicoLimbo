@@ -13,6 +13,7 @@ impl Nbt {
             Nbt::Double { name, value } => json!({ name.clone().unwrap_or_default(): *value }),
             Nbt::ByteArray { name, value } => json!({ name.clone().unwrap_or_default(): value }),
             Nbt::String { name, value } => json!({ name.clone().unwrap_or_default(): value }),
+            Nbt::NamelessString { value } => json!({ "": value }),
             Nbt::List { name, value, .. } => {
                 let list: Vec<Value> = value.iter().map(|v| v.to_json()).collect();
                 json!({ name.clone().unwrap_or_default(): list })

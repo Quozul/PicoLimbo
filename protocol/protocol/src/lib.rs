@@ -12,6 +12,7 @@ pub mod prelude {
     pub use crate::data_types::length_padded_vec::{
         LengthPaddedVec, LengthPaddedVecDecodeError, LengthPaddedVecEncodeError,
     };
+    pub use crate::data_types::nbt::NbtEncodeError;
     pub use crate::data_types::optional::DecodeOptionError;
     pub use crate::data_types::position::Position;
     pub use crate::data_types::string::StringDecodingError;
