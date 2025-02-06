@@ -1,4 +1,4 @@
-use protocol::prelude::{DeserializePacketData, VarInt, VarIntParseError};
+use protocol::prelude::{DecodePacketField, VarInt, VarIntDecodeError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -23,8 +23,8 @@ pub fn get_packet_length(bytes: &[u8]) -> Result<PacketLengthParseResult, Packet
     let mut packet_start_index = 0;
     let packet_length = VarInt::decode(bytes, &mut packet_start_index)
         .map_err(|err| match err {
-            VarIntParseError::VarIntTooLarge => PacketLengthParseError::PacketTooLarge,
-            VarIntParseError::InvalidVarIntLength => PacketLengthParseError::IncompleteLength,
+            VarIntDecodeError::VarIntTooLarge => PacketLengthParseError::PacketTooLarge,
+            VarIntDecodeError::InvalidVarIntLength => PacketLengthParseError::IncompleteLength,
         })?
         .value();
 

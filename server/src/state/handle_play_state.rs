@@ -1,11 +1,11 @@
 use crate::packet_error::PacketError;
-use crate::packets::play::client_tick_end_packet::ClientTickEndPacket;
-use crate::packets::play::server_bound_keep_alive_packet::ServerBoundKeepAlivePacket;
-use crate::packets::play::set_player_position_packet::{
+use protocol::prelude::handshaking::data::state::State;
+use protocol::prelude::play::client_tick_end_packet::ClientTickEndPacket;
+use protocol::prelude::play::server_bound_keep_alive_packet::ServerBoundKeepAlivePacket;
+use protocol::prelude::play::set_player_position_packet::{
     SetPlayerPositionAndRotationPacket, SetPlayerPositionPacket, SetPlayerRotationPacket,
 };
-use crate::state::State;
-use protocol::prelude::{DecodePacket, PacketId};
+use protocol::prelude::{DecodePacket, PacketId, ProtocolVersion};
 
 pub enum PlayResult {
     UpdatePositionAndRotation {
@@ -66,28 +66,27 @@ impl From<ClientTickEndPacket> for PlayResult {
     }
 }
 
-pub fn handle_play_state(packet_id: u8, payload: &[u8]) -> Result<PlayResult, PacketError> {
-    match packet_id {
-        ServerBoundKeepAlivePacket::PACKET_ID => {
-            let packet = ServerBoundKeepAlivePacket::decode(payload)?;
-            Ok(packet.into())
-        }
-        ClientTickEndPacket::PACKET_ID => {
-            let packet = ClientTickEndPacket::decode(payload)?;
-            Ok(packet.into())
-        }
-        SetPlayerPositionAndRotationPacket::PACKET_ID => {
-            let packet = SetPlayerPositionAndRotationPacket::decode(payload)?;
-            Ok(packet.into())
-        }
-        SetPlayerRotationPacket::PACKET_ID => {
-            let packet = SetPlayerRotationPacket::decode(payload)?;
-            Ok(packet.into())
-        }
-        SetPlayerPositionPacket::PACKET_ID => {
-            let packet = SetPlayerPositionPacket::decode(payload)?;
-            Ok(packet.into())
-        }
-        _ => Err(PacketError::new(State::Play, packet_id)),
+pub fn handle_play_state(
+    packet_id: u8,
+    payload: &[u8],
+    protocol_version: &ProtocolVersion,
+) -> Result<PlayResult, PacketError> {
+    if ServerBoundKeepAlivePacket::is_packet(packet_id, protocol_version) {
+        let packet = ServerBoundKeepAlivePacket::decode(payload, protocol_version)?;
+        Ok(packet.into())
+    } else if ClientTickEndPacket::is_packet(packet_id, protocol_version) {
+        let packet = ClientTickEndPacket::decode(payload, protocol_version)?;
+        Ok(packet.into())
+    } else if SetPlayerPositionAndRotationPacket::is_packet(packet_id, protocol_version) {
+        let packet = SetPlayerPositionAndRotationPacket::decode(payload, protocol_version)?;
+        Ok(packet.into())
+    } else if SetPlayerRotationPacket::is_packet(packet_id, protocol_version) {
+        let packet = SetPlayerRotationPacket::decode(payload, protocol_version)?;
+        Ok(packet.into())
+    } else if SetPlayerPositionPacket::is_packet(packet_id, protocol_version) {
+        let packet = SetPlayerPositionPacket::decode(payload, protocol_version)?;
+        Ok(packet.into())
+    } else {
+        Err(PacketError::new(State::Play, packet_id))
     }
 }

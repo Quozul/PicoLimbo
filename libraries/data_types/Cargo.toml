@@ -1,0 +1,9 @@
+[package]
+name = "data_types"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+uuid = { version = "1.11.0", features = ["v4"] }
+thiserror = "2.0.6"
+nbt = { path = "../nbt" }

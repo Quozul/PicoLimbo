@@ -1,0 +1,8 @@
+[package]
+name = "macro_traits"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+thiserror = "2.0.6"
+protocol_version = { path = "../protocol_version" }

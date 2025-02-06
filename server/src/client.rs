@@ -1,19 +1,3 @@
-use crate::packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
-use crate::packets::configuration::client_bound_plugin_message_packet::ClientBoundPluginMessagePacket;
-use crate::packets::configuration::data::registry_entry::RegistryEntry;
-use crate::packets::configuration::data::server_link_label::ServerLinkLabel;
-use crate::packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
-use crate::packets::configuration::registry_data_packet::RegistryDataPacket;
-use crate::packets::configuration::server_links_packet::{ServerLink, ServerLinksPacket};
-use crate::packets::login::login_success_packet::LoginSuccessPacket;
-use crate::packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
-use crate::packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
-use crate::packets::play::game_event_packet::GameEventPacket;
-use crate::packets::play::login_packet::LoginPacket;
-use crate::packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
-use crate::packets::status::ping_response_packet::PingResponsePacket;
-use crate::packets::status::status_response::StatusResponse;
-use crate::packets::status::status_response_packet::StatusResponsePacket;
 use crate::payload::{Payload, PayloadAppendError};
 use crate::registry::get_all_registries::get_all_registries;
 use crate::state::handle_configuration_state::{handle_configuration_state, ConfigurationResult};
@@ -21,8 +5,26 @@ use crate::state::handle_handshake_state::handle_handshake_state;
 use crate::state::handle_login_state::{handle_login_state, LoginResult};
 use crate::state::handle_play_state::{handle_play_state, PlayResult};
 use crate::state::handle_status_state::{handle_status_state, StatusResult};
-use crate::state::State;
-use protocol::prelude::{EncodePacket, Identifier, PacketId, SerializePacketData, VarInt};
+use protocol::prelude::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
+use protocol::prelude::configuration::client_bound_plugin_message_packet::ClientBoundPluginMessagePacket;
+use protocol::prelude::configuration::data::registry_entry::RegistryEntry;
+use protocol::prelude::configuration::data::server_link_label::ServerLinkLabel;
+use protocol::prelude::configuration::finish_configuration_packet::FinishConfigurationPacket;
+use protocol::prelude::configuration::registry_data_packet::RegistryDataPacket;
+use protocol::prelude::configuration::server_links_packet::{ServerLink, ServerLinksPacket};
+use protocol::prelude::handshaking::data::state::State;
+use protocol::prelude::login::login_success_packet::LoginSuccessPacket;
+use protocol::prelude::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
+use protocol::prelude::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
+use protocol::prelude::play::game_event_packet::GameEventPacket;
+use protocol::prelude::play::login_packet::LoginPacket;
+use protocol::prelude::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use protocol::prelude::status::data::status_response::StatusResponse;
+use protocol::prelude::status::ping_response_packet::PingResponsePacket;
+use protocol::prelude::status::status_response_packet::StatusResponsePacket;
+use protocol::prelude::{
+    EncodePacket, EncodePacketField, Identifier, PacketId, ProtocolVersion, VarInt,
+};
 use rand::Rng;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -31,12 +33,13 @@ use std::str::FromStr;
 use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 pub struct Client {
     socket: TcpStream,
-    state: State,
     payload: Payload,
+    state: State,
+    protocol_version: Option<ProtocolVersion>,
 }
 
 #[derive(Error, Debug)]
@@ -57,6 +60,7 @@ impl Client {
             socket,
             state: State::Handshake,
             payload: Payload::new(),
+            protocol_version: None,
         }
     }
 
@@ -120,27 +124,86 @@ impl Client {
         let bytes = self.get_payload().get_data();
         let packet_id = bytes[0];
         let packet_payload = &bytes[1..];
+        trace!(
+            "received packet id 0x{:02x} with payload '{}'",
+            packet_id,
+            print_bytes_hex(packet_payload, packet_payload.len())
+        );
         (packet_id, packet_payload)
     }
 
-    async fn handle_play(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn handle_handshake(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
         let (packet_id, packet_payload) = self.get_packet();
-        let result = handle_play_state(packet_id, packet_payload);
+        let handshake_packet =
+            handle_handshake_state(packet_id, packet_payload, &protocol_version)?;
+        self.update_state(handshake_packet.get_next_state()?);
+        self.protocol_version = Some(handshake_packet.get_protocol_version());
+        Ok(())
+    }
+
+    async fn handle_status(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
+        let (packet_id, packet_payload) = self.get_packet();
+        let result = handle_status_state(packet_id, packet_payload, &protocol_version)?;
+        let pvn = self
+            .protocol_version
+            .clone()
+            .map(|v| v.version_number())
+            .unwrap_or_default();
+        let version_name = self
+            .protocol_version
+            .clone()
+            .map(|v| v.version_name())
+            .unwrap_or_default();
+
         match result {
-            Ok(result) => match result {
-                PlayResult::UpdatePositionAndRotation { .. } => {}
-                PlayResult::Nothing => {}
-            },
-            Err(err) => {
-                warn!("{err}");
+            StatusResult::Status => {
+                let packet = StatusResponsePacket::from_status_response(&StatusResponse::new(
+                    version_name,
+                    pvn,
+                    "A Minecraft Server",
+                    false,
+                ));
+                self.write_packet(packet).await?;
+            }
+            StatusResult::Ping(timestamp) => {
+                let packet = PingResponsePacket { timestamp };
+                self.write_packet(packet).await?;
+            }
+        };
+        Ok(())
+    }
+
+    async fn handle_login(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
+        let (packet_id, packet_payload) = self.get_packet();
+        let result = handle_login_state(packet_id, packet_payload, &protocol_version)?;
+        match result {
+            LoginResult::Login(uuid, username) => {
+                debug!("login success for user '{}' with uuid '{}'", username, uuid);
+                let packet = LoginSuccessPacket::new(uuid, username);
+                self.write_packet(packet).await?;
+
+                if let Some(protocol_version) = self.protocol_version.clone() {
+                    if protocol_version == ProtocolVersion::V1_7_2 {
+                        self.update_state(State::Play);
+                        let packet = LoginPacket::default();
+                        self.write_packet(packet).await?;
+                    }
+                }
+            }
+            LoginResult::LoginAcknowledged => {
+                self.update_state(State::Configuration);
             }
         }
         Ok(())
     }
 
     async fn handle_configuration(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
         let (packet_id, packet_payload) = self.get_packet();
-        let result = handle_configuration_state(packet_id, packet_payload)?;
+        let result = handle_configuration_state(packet_id, packet_payload, &protocol_version)?;
         match result {
             ConfigurationResult::SendConfiguration => {
                 // Send Server Brand
@@ -154,16 +217,6 @@ impl Client {
 
                 // Send Registry Data
                 self.send_registry_data().await?;
-
-                // Send Server Links
-                let packet = ServerLinksPacket {
-                    links: vec![ServerLink::built_in(
-                        ServerLinkLabel::Website,
-                        "https://quozul.dev",
-                    )]
-                    .into(),
-                };
-                self.write_packet(packet).await?;
 
                 // Send Finished Configuration
                 let packet = FinishConfigurationPacket {};
@@ -221,50 +274,19 @@ impl Client {
         Ok(())
     }
 
-    async fn handle_login(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn handle_play(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
         let (packet_id, packet_payload) = self.get_packet();
-        let result = handle_login_state(packet_id, packet_payload)?;
+        let result = handle_play_state(packet_id, packet_payload, &protocol_version);
         match result {
-            LoginResult::Login(uuid, username) => {
-                let packet = LoginSuccessPacket {
-                    uuid,
-                    username,
-                    properties: Vec::new().into(),
-                };
-                self.write_packet(packet).await?;
-            }
-            LoginResult::LoginAcknowledged => {
-                self.update_state(State::Configuration);
+            Ok(result) => match result {
+                PlayResult::UpdatePositionAndRotation { .. } => {}
+                PlayResult::Nothing => {}
+            },
+            Err(err) => {
+                warn!("{err}");
             }
         }
-        Ok(())
-    }
-
-    async fn handle_status(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let (packet_id, packet_payload) = self.get_packet();
-        let result = handle_status_state(packet_id, packet_payload)?;
-        match result {
-            StatusResult::Status => {
-                let packet = StatusResponsePacket::from_status_response(&StatusResponse::new(
-                    "1.21.4",
-                    769,
-                    "A Minecraft Server",
-                    false,
-                ));
-                self.write_packet(packet).await?;
-            }
-            StatusResult::Ping(timestamp) => {
-                let packet = PingResponsePacket { timestamp };
-                self.write_packet(packet).await?;
-            }
-        };
-        Ok(())
-    }
-
-    async fn handle_handshake(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let (packet_id, packet_payload) = self.get_packet();
-        let next_state = handle_handshake_state(packet_id, packet_payload)?;
-        self.update_state(next_state);
         Ok(())
     }
 
@@ -281,14 +303,29 @@ impl Client {
         &mut self,
         packet: impl EncodePacket + PacketId,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        debug!("writing packet id 0x{:02x}", packet.get_packet_id());
-        let encoded_packet = packet.encode()?;
-        let mut payload = Vec::new();
-        VarInt::new(encoded_packet.len() as i32 + 1).encode(&mut payload)?;
-        payload.push(packet.get_packet_id());
-        payload.extend_from_slice(&encoded_packet);
-        self.socket.write_all(&payload).await?;
-        Ok(())
+        let protocol_version = self.protocol_version.clone().unwrap_or_default();
+
+        if packet.can_send_packet(&protocol_version) {
+            let packet_id = packet.get_packet_id(&protocol_version);
+            if let Some(packet_id) = packet_id {
+                let encoded_packet = packet.encode(&protocol_version)?;
+                trace!(
+                    "writing packet id 0x{:02x} with payload '{}'",
+                    packet_id,
+                    print_bytes_hex(&encoded_packet, encoded_packet.len())
+                );
+                let mut payload = Vec::new();
+                VarInt::new(encoded_packet.len() as i32 + 1).encode(&mut payload)?;
+                payload.push(packet_id);
+                payload.extend_from_slice(&encoded_packet);
+                self.socket.write_all(&payload).await?;
+                Ok(())
+            } else {
+                Err("packet_id not found".into())
+            }
+        } else {
+            Ok(())
+        }
     }
 }
 

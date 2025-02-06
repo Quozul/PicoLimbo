@@ -19,10 +19,8 @@ pub fn expand_packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         impl PacketId for #struct_name {
-            const PACKET_ID: u8 = #packet_id;
-
-            fn get_packet_id(&self) -> u8 {
-                Self::PACKET_ID
+            fn packet_id(protocol_version: &protocol_version::ProtocolVersion) -> Option<u8> {
+                Some(#packet_id)
             }
         }
     };

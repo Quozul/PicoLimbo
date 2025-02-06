@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 macros = { path = "../../macros" }
-thiserror = "2.0.4"
 uuid = { version = "1.11.0", features = ["v4"] }
 nbt = { path = "../nbt" }
+minecraft_packets = { path = "../minecraft_packets" }
+macro_traits = { path = "../macro_traits" }
+data_types = { path = "../data_types" }
+protocol_version = { path = "../protocol_version" }

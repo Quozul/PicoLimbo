@@ -1,0 +1,14 @@
+[package]
+name = "minecraft_packets"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+thiserror = "2.0.5"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+protocol_version = { path = "../protocol_version" }
+macro_traits = { path = "../macro_traits" }
+data_types = { path = "../data_types" }
+nbt = { path = "../nbt" }
+macros = { path = "../../macros" }
