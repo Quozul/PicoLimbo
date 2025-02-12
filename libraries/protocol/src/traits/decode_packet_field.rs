@@ -1,35 +1,38 @@
 use thiserror::Error;
+use tokio::io::{AsyncRead, AsyncReadExt};
 
+#[async_trait::async_trait]
 pub trait DecodePacketField: Sized {
     type Error: std::error::Error;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error>;
+    /// Decodes an instance of Self from the provided asynchronous reader.
+    async fn decode<R>(reader: &mut R) -> Result<Self, Self::Error>
+    where
+        R: AsyncRead + Unpin + Send;
 }
 
 #[derive(Debug, Error)]
 pub enum DeserializeNumberError {
-    #[error("not enough bytes")]
-    InvalidData,
-    #[error("not enough bytes")]
-    OutOfBounds,
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 macro_rules! impl_deserialize_packet_data {
     ($($t:ty),*) => {
         $(
+            #[async_trait::async_trait]
             impl DecodePacketField for $t {
                 type Error = DeserializeNumberError;
 
-                fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-                     if *index + std::mem::size_of::<$t>() > bytes.len() {
-                         return Err(DeserializeNumberError::OutOfBounds);
-                     }
-
-                    let value = <$t>::from_be_bytes(bytes[*index..*index + std::mem::size_of::<$t>()]
-                        .try_into()
-                        .map_err(|_| DeserializeNumberError::InvalidData)?);
-                    *index += std::mem::size_of::<$t>();
-                    Ok(value)
+                async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+                where
+                    T: AsyncRead + Unpin + Send,
+                {
+                    let mut buf = [0u8; std::mem::size_of::<$t>()];
+                    reader
+                        .read_exact(&mut buf)
+                        .await?;
+                    Ok(<$t>::from_be_bytes(buf))
                 }
             }
         )*
@@ -38,12 +41,16 @@ macro_rules! impl_deserialize_packet_data {
 
 impl_deserialize_packet_data!(i64, i32, f32, f64, i8, u16, u8);
 
+#[async_trait::async_trait]
 impl DecodePacketField for bool {
-    type Error = std::convert::Infallible;
+    type Error = std::io::Error;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let value = bytes[*index] == 0x01;
-        *index += 1;
-        Ok(value)
+    async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+    where
+        T: AsyncRead + Unpin + Send,
+    {
+        let mut buf = [0u8; 1];
+        reader.read_exact(&mut buf).await?;
+        Ok(buf[0] == 0x01)
     }
 }

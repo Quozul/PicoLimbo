@@ -1,5 +1,4 @@
 use crate::prelude::EncodePacketField;
-use crate::traits::decode_packet_field::DecodePacketField;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,7 +8,7 @@ pub enum DecodeOptionError {
     Infallible,
 }
 
-impl<T: DecodePacketField> DecodePacketField for Option<T> {
+/*impl<T: DecodePacketField> DecodePacketField for Option<T> {
     type Error = DecodeOptionError;
 
     fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
@@ -22,7 +21,7 @@ impl<T: DecodePacketField> DecodePacketField for Option<T> {
             Ok(None)
         }
     }
-}
+}*/
 
 #[derive(Error, Debug)]
 #[error("invalid option error")]

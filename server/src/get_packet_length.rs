@@ -1,5 +1,6 @@
 use protocol::prelude::*;
 use thiserror::Error;
+use tokio::io::AsyncRead;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum PacketLengthParseError {
@@ -13,12 +14,15 @@ pub enum PacketLengthParseError {
 
 pub const MAXIMUM_PACKET_LENGTH: usize = 2_097_151;
 
-pub fn get_packet_length(bytes: &[u8]) -> Result<usize, PacketLengthParseError> {
-    let mut packet_start_index = 0;
-    let packet_length = VarInt::decode(bytes, &mut packet_start_index)
+pub async fn get_packet_length<R>(reader: &mut R) -> Result<usize, PacketLengthParseError>
+where
+    R: AsyncRead + Unpin + Send,
+{
+    let packet_length = VarInt::decode(reader)
+        .await
         .map_err(|err| match err {
             VarIntParseError::VarIntTooLarge => PacketLengthParseError::PacketTooLarge,
-            VarIntParseError::InvalidVarIntLength => PacketLengthParseError::IncompleteLength,
+            VarIntParseError::Io(_) => PacketLengthParseError::IncompleteLength,
         })?
         .value();
 

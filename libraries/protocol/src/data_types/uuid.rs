@@ -1,14 +1,18 @@
 use crate::prelude::EncodePacketField;
 use crate::traits::decode_packet_field::DecodePacketField;
+use tokio::io::{AsyncRead, AsyncReadExt};
 use uuid::Uuid;
 
+#[async_trait::async_trait]
 impl DecodePacketField for Uuid {
-    type Error = std::convert::Infallible;
+    type Error = std::io::Error;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
+    async fn decode<R>(reader: &mut R) -> Result<Self, Self::Error>
+    where
+        R: AsyncRead + Unpin + Send,
+    {
         let mut data = [0u8; 16];
-        data.copy_from_slice(&bytes[*index..*index + 16]);
-        *index += 16;
+        reader.read_exact(&mut data).await?;
         Ok(Uuid::from_bytes(data))
     }
 }

@@ -347,7 +347,9 @@ name = "packet_serializer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -378,10 +380,13 @@ dependencies = [
 name = "protocol"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "macros",
  "nbt",
  "packet_serializer",
  "thiserror",
+ "tokio",
+ "tokio-test",
  "uuid",
 ]
 

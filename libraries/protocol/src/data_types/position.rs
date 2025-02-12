@@ -1,5 +1,6 @@
 use crate::prelude::EncodePacketField;
 use crate::traits::decode_packet_field::{DecodePacketField, DeserializeNumberError};
+use tokio::io::AsyncRead;
 
 #[derive(Debug)]
 pub struct Position {
@@ -14,11 +15,15 @@ impl Position {
     }
 }
 
+#[async_trait::async_trait]
 impl DecodePacketField for Position {
     type Error = DeserializeNumberError;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let val = i64::decode(bytes, index)?;
+    async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+    where
+        T: AsyncRead + Unpin + Send,
+    {
+        let val = i64::decode(reader).await?;
         let x = (val >> 38) as f64;
         let y = (val << 52 >> 52) as f64;
         let z = (val << 26 >> 38) as f64;
@@ -41,14 +46,20 @@ impl EncodePacketField for Position {
 mod test {
     use super::*;
 
-    #[test]
-    fn test_position() {
-        let position = Position::new(18357644.0, 831.0, -20882616.0);
-        let mut bytes = Vec::new();
-        position.encode(&mut bytes).unwrap();
-        let decoded_position = Position::decode(&bytes, &mut 0).unwrap();
-        assert_eq!(position.x, decoded_position.x);
-        assert_eq!(position.y, decoded_position.y);
-        assert_eq!(position.z, decoded_position.z);
+    #[tokio::test]
+    async fn test_position() {
+        // Given
+        let expected_position = Position::new(18357644.0, 831.0, -20882616.0);
+        let mut expected_bytes = Vec::new();
+        expected_position.encode(&mut expected_bytes).unwrap();
+        let mut reader = tokio_test::io::Builder::new().read(&expected_bytes).build();
+
+        // When
+        let decoded_position = Position::decode(&mut reader).await.unwrap();
+
+        // Then
+        assert_eq!(expected_position.x, decoded_position.x);
+        assert_eq!(expected_position.y, decoded_position.y);
+        assert_eq!(expected_position.z, decoded_position.z);
     }
 }

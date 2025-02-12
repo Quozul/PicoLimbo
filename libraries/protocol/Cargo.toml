@@ -9,3 +9,8 @@ packet_serializer = { path = "../packet_serializer" }
 thiserror = "2.0"
 uuid = { version = "1.13", features = ["v4"] }
 nbt = { path = "../nbt" }
+tokio = { version = "1.43", features = ["io-util", "macros"] }
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio-test = "0.4.4"

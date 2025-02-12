@@ -1,47 +1,47 @@
-use crate::data_types::var_int::{VarInt, CONTINUE_BIT};
-use crate::prelude::{DecodePacketField, EncodePacketField};
+use crate::data_types::var_int::VarInt;
+use crate::prelude::{DecodePacketField, EncodePacketField, VarIntParseError};
 use thiserror::Error;
+use tokio::io::{AsyncRead, AsyncReadExt};
 
 #[derive(Error, Debug)]
 pub enum StringDecodingError {
-    #[error("invalid string size")]
-    InvalidStringSize,
     #[error("string too large")]
     StringTooLarge,
-    #[error("invalid string offset")]
-    InvalidOffset,
     #[error("invalid utf-8 string")]
     InvalidUtf8String(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    VarIntParseError(#[from] VarIntParseError),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 const MAX_STRING_SIZE: usize = 32767;
 
+#[async_trait::async_trait]
 impl DecodePacketField for String {
     type Error = StringDecodingError;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let length = VarInt::decode(bytes, index)
-            .map_err(|_| StringDecodingError::InvalidStringSize)?
-            .value() as usize;
-
+    async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+    where
+        T: AsyncRead + Unpin + Send,
+    {
+        let varint = VarInt::decode(reader).await?;
+        let length = varint.value() as usize;
         if length > MAX_STRING_SIZE {
             return Err(StringDecodingError::StringTooLarge);
         }
 
-        while (bytes[*index] & CONTINUE_BIT) != 0 {
-            *index += 1;
+        // For an empty string, do not consume any further bytes.
+        if length == 0 {
+            return Ok(String::new());
         }
 
-        if *index + length > bytes.len() {
-            return Err(StringDecodingError::InvalidOffset);
-        }
+        // Now read the rest of the string bytes.
+        let mut string_bytes = vec![0u8; length];
+        reader.read_exact(&mut string_bytes).await?;
 
-        let result = std::str::from_utf8(&bytes[*index..*index + length])
-            .map_err(StringDecodingError::InvalidUtf8String)?;
-
-        *index += length;
-
-        Ok(result.to_string())
+        let s = std::str::from_utf8(&string_bytes)?;
+        Ok(s.to_string())
     }
 }
 
@@ -57,12 +57,26 @@ impl EncodePacketField for String {
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::EncodePacketField;
+    use crate::prelude::{DecodePacketField, EncodePacketField};
 
     #[test]
     fn test_encode_string() {
         let mut bytes = Vec::new();
         "hello".to_string().encode(&mut bytes).unwrap();
         assert_eq!(bytes, vec![5, 104, 101, 108, 108, 111]);
+    }
+
+    #[tokio::test]
+    async fn test_decode_string() {
+        // Given
+        let bytes = vec![5, 104, 101, 108, 108, 111];
+        let mut reader = tokio_test::io::Builder::new().read(&bytes).build();
+        let expected_string = "hello".to_string();
+
+        // When
+        let string = String::decode(&mut reader).await.unwrap();
+
+        // Then
+        assert_eq!(string, expected_string);
     }
 }

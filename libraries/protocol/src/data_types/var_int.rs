@@ -1,16 +1,17 @@
 use crate::prelude::EncodePacketField;
 use crate::traits::decode_packet_field::DecodePacketField;
 use thiserror::Error;
+use tokio::io::{AsyncRead, AsyncReadExt};
 
 pub const SEGMENT_BITS: u8 = 0x7F;
 pub const CONTINUE_BIT: u8 = 0x80;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum VarIntParseError {
     #[error("invalid var int")]
     VarIntTooLarge,
-    #[error("invalid var int length")]
-    InvalidVarIntLength,
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 #[derive(Debug, Default, Clone)]
@@ -26,22 +27,24 @@ impl VarInt {
     }
 }
 
+#[async_trait::async_trait]
 impl DecodePacketField for VarInt {
     type Error = VarIntParseError;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
+    async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+    where
+        T: AsyncRead + Unpin + Send,
+    {
         let mut value = 0;
         let mut position = 0;
 
         while position < 32 {
-            if *index >= bytes.len() {
-                return Err(VarIntParseError::InvalidVarIntLength)?;
-            }
+            let mut buf = [0u8; 1];
+            reader.read_exact(&mut buf).await?;
+            let current_byte = buf[0];
 
-            let current_byte = bytes[*index];
             value |= ((current_byte & SEGMENT_BITS) as i32) << position;
 
-            *index += 1;
             if (current_byte & CONTINUE_BIT) == 0 {
                 break;
             }
@@ -50,7 +53,7 @@ impl DecodePacketField for VarInt {
         }
 
         if position >= 32 {
-            return Err(VarIntParseError::VarIntTooLarge)?;
+            return Err(VarIntParseError::VarIntTooLarge);
         }
 
         Ok(Self(value))
@@ -98,13 +101,14 @@ mod tests {
         ]
     }
 
-    #[test]
-    fn test_read_var_int() {
+    #[tokio::test]
+    async fn test_read_var_int() {
         let test_cases = get_test_cases();
 
         for (bytes, expected) in test_cases {
-            let mut index = 0;
-            let result = VarInt::decode(&bytes, &mut index);
+            let mut reader = tokio_test::io::Builder::new().read(&bytes).build();
+
+            let result = VarInt::decode(&mut reader).await;
             assert_eq!(result.unwrap().value(), expected);
         }
     }

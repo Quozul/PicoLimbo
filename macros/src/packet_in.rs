@@ -31,14 +31,14 @@ pub fn expand_parse_packet_in_derive(input: TokenStream) -> TokenStream {
         if let Some(version_range) = version_range {
             quote! {
                 let #field_name = if (#version_range).contains(&protocol_version) {
-                    <#field_type as DecodePacketField>::decode(bytes, &mut index).map_err(|_| DecodePacketError)?
+                    <#field_type as DecodePacketField>::decode(reader).await.map_err(|_| DecodePacketError)?
                 } else {
                     #field_type::default()
                 };
             }
         } else {
             quote! {
-                let #field_name = <#field_type as DecodePacketField>::decode(bytes, &mut index).map_err(|_| DecodePacketError)?;
+                let #field_name = <#field_type as DecodePacketField>::decode(reader).await.map_err(|_| DecodePacketError)?;
             }
         }
     });
@@ -51,8 +51,12 @@ pub fn expand_parse_packet_in_derive(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
+        #[async_trait::async_trait]
         impl DecodePacket for #name {
-            fn decode(bytes: &[u8], protocol_version: u32) -> Result<Self, DecodePacketError> {
+            async fn decode<R>(reader: &mut R, protocol_version: u32) -> Result<Self, DecodePacketError>
+            where
+                R: tokio::io::AsyncRead + Unpin + Send,
+            {
                 let mut index = 0;
                 #(#field_parsers)*
 

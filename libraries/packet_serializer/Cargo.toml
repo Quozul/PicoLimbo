@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 thiserror = "2.0"
 anyhow = "1.0"
+tokio = "1.43"
+async-trait = "0.1"

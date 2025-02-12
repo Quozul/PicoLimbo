@@ -7,40 +7,24 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 pub struct PacketStream<Stream>
 where
-    Stream: AsyncWrite + AsyncRead + Unpin,
+    Stream: AsyncWrite + AsyncRead + Unpin + Send,
 {
     stream: Stream,
 }
 
 impl<Stream> PacketStream<Stream>
 where
-    Stream: AsyncWrite + AsyncRead + Unpin,
+    Stream: AsyncWrite + AsyncRead + Unpin + Send,
 {
     pub fn new(stream: Stream) -> PacketStream<Stream> {
         PacketStream { stream }
     }
 
     pub async fn read_packet(&mut self) -> Result<RawPacket, PacketStreamError> {
-        let mut var_int_buf = Vec::new();
-
-        for _ in 0..5 {
-            let mut byte = [0u8; 1];
-            self.stream.read_exact(&mut byte).await?;
-            var_int_buf.push(byte[0]);
-
-            match get_packet_length(&var_int_buf) {
-                Ok(packet_length) => {
-                    let mut data = vec![0u8; packet_length];
-                    self.stream.read_exact(&mut data).await?;
-                    return Ok(RawPacket::new(data));
-                }
-                Err(PacketLengthParseError::IncompleteLength) => {
-                    continue;
-                }
-                Err(e) => Err(e)?,
-            }
-        }
-        Err(PacketLengthParseError::IncompleteLength)?
+        let packet_length = get_packet_length(&mut self.stream).await?;
+        let mut data = vec![0u8; packet_length];
+        self.stream.read_exact(&mut data).await?;
+        Ok(RawPacket::new(data))
     }
 
     pub async fn write_packet(&mut self, packet: RawPacket) -> Result<(), PacketStreamError> {

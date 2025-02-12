@@ -1,5 +1,6 @@
 use protocol::prelude::*;
 use thiserror::Error;
+use tokio::io::AsyncRead;
 
 #[derive(Debug)]
 pub struct KnownPack {
@@ -25,13 +26,17 @@ pub enum DecodePacketError {
     String(#[from] StringDecodingError),
 }
 
+#[async_trait::async_trait]
 impl DecodePacketField for KnownPack {
     type Error = DecodePacketError;
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let namespace = String::decode(bytes, index).map_err(DecodePacketError::String)?;
-        let id = String::decode(bytes, index).map_err(DecodePacketError::String)?;
-        let version = String::decode(bytes, index).map_err(DecodePacketError::String)?;
+    async fn decode<T>(reader: &mut T) -> Result<Self, Self::Error>
+    where
+        T: AsyncRead + Unpin + Send,
+    {
+        let namespace = String::decode(reader).await?;
+        let id = String::decode(reader).await?;
+        let version = String::decode(reader).await?;
 
         Ok(Self {
             namespace,
