@@ -1,4 +1,4 @@
-use crate::data_types::var_int::{VarInt, CONTINUE_BIT};
+use crate::data_types::var_int::{CONTINUE_BIT, VarInt};
 use crate::prelude::{DecodePacketField, EncodePacketField};
 use thiserror::Error;
 
@@ -53,8 +53,8 @@ impl DecodePacketField for String {
 impl EncodePacketField for String {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
-        VarInt::new(self.len() as i32).encode(bytes)?;
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+        VarInt::new(self.len() as i32).encode(bytes, protocol_version)?;
         bytes.extend_from_slice(self.as_bytes());
         Ok(())
     }
@@ -67,7 +67,7 @@ mod test {
     #[test]
     fn test_encode_string() {
         let mut bytes = Vec::new();
-        "hello".to_string().encode(&mut bytes).unwrap();
+        "hello".to_string().encode(&mut bytes, 0).unwrap();
         assert_eq!(bytes, vec![5, 104, 101, 108, 108, 111]);
     }
 }

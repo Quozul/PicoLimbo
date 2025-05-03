@@ -1,6 +1,7 @@
-use crate::get_packet_length::{get_packet_length, PacketLengthParseError, MAXIMUM_PACKET_LENGTH};
+use crate::get_packet_length::{MAXIMUM_PACKET_LENGTH, PacketLengthParseError, get_packet_length};
 use crate::raw_packet::RawPacket;
 use minecraft_protocol::prelude::*;
+use minecraft_protocol::protocol_version::ProtocolVersion;
 use std::convert::Infallible;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
@@ -51,7 +52,10 @@ where
 
         let mut var_int_bytes = Vec::new();
         let var_int = VarInt::new(packet_length as i32);
-        var_int.encode(&mut var_int_bytes)?;
+        var_int.encode(
+            &mut var_int_bytes,
+            ProtocolVersion::default().version_number(),
+        )?;
 
         self.stream.write_all(&var_int_bytes).await?;
         self.stream.write_all(&[packet.packet_id()]).await?;

@@ -60,7 +60,7 @@ impl DecodePacketField for VarInt {
 impl EncodePacketField for VarInt {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, _protocol_version: u32) -> Result<(), Self::Error> {
         let mut value = self.value();
 
         loop {
@@ -147,7 +147,7 @@ mod tests {
 
         for (expected_bytes, value) in test_cases {
             let mut bytes = Vec::new();
-            VarInt::new(value).encode(&mut bytes).unwrap();
+            VarInt::new(value).encode(&mut bytes, 0).unwrap();
             assert_eq!(bytes, expected_bytes);
         }
     }

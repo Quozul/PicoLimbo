@@ -30,11 +30,11 @@ impl DecodePacketField for Position {
 impl EncodePacketField for Position {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         let val = ((self.x as i64 & 0x3FFFFFF) << 38)
             | ((self.z as i64 & 0x3FFFFFF) << 12)
             | (self.y as i64 & 0xFFF);
-        val.encode(bytes)
+        val.encode(bytes, protocol_version)
     }
 }
 
@@ -46,7 +46,7 @@ mod test {
     fn test_position() {
         let position = Position::new(18357644.0, 831.0, -20882616.0);
         let mut bytes = Vec::new();
-        position.encode(&mut bytes).unwrap();
+        position.encode(&mut bytes, 0).unwrap();
         let decoded_position = Position::decode(&bytes, &mut 0).unwrap();
         assert_eq!(position.x, decoded_position.x);
         assert_eq!(position.y, decoded_position.y);

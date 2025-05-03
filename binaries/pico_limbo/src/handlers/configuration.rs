@@ -111,7 +111,7 @@ pub async fn send_play_packets(mut client: MutexGuard<'_, Client>) {
         client.send_packet(packet).await;
 
         // Send Chunk Data and Update Light
-        let packet = ChunkDataAndUpdateLightPacket::default();
+        let packet = ChunkDataAndUpdateLightPacket::new(client.protocol_version());
         client.send_packet(packet).await;
     }
 

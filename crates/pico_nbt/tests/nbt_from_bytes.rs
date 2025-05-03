@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use nbt::prelude::{parse_tag, BinaryReader, Nbt};
+    use nbt::prelude::{BinaryReader, Nbt, parse_tag};
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test_files/hello_world.nbt");
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test_files/bigtest.nbt");
 
@@ -37,7 +37,7 @@ mod tests {
         };
 
         // When
-        let serialized = nbt.to_bytes();
+        let serialized = nbt.to_bytes(false);
 
         // Then
         assert_eq!(serialized, HELLO_WORLD_NBT);
@@ -62,7 +62,7 @@ mod tests {
         let nbt = build_expected_big_test_nbt();
 
         // When
-        let encoded_bytes = nbt.to_bytes();
+        let encoded_bytes = nbt.to_bytes(false);
 
         // Then
         assert_eq!(encoded_bytes, BIG_TEST_NBT);
@@ -111,7 +111,7 @@ mod tests {
                                 Nbt::Float {
                                     name: Some(String::from("value")),
                                     value: 0.75,
-                                }
+                                },
                             ]),
                         },
                         Nbt::Compound {
@@ -124,7 +124,7 @@ mod tests {
                                 Nbt::Float {
                                     name: Some(String::from("value")),
                                     value: 0.5,
-                                }
+                                },
                             ]),
                         },
                     ]),
@@ -192,7 +192,9 @@ mod tests {
                     value: 127,
                 },
                 Nbt::ByteArray {
-                    name: Some(String::from("byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))")),
+                    name: Some(String::from(
+                        "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))",
+                    )),
                     value,
                 },
                 Nbt::Double {

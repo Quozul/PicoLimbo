@@ -1,4 +1,5 @@
 use crate::prelude::EncodePacketField;
+use crate::protocol_version::ProtocolVersion;
 use nbt::prelude::Nbt;
 use thiserror::Error;
 
@@ -25,8 +26,9 @@ impl From<std::io::Error> for NbtEncodeError {
 impl EncodePacketField for Nbt {
     type Error = NbtEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
-        let nbt_bytes = self.to_bytes();
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+        let nbt_bytes =
+            self.to_bytes(protocol_version >= ProtocolVersion::V1_21_5.version_number());
         bytes.extend_from_slice(&nbt_bytes);
         Ok(())
     }

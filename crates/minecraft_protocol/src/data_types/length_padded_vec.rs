@@ -79,14 +79,14 @@ pub enum LengthPaddedVecEncodeError {
 impl<T: EncodePacketField> EncodePacketField for LengthPaddedVec<T> {
     type Error = LengthPaddedVecEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         VarInt::new(self.0.len() as i32)
-            .encode(bytes)
+            .encode(bytes, protocol_version)
             .map_err(|_| LengthPaddedVecEncodeError::EncodeError)?;
 
         for value in &self.0 {
             value
-                .encode(bytes)
+                .encode(bytes, protocol_version)
                 .map_err(|_| LengthPaddedVecEncodeError::EncodeError)?;
         }
         Ok(())
@@ -127,7 +127,7 @@ mod tests {
     fn test_vec_encode() {
         let vec = LengthPaddedVec(vec![VarInt::new(1), VarInt::new(2)]);
         let mut bytes = Vec::new();
-        vec.encode(&mut bytes).unwrap();
+        vec.encode(&mut bytes, 0).unwrap();
         assert_eq!(bytes, vec![0x02, 0x01, 0x02]);
     }
 
@@ -135,7 +135,7 @@ mod tests {
     fn test_vec_encode_empty() {
         let vec = LengthPaddedVec(Vec::<VarInt>::new());
         let mut bytes = Vec::new();
-        vec.encode(&mut bytes).unwrap();
+        vec.encode(&mut bytes, 0).unwrap();
         assert_eq!(bytes, vec![0x00]);
     }
 }

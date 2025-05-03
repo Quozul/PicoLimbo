@@ -1,4 +1,5 @@
 use minecraft_protocol::prelude::*;
+use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -33,10 +34,17 @@ impl PaletteContainer {
             data: Vec::new().into(),
         }
     }
-    pub fn biomes_void() -> Self {
+
+    pub fn biomes_void(protocol_version: ProtocolVersion) -> Self {
+        let value = if protocol_version >= ProtocolVersion::V1_21_5 {
+            VarInt::new(0)
+        } else {
+            VarInt::new(1)
+        };
+
         Self::SingleValued {
             bits_per_entry: 0,
-            value: VarInt::new(1),
+            value,
             data: Vec::new().into(),
         }
     }
@@ -65,32 +73,32 @@ impl From<LengthPaddedVecEncodeError> for PaletteContainerError {
 impl EncodePacketField for PaletteContainer {
     type Error = PaletteContainerError;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         match self {
             PaletteContainer::SingleValued {
                 bits_per_entry,
                 value,
                 data,
             } => {
-                bits_per_entry.encode(bytes)?;
-                value.encode(bytes)?;
-                data.encode(bytes)?;
+                bits_per_entry.encode(bytes, protocol_version)?;
+                value.encode(bytes, protocol_version)?;
+                data.encode(bytes, protocol_version)?;
             }
             PaletteContainer::Indirect {
                 bits_per_entry,
                 palette,
                 data,
             } => {
-                bits_per_entry.encode(bytes)?;
-                palette.encode(bytes)?;
-                data.encode(bytes)?;
+                bits_per_entry.encode(bytes, protocol_version)?;
+                palette.encode(bytes, protocol_version)?;
+                data.encode(bytes, protocol_version)?;
             }
             PaletteContainer::Direct {
                 bits_per_entry,
                 data,
             } => {
-                bits_per_entry.encode(bytes)?;
-                data.encode(bytes)?;
+                bits_per_entry.encode(bytes, protocol_version)?;
+                data.encode(bytes, protocol_version)?;
             }
         }
         Ok(())

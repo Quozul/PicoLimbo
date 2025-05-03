@@ -20,7 +20,7 @@ impl DecodePacketField for Uuid {
 impl EncodePacketField for Uuid {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, _protocol_version: u32) -> Result<(), Self::Error> {
         bytes.extend_from_slice(self.as_bytes());
         Ok(())
     }

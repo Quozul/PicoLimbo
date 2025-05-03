@@ -1,5 +1,5 @@
 use crate::writers::{
-    size_to_i32_bytes, write_array_i32, write_array_i64, write_array_i8, write_string,
+    size_to_i32_bytes, write_array_i8, write_array_i32, write_array_i64, write_string,
 };
 
 #[derive(PartialEq, Debug, Clone)]
@@ -61,8 +61,8 @@ pub enum Nbt {
 }
 
 impl Nbt {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.to_bytes_tag(false, false)
+    pub fn to_bytes(&self, allow_dynamic_typed_lists: bool) -> Vec<u8> {
+        self.to_bytes_tag(false, false, allow_dynamic_typed_lists)
     }
 
     pub fn get_long(&self) -> Option<&i64> {
@@ -154,7 +154,12 @@ impl Nbt {
         }
     }
 
-    fn to_bytes_tag(&self, skip_name: bool, skip_tag_type: bool) -> Vec<u8> {
+    fn to_bytes_tag(
+        &self,
+        skip_name: bool,
+        skip_tag_type: bool,
+        allow_dynamic_typed_lists: bool,
+    ) -> Vec<u8> {
         let tag_type = self.get_tag_type();
         let mut base = if skip_tag_type {
             Vec::new()
@@ -195,28 +200,74 @@ impl Nbt {
             Nbt::List {
                 value, tag_type, ..
             } => {
-                let mut serialized_value: Vec<u8> = Vec::from([*tag_type]);
+                let mut serialized_value: Vec<u8> = if allow_dynamic_typed_lists {
+                    Vec::from([10])
+                } else {
+                    Vec::from([*tag_type])
+                };
                 let size_bytes = size_to_i32_bytes(value.len());
                 serialized_value.extend_from_slice(&size_bytes);
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(true, true));
+                    if allow_dynamic_typed_lists {
+                        let next_tag_type = next_tag.get_tag_type();
+                        let is_compound = next_tag_type == 10;
+                        if is_compound {
+                            serialized_value.extend(next_tag.to_bytes_tag(
+                                true,
+                                true,
+                                allow_dynamic_typed_lists,
+                            ));
+                        } else {
+                            let compound_tag = Nbt::Compound {
+                                name: None,
+                                value: vec![next_tag.clone()],
+                            };
+                            serialized_value.extend(compound_tag.to_bytes_tag(
+                                true,
+                                true,
+                                allow_dynamic_typed_lists,
+                            ));
+                        }
+                    } else {
+                        serialized_value.extend(next_tag.to_bytes_tag(
+                            true,
+                            true,
+                            allow_dynamic_typed_lists,
+                        ));
+                    }
                 }
                 base.extend(serialized_value);
             }
             Nbt::Compound { value, .. } => {
                 let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(false, false));
+                    serialized_value.extend(next_tag.to_bytes_tag(
+                        false,
+                        false,
+                        allow_dynamic_typed_lists,
+                    ));
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(true, false));
+                serialized_value.extend(Nbt::End.to_bytes_tag(
+                    true,
+                    false,
+                    allow_dynamic_typed_lists,
+                ));
                 base.extend(serialized_value);
             }
             Nbt::NamelessCompound { value } => {
                 let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(false, false));
+                    serialized_value.extend(next_tag.to_bytes_tag(
+                        false,
+                        false,
+                        allow_dynamic_typed_lists,
+                    ));
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(true, false));
+                serialized_value.extend(Nbt::End.to_bytes_tag(
+                    true,
+                    false,
+                    allow_dynamic_typed_lists,
+                ));
                 base.extend(serialized_value);
             }
             Nbt::IntArray { value, .. } => {
@@ -261,7 +312,7 @@ mod test {
     #[test]
     fn test_nbt_root_compound_to_bytes() {
         let nbt = Nbt::NamelessCompound { value: vec![] };
-        assert_eq!(nbt.to_bytes(), vec![0x0a, 0x00]);
+        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00]);
     }
 
     #[test]
@@ -270,7 +321,7 @@ mod test {
             name: None,
             value: vec![],
         };
-        assert_eq!(nbt.to_bytes(), vec![0x0a, 0x00, 0x00, 0x00]);
+        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00, 0x00, 0x00]);
     }
 
     #[test]
@@ -279,6 +330,9 @@ mod test {
             name: Some("hi".to_string()),
             value: vec![],
         };
-        assert_eq!(nbt.to_bytes(), vec![0x0a, 0x00, 0x02, 0x68, 0x69, 0x00]);
+        assert_eq!(
+            nbt.to_bytes(false),
+            vec![0x0a, 0x00, 0x02, 0x68, 0x69, 0x00]
+        );
     }
 }

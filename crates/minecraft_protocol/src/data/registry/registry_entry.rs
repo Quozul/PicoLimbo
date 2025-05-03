@@ -21,15 +21,15 @@ pub enum RegistryEntryEncodeError {
 impl EncodePacketField for RegistryEntry {
     type Error = RegistryEntryEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         self.entry_id
-            .encode(bytes)
+            .encode(bytes, protocol_version)
             .map_err(|_| RegistryEntryEncodeError::Identifier)?;
         self.has_data
-            .encode(bytes)
+            .encode(bytes, protocol_version)
             .map_err(|_| RegistryEntryEncodeError::Infallible)?;
         if let Some(nbt) = &self.nbt {
-            nbt.encode(bytes)
+            nbt.encode(bytes, protocol_version)
                 .map_err(|_| RegistryEntryEncodeError::Infallible)?;
         }
         Ok(())

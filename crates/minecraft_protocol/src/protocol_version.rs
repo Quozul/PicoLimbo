@@ -5,6 +5,8 @@ use std::str::FromStr;
 #[derive(Default, Clone, Debug, Pvn, Hash)]
 pub enum ProtocolVersion {
     #[default]
+    #[pvn(770)]
+    V1_21_5,
     #[pvn(769)]
     V1_21_4,
     #[pvn(768)]

@@ -44,10 +44,10 @@ impl DecodePacketField for KnownPack {
 impl EncodePacketField for KnownPack {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
-        self.namespace.encode(bytes)?;
-        self.id.encode(bytes)?;
-        self.version.encode(bytes)?;
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+        self.namespace.encode(bytes, protocol_version)?;
+        self.id.encode(bytes, protocol_version)?;
+        self.version.encode(bytes, protocol_version)?;
         Ok(())
     }
 }

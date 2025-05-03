@@ -28,6 +28,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
+    "1.21.5",
     "1.21.4",
     "1.21.2",
     "1.21",
@@ -64,10 +65,15 @@ const SUPPORTED_VERSIONS = [
         const generatedDirectory = await mkdtemp(
             `/tmp/generated_${version.version}`,
         );
-        await execute(
-            `java -DbundlerMainClass=net.minecraft.data.Main -jar ${version.fileName} --reports --server --output ${generatedDirectory}`,
-            serverJarDirectory,
-        );
+        const command = `java -DbundlerMainClass=net.minecraft.data.Main -jar ${version.fileName} --reports --server --output ${generatedDirectory}`;
+        try {
+            await execute(command, serverJarDirectory);
+        } catch (e) {
+            console.error(
+                `An error occurred while processing version ${version.fileName}:`,
+                e,
+            );
+        }
         console.log(`Generated ${version.version}: ${version.path}`);
 
         // Copy the generated data

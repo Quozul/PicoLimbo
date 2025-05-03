@@ -67,9 +67,9 @@ impl DecodePacketField for Identifier {
 impl EncodePacketField for Identifier {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         let string = format!("{}:{}", self.namespace, self.thing);
-        string.encode(bytes)
+        string.encode(bytes, protocol_version)
     }
 }
 
@@ -82,7 +82,7 @@ mod tests {
     fn test_identifier() {
         let identifier = Identifier::minecraft("overworld");
         let mut bytes = Vec::new();
-        identifier.encode(&mut bytes).unwrap();
+        identifier.encode(&mut bytes, 0).unwrap();
         let mut index = 0;
         let decoded_identifier = Identifier::decode(&bytes, &mut index).unwrap();
         assert_eq!(identifier, decoded_identifier);

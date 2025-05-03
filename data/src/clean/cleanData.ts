@@ -75,4 +75,11 @@ const REGISTRIES_TO_SEND = [
     "trim_pattern",
     "wolf_variant",
     "worldgen/biome",
+    // The following registries were added in 1.21.5
+    "cat_variant",
+    "chicken_variant",
+    "cow_variant",
+    "frog_variant",
+    "pig_variant",
+    "wolf_sound_variant",
 ];

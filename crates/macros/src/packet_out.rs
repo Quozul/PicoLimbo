@@ -1,7 +1,7 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 pub fn expand_parse_out_packet_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -30,12 +30,12 @@ pub fn expand_parse_out_packet_derive(input: TokenStream) -> TokenStream {
         if let Some(version_range) = version_range {
             quote! {
                 if (#version_range).contains(&protocol_version) {
-                    self.#field_name.encode(&mut bytes)?;
+                    self.#field_name.encode(&mut bytes, protocol_version)?;
                 }
             }
         } else {
             quote! {
-                self.#field_name.encode(&mut bytes)?;
+                self.#field_name.encode(&mut bytes, protocol_version)?;
             }
         }
     });
