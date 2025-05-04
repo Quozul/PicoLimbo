@@ -20,8 +20,8 @@ impl_int!(u8, i8, i16, i32, i64, f32, f64);
 impl<T: WriteBytes> WriteBytes for [T] {
     #[inline]
     fn write(&self, out: &mut Vec<u8>) {
-        let len = self.len() as i32;
-        out.extend_from_slice(&len.to_be_bytes());
+        let length = self.len() as i32;
+        length.write(out);
         for elt in self {
             elt.write(out);
         }
@@ -39,8 +39,8 @@ impl WriteBytes for String {
     #[inline]
     fn write(&self, out: &mut Vec<u8>) {
         let bytes = self.as_bytes();
-        let length = bytes.len() as u16;
-        out.extend_from_slice(&length.to_be_bytes());
+        let length = bytes.len() as i16;
+        length.write(out);
         out.extend_from_slice(bytes);
     }
 }
@@ -56,7 +56,7 @@ pub(crate) struct BinaryWriter(Vec<u8>);
 
 impl BinaryWriter {
     pub(crate) fn new() -> Self {
-        Self(Vec::new())
+        Self(Vec::with_capacity(1024))
     }
 
     pub(crate) fn write<T: WriteBytes>(&mut self, v: T) {

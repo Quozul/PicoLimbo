@@ -15,8 +15,8 @@ use minecraft_protocol::prelude::PacketId;
 use net::raw_packet::RawPacket;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tokio::io::copy_bidirectional;
 use tokio::net::TcpStream;
@@ -102,7 +102,7 @@ impl ConnectionHandler for ClientContext {
 
         // On client disconnect, check if we can stop the server
         let player_count = self.connected_players.load(Ordering::SeqCst);
-        if player_count <= 0 {
+        if player_count == 0 {
             let server_manager = self.server_manager.lock().await;
             if server_manager.get_server_status().await != ServerStatus::Offline {
                 if client.wants_to_login() {

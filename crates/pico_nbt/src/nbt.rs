@@ -129,7 +129,7 @@ impl Nbt {
     }
 
     fn has_name(&self) -> bool {
-        !matches!(self, Nbt::End { .. })
+        !matches!(self, Nbt::End)
     }
 
     fn to_bytes_tag(
