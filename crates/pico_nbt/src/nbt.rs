@@ -291,7 +291,13 @@ mod test {
     #[test]
     fn test_nbt_root_compound_to_bytes() {
         let nbt = Nbt::NamelessCompound { value: vec![] };
-        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00]);
+        assert_eq!(
+            nbt.to_bytes(false),
+            vec![
+                0x0a, // Tag type of compound
+                0x00, // End tag
+            ]
+        );
     }
 
     #[test]
@@ -300,7 +306,14 @@ mod test {
             name: None,
             value: vec![],
         };
-        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00, 0x00, 0x00]);
+        assert_eq!(
+            nbt.to_bytes(false),
+            vec![
+                0x0a, // Tag type of compound
+                0x00, 0x00, // Tag name length of 0
+                0x00, // End tag
+            ]
+        );
     }
 
     #[test]
@@ -311,7 +324,88 @@ mod test {
         };
         assert_eq!(
             nbt.to_bytes(false),
-            vec![0x0a, 0x00, 0x02, 0x68, 0x69, 0x00]
+            vec![
+                0x0a, // Tag type of compound
+                0x00, 0x02, // Tag name length of 2
+                0x68, 0x69, // Tag name
+                0x00, // End tag
+            ]
         );
+    }
+
+    #[test]
+    fn test_nbt_list_single_type() {
+        // Given
+        let nbt = Nbt::List {
+            name: None,
+            value: vec![
+                Nbt::Int {
+                    name: Some("test".to_string()), // The name is not encoded
+                    value: 123,
+                },
+                Nbt::Int {
+                    name: Some("test".to_string()),
+                    value: 42,
+                },
+            ],
+            tag_type: 3, // 3 is the tag type of Int
+        };
+        let expected = vec![
+            9, // List own tag type
+            0, 0, // List name length
+            3, // Content tag type
+            0, 0, 0, 2, // List length
+            0, 0, 0, 123, // First element
+            0, 0, 0, 42, // Second element
+        ];
+
+        // When
+        let serialized = nbt.to_bytes(false);
+
+        // Then
+        assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_nbt_list_heterogenous_type() {
+        // Given
+        let nbt = Nbt::List {
+            name: None,
+            value: vec![
+                Nbt::Int {
+                    name: Some("test".to_string()),
+                    value: 123,
+                },
+                Nbt::Short {
+                    name: Some("test".to_string()),
+                    value: 42,
+                },
+            ],
+            tag_type: 3, // This is ignored in this case
+        };
+        let expected = vec![
+            9, // List own tag type
+            0, 0,  // List name length
+            10, // Content tag type
+            0, 0, 0, 2, // List length
+            // First element
+            3, // Compound tag type
+            0, 4, // Length of the name
+            116, 101, 115, 116, // Name of the compound tag
+            0, 0, 0, 123, // Compound value
+            0,   // End tag type
+            // Second element
+            2, // Compound tag type
+            0, 4, // Length of the name
+            116, 101, 115, 116, // Name of the compound tag
+            0, 42, // Compound value
+            0,  // End tag type
+        ];
+
+        // When
+        let serialized = nbt.to_bytes(true);
+
+        // Then
+        assert_eq!(serialized, expected);
     }
 }
