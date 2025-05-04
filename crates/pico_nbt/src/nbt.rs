@@ -1,8 +1,6 @@
+use crate::binary_writer::BinaryWriter;
 use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
-use crate::writers::{
-    size_to_i32_bytes, write_array_i8, write_array_i32, write_array_i64, write_string,
-};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -60,8 +58,10 @@ pub enum Nbt {
 
 impl Nbt {
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
+        let mut writer = BinaryWriter::new();
         let context = NbtContext::root();
-        self.to_bytes_tag(context, nbt_features)
+        self.to_bytes_tag(&mut writer, context, nbt_features);
+        writer.into_inner()
     }
 
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
@@ -132,102 +132,98 @@ impl Nbt {
         !matches!(self, Nbt::End { .. })
     }
 
-    fn serialize_name(&self) -> Vec<u8> {
-        match self.get_name() {
-            None => Vec::from([0, 0]),
-            Some(name) => write_string(name),
-        }
-    }
-
-    fn to_bytes_tag(&self, context: NbtContext, nbt_features: NbtFeatures) -> Vec<u8> {
-        let tag_type = self.get_tag_type();
-        let mut base = if context.should_include_tag_type() {
-            Vec::from([tag_type])
-        } else {
-            Vec::new()
+    fn to_bytes_tag(
+        &self,
+        writer: &mut BinaryWriter,
+        context: NbtContext,
+        nbt_features: NbtFeatures,
+    ) {
+        if context.should_include_tag_type() {
+            writer.write(self.get_tag_type());
         };
 
         if context.should_include_tag_name(nbt_features) && self.has_name() {
-            base.extend(self.serialize_name());
+            match self.get_name() {
+                None => {
+                    writer.write(0_u8);
+                    writer.write(0_u8);
+                }
+                Some(name) => {
+                    writer.write(name);
+                }
+            }
         }
 
         match self {
             Nbt::End => {}
             Nbt::Byte { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Short { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Int { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Long { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Float { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Double { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::ByteArray { value, .. } => {
-                base.extend(write_array_i8(value));
+                writer.write(value);
             }
             Nbt::String { value, .. } => {
-                base.extend(write_string(value.clone()));
+                writer.write(value);
             }
             Nbt::List {
                 value, tag_type, ..
             } => {
-                let mut serialized_value: Vec<u8> = if nbt_features.is_dynamic_lists_available() {
-                    Vec::from([10])
+                // Write the type of the list
+                if nbt_features.is_dynamic_lists_available() {
+                    writer.write(10_u8);
                 } else {
-                    Vec::from([*tag_type])
+                    writer.write(*tag_type);
                 };
-                let size_bytes = size_to_i32_bytes(value.len());
-                serialized_value.extend_from_slice(&size_bytes);
+
+                // Write the length of the list
+                writer.write(value.len() as i32);
+
+                // Write each tag in the list
                 for next_tag in value {
                     if nbt_features.is_dynamic_lists_available() {
-                        let next_tag_type = next_tag.get_tag_type();
-                        let is_compound = next_tag_type == 10;
+                        let is_compound = next_tag.get_tag_type() == 10;
                         if is_compound {
-                            serialized_value
-                                .extend(next_tag.to_bytes_tag(NbtContext::list(), nbt_features));
+                            next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                         } else {
                             let compound_tag = Nbt::Compound {
                                 name: None,
                                 value: vec![next_tag.clone()],
                             };
-                            serialized_value.extend(
-                                compound_tag.to_bytes_tag(NbtContext::list(), nbt_features),
-                            );
+                            compound_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                         }
                     } else {
-                        serialized_value
-                            .extend(next_tag.to_bytes_tag(NbtContext::list(), nbt_features));
+                        next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                     }
                 }
-                base.extend(serialized_value);
             }
             Nbt::Compound { value, .. } => {
-                let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value
-                        .extend(next_tag.to_bytes_tag(NbtContext::default(), nbt_features));
+                    next_tag.to_bytes_tag(writer, NbtContext::default(), nbt_features);
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(NbtContext::default(), nbt_features));
-                base.extend(serialized_value);
+                Nbt::End.to_bytes_tag(writer, NbtContext::default(), nbt_features);
             }
             Nbt::IntArray { value, .. } => {
-                base.extend(write_array_i32(value));
+                writer.write(value);
             }
             Nbt::LongArray { value, .. } => {
-                base.extend(write_array_i64(value));
+                writer.write(value);
             }
         };
-
-        base
     }
 }
 
