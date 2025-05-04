@@ -35,7 +35,8 @@ impl ChunkDataAndUpdateLightPacket {
             name: Some("MOTION_BLOCKING".to_string()),
             value: vec![0; 37],
         };
-        let root_tag = Nbt::NamelessCompound {
+        let root_tag = Nbt::Compound {
+            name: None,
             value: vec![long_array_tag],
         };
         let data = vec![ChunkSection::void(protocol_version.clone()); 24];

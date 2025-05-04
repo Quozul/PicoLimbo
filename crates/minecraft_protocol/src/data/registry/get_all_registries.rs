@@ -108,18 +108,11 @@ pub fn get_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
                                                 name: Some("id".to_string()),
                                                 value: id,
                                             },
-                                            e.nbt
-                                                .clone()
-                                                .unwrap()
-                                                .to_named_compound("element".to_string()),
+                                            e.nbt.clone().unwrap().set_name("element".to_string()),
                                         ],
                                     };
                                     id = id + 1;
-                                    if protocol_version >= ProtocolVersion::V1_20_2 {
-                                        n.to_nameless_compound()
-                                    } else {
-                                        n
-                                    }
+                                    n
                                 })
                                 .collect(),
                             tag_type: 10,
@@ -170,7 +163,7 @@ fn json_to_nbt(
     let registry_id = get_registry_id(root_directory, path)?;
     let entry_id = get_entry_id(path)?;
     let json = get_json_files(path)?;
-    let nbt = Nbt::from_json(&json, None).to_nameless_compound();
+    let nbt = Nbt::from_json(&json, None);
 
     Ok(DataRegistryEntry {
         registry_id,

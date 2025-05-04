@@ -1,3 +1,4 @@
+use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
 use crate::writers::{
     size_to_i32_bytes, write_array_i8, write_array_i32, write_array_i64, write_string,
@@ -47,10 +48,6 @@ pub enum Nbt {
         name: Option<String>,
         value: Vec<Nbt>,
     },
-    /// Only for network Nbt for versions 1.20.2 and above
-    NamelessCompound {
-        value: Vec<Nbt>,
-    },
     IntArray {
         name: Option<String>,
         value: Vec<i32>,
@@ -63,7 +60,8 @@ pub enum Nbt {
 
 impl Nbt {
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
-        self.to_bytes_tag(false, false, nbt_features)
+        let context = NbtContext::root();
+        self.to_bytes_tag(context, nbt_features)
     }
 
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
@@ -79,7 +77,6 @@ impl Nbt {
     pub fn get_vec(&self) -> Option<Vec<Nbt>> {
         match self {
             Self::Compound { value, .. } => Some(value.clone()),
-            Self::NamelessCompound { value, .. } => Some(value.clone()),
             Self::List { value, .. } => Some(value.clone()),
             _ => None,
         }
@@ -98,14 +95,13 @@ impl Nbt {
             Nbt::String { .. } => 8,
             Nbt::List { .. } => 9,
             Nbt::Compound { .. } => 10,
-            Nbt::NamelessCompound { .. } => 10,
             Nbt::IntArray { .. } => 11,
             Nbt::LongArray { .. } => 12,
         }
     }
 
     fn has_name(&self) -> bool {
-        !matches!(self, Nbt::NamelessCompound { .. } | Nbt::End { .. })
+        !matches!(self, Nbt::End { .. })
     }
 
     pub fn get_name(&self) -> Option<String> {
@@ -121,7 +117,6 @@ impl Nbt {
             Nbt::String { name, .. } => name.clone(),
             Nbt::List { name, .. } => name.clone(),
             Nbt::Compound { name, .. } => name.clone(),
-            Nbt::NamelessCompound { .. } => None,
             Nbt::IntArray { name, .. } => name.clone(),
             Nbt::LongArray { name, .. } => name.clone(),
         }
@@ -134,20 +129,15 @@ impl Nbt {
         }
     }
 
-    fn to_bytes_tag(
-        &self,
-        skip_name: bool,
-        skip_tag_type: bool,
-        nbt_features: NbtFeatures,
-    ) -> Vec<u8> {
+    fn to_bytes_tag(&self, context: NbtContext, nbt_features: NbtFeatures) -> Vec<u8> {
         let tag_type = self.get_tag_type();
-        let mut base = if skip_tag_type {
+        let mut base = if context.should_skip_tag_type() {
             Vec::new()
         } else {
             Vec::from([tag_type])
         };
 
-        if !skip_name && self.has_name() {
+        if !context.should_skip_name(nbt_features) && self.has_name() {
             base.extend(self.serialize_name());
         }
 
@@ -192,24 +182,20 @@ impl Nbt {
                         let next_tag_type = next_tag.get_tag_type();
                         let is_compound = next_tag_type == 10;
                         if is_compound {
-                            serialized_value.extend(next_tag.to_bytes_tag(
-                                true,
-                                true,
-                                nbt_features,
-                            ));
+                            serialized_value
+                                .extend(next_tag.to_bytes_tag(NbtContext::list(), nbt_features));
                         } else {
                             let compound_tag = Nbt::Compound {
                                 name: None,
                                 value: vec![next_tag.clone()],
                             };
-                            serialized_value.extend(compound_tag.to_bytes_tag(
-                                true,
-                                true,
-                                nbt_features,
-                            ));
+                            serialized_value.extend(
+                                compound_tag.to_bytes_tag(NbtContext::list(), nbt_features),
+                            );
                         }
                     } else {
-                        serialized_value.extend(next_tag.to_bytes_tag(true, true, nbt_features));
+                        serialized_value
+                            .extend(next_tag.to_bytes_tag(NbtContext::list(), nbt_features));
                     }
                 }
                 base.extend(serialized_value);
@@ -217,17 +203,10 @@ impl Nbt {
             Nbt::Compound { value, .. } => {
                 let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(false, false, nbt_features));
+                    serialized_value
+                        .extend(next_tag.to_bytes_tag(NbtContext::default(), nbt_features));
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(true, false, nbt_features));
-                base.extend(serialized_value);
-            }
-            Nbt::NamelessCompound { value } => {
-                let mut serialized_value: Vec<u8> = Vec::new();
-                for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(false, false, nbt_features));
-                }
-                serialized_value.extend(Nbt::End.to_bytes_tag(true, false, nbt_features));
+                serialized_value.extend(Nbt::End.to_bytes_tag(NbtContext::default(), nbt_features));
                 base.extend(serialized_value);
             }
             Nbt::IntArray { value, .. } => {
@@ -241,26 +220,13 @@ impl Nbt {
         base
     }
 
-    pub fn to_nameless_compound(&self) -> Nbt {
+    pub fn set_name(&self, name: String) -> Nbt {
         match self {
-            Nbt::Compound { value, .. } => Nbt::NamelessCompound {
-                value: value.clone(),
-            },
-            _ => panic!("Cannot convert non-compound Nbt to nameless compound"),
-        }
-    }
-
-    pub fn to_named_compound(&self, name: String) -> Nbt {
-        match self {
-            Nbt::NamelessCompound { value, .. } => Nbt::Compound {
-                name: Some(name),
-                value: value.clone(),
-            },
             Nbt::Compound { value, .. } => Nbt::Compound {
                 name: Some(name),
                 value: value.clone(),
             },
-            _ => panic!("Cannot convert non-compound Nbt to nameless compound"),
+            _ => panic!("Cannot set name on non-compound"),
         }
     }
 }
@@ -271,9 +237,12 @@ mod test {
 
     #[test]
     fn test_nbt_root_compound_to_bytes() {
-        let nbt = Nbt::NamelessCompound { value: vec![] };
+        let nbt = Nbt::Compound {
+            value: vec![],
+            name: None,
+        };
         assert_eq!(
-            nbt.to_bytes(NbtFeatures::default()),
+            nbt.to_bytes(NbtFeatures::builder().nameless().build()),
             vec![
                 0x0a, // Tag type of compound
                 0x00, // End tag

@@ -1,4 +1,5 @@
 mod nbt;
+mod nbt_context;
 mod nbt_from_json;
 mod nbt_version;
 mod writers;
