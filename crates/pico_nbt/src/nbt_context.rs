@@ -29,11 +29,11 @@ impl NbtContext {
         }
     }
 
-    pub fn should_skip_name(&self, nbt_features: NbtFeatures) -> bool {
-        nbt_features.is_nameless_available() && self.is_root || self.is_in_list
+    pub fn should_include_tag_name(&self, nbt_features: NbtFeatures) -> bool {
+        !(nbt_features.is_nameless_available() && self.is_root) && !self.is_in_list
     }
 
-    pub fn should_skip_tag_type(&self) -> bool {
-        self.is_in_list
+    pub fn should_include_tag_type(&self) -> bool {
+        !self.is_in_list
     }
 }

@@ -82,7 +82,17 @@ impl Nbt {
         }
     }
 
-    pub fn get_tag_type(&self) -> u8 {
+    pub fn set_name(&self, name: String) -> Nbt {
+        match self {
+            Nbt::Compound { value, .. } => Nbt::Compound {
+                name: Some(name),
+                value: value.clone(),
+            },
+            _ => panic!("Cannot set name on non-compound"),
+        }
+    }
+
+    pub(crate) fn get_tag_type(&self) -> u8 {
         match self {
             Nbt::End => 0,
             Nbt::Byte { .. } => 1,
@@ -100,11 +110,7 @@ impl Nbt {
         }
     }
 
-    fn has_name(&self) -> bool {
-        !matches!(self, Nbt::End { .. })
-    }
-
-    pub fn get_name(&self) -> Option<String> {
+    pub(crate) fn get_name(&self) -> Option<String> {
         match self {
             Nbt::End => None,
             Nbt::Byte { name, .. } => name.clone(),
@@ -122,6 +128,10 @@ impl Nbt {
         }
     }
 
+    fn has_name(&self) -> bool {
+        !matches!(self, Nbt::End { .. })
+    }
+
     fn serialize_name(&self) -> Vec<u8> {
         match self.get_name() {
             None => Vec::from([0, 0]),
@@ -131,13 +141,13 @@ impl Nbt {
 
     fn to_bytes_tag(&self, context: NbtContext, nbt_features: NbtFeatures) -> Vec<u8> {
         let tag_type = self.get_tag_type();
-        let mut base = if context.should_skip_tag_type() {
-            Vec::new()
-        } else {
+        let mut base = if context.should_include_tag_type() {
             Vec::from([tag_type])
+        } else {
+            Vec::new()
         };
 
-        if !context.should_skip_name(nbt_features) && self.has_name() {
+        if context.should_include_tag_name(nbt_features) && self.has_name() {
             base.extend(self.serialize_name());
         }
 
@@ -218,16 +228,6 @@ impl Nbt {
         };
 
         base
-    }
-
-    pub fn set_name(&self, name: String) -> Nbt {
-        match self {
-            Nbt::Compound { value, .. } => Nbt::Compound {
-                name: Some(name),
-                value: value.clone(),
-            },
-            _ => panic!("Cannot set name on non-compound"),
-        }
     }
 }
 
