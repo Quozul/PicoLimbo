@@ -40,7 +40,7 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
             client.send_packet(packet).await;
         }
     } else {
-        let registry_codec = get_registry_codec(client.protocol_version()).to_nameless_compound();
+        let registry_codec = get_registry_codec(client.protocol_version());
         let packet = RegistryDataCodecPacket { registry_codec };
         client.send_packet(packet).await;
     }

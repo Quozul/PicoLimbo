@@ -1,6 +1,6 @@
-use crate::writers::{
-    size_to_i32_bytes, write_array_i8, write_array_i32, write_array_i64, write_string,
-};
+use crate::binary_writer::BinaryWriter;
+use crate::nbt_context::NbtContext;
+use crate::nbt_version::NbtFeatures;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -46,10 +46,6 @@ pub enum Nbt {
         name: Option<String>,
         value: Vec<Nbt>,
     },
-    /// Only for network Nbt for versions 1.20.2 and above
-    NamelessCompound {
-        value: Vec<Nbt>,
-    },
     IntArray {
         name: Option<String>,
         value: Vec<i32>,
@@ -61,29 +57,11 @@ pub enum Nbt {
 }
 
 impl Nbt {
-    pub fn to_bytes(&self, allow_dynamic_typed_lists: bool) -> Vec<u8> {
-        self.to_bytes_tag(false, false, allow_dynamic_typed_lists)
-    }
-
-    pub fn get_long(&self) -> Option<&i64> {
-        match self {
-            Nbt::Long { value, .. } => Some(value),
-            _ => None,
-        }
-    }
-
-    pub fn get_int(&self) -> Option<&i32> {
-        match self {
-            Nbt::Int { value, .. } => Some(value),
-            _ => None,
-        }
-    }
-
-    pub fn get_string(&self) -> Option<&String> {
-        match self {
-            Nbt::String { value, .. } => Some(value),
-            _ => None,
-        }
+    pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
+        let mut writer = BinaryWriter::new();
+        let context = NbtContext::root();
+        self.to_bytes_tag(&mut writer, context, nbt_features);
+        writer.into_inner()
     }
 
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
@@ -99,13 +77,22 @@ impl Nbt {
     pub fn get_vec(&self) -> Option<Vec<Nbt>> {
         match self {
             Self::Compound { value, .. } => Some(value.clone()),
-            Self::NamelessCompound { value, .. } => Some(value.clone()),
             Self::List { value, .. } => Some(value.clone()),
             _ => None,
         }
     }
 
-    pub fn get_tag_type(&self) -> u8 {
+    pub fn set_name(&self, name: String) -> Nbt {
+        match self {
+            Nbt::Compound { value, .. } => Nbt::Compound {
+                name: Some(name),
+                value: value.clone(),
+            },
+            _ => panic!("Cannot set name on non-compound"),
+        }
+    }
+
+    pub(crate) fn get_tag_type(&self) -> u8 {
         match self {
             Nbt::End => 0,
             Nbt::Byte { .. } => 1,
@@ -118,17 +105,12 @@ impl Nbt {
             Nbt::String { .. } => 8,
             Nbt::List { .. } => 9,
             Nbt::Compound { .. } => 10,
-            Nbt::NamelessCompound { .. } => 10,
             Nbt::IntArray { .. } => 11,
             Nbt::LongArray { .. } => 12,
         }
     }
 
-    fn has_name(&self) -> bool {
-        !matches!(self, Nbt::NamelessCompound { .. } | Nbt::End { .. })
-    }
-
-    pub fn get_name(&self) -> Option<String> {
+    pub(crate) fn get_name(&self) -> Option<String> {
         match self {
             Nbt::End => None,
             Nbt::Byte { name, .. } => name.clone(),
@@ -141,167 +123,107 @@ impl Nbt {
             Nbt::String { name, .. } => name.clone(),
             Nbt::List { name, .. } => name.clone(),
             Nbt::Compound { name, .. } => name.clone(),
-            Nbt::NamelessCompound { .. } => None,
             Nbt::IntArray { name, .. } => name.clone(),
             Nbt::LongArray { name, .. } => name.clone(),
         }
     }
 
-    fn serialize_name(&self) -> Vec<u8> {
-        match self.get_name() {
-            None => Vec::from([0, 0]),
-            Some(name) => write_string(name),
-        }
+    fn has_name(&self) -> bool {
+        !matches!(self, Nbt::End { .. })
     }
 
     fn to_bytes_tag(
         &self,
-        skip_name: bool,
-        skip_tag_type: bool,
-        allow_dynamic_typed_lists: bool,
-    ) -> Vec<u8> {
-        let tag_type = self.get_tag_type();
-        let mut base = if skip_tag_type {
-            Vec::new()
-        } else {
-            Vec::from([tag_type])
+        writer: &mut BinaryWriter,
+        context: NbtContext,
+        nbt_features: NbtFeatures,
+    ) {
+        if context.should_include_tag_type() {
+            writer.write(self.get_tag_type());
         };
 
-        if !skip_name && self.has_name() {
-            base.extend(self.serialize_name());
+        if context.should_include_tag_name(nbt_features) && self.has_name() {
+            match self.get_name() {
+                None => {
+                    writer.write(0_u8);
+                    writer.write(0_u8);
+                }
+                Some(name) => {
+                    writer.write(name);
+                }
+            }
         }
 
         match self {
             Nbt::End => {}
             Nbt::Byte { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Short { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Int { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Long { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Float { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::Double { value, .. } => {
-                base.extend(value.to_be_bytes());
+                writer.write(value);
             }
             Nbt::ByteArray { value, .. } => {
-                base.extend(write_array_i8(value));
+                writer.write(value);
             }
             Nbt::String { value, .. } => {
-                base.extend(write_string(value.clone()));
+                writer.write(value);
             }
             Nbt::List {
                 value, tag_type, ..
             } => {
-                let mut serialized_value: Vec<u8> = if allow_dynamic_typed_lists {
-                    Vec::from([10])
+                // Write the type of the list
+                if nbt_features.is_dynamic_lists_available() {
+                    writer.write(10_u8);
                 } else {
-                    Vec::from([*tag_type])
+                    writer.write(*tag_type);
                 };
-                let size_bytes = size_to_i32_bytes(value.len());
-                serialized_value.extend_from_slice(&size_bytes);
+
+                // Write the length of the list
+                writer.write(value.len() as i32);
+
+                // Write each tag in the list
                 for next_tag in value {
-                    if allow_dynamic_typed_lists {
-                        let next_tag_type = next_tag.get_tag_type();
-                        let is_compound = next_tag_type == 10;
+                    if nbt_features.is_dynamic_lists_available() {
+                        let is_compound = next_tag.get_tag_type() == 10;
                         if is_compound {
-                            serialized_value.extend(next_tag.to_bytes_tag(
-                                true,
-                                true,
-                                allow_dynamic_typed_lists,
-                            ));
+                            next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                         } else {
                             let compound_tag = Nbt::Compound {
                                 name: None,
                                 value: vec![next_tag.clone()],
                             };
-                            serialized_value.extend(compound_tag.to_bytes_tag(
-                                true,
-                                true,
-                                allow_dynamic_typed_lists,
-                            ));
+                            compound_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                         }
                     } else {
-                        serialized_value.extend(next_tag.to_bytes_tag(
-                            true,
-                            true,
-                            allow_dynamic_typed_lists,
-                        ));
+                        next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                     }
                 }
-                base.extend(serialized_value);
             }
             Nbt::Compound { value, .. } => {
-                let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(
-                        false,
-                        false,
-                        allow_dynamic_typed_lists,
-                    ));
+                    next_tag.to_bytes_tag(writer, NbtContext::default(), nbt_features);
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(
-                    true,
-                    false,
-                    allow_dynamic_typed_lists,
-                ));
-                base.extend(serialized_value);
-            }
-            Nbt::NamelessCompound { value } => {
-                let mut serialized_value: Vec<u8> = Vec::new();
-                for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(
-                        false,
-                        false,
-                        allow_dynamic_typed_lists,
-                    ));
-                }
-                serialized_value.extend(Nbt::End.to_bytes_tag(
-                    true,
-                    false,
-                    allow_dynamic_typed_lists,
-                ));
-                base.extend(serialized_value);
+                Nbt::End.to_bytes_tag(writer, NbtContext::default(), nbt_features);
             }
             Nbt::IntArray { value, .. } => {
-                base.extend(write_array_i32(value));
+                writer.write(value);
             }
             Nbt::LongArray { value, .. } => {
-                base.extend(write_array_i64(value));
+                writer.write(value);
             }
         };
-
-        base
-    }
-
-    pub fn to_nameless_compound(&self) -> Nbt {
-        match self {
-            Nbt::Compound { value, .. } => Nbt::NamelessCompound {
-                value: value.clone(),
-            },
-            _ => panic!("Cannot convert non-compound Nbt to nameless compound"),
-        }
-    }
-
-    pub fn to_named_compound(&self, name: String) -> Nbt {
-        match self {
-            Nbt::NamelessCompound { value, .. } => Nbt::Compound {
-                name: Some(name),
-                value: value.clone(),
-            },
-            Nbt::Compound { value, .. } => Nbt::Compound {
-                name: Some(name),
-                value: value.clone(),
-            },
-            _ => panic!("Cannot convert non-compound Nbt to nameless compound"),
-        }
     }
 }
 
@@ -311,8 +233,17 @@ mod test {
 
     #[test]
     fn test_nbt_root_compound_to_bytes() {
-        let nbt = Nbt::NamelessCompound { value: vec![] };
-        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00]);
+        let nbt = Nbt::Compound {
+            value: vec![],
+            name: None,
+        };
+        assert_eq!(
+            nbt.to_bytes(NbtFeatures::builder().nameless().build()),
+            vec![
+                0x0a, // Tag type of compound
+                0x00, // End tag
+            ]
+        );
     }
 
     #[test]
@@ -321,7 +252,14 @@ mod test {
             name: None,
             value: vec![],
         };
-        assert_eq!(nbt.to_bytes(false), vec![0x0a, 0x00, 0x00, 0x00]);
+        assert_eq!(
+            nbt.to_bytes(NbtFeatures::default()),
+            vec![
+                0x0a, // Tag type of compound
+                0x00, 0x00, // Tag name length of 0
+                0x00, // End tag
+            ]
+        );
     }
 
     #[test]
@@ -331,8 +269,90 @@ mod test {
             value: vec![],
         };
         assert_eq!(
-            nbt.to_bytes(false),
-            vec![0x0a, 0x00, 0x02, 0x68, 0x69, 0x00]
+            nbt.to_bytes(NbtFeatures::default()),
+            vec![
+                0x0a, // Tag type of compound
+                0x00, 0x02, // Tag name length of 2
+                0x68, 0x69, // Tag name
+                0x00, // End tag
+            ]
         );
+    }
+
+    #[test]
+    fn test_nbt_list_single_type() {
+        // Given
+        let nbt = Nbt::List {
+            name: None,
+            value: vec![
+                Nbt::Int {
+                    name: Some("test".to_string()), // The name is not encoded
+                    value: 123,
+                },
+                Nbt::Int {
+                    name: Some("test".to_string()),
+                    value: 42,
+                },
+            ],
+            tag_type: 3, // 3 is the tag type of Int
+        };
+        let expected = vec![
+            9, // List own tag type
+            0, 0, // List name length
+            3, // Content tag type
+            0, 0, 0, 2, // List length
+            0, 0, 0, 123, // First element
+            0, 0, 0, 42, // Second element
+        ];
+
+        // When
+        let serialized = nbt.to_bytes(NbtFeatures::default());
+
+        // Then
+        assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_nbt_list_heterogenous_type() {
+        // Given
+        let features = NbtFeatures::builder().dynamic_lists().build();
+        let nbt = Nbt::List {
+            name: None,
+            value: vec![
+                Nbt::Int {
+                    name: Some("test".to_string()),
+                    value: 123,
+                },
+                Nbt::Short {
+                    name: Some("test".to_string()),
+                    value: 42,
+                },
+            ],
+            tag_type: 3, // This is ignored in this case
+        };
+        let expected = vec![
+            9, // List own tag type
+            0, 0,  // List name length
+            10, // Content tag type
+            0, 0, 0, 2, // List length
+            // First element
+            3, // Compound tag type
+            0, 4, // Length of the name
+            116, 101, 115, 116, // Name of the compound tag
+            0, 0, 0, 123, // Compound value
+            0,   // End tag type
+            // Second element
+            2, // Compound tag type
+            0, 4, // Length of the name
+            116, 101, 115, 116, // Name of the compound tag
+            0, 42, // Compound value
+            0,  // End tag type
+        ];
+
+        // When
+        let serialized = nbt.to_bytes(features);
+
+        // Then
+        assert_eq!(serialized, expected);
     }
 }
