@@ -65,27 +65,6 @@ impl Nbt {
         self.to_bytes_tag(false, false, allow_dynamic_typed_lists)
     }
 
-    pub fn get_long(&self) -> Option<&i64> {
-        match self {
-            Nbt::Long { value, .. } => Some(value),
-            _ => None,
-        }
-    }
-
-    pub fn get_int(&self) -> Option<&i32> {
-        match self {
-            Nbt::Int { value, .. } => Some(value),
-            _ => None,
-        }
-    }
-
-    pub fn get_string(&self) -> Option<&String> {
-        match self {
-            Nbt::String { value, .. } => Some(value),
-            _ => None,
-        }
-    }
-
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
         let name = name.to_string();
         match self {
