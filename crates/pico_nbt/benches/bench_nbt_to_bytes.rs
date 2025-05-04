@@ -3,12 +3,13 @@
 #[cfg(test)]
 mod tests {
     extern crate test;
-    use nbt::prelude::Nbt;
+    use nbt::prelude::{Nbt, NbtFeatures};
     use test::Bencher;
 
     #[bench]
     fn bench_nbt_to_bytes(b: &mut Bencher) {
         // Given
+        let features = NbtFeatures::builder().dynamic_lists().build();
         let nbt = Nbt::Compound {
             name: Some("Hello, World".to_string()),
             value: vec![
@@ -34,7 +35,7 @@ mod tests {
         };
 
         b.iter(|| {
-            nbt.to_bytes(true);
+            nbt.to_bytes(features);
         });
     }
 }

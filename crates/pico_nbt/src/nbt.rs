@@ -1,3 +1,4 @@
+use crate::nbt_version::NbtFeatures;
 use crate::writers::{
     size_to_i32_bytes, write_array_i8, write_array_i32, write_array_i64, write_string,
 };
@@ -61,8 +62,8 @@ pub enum Nbt {
 }
 
 impl Nbt {
-    pub fn to_bytes(&self, allow_dynamic_typed_lists: bool) -> Vec<u8> {
-        self.to_bytes_tag(false, false, allow_dynamic_typed_lists)
+    pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
+        self.to_bytes_tag(false, false, nbt_features)
     }
 
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
@@ -137,7 +138,7 @@ impl Nbt {
         &self,
         skip_name: bool,
         skip_tag_type: bool,
-        allow_dynamic_typed_lists: bool,
+        nbt_features: NbtFeatures,
     ) -> Vec<u8> {
         let tag_type = self.get_tag_type();
         let mut base = if skip_tag_type {
@@ -179,7 +180,7 @@ impl Nbt {
             Nbt::List {
                 value, tag_type, ..
             } => {
-                let mut serialized_value: Vec<u8> = if allow_dynamic_typed_lists {
+                let mut serialized_value: Vec<u8> = if nbt_features.is_dynamic_lists_available() {
                     Vec::from([10])
                 } else {
                     Vec::from([*tag_type])
@@ -187,14 +188,14 @@ impl Nbt {
                 let size_bytes = size_to_i32_bytes(value.len());
                 serialized_value.extend_from_slice(&size_bytes);
                 for next_tag in value {
-                    if allow_dynamic_typed_lists {
+                    if nbt_features.is_dynamic_lists_available() {
                         let next_tag_type = next_tag.get_tag_type();
                         let is_compound = next_tag_type == 10;
                         if is_compound {
                             serialized_value.extend(next_tag.to_bytes_tag(
                                 true,
                                 true,
-                                allow_dynamic_typed_lists,
+                                nbt_features,
                             ));
                         } else {
                             let compound_tag = Nbt::Compound {
@@ -204,15 +205,11 @@ impl Nbt {
                             serialized_value.extend(compound_tag.to_bytes_tag(
                                 true,
                                 true,
-                                allow_dynamic_typed_lists,
+                                nbt_features,
                             ));
                         }
                     } else {
-                        serialized_value.extend(next_tag.to_bytes_tag(
-                            true,
-                            true,
-                            allow_dynamic_typed_lists,
-                        ));
+                        serialized_value.extend(next_tag.to_bytes_tag(true, true, nbt_features));
                     }
                 }
                 base.extend(serialized_value);
@@ -220,33 +217,17 @@ impl Nbt {
             Nbt::Compound { value, .. } => {
                 let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(
-                        false,
-                        false,
-                        allow_dynamic_typed_lists,
-                    ));
+                    serialized_value.extend(next_tag.to_bytes_tag(false, false, nbt_features));
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(
-                    true,
-                    false,
-                    allow_dynamic_typed_lists,
-                ));
+                serialized_value.extend(Nbt::End.to_bytes_tag(true, false, nbt_features));
                 base.extend(serialized_value);
             }
             Nbt::NamelessCompound { value } => {
                 let mut serialized_value: Vec<u8> = Vec::new();
                 for next_tag in value {
-                    serialized_value.extend(next_tag.to_bytes_tag(
-                        false,
-                        false,
-                        allow_dynamic_typed_lists,
-                    ));
+                    serialized_value.extend(next_tag.to_bytes_tag(false, false, nbt_features));
                 }
-                serialized_value.extend(Nbt::End.to_bytes_tag(
-                    true,
-                    false,
-                    allow_dynamic_typed_lists,
-                ));
+                serialized_value.extend(Nbt::End.to_bytes_tag(true, false, nbt_features));
                 base.extend(serialized_value);
             }
             Nbt::IntArray { value, .. } => {
@@ -292,7 +273,7 @@ mod test {
     fn test_nbt_root_compound_to_bytes() {
         let nbt = Nbt::NamelessCompound { value: vec![] };
         assert_eq!(
-            nbt.to_bytes(false),
+            nbt.to_bytes(NbtFeatures::default()),
             vec![
                 0x0a, // Tag type of compound
                 0x00, // End tag
@@ -307,7 +288,7 @@ mod test {
             value: vec![],
         };
         assert_eq!(
-            nbt.to_bytes(false),
+            nbt.to_bytes(NbtFeatures::default()),
             vec![
                 0x0a, // Tag type of compound
                 0x00, 0x00, // Tag name length of 0
@@ -323,7 +304,7 @@ mod test {
             value: vec![],
         };
         assert_eq!(
-            nbt.to_bytes(false),
+            nbt.to_bytes(NbtFeatures::default()),
             vec![
                 0x0a, // Tag type of compound
                 0x00, 0x02, // Tag name length of 2
@@ -360,7 +341,7 @@ mod test {
         ];
 
         // When
-        let serialized = nbt.to_bytes(false);
+        let serialized = nbt.to_bytes(NbtFeatures::default());
 
         // Then
         assert_eq!(serialized, expected);
@@ -369,6 +350,7 @@ mod test {
     #[test]
     fn test_nbt_list_heterogenous_type() {
         // Given
+        let features = NbtFeatures::builder().dynamic_lists().build();
         let nbt = Nbt::List {
             name: None,
             value: vec![
@@ -403,7 +385,7 @@ mod test {
         ];
 
         // When
-        let serialized = nbt.to_bytes(true);
+        let serialized = nbt.to_bytes(features);
 
         // Then
         assert_eq!(serialized, expected);
