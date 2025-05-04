@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 pub struct PacketMap {
     root_directory: PathBuf,
     // The cache holds the mapping for each protocol version.
-    cached_mappings: Arc<RwLock<HashMap<ProtocolVersion, Arc<HashMap<String, u8>>>>>,
+    cached_mappings: Arc<RwLock<HashMap<u32, Arc<HashMap<String, u8>>>>>,
 }
 
 impl PacketMap {
@@ -71,7 +71,7 @@ impl PacketMap {
                 .cached_mappings
                 .read()
                 .map_err(|e| anyhow!("Failed to acquire read lock: {}", e))?;
-            if let Some(mapping) = cache.get(protocol_version) {
+            if let Some(mapping) = cache.get(&protocol_version.version_number()) {
                 return Ok(mapping.clone());
             }
         }
@@ -89,7 +89,7 @@ impl PacketMap {
             .cached_mappings
             .write()
             .map_err(|e| anyhow!("Failed to acquire write lock: {}", e))?;
-        cache.insert(protocol_version.clone(), mapping_arc.clone());
+        cache.insert(protocol_version.version_number(), mapping_arc.clone());
         Ok(mapping_arc)
     }
 

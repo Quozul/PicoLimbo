@@ -2,7 +2,7 @@ use macros::Pvn;
 use std::cmp::Ordering;
 use std::str::FromStr;
 
-#[derive(Default, Clone, Debug, Pvn, Hash)]
+#[derive(Default, Clone, Debug, Pvn)]
 pub enum ProtocolVersion {
     #[default]
     #[pvn(770)]
