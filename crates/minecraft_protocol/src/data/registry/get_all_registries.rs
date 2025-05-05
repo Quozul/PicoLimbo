@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 use walkdir::WalkDir;
 
@@ -59,23 +59,53 @@ pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,
 ) -> HashMap<Identifier, Vec<RegistryEntry>> {
     let version_directory = get_version_directory(protocol_version);
-    let registries = get_all_registries(&version_directory);
 
-    let mut grouped: HashMap<Identifier, Vec<RegistryEntry>> = HashMap::new();
+    WalkDir::new(&version_directory)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            REGISTRIES_TO_SEND
+                .iter()
+                .any(|needle| e.path().to_string_lossy().contains(needle))
+        })
+        .filter_map(|e| {
+            let path = e.path();
+            if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some("json") {
+                return None;
+            }
 
-    for registry in &registries {
-        let entry = RegistryEntry {
-            entry_id: Identifier::minecraft(&registry.entry_id),
-            has_data: true,
-            nbt: Some(registry.nbt.clone()),
-        };
-        grouped
-            .entry(Identifier::from_str(&registry.registry_id).unwrap())
-            .or_default()
-            .push(entry);
-    }
+            let registry_id = {
+                let suffix = path.strip_prefix(&version_directory).ok()?;
+                let parent_dir = suffix.parent()?;
+                let registry_str = format!("minecraft:{}", parent_dir.to_string_lossy());
+                if !AVAILABLE_REGISTRIES.contains(&registry_str.as_str()) {
+                    return None;
+                }
+                Identifier::from_str(&registry_str).ok()?
+            };
 
-    grouped
+            let nbt = {
+                let file = File::open(path).ok()?;
+                let json: Value = serde_json::from_reader(BufReader::new(file)).ok()?;
+                Nbt::from_json(&json, None)
+            };
+
+            let entry = {
+                let stem = path.file_stem()?.to_str()?;
+                let entry_id = Identifier::minecraft(stem);
+                RegistryEntry {
+                    entry_id,
+                    has_data: true,
+                    nbt: Some(nbt),
+                }
+            };
+
+            Some((registry_id, entry))
+        })
+        .fold(HashMap::new(), |mut acc, (rid, entry)| {
+            acc.entry(rid).or_default().push(entry);
+            acc
+        })
 }
 
 /// Way to get registries since 1.16.2 up until 1.20.3
@@ -115,71 +145,4 @@ pub fn get_v1_16_registry_codec() -> anyhow::Result<Nbt> {
     let reader = BufReader::new(file);
     let json: Value = serde_json::from_reader(reader)?;
     Ok(Nbt::from_json(&json, None))
-}
-
-fn get_all_registries(root_directory: &Path) -> Vec<DataRegistryEntry> {
-    WalkDir::new(root_directory)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            let path = e.path().to_str().unwrap_or_default();
-            REGISTRIES_TO_SEND.iter().any(|s| path.contains(s))
-        })
-        .flat_map(|entry| json_to_nbt(root_directory, entry.path()))
-        .filter(|entry| AVAILABLE_REGISTRIES.contains(&entry.registry_id.as_str()))
-        .collect::<Vec<_>>()
-}
-
-#[derive(Debug)]
-pub struct DataRegistryEntry {
-    pub registry_id: String,
-    pub entry_id: String,
-    pub nbt: Nbt,
-}
-
-fn json_to_nbt(
-    root_directory: &Path,
-    path: &Path,
-) -> Result<DataRegistryEntry, Box<dyn std::error::Error>> {
-    if !path.is_file() || path.extension().and_then(|s| s.to_str()) != Some("json") {
-        return Err(format!("{path:?} not a json file").into());
-    }
-
-    let registry_id = get_registry_id(root_directory, path)?;
-    let entry_id = get_entry_id(path)?;
-    let json = get_json_files(path)?;
-    let nbt = Nbt::from_json(&json, None);
-
-    Ok(DataRegistryEntry {
-        registry_id,
-        entry_id,
-        nbt,
-    })
-}
-
-fn get_registry_id(
-    root_directory: &Path,
-    path: &Path,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let suffix = path.strip_prefix(root_directory)?;
-    Ok(format!(
-        "minecraft:{}",
-        suffix
-            .parent()
-            .ok_or("failed to read suffix")?
-            .to_string_lossy()
-    ))
-}
-
-fn get_entry_id(path: &Path) -> Result<String, &str> {
-    path.file_stem()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_string())
-        .ok_or("Failed to get file stem")
-}
-
-fn get_json_files(path: &Path) -> std::io::Result<Value> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    Ok(serde_json::from_reader(reader)?)
 }
