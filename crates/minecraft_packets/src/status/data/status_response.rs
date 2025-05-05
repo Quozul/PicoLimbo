@@ -17,6 +17,7 @@ pub struct PlayerSample {
 pub struct Players {
     pub max: u32,
     pub online: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sample: Option<Vec<PlayerSample>>,
 }
 
@@ -25,6 +26,7 @@ pub struct StatusResponse {
     pub version: Version,
     pub players: Players,
     pub description: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub favicon: Option<String>,
     #[serde(
         alias = "enforcesSecureChat",

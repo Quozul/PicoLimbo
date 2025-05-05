@@ -354,7 +354,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "minecraft_protocol",
- "rand",
  "serde",
  "serde_json",
  "thiserror",
