@@ -9,7 +9,7 @@ pub struct RegistryDataPacket {
     pub entries: LengthPaddedVec<RegistryEntry>,
 }
 
-/// This packet is to use with < 1.20.5
+/// This packet is to use with 1.20.2 < 1.20.5
 #[derive(Debug, PacketOut)]
 #[packet_id("configuration/clientbound/minecraft:registry_data")]
 pub struct RegistryDataCodecPacket {

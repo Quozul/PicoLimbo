@@ -1,6 +1,6 @@
+use crate::ServerState;
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
 use crate::velocity::check_velocity_key_integrity::check_velocity_key_integrity;
-use crate::ServerState;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;
@@ -82,7 +82,7 @@ async fn login_start_velocity(client: SharedClient, _packet: LoginStartPacket) {
 async fn fire_login_success(client: SharedClient, game_profile: GameProfile) {
     let mut client = client.lock().await;
 
-    if client.protocol_version() >= ProtocolVersion::V1_21_2 {
+    if ProtocolVersion::V1_21_2 <= client.protocol_version() {
         let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());
         client.send_packet(packet).await;
     } else {
@@ -97,9 +97,9 @@ async fn fire_login_success(client: SharedClient, game_profile: GameProfile) {
         game_profile.uuid()
     );
 
-    if client.protocol_version() < ProtocolVersion::V1_20_2 {
-        send_play_packets(client).await;
-    } else {
+    if ProtocolVersion::V1_20_2 <= client.protocol_version() {
         send_configuration_packets(client).await;
+    } else {
+        send_play_packets(client).await;
     }
 }

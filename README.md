@@ -14,7 +14,7 @@ connection (keep alive) without unnecessary overhead.
 The server does not aim to replicate every feature or packet supported by Minecraft servers. However, it aims to support
 all Minecraft versions from 1.7.2 up to the most recent ones.
 
-This project only implements 23 different packets and support more than 44 different Minecraft versions.
+This project only implements 24 different packets and support more than 45 different Minecraft versions.
 
 ## Getting Started
 

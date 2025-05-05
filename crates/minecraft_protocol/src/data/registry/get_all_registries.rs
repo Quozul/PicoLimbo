@@ -54,7 +54,8 @@ fn get_version_directory(protocol_version: ProtocolVersion) -> PathBuf {
         .join("data/minecraft")
 }
 
-pub fn get_grouped_registries(
+/// Way to get registries since 1.20.5
+pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,
 ) -> HashMap<Identifier, Vec<RegistryEntry>> {
     let version_directory = get_version_directory(protocol_version);
@@ -77,8 +78,9 @@ pub fn get_grouped_registries(
     grouped
 }
 
-pub fn get_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
-    let grouped = get_grouped_registries(protocol_version.clone());
+/// Way to get registries since 1.16.2
+pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
+    let grouped = get_v1_20_5_registries(protocol_version.clone());
     Nbt::Compound {
         name: None,
         value: grouped
@@ -124,7 +126,8 @@ pub fn get_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
     }
 }
 
-pub fn get_1_16_registry_codec() -> anyhow::Result<Nbt> {
+/// Way to get registries for 1.16 and 1.16.1
+pub fn get_v1_16_registry_codec() -> anyhow::Result<Nbt> {
     let path = get_version_directory(ProtocolVersion::V1_16).join("dimension.json");
     let file = File::open(path)?;
     let reader = BufReader::new(file);
