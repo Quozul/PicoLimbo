@@ -78,52 +78,34 @@ pub fn get_v1_20_5_registries(
     grouped
 }
 
-/// Way to get registries since 1.16.2
+/// Way to get registries since 1.16.2 up until 1.20.3
 pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
-    let grouped = get_v1_20_5_registries(protocol_version.clone());
-    Nbt::Compound {
-        name: None,
-        value: grouped
-            .iter()
-            .map(|(registry_id, entries)| {
-                let mut id = 0;
-                Nbt::Compound {
-                    name: Some(registry_id.to_string()),
-                    value: vec![
-                        Nbt::String {
-                            name: Some(String::from("type")),
-                            value: registry_id.to_string(),
-                        },
-                        Nbt::List {
-                            name: Some(String::from("value")),
-                            value: entries
-                                .iter()
-                                .map(|e| {
-                                    let n = Nbt::Compound {
-                                        name: None,
-                                        value: vec![
-                                            Nbt::String {
-                                                name: Some("name".to_string()),
-                                                value: e.entry_id.to_string(),
-                                            },
-                                            Nbt::Int {
-                                                name: Some("id".to_string()),
-                                                value: id,
-                                            },
-                                            e.nbt.clone().unwrap().set_name("element".to_string()),
-                                        ],
-                                    };
-                                    id = id + 1;
-                                    n
-                                })
-                                .collect(),
-                            tag_type: 10,
-                        },
-                    ],
-                }
-            })
-            .collect::<Vec<_>>(),
-    }
+    let grouped = get_v1_20_5_registries(protocol_version.clone())
+        .iter()
+        .map(|(registry_id, entries)| {
+            let value = entries
+                .iter()
+                .enumerate()
+                .map(|(id, entry)| {
+                    Nbt::nameless_compound(vec![
+                        Nbt::string("name", &entry.entry_id),
+                        Nbt::int("id", id as i32),
+                        entry.nbt.clone().unwrap().set_name("element".to_string()),
+                    ])
+                })
+                .collect::<Vec<Nbt>>();
+
+            Nbt::compound(
+                registry_id,
+                vec![
+                    Nbt::string("type", registry_id),
+                    Nbt::compound_list("value", value),
+                ],
+            )
+        })
+        .collect::<Vec<Nbt>>();
+
+    Nbt::nameless_compound(grouped)
 }
 
 /// Way to get registries for 1.16 and 1.16.1
@@ -160,7 +142,7 @@ fn json_to_nbt(
     path: &Path,
 ) -> Result<DataRegistryEntry, Box<dyn std::error::Error>> {
     if !path.is_file() || path.extension().and_then(|s| s.to_str()) != Some("json") {
-        return Err(format!("{:?} not a json file", path).into());
+        return Err(format!("{path:?} not a json file").into());
     }
 
     let registry_id = get_registry_id(root_directory, path)?;

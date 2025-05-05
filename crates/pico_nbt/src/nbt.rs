@@ -57,6 +57,39 @@ pub enum Nbt {
 }
 
 impl Nbt {
+    pub fn nameless_compound(value: Vec<Nbt>) -> Nbt {
+        Self::Compound { name: None, value }
+    }
+
+    pub fn compound(name: impl ToString, value: Vec<Nbt>) -> Nbt {
+        Self::Compound {
+            name: Some(name.to_string()),
+            value,
+        }
+    }
+
+    pub fn compound_list(name: impl ToString, value: Vec<Nbt>) -> Nbt {
+        Self::List {
+            name: Some(name.to_string()),
+            value,
+            tag_type: 10,
+        }
+    }
+
+    pub fn string(name: impl ToString, value: impl ToString) -> Nbt {
+        Self::String {
+            name: Some(name.to_string()),
+            value: value.to_string(),
+        }
+    }
+
+    pub fn int(name: impl ToString, value: i32) -> Nbt {
+        Self::Int {
+            name: Some(name.to_string()),
+            value,
+        }
+    }
+
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
         let mut writer = BinaryWriter::new();
         let context = NbtContext::root();
