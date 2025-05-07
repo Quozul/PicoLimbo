@@ -1,0 +1,41 @@
+name: Build Linux
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      binary:
+        required: true
+        type: string
+
+
+jobs:
+  github-releases:
+    name: linux
+    env:
+      platform: linux-x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          cargo build --release --target x86_64-unknown-linux-gnu --no-default-features
+
+      - name: Set file name
+        id: set_file_name
+        run: |
+          echo "file_name=${{ inputs.binary }}_${{ inputs.tag }}_${{ env.platform }}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare package
+        run: |
+          cp target/x86_64-unknown-linux-gnu/release/${{ inputs.binary }} ${{ steps.set_file_name.outputs.file_name }}
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.platform }}
+          path: ${{ steps.set_file_name.outputs.file_name }}
+          retention-days: 1

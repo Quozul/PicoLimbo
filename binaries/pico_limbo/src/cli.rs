@@ -1,7 +1,10 @@
 use clap::Parser;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(
+    version,
+    about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.5"
+)]
 pub struct Cli {
     /// Sets the listening address
     #[arg(short, long, default_value = "127.0.0.1:25565")]
@@ -11,7 +14,7 @@ pub struct Cli {
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub debug: u8,
 
-    /// Secret key used for Velocity modern forwarding
+    /// Sets the secret key to enable Velocity modern forwarding
     #[arg(short, long)]
     pub secret_key: Option<String>,
 }

@@ -46,7 +46,8 @@ pico_limbo --address 127.0.0.1:25565 --secret-key MyForwardingSecret
 ## Similar Projects
 
 - [Limbo](https://github.com/LOOHP/Limbo) - Supports only one version of the game at a time
-- [NanoLimbo](https://github.com/Nan1t/NanoLimbo)
+- [NanoLimbo](https://github.com/Nan1t/NanoLimbo) - Maintained
+  by [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo/tree/feature/1.21.2)
 - [TyphoonLimbo](https://github.com/TyphoonMC/TyphoonLimbo) - No longer active
 - [LiteLimbo](https://github.com/ThomasOM/LiteLimbo) - No longer active
 
