@@ -4,7 +4,7 @@ version = "1.21.5-1"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
+tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }

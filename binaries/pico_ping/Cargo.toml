@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1.44", features = ["rt", "rt-multi-thread", "macros", "io-util", "net"] }
+tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "macros", "io-util", "net"] }
 minecraft_packets = { path = "../../crates/minecraft_packets" }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }
 anyhow = "1.0"
