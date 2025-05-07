@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     {
-        let status_request = StatusRequestPacket::new();
+        let status_request = StatusRequestPacket::default();
         let packet = RawPacket::from_packet(0, protocol_version.version_number(), &status_request)?;
         packet_reader.write_packet(packet).await?;
     }

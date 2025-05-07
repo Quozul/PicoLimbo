@@ -10,9 +10,9 @@ use crate::handlers::status::{on_ping_request, on_status_request};
 use clap::Parser;
 use minecraft_server::server::Server;
 use tracing::Level;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() {

@@ -7,6 +7,6 @@ pub async fn on_login_start(client: &mut Client, packet: &LoginStartPacket) {
         "Hello {}! This server was automatically started and will be online soon.",
         packet.name
     ))
-    .unwrap_or(LoginDisconnectPacket::default());
+    .unwrap_or_default();
     client.send_packet(packet).await;
 }

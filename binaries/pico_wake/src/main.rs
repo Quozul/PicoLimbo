@@ -12,9 +12,9 @@ use crate::client_context::ClientContext;
 use crate::server::Server;
 use clap::Parser;
 use tracing::Level;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

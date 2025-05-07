@@ -31,7 +31,7 @@ impl FromStr for Identifier {
         let namespace = split.next().unwrap_or("minecraft");
         let thing = split
             .next()
-            .unwrap_or_else(|| panic!("Invalid identifier string: {}", string));
+            .unwrap_or_else(|| panic!("Invalid identifier string: {string}"));
         Ok(Self {
             namespace: namespace.to_string(),
             thing: thing.to_string(),

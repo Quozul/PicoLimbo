@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse::Parse, parse_macro_input, DeriveInput, LitInt, LitStr, Token};
+use syn::{DeriveInput, LitInt, LitStr, Token, parse::Parse, parse_macro_input};
 
 struct PvnAttribute {
     pvn: LitInt,
@@ -64,7 +64,7 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
                 "ProtocolVersion can only be derived for enums",
             )
             .to_compile_error()
-            .into()
+            .into();
         }
     };
 

@@ -60,7 +60,7 @@ pub async fn on_custom_query_answer(
             fire_login_success(client, game_profile).await;
         } else {
             let packet = LoginDisconnectPacket::text("You must connect through a proxy.")
-                .unwrap_or(LoginDisconnectPacket::default());
+                .unwrap_or_default();
             let mut client = client.lock().await;
             client.send_packet(packet).await;
         }

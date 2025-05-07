@@ -3,8 +3,9 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
+    DeriveInput, LitStr,
     parse::{Parse, ParseStream},
-    parse_macro_input, DeriveInput, LitStr,
+    parse_macro_input,
 };
 
 struct PacketArgs {

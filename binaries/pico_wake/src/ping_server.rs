@@ -62,5 +62,5 @@ pub async fn ping_server(
 fn resolve_socket_addr(addr: &str) -> std::io::Result<SocketAddr> {
     addr.to_socket_addrs()?
         .next()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "no socket address found"))
+        .ok_or_else(|| std::io::Error::other("no socket address found"))
 }

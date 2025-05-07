@@ -46,13 +46,13 @@ pub fn parse_socket_addr(addr: &str) -> io::Result<SocketAddr> {
     let addr_with_port = if addr.contains(':') {
         addr.to_string()
     } else {
-        format!("{}:{}", addr, DEFAULT_PORT)
+        format!("{addr}:{DEFAULT_PORT}")
     };
 
     let mut addrs_iter = addr_with_port.to_socket_addrs()?;
     addrs_iter
         .next()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "No valid socket addresses found"))
+        .ok_or_else(|| io::Error::other("No valid socket addresses found"))
 }
 
 #[cfg(test)]

@@ -45,8 +45,9 @@ impl From<Vec<u8>> for RawPacket {
 
 impl Display for RawPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(for byte in self.data() {
-            write!(f, "{:02X} ", byte)?;
-        })
+        for byte in self.data() {
+            write!(f, "{byte:02X} ")?;
+        }
+        Ok(())
     }
 }

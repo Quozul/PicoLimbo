@@ -3,6 +3,7 @@ use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum PaletteContainer {
     SingleValued {
         /// Should always be 0 for Single valued palette

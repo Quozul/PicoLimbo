@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+type CachedMappings = Arc<RwLock<HashMap<u32, Arc<HashMap<String, u8>>>>>;
+
 /// A mapping from composite packet names (like "handshake/serverbound/minecraft:intention")
 /// to their packet IDs. This structure also caches the mapping per protocol version,
 /// loading the JSON file from disk as needed.
@@ -13,7 +15,7 @@ use std::sync::{Arc, RwLock};
 pub struct PacketMap {
     root_directory: PathBuf,
     // The cache holds the mapping for each protocol version.
-    cached_mappings: Arc<RwLock<HashMap<u32, Arc<HashMap<String, u8>>>>>,
+    cached_mappings: CachedMappings,
 }
 
 impl PacketMap {
@@ -53,10 +55,10 @@ impl PacketMap {
         packet_id: u8,
     ) -> anyhow::Result<Option<String>> {
         let mapping = self.get_mapping(protocol_version)?;
-        let prefix = format!("{}/serverbound", state);
+        let prefix = format!("{state}/serverbound");
         Ok(mapping
             .iter()
-            .find(|&(ref key, &id)| id == packet_id && key.starts_with(&prefix))
+            .find(|&(key, &id)| id == packet_id && key.starts_with(&prefix))
             .map(|(key, _)| key.clone()))
     }
 
@@ -142,7 +144,7 @@ impl PacketMap {
                         if protocol_id > u8::MAX as u64 {
                             return Err(anyhow!("protocol_id is out of u8 range"));
                         }
-                        let key = format!("{}/{}/{}", state, direction, packet_name);
+                        let key = format!("{state}/{direction}/{packet_name}");
                         mapping.insert(key, protocol_id as u8);
                     }
                 }

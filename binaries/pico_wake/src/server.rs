@@ -1,7 +1,7 @@
 use crate::connection_handler::ConnectionHandler;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{SignalKind, signal};
 use tracing::{error, info};
 
 pub struct Server<C: ConnectionHandler + Send + Sync + 'static> {
