@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.45", features = ["process", "io-std"] }
+tokio = { version = "1.45", features = ["process", "io-std", "signal"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }

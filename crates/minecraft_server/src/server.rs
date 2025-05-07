@@ -9,7 +9,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
-use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::Mutex;
 use tokio::time::interval;
 use tracing::{debug, error, info};
@@ -57,8 +56,6 @@ impl<S: Clone + Sync + Send + 'static> Server<S> {
         let handlers = Arc::new(self.handlers);
         let packet_map = self.packet_map;
 
-        let mut sigterm = signal(SignalKind::terminate()).expect("failed to setup SIGTERM handler");
-
         loop {
             tokio::select! {
                 accept_result = listener.accept() => {
@@ -84,11 +81,6 @@ impl<S: Clone + Sync + Send + 'static> Server<S> {
                     info!("SIGINT received, shutting down gracefully.");
                     break;
                 }
-
-                _ = sigterm.recv() => {
-                    info!("SIGTERM received, shutting down gracefully.");
-                    break;
-                },
             }
         }
     }

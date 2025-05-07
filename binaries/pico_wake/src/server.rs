@@ -1,7 +1,7 @@
 use crate::connection_handler::ConnectionHandler;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tokio::signal::unix::{SignalKind, signal};
+use tokio::signal;
 use tracing::{error, info};
 
 pub struct Server<C: ConnectionHandler + Send + Sync + 'static> {
@@ -21,18 +21,11 @@ impl<C: ConnectionHandler + Send + Sync + 'static> Server<C> {
     }
 
     pub async fn run(&self) -> anyhow::Result<()> {
-        let mut sigint = signal(SignalKind::terminate())?;
-        let mut sigterm = signal(SignalKind::terminate())?;
-
         loop {
             tokio::select! {
                 _ = self.accept() => {},
-                _ = sigint.recv() => {
+                _ = signal::ctrl_c() => {
                     info!("SIGINT received, shutting down gracefully.");
-                    break;
-                },
-                _ = sigterm.recv() => {
-                    info!("SIGTERM received, shutting down gracefully.");
                     break;
                 },
             }
