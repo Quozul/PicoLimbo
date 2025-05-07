@@ -48,8 +48,7 @@ const REGISTRIES_TO_SEND: [&str; 15] = [
 ];
 
 fn get_version_directory(protocol_version: ProtocolVersion) -> PathBuf {
-    let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "./data/generated".to_string());
-    PathBuf::from(data_dir)
+    PathBuf::from("./assets")
         .join(protocol_version.data())
         .join("data/minecraft")
 }

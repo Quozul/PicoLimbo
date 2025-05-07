@@ -36,12 +36,9 @@ impl ClientContext {
     /// Constructs a new `ClientContext` by reading configuration from environment variables.
     ///
     /// Expected environment variables:
-    /// - `DATA_DIR`: Optional. Defaults to "./data/generated".
     /// - `STARTUP`: Required. Used for creating the `ServerManager`.
     pub fn new(backend_server_address: String) -> anyhow::Result<Self> {
-        // Construct the packet_map using DATA_DIR, or a default path.
-        let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "./data/generated".to_string());
-        let packet_map = PacketMap::new(PathBuf::from(data_dir));
+        let packet_map = PacketMap::new(PathBuf::from("./assets"));
 
         // Create the server manager using the STARTUP environment variable.
         let startup = std::env::var("STARTUP")?;

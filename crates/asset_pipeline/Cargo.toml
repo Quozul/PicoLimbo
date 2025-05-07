@@ -1,0 +1,8 @@
+[package]
+name = "asset_pipeline"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tar = "0.4"
+flate2 = "1.0"

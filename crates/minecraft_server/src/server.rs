@@ -25,7 +25,7 @@ where
 
 impl<S: Clone + Sync + Send + 'static> Server<S> {
     pub fn new(listen_address: impl ToString, state: S) -> Self {
-        let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "./data/generated".to_string());
+        let data_dir = "./assets";
         Self {
             state,
             handlers: HashMap::new(),
