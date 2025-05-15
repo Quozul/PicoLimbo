@@ -22,7 +22,7 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-unknown-linux-gnu --no-default-features
+          cargo build --release --target x86_64-unknown-linux-gnu --bin pico_limbo --package pico_limbo
 
       - name: Set file name
         id: set_file_name
