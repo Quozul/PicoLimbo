@@ -74,7 +74,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact_name: linux-x86_64
+          - artifact_name: linux-gnu-x86_64
+            os: ubuntu-latest
+          - artifact_name: linux-musl-x86_64
             os: ubuntu-latest
           - artifact_name: windows-x86_64
             os: windows-latest
