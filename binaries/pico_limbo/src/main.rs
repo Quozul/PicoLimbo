@@ -21,7 +21,8 @@ async fn main() {
     let cli = Cli::parse();
     enable_logging(cli.debug);
 
-    let state = if let Some(secret_key) = cli.secret_key {
+    let secret_key = cli.secret_key.filter(|s| !s.is_empty());
+    let state = if let Some(secret_key) = secret_key {
         ServerState::modern_forwarding(secret_key.as_bytes())
     } else {
         ServerState::no_forwarding()

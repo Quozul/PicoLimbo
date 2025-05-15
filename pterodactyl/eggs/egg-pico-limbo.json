@@ -4,16 +4,16 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2025-05-07T15:50:18+02:00",
+    "exported_at": "2025-05-15T21:02:51+02:00",
     "name": "PicoLimbo",
     "author": "quozul@pm.me",
     "description": "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to the most recent ones.",
     "features": null,
     "docker_images": {
-        "ghcr.io\/parkervcp\/yolks:debian": "ghcr.io\/parkervcp\/yolks:debian"
+        "ghcr.io\/parkervcp\/yolks:alpine": "ghcr.io\/parkervcp\/yolks:alpine"
     },
     "file_denylist": [],
-    "startup": ".\/pico_limbo -a {{SERVER_IP}}:{{SERVER_PORT}}",
+    "startup": ".\/pico_limbo --address=\"0.0.0.0:{{SERVER_PORT}}\" --secret-key=\"{{VELOCITY_FORWARDING_SECRET}}\"",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
@@ -22,10 +22,21 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!\/bin\/bash\r\n# PicoLimbo Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\n\r\nset -e\r\n\r\n# install dependencies\r\napt update\r\napt install -y curl jq\r\n\r\n# figure out DOWNLOAD_URL if not supplied\r\nif [ -z \"${DOWNLOAD_URL}\" ]; then\r\n  GITHUB_PACKAGE=\"Quozul\/PicoLimbo\"\r\n  PATTERN=\"pico_limbo_.*_linux-x86_64\"\r\n\r\n  echo \"Fetching release info from GitHub...\"\r\n  LATEST_JSON=$(curl -s \"https:\/\/api.github.com\/repos\/${GITHUB_PACKAGE}\/releases\/latest\")\r\n  ALL_JSON=$(curl -s \"https:\/\/api.github.com\/repos\/${GITHUB_PACKAGE}\/releases\")\r\n\r\n  if [ -z \"${VERSION}\" ] || [ \"${VERSION}\" == \"latest\" ]; then\r\n    DOWNLOAD_URL=$(echo \"${LATEST_JSON}\" \\\r\n      | jq -r \".assets[].browser_download_url | select(test(\\\"${PATTERN}\\\"))\")\r\n  else\r\n    # look for a release whose tag_name == $VERSION\r\n    MATCH_RELEASE=$(echo \"${ALL_JSON}\" \\\r\n      | jq -c --arg v \"${VERSION}\" '.[] | select(.tag_name==$v)')\r\n    if [ -n \"${MATCH_RELEASE}\" ]; then\r\n      DOWNLOAD_URL=$(echo \"${MATCH_RELEASE}\" \\\r\n        | jq -r \".assets[].browser_download_url | select(test(\\\"${PATTERN}\\\"))\")\r\n    else\r\n      echo \"Version ${VERSION} not found, defaulting to latest.\"\r\n      DOWNLOAD_URL=$(echo \"${LATEST_JSON}\" \\\r\n        | jq -r \".assets[].browser_download_url | select(test(\\\"${PATTERN}\\\"))\")\r\n    fi\r\n  fi\r\n\r\nelse\r\n  echo \"Using provided DOWNLOAD_URL.\"\r\n  if ! curl --head --silent --fail \"${DOWNLOAD_URL}\"; then\r\n    echo \"ERROR: Provided download link is invalid.\" >&2\r\n    exit 1\r\n  fi\r\nfi\r\n\r\n# switch into server dir\r\ncd \/mnt\/server\r\n\r\n# allow override of binary name\r\n: ${SERVER_BINARY:=\"pico_limbo\"}\r\n\r\necho \"Downloading PicoLimbo binary...\"\r\necho \"  curl -sSL ${DOWNLOAD_URL} -o ${SERVER_BINARY}\"\r\ncurl -sSL -o \"${SERVER_BINARY}\" \"${DOWNLOAD_URL}\"\r\nchmod +x \"${SERVER_BINARY}\"\r\n\r\necho \"-----------------------------------------\"\r\necho \"PicoLimbo installation complete.\"\r\necho \"Run .\/${SERVER_BINARY} to start.\"\r\necho \"-----------------------------------------\"",
-            "container": "ghcr.io\/parkervcp\/installers:debian",
-            "entrypoint": "bash"
+            "script": "#!\/bin\/sh\r\n# PicoLimbo Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\n\r\nset -e\r\n\r\napk add --no-cache curl jq unzip\r\n\r\nif [ -z \"$DOWNLOAD_URL\" ]; then\r\n  GITHUB_PACKAGE=\"Quozul\/PicoLimbo\"\r\n  PATTERN='pico_limbo_.*_linux-musl-x86_64[.]zip'\r\n\r\n  echo \"Fetching release info from GitHub...\"\r\n  LATEST_JSON=$(curl -s \"https:\/\/api.github.com\/repos\/$GITHUB_PACKAGE\/releases\/latest\")\r\n  ALL_JSON=$(curl -s \"https:\/\/api.github.com\/repos\/$GITHUB_PACKAGE\/releases\")\r\n\r\n  if [ -z \"$VERSION\" ] || [ \"$VERSION\" = \"latest\" ]; then\r\n    DOWNLOAD_URL=$(printf '%s' \"$LATEST_JSON\" \\\r\n      | jq -r \".assets[].browser_download_url | select(test(\\\"$PATTERN\\\"))\")\r\n  else\r\n    MATCH_RELEASE=$(printf '%s' \"$ALL_JSON\" \\\r\n      | jq -c --arg v \"$VERSION\" '.[] | select(.tag_name==$v)')\r\n    if [ -n \"$MATCH_RELEASE\" ]; then\r\n      DOWNLOAD_URL=$(printf '%s' \"$MATCH_RELEASE\" \\\r\n        | jq -r \".assets[].browser_download_url | select(test(\\\"$PATTERN\\\"))\")\r\n    else\r\n      echo \"Version $VERSION not found, defaulting to latest.\"\r\n      DOWNLOAD_URL=$(printf '%s' \"$LATEST_JSON\" \\\r\n        | jq -r \".assets[].browser_download_url | select(test(\\\"$PATTERN\\\"))\")\r\n    fi\r\n  fi\r\nelse\r\n  echo \"Using provided DOWNLOAD_URL.\"\r\n  if ! curl -Isf \"$DOWNLOAD_URL\" >\/dev\/null; then\r\n    echo \"ERROR: Provided download URL is invalid.\" >&2\r\n    exit 1\r\n  fi\r\nfi\r\n\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server\r\n\r\nSERVER_BINARY=${SERVER_BINARY:-pico_limbo}\r\n\r\necho \"Downloading PicoLimbo...\"\r\nZIP_FILE=${DOWNLOAD_URL##*\/}\r\ncurl -sSL -o \"$ZIP_FILE\" \"$DOWNLOAD_URL\"\r\n\r\necho \"Unzipping $ZIP_FILE...\"\r\nunzip -o \"$ZIP_FILE\"\r\nrm \"$ZIP_FILE\"\r\n\r\nchmod +x \"$SERVER_BINARY\"\r\n\r\necho \"-----------------------------------------\"\r\necho \"PicoLimbo installation complete.\"\r\necho \"-----------------------------------------\"",
+            "container": "ghcr.io\/parkervcp\/yolks:alpine",
+            "entrypoint": "ash"
         }
     },
-    "variables": []
+    "variables": [
+        {
+            "name": "Velocity Forwarding Secret",
+            "description": "This secret is used to ensure that player info forwarded by Velocity comes from your proxy and not from someone pretending to run Velocity.",
+            "env_variable": "VELOCITY_FORWARDING_SECRET",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string",
+            "field_type": "text"
+        }
+    ]
 }
