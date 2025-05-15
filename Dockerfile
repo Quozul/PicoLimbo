@@ -16,6 +16,9 @@ FROM alpine
 
 WORKDIR /usr/src/app
 
+COPY data/generated /usr/src/app/data
 COPY --from=build /usr/bin/pico_wake /usr/bin/pico_limbo /usr/bin/
+
+ENV DATA_DIR=/usr/src/app/data
 
 CMD ["pico_limbo", "-a", "0.0.0.0:25565"]
