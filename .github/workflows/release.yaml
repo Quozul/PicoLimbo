@@ -54,7 +54,7 @@ jobs:
       binary: ${{ needs.load-env.outputs.binary }}
 
 
-  # Build for MacOS x86_64/ARM64
+  # Build for MacOS ARM64
   build-macos:
     needs: load-env
     uses: ./.github/workflows/macos.yaml
@@ -91,8 +91,6 @@ jobs:
             os: ubuntu-latest
           - artifact_name: windows-x86_64
             os: windows-latest
-          - artifact_name: darwin-x86_64
-            os: macos-latest
           - artifact_name: darwin-aarch64
             os: macos-latest
     uses: ./.github/workflows/github_releases.yaml

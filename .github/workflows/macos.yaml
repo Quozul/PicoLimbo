@@ -12,47 +12,6 @@ on:
 
 
 jobs:
-  build-macos-intel:
-    name: macos_intel
-    env:
-      platform: darwin-x86_64
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Environment Setup
-        run: |
-          export CFLAGS="-fno-stack-check"
-          export MACOSX_DEPLOYMENT_TARGET="10.9"
-          rustup component add rust-std --target x86_64-apple-darwin
-
-      - name: Build
-        run: |
-          cargo build --release --target x86_64-apple-darwin --bin pico_limbo --package pico_limbo
-
-      - name: Set file name
-        id: set_file_name
-        run: |
-          echo "file_name=${{ inputs.binary }}_${{ inputs.tag }}_${{ env.platform }}" >> "$GITHUB_OUTPUT"
-
-      - name: Prepare Package
-        run: |
-          mkdir darwin-x86_64
-          cp target/x86_64-apple-darwin/release/${{ inputs.binary }} darwin-x86_64/
-          cp -r data/generated darwin-x86_64/assets
-
-      - name: Package as a zip
-        working-directory: ./darwin-x86_64
-        run: |
-          zip -r ../${{ steps.set_file_name.outputs.file_name }}.zip .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.platform }}
-          path: ${{ steps.set_file_name.outputs.file_name }}.zip
-          retention-days: 1
-
   build-macos-apple-silicon:
     name: macos_apple_silicon
     env:
