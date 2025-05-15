@@ -11,6 +11,8 @@ permissions:
   contents: write
   # To verify the deployment originates from an appropriate source
   id-token: write
+  # To upload the Docker image
+  packages: write
 
 on:
   push:
@@ -60,6 +62,15 @@ jobs:
     with:
       tag: ${{ needs.load-env.outputs.tag }}
       binary: ${{ needs.load-env.outputs.binary }}
+
+
+  # Build Docker
+  build-docker:
+    needs: load-env
+    uses: ./.github/workflows/docker.yaml
+    name: build-docker
+    with:
+      tag: ${{ needs.load-env.outputs.tag }}
 
 
   # Release binaries in GitHub

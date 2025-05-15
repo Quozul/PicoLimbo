@@ -1,19 +1,19 @@
 name: Build and Publish Docker Images
 
-on:
-  push:
-
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
-permissions:
-  contents: read
-  packages: write
-  attestations: write
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
 
 jobs:
-  build-standalone:
+  build-docker:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +35,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=schedule
+            type=ref,event=tag
 
       - name: Build and push standalone image
         uses: docker/build-push-action@v6
