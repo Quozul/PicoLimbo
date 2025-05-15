@@ -44,13 +44,20 @@ jobs:
 
       - name: Prepare Package
         run: |
-          cp target/x86_64-apple-darwin/release/${{ inputs.binary }} ${{ steps.set_file_name.outputs.file_name }}
+          mkdir darwin-x86_64
+          cp target/x86_64-apple-darwin/release/${{ inputs.binary }} darwin-x86_64/
+          cp -r data/generated darwin-x86_64/assets
 
-      - name: Upload binaries to artifacts
+      - name: Package as a zip
+        working-directory: ./darwin-x86_64
+        run: |
+          zip -r ../${{ steps.set_file_name.outputs.file_name }}.zip .
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.platform }}
-          path: ${{ steps.set_file_name.outputs.file_name }}
+          path: ${{ steps.set_file_name.outputs.file_name }}.zip
           retention-days: 1
 
   build-macos-apple-silicon:
@@ -78,11 +85,18 @@ jobs:
 
       - name: Prepare Package
         run: |
-          cp target/aarch64-apple-darwin/release/${{ inputs.binary }} ${{ steps.set_file_name.outputs.file_name }}
+          mkdir darwin-aarch64
+          cp target/aarch64-apple-darwin/release/${{ inputs.binary }} darwin-aarch64/
+          cp -r data/generated darwin-aarch64/assets
 
-      - name: Upload binaries to artifacts
+      - name: Package as a zip
+        working-directory: ./darwin-aarch64
+        run: |
+          zip -r ../${{ steps.set_file_name.outputs.file_name }}.zip .
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.platform }}
-          path: ${{ steps.set_file_name.outputs.file_name }}
+          path: ${{ steps.set_file_name.outputs.file_name }}.zip
           retention-days: 1

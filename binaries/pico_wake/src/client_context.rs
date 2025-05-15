@@ -37,8 +37,8 @@ impl ClientContext {
     ///
     /// Expected environment variables:
     /// - `STARTUP`: Required. Used for creating the `ServerManager`.
-    pub fn new(backend_server_address: String) -> anyhow::Result<Self> {
-        let packet_map = PacketMap::new(PathBuf::from("./assets"));
+    pub fn new(backend_server_address: String, data_location: PathBuf) -> anyhow::Result<Self> {
+        let packet_map = PacketMap::new(data_location);
 
         // Create the server manager using the STARTUP environment variable.
         let startup = std::env::var("STARTUP")?;

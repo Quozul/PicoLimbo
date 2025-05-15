@@ -1,27 +1,23 @@
 mod cli;
+mod get_data_directory;
 mod handlers;
 mod velocity;
 
 use crate::cli::Cli;
+use crate::get_data_directory::get_data_directory;
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
 use crate::handlers::status::{on_ping_request, on_status_request};
-use asset_pipeline::{embed_assets, extract_archive};
 use clap::Parser;
 use minecraft_server::server::Server;
-use std::path::Path;
 use tracing::Level;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-const ASSETS_TAR_GZ: &[u8] = embed_assets!();
-
 #[tokio::main]
 async fn main() {
-    extract_archive(ASSETS_TAR_GZ, Path::new("assets")).expect("failed to unpack embedded assets");
-
     let cli = Cli::parse();
     enable_logging(cli.debug);
 
@@ -31,7 +27,8 @@ async fn main() {
         ServerState::no_forwarding()
     };
 
-    Server::<ServerState>::new(cli.address, state)
+    let data_directory = get_data_directory();
+    Server::<ServerState>::new(cli.address, data_directory, state)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)

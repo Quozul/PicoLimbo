@@ -33,11 +33,18 @@ jobs:
       - name: Prepare package
         shell: bash
         run: |
-          cp target/x86_64-pc-windows-msvc/release/${{ inputs.binary }}.exe ${{ steps.set_file_name.outputs.file_name }}.exe
+          mkdir windows
+          cp target/x86_64-pc-windows-msvc/release/${{ inputs.binary }}.exe windows/
+          cp -r data/generated windows/assets
+
+      - name: Package as a zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path windows\* -DestinationPath "${{ steps.set_file_name.outputs.file_name }}.zip"
 
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.platform }}
-          path: ${{ steps.set_file_name.outputs.file_name }}.exe
+          path: ${{ steps.set_file_name.outputs.file_name }}.zip
           retention-days: 1

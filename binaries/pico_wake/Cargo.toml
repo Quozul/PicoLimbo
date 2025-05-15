@@ -2,7 +2,6 @@
 name = "pico_wake"
 version = "0.1.0"
 edition = "2024"
-build = "build.rs"
 
 [dependencies]
 tokio = { version = "1.45", features = ["process", "io-std", "signal"] }
@@ -17,7 +16,3 @@ anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 async-trait = "0.1"
 tokio-util = "0.7"
-asset_pipeline = { path = "../../crates/asset_pipeline" }
-
-[build-dependencies]
-asset_pipeline = { path = "../../crates/asset_pipeline" }

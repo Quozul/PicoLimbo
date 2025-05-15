@@ -1,3 +1,4 @@
+use crate::get_data_directory::get_data_directory;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
 use minecraft_packets::configuration::client_bound_plugin_message_packet::ClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
@@ -24,13 +25,14 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
     let packet = ClientBoundPluginMessagePacket::brand("PicoLimbo");
     client.send_packet(packet).await;
 
+    let data_location = get_data_directory();
     if ProtocolVersion::V1_20_5 <= client.protocol_version() {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
         client.send_packet(packet).await;
 
         // Send Registry Data
-        let grouped = get_v1_20_5_registries(client.protocol_version());
+        let grouped = get_v1_20_5_registries(client.protocol_version(), &data_location);
         for (registry_id, entries) in grouped {
             let packet = RegistryDataPacket {
                 registry_id,
@@ -40,7 +42,7 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
         }
     } else {
         // Only for 1.20.2 and 1.20.3
-        let registry_codec = get_v1_16_2_registry_codec(client.protocol_version());
+        let registry_codec = get_v1_16_2_registry_codec(client.protocol_version(), &data_location);
         let packet = RegistryDataCodecPacket { registry_codec };
         client.send_packet(packet).await;
     }
@@ -59,12 +61,13 @@ pub async fn send_play_packets(mut client: MutexGuard<'_, Client>) {
         // it is no longer sent in the login packet
         (Nbt::End, Nbt::End)
     } else {
+        let data_location = get_data_directory();
         let registry_codec = if client.protocol_version() == ProtocolVersion::V1_16
             || client.protocol_version() == ProtocolVersion::V1_16_1
         {
-            get_v1_16_registry_codec().unwrap()
+            get_v1_16_registry_codec(&data_location).unwrap()
         } else {
-            get_v1_16_2_registry_codec(client.protocol_version())
+            get_v1_16_2_registry_codec(client.protocol_version(), &data_location)
         };
 
         // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately

@@ -31,11 +31,18 @@ jobs:
 
       - name: Prepare package
         run: |
-          cp target/x86_64-unknown-linux-gnu/release/${{ inputs.binary }} ${{ steps.set_file_name.outputs.file_name }}
+          mkdir linux
+          cp target/x86_64-unknown-linux-gnu/release/${{ inputs.binary }} linux/
+          cp -r data/generated linux/assets
+
+      - name: Package as a zip
+        working-directory: ./linux
+        run: |
+          zip --recurse-paths ../${{ steps.set_file_name.outputs.file_name  }}.zip .
 
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.platform }}
-          path: ${{ steps.set_file_name.outputs.file_name }}
+          path: ${{ steps.set_file_name.outputs.file_name  }}.zip
           retention-days: 1

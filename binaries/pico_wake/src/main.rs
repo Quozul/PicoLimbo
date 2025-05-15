@@ -10,24 +10,22 @@ mod server_manager;
 use crate::cli::Cli;
 use crate::client_context::ClientContext;
 use crate::server::Server;
-use asset_pipeline::{embed_assets, extract_archive};
 use clap::Parser;
-use std::path::Path;
+use std::path::PathBuf;
 use tracing::Level;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-const ASSETS_TAR_GZ: &[u8] = embed_assets!();
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    extract_archive(ASSETS_TAR_GZ, Path::new("assets"))?;
-
     let cli = Cli::parse();
     enable_logging(cli.debug);
 
-    let client_context = ClientContext::new(cli.backend)?;
+    let data_directory = std::env::var_os("DATA_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("./assets"));
+    let client_context = ClientContext::new(cli.backend, data_directory)?;
     Server::new(cli.address, client_context)
         .await?
         .run()

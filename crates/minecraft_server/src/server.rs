@@ -24,12 +24,11 @@ where
 }
 
 impl<S: Clone + Sync + Send + 'static> Server<S> {
-    pub fn new(listen_address: impl ToString, state: S) -> Self {
-        let data_dir = "./assets";
+    pub fn new(listen_address: impl ToString, data_location: PathBuf, state: S) -> Self {
         Self {
             state,
             handlers: HashMap::new(),
-            packet_map: PacketMap::new(PathBuf::from(data_dir)),
+            packet_map: PacketMap::new(data_location),
             listen_address: listen_address.to_string(),
         }
     }

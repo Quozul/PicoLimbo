@@ -15,5 +15,4 @@ members = [
     "binaries/pico_limbo",
     "binaries/pico_wake",
     "binaries/pico_ping",
-    "crates/asset_pipeline",
 ]

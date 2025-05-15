@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use walkdir::WalkDir;
 
@@ -47,8 +47,8 @@ const REGISTRIES_TO_SEND: [&str; 15] = [
     "wolf_sound_variant",
 ];
 
-fn get_version_directory(protocol_version: ProtocolVersion) -> PathBuf {
-    PathBuf::from("./assets")
+fn get_version_directory(protocol_version: ProtocolVersion, data_location: &Path) -> PathBuf {
+    data_location
         .join(protocol_version.data())
         .join("data/minecraft")
 }
@@ -56,8 +56,9 @@ fn get_version_directory(protocol_version: ProtocolVersion) -> PathBuf {
 /// Way to get registries since 1.20.5
 pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,
+    data_location: &Path,
 ) -> HashMap<Identifier, Vec<RegistryEntry>> {
-    let version_directory = get_version_directory(protocol_version);
+    let version_directory = get_version_directory(protocol_version, data_location);
 
     WalkDir::new(&version_directory)
         .into_iter()
@@ -108,8 +109,8 @@ pub fn get_v1_20_5_registries(
 }
 
 /// Way to get registries since 1.16.2 up until 1.20.3
-pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
-    let grouped = get_v1_20_5_registries(protocol_version.clone())
+pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion, data_location: &Path) -> Nbt {
+    let grouped = get_v1_20_5_registries(protocol_version.clone(), data_location)
         .iter()
         .map(|(registry_id, entries)| {
             let value = entries
@@ -138,8 +139,8 @@ pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion) -> Nbt {
 }
 
 /// Way to get registries for 1.16 and 1.16.1
-pub fn get_v1_16_registry_codec() -> anyhow::Result<Nbt> {
-    let path = get_version_directory(ProtocolVersion::V1_16).join("dimension.json");
+pub fn get_v1_16_registry_codec(data_location: &Path) -> anyhow::Result<Nbt> {
+    let path = get_version_directory(ProtocolVersion::V1_16, data_location).join("dimension.json");
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let json: Value = serde_json::from_reader(reader)?;
