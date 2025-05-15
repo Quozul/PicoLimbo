@@ -6,19 +6,6 @@ env:
   # Check you Cargo.toml -> package -> name
   binary: pico_limbo
 
-  # Build platforms
-
-  # Valid platforms: "linux, windows, macos_intel, macos_apple_silicon"
-  # - Write "intel" and "apple" to abbreviate "macos_intel" and "macos_apple_silicon," respectively.
-  # - Write "macos" to build for both "intel" and "apple"
-  build_for: "linux,windows,macos"
-
-  # Releases
-
-  # Valid platforms: "github_releases"
-  # - For brevity you can write: "releases"
-  publish_to: "github_releases"
-
 permissions:
   # To upload files to GitHub Releases
   contents: write
@@ -35,12 +22,6 @@ on:
         description: "Add tag version: (e.g. -> v3.6.1)"
         required: true
         type: string
-      build_for:
-        description: "Build for:"
-        default: linux,windows,macos
-      publish_to:
-        description: "Publish to:"
-        default: github_releases
 
 jobs:
   # Load variables
@@ -49,18 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
     outputs:
-      run_build_linux: ${{ (inputs.tag && contains(inputs.build_for, 'linux')) || (!inputs.tag && contains(env.build_for, 'linux') ) }}
-      run_build_windows: ${{ ( inputs.tag && contains(inputs.build_for, 'windows')) || (!inputs.tag && contains(env.build_for, 'windows') ) }}
-      run_build_macos_intel: ${{ ( inputs.tag && ( contains(inputs.build_for, 'intel') || contains(inputs.build_for, 'macos') )) || (!inputs.tag && (contains(env.build_for, 'intel') || contains(env.build_for, 'macos')) ) }}
-      run_build_macos_apple_silicon: ${{ ( inputs.tag && ( contains(inputs.build_for, 'apple') || contains(inputs.build_for, 'macos') )) || (!inputs.tag && (contains(env.build_for, 'apple') || contains(env.build_for, 'macos')) ) }}
-      run_publish_github_releases: ${{ ( inputs.tag && contains(inputs.publish_to, 'releases')) || (!inputs.tag && contains(env.publish_to, 'releases') ) }}
       tag: ${{ ( inputs.tag || github.ref_name ) }}
       binary: ${{ env.binary }}
 
   # Build for Linux x86_64
   build-linux:
     needs: load-env
-    if: needs.load-env.outputs.run_build_linux == 'true'
     uses: ./.github/workflows/linux.yaml
     name: build
     with:
@@ -70,7 +45,6 @@ jobs:
   # Build for Windows x86_64
   build-windows:
     needs: load-env
-    if: needs.load-env.outputs.run_build_windows == 'true'
     uses: ./.github/workflows/windows.yaml
     name: build
     with:
@@ -81,14 +55,11 @@ jobs:
   # Build for MacOS x86_64/ARM64
   build-macos:
     needs: load-env
-    if: needs.load-env.outputs.run_build_macos_intel == 'true' || needs.load-env.outputs.run_build_macos_apple_silicon == 'true'
     uses: ./.github/workflows/macos.yaml
     name: build
     with:
       tag: ${{ needs.load-env.outputs.tag }}
       binary: ${{ needs.load-env.outputs.binary }}
-      run_macos_intel: ${{ needs.load-env.outputs.run_build_macos_intel }}
-      run_macos_apple_silicon: ${{ needs.load-env.outputs.run_build_macos_apple_silicon }}
 
 
   # Release binaries in GitHub
@@ -98,7 +69,7 @@ jobs:
       - build-linux
       - build-windows
       - build-macos
-    if: ${{ always() && !failure() && !cancelled() && needs.load-env.outputs.run_publish_github_releases == 'true'}}
+    if: ${{ always() && !failure() && !cancelled() }}
     strategy:
       fail-fast: false
       matrix:

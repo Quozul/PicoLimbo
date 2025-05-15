@@ -9,17 +9,10 @@ on:
       binary:
         required: true
         type: string
-      run_macos_intel:
-        required: true
-        type: string
-      run_macos_apple_silicon:
-        required: true
-        type: string
 
 
 jobs:
   build-macos-intel:
-    if: inputs.run_macos_intel == 'true'
     name: macos_intel
     env:
       platform: darwin-x86_64
@@ -62,7 +55,6 @@ jobs:
 
   build-macos-apple-silicon:
     name: macos_apple_silicon
-    if: inputs.run_macos_apple_silicon == 'true'
     env:
       platform: darwin-aarch64
     runs-on: macos-latest
