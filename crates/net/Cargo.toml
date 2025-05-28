@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.45", features = [] }
+tokio = { version = "1.45", features = ["io-util", "test-util", "macros"] }
 minecraft_protocol = { path = "../minecraft_protocol" }
 thiserror = "2.0"
 anyhow = "1.0"

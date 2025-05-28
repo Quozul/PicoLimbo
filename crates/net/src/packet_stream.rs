@@ -22,26 +22,16 @@ where
     }
 
     pub async fn read_packet(&mut self) -> Result<RawPacket, PacketStreamError> {
-        let mut var_int_buf = Vec::new();
+        let packet_length = self.read_packet_length().await?;
 
-        for _ in 0..5 {
-            let mut byte = [0u8; 1];
-            self.stream.read_exact(&mut byte).await?;
-            var_int_buf.push(byte[0]);
-
-            match get_packet_length(&var_int_buf) {
-                Ok(packet_length) => {
-                    let mut data = vec![0u8; packet_length];
-                    self.stream.read_exact(&mut data).await?;
-                    return Ok(RawPacket::new(data));
-                }
-                Err(PacketLengthParseError::IncompleteLength) => {
-                    continue;
-                }
-                Err(e) => Err(e)?,
-            }
+        if packet_length == 0 {
+            return Err(PacketStreamError::EmptyPacket);
         }
-        Err(PacketLengthParseError::IncompleteLength)?
+
+        let mut data = vec![0u8; packet_length];
+        self.stream.read_exact(&mut data).await?;
+
+        RawPacket::new(data).map_err(|_| PacketStreamError::EmptyPacket)
     }
 
     pub async fn write_packet(&mut self, packet: RawPacket) -> Result<(), PacketStreamError> {
@@ -57,15 +47,37 @@ where
             ProtocolVersion::default().version_number(),
         )?;
 
-        self.stream.write_all(&var_int_bytes).await?;
-        self.stream.write_all(&[packet.packet_id()]).await?;
-        self.stream.write_all(packet.data()).await?;
-        self.stream.flush().await?;
-        Ok(())
+        if let Some(packet_id) = packet.packet_id() {
+            self.stream.write_all(&var_int_bytes).await?;
+            self.stream.write_all(&[packet_id]).await?;
+            self.stream.write_all(packet.data()).await?;
+            self.stream.flush().await?;
+            Ok(())
+        } else {
+            Err(PacketStreamError::MissingPacketId)
+        }
     }
 
     pub fn get_stream(&mut self) -> &mut Stream {
         &mut self.stream
+    }
+
+    async fn read_packet_length(&mut self) -> Result<usize, PacketStreamError> {
+        let mut var_int_buf = Vec::new();
+
+        for _ in 0..5 {
+            let mut byte = [0u8; 1];
+            self.stream.read_exact(&mut byte).await?;
+            var_int_buf.push(byte[0]);
+
+            match get_packet_length(&var_int_buf) {
+                Ok(length) => return Ok(length),
+                Err(PacketLengthParseError::IncompleteLength) => continue,
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        Err(PacketLengthParseError::IncompleteLength.into())
     }
 }
 
@@ -77,6 +89,10 @@ pub enum PacketStreamError {
     VarInt(#[from] PacketLengthParseError),
     #[error(transparent)]
     Infallible(#[from] Infallible),
+    #[error("empty packet")]
+    EmptyPacket,
+    #[error("missing packet id")]
+    MissingPacketId,
 }
 
 #[cfg(test)]
@@ -96,7 +112,25 @@ mod tests {
 
         // Then
         assert_eq!(packet.size(), 1);
-        assert_eq!(packet.packet_id(), 42);
+        assert_eq!(packet.packet_id().unwrap(), 42);
+    }
+
+    #[tokio::test]
+    async fn test_read_empty_packet() {
+        // Given
+        let reader = tokio_test::io::Builder::new().read(&[0]).build();
+
+        let mut packet_stream = PacketStream::new(reader);
+
+        // When
+        let packet = packet_stream.read_packet().await;
+
+        // Then
+        assert!(packet.is_err());
+        assert!(matches!(
+            packet.unwrap_err(),
+            PacketStreamError::EmptyPacket
+        ));
     }
 
     #[tokio::test]
@@ -132,7 +166,7 @@ mod tests {
 
         // Then
         assert_eq!(packet.size(), 2);
-        assert_eq!(packet.packet_id(), 42);
+        assert_eq!(packet.packet_id().unwrap(), 42);
         assert_eq!(packet.data(), [84]);
     }
 
@@ -152,10 +186,10 @@ mod tests {
 
         // Then
         assert_eq!(packet_1.size(), 1);
-        assert_eq!(packet_1.packet_id(), 42);
+        assert_eq!(packet_1.packet_id().unwrap(), 42);
 
         assert_eq!(packet_2.size(), 2);
-        assert_eq!(packet_2.packet_id(), 42);
+        assert_eq!(packet_2.packet_id().unwrap(), 42);
         assert_eq!(packet_2.data(), [84]);
     }
 
@@ -163,7 +197,7 @@ mod tests {
     #[tokio::test]
     async fn test_write_simple_packet() {
         // Given
-        let packet = RawPacket::new(vec![42, 84]);
+        let packet = RawPacket::new(vec![42, 84]).unwrap();
         let expected_bytes = vec![2, 42, 84];
 
         let stream = tokio_test::io::Builder::new()

@@ -29,6 +29,8 @@ pub enum ClientReadPacketError {
     PacketStream(#[from] PacketStreamError),
     #[error("unknown packet {id} received in state {state}")]
     UnknownPacket { id: u8, state: State },
+    #[error("empty packet received in state {state}")]
+    EmptyPacket { state: State },
 }
 
 impl Client {
@@ -46,16 +48,21 @@ impl Client {
 
     pub async fn read_packet(&mut self) -> Result<NamedPacket, ClientReadPacketError> {
         let packet = self.packet_reader.read_packet().await?;
-        let packet_id = packet.packet_id();
-        if let Some(packet_name) = self.get_packet_name_from_id(packet_id) {
-            debug!("received packet {} (id={})", packet_name, packet_id);
-            Ok(NamedPacket {
-                name: packet_name,
-                data: packet.data().to_vec(),
-            })
+        if let Some(packet_id) = packet.packet_id() {
+            if let Some(packet_name) = self.get_packet_name_from_id(packet_id) {
+                debug!("received packet {} (id={})", packet_name, packet_id);
+                Ok(NamedPacket {
+                    name: packet_name,
+                    data: packet.data().to_vec(),
+                })
+            } else {
+                Err(ClientReadPacketError::UnknownPacket {
+                    id: packet_id,
+                    state: self.state.clone(),
+                })
+            }
         } else {
-            Err(ClientReadPacketError::UnknownPacket {
-                id: packet_id,
+            Err(ClientReadPacketError::EmptyPacket {
                 state: self.state.clone(),
             })
         }
