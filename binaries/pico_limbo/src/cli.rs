@@ -1,8 +1,11 @@
 use clap::Parser;
+use shadow_rs::shadow;
+
+shadow!(build);
 
 #[derive(Parser)]
 #[command(
-    version,
+    version = build::CLAP_LONG_VERSION,
     about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.5"
 )]
 pub struct Cli {
