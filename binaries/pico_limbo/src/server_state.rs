@@ -1,3 +1,4 @@
+use minecraft_packets::play::Dimension;
 use minecraft_server::server::GetDataDirectory;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -7,6 +8,7 @@ pub struct ServerState {
     secret_key: Vec<u8>,
     modern_forwarding: bool,
     data_directory: PathBuf,
+    spawn_dimension: Dimension,
 }
 
 impl ServerState {
@@ -28,6 +30,10 @@ impl GetDataDirectory for ServerState {
     fn data_directory(&self) -> &PathBuf {
         &self.data_directory
     }
+
+    fn spawn_dimension(&self) -> &Dimension {
+        &self.spawn_dimension
+    }
 }
 
 #[derive(Error, Debug)]
@@ -41,6 +47,7 @@ pub struct ServerStateBuilder {
     secret_key: Option<Vec<u8>>,
     modern_forwarding: bool,
     asset_directory: Option<PathBuf>,
+    dimension: Option<Dimension>,
 }
 
 impl ServerStateBuilder {
@@ -68,6 +75,12 @@ impl ServerStateBuilder {
         self
     }
 
+    /// Set the spawn dimension
+    pub fn dimension(&mut self, dimension: Dimension) -> &mut Self {
+        self.dimension = Some(dimension);
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -76,6 +89,7 @@ impl ServerStateBuilder {
             data_directory: self
                 .asset_directory
                 .ok_or(ServerStateBuildError::MissingAssetDirectory)?,
+            spawn_dimension: self.dimension.unwrap_or_default(),
         })
     }
 }

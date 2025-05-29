@@ -8,6 +8,7 @@ use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::play::Dimension;
 use minecraft_protocol::prelude::{DecodePacketField, Uuid};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
@@ -23,7 +24,13 @@ pub async fn on_login_start(state: ServerState, client: SharedClient, packet: Lo
         login_start_velocity(client, packet).await;
     } else {
         let game_profile: GameProfile = packet.into();
-        fire_login_success(client, game_profile, state.data_directory()).await;
+        fire_login_success(
+            client,
+            game_profile,
+            state.data_directory(),
+            state.spawn_dimension(),
+        )
+        .await;
     }
 }
 
@@ -59,7 +66,13 @@ pub async fn on_custom_query_answer(
             let player_name = String::decode(buf, &mut index).unwrap_or_default();
 
             let game_profile = GameProfile::new(player_name, player_uuid);
-            fire_login_success(client, game_profile, state.data_directory()).await;
+            fire_login_success(
+                client,
+                game_profile,
+                state.data_directory(),
+                state.spawn_dimension(),
+            )
+            .await;
         } else {
             let packet = LoginDisconnectPacket::text("You must connect through a proxy.")
                 .unwrap_or_default();
@@ -85,6 +98,7 @@ async fn fire_login_success(
     client: SharedClient,
     game_profile: GameProfile,
     data_location: &PathBuf,
+    spawn_dimension: &Dimension,
 ) {
     let mut client = client.lock().await;
 
@@ -104,8 +118,8 @@ async fn fire_login_success(
     );
 
     if ProtocolVersion::V1_20_2 <= client.protocol_version() {
-        send_configuration_packets(client, data_location).await;
+        send_configuration_packets(client, data_location, spawn_dimension).await;
     } else {
-        send_play_packets(client, data_location).await;
+        send_play_packets(client, data_location, spawn_dimension).await;
     }
 }

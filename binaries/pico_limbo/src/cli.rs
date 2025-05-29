@@ -57,4 +57,16 @@ pub struct Cli {
         help = "Directory containing packet maps and game registries"
     )]
     pub data_directory: PathBuf,
+
+    /// Name of the dimension to spawn the player in
+    ///
+    /// Supported dimensions: "overworld", "nether" or "end"
+    #[arg(
+        short = 's',
+        long = "spawn-dimension",
+        value_name = "DIMENSION",
+        default_value = "overworld",
+        help = "Name of the dimension to spawn the player in"
+    )]
+    pub spawn_dimension: String,
 }

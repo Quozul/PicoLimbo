@@ -10,6 +10,7 @@ use crate::handlers::play::on_player_position;
 use crate::handlers::status::{on_ping_request, on_status_request};
 use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
+use minecraft_packets::play::Dimension;
 use minecraft_server::server::Server;
 use std::path::PathBuf;
 use tracing::Level;
@@ -21,8 +22,8 @@ use tracing_subscriber::util::SubscriberInitExt;
 async fn main() {
     let cli = Cli::parse();
     enable_logging(cli.verbose);
-    let server_state =
-        build_state(cli.secret_key, cli.data_directory).expect("Failed to initialize server state");
+    let server_state = build_state(cli.secret_key, cli.data_directory, cli.spawn_dimension)
+        .expect("Failed to initialize server state");
 
     Server::<ServerState>::new(cli.bind, server_state)
         .on(on_handshake)
@@ -53,6 +54,7 @@ fn enable_logging(verbose: u8) {
 fn build_state(
     secret_key: Option<String>,
     asset_directory: PathBuf,
+    dimension_name: String,
 ) -> Result<ServerState, ServerStateBuildError> {
     let mut server_state_builder = ServerState::builder();
 
@@ -66,6 +68,7 @@ fn build_state(
     }
 
     server_state_builder.data_directory(asset_directory);
+    server_state_builder.dimension(Dimension::from_name(&dimension_name).unwrap_or_default());
 
     server_state_builder.build()
 }

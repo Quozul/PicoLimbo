@@ -4,6 +4,7 @@ use minecraft_packets::configuration::finish_configuration_packet::FinishConfigu
 use minecraft_packets::configuration::registry_data_packet::{
     RegistryDataCodecPacket, RegistryDataPacket,
 };
+use minecraft_packets::play::Dimension;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::login_packet::LoginPacket;
@@ -23,6 +24,7 @@ use tokio::sync::MutexGuard;
 pub async fn send_configuration_packets(
     mut client: MutexGuard<'_, Client>,
     data_location: &PathBuf,
+    spawn_dimension: &Dimension,
 ) {
     // Send Server Brand
     let packet = ClientBoundPluginMessagePacket::brand("PicoLimbo");
@@ -53,11 +55,15 @@ pub async fn send_configuration_packets(
     let packet = FinishConfigurationPacket {};
     client.send_packet(packet).await;
 
-    send_play_packets(client, data_location).await;
+    send_play_packets(client, data_location, spawn_dimension).await;
 }
 
 /// Switch to the Play state and send required packets to spawn the player in the world
-pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, data_location: &PathBuf) {
+pub async fn send_play_packets(
+    mut client: MutexGuard<'_, Client>,
+    data_location: &PathBuf,
+    spawn_dimension: &Dimension,
+) {
     let (registry_codec, dimension) = if ProtocolVersion::V1_20_2 <= client.protocol_version() {
         // Since 1.20.2, registries are sent during the configuration state,
         // it is no longer sent in the login packet
@@ -75,29 +81,38 @@ pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, data_location
         let dimension = if (ProtocolVersion::V1_16_2..=ProtocolVersion::V1_18_2)
             .contains(&client.protocol_version())
         {
-            registry_codec
+            let dimension_types = registry_codec
                 .find_tag("minecraft:dimension_type")
                 .unwrap()
                 .find_tag("value")
                 .unwrap()
                 .get_vec()
-                .unwrap()
-                .first()
-                .unwrap()
-                .find_tag("element")
-                .unwrap()
-                .clone()
+                .unwrap();
+
+            let dimension = dimension_types
+                .iter()
+                .find(|element| {
+                    element
+                        .find_tag("name".to_string())
+                        .map(|name| match name {
+                            Nbt::String { value, .. } => {
+                                value == &spawn_dimension.identifier().to_string()
+                            }
+                            _ => false,
+                        })
+                        .unwrap()
+                })
+                .map(|element| element.clone())
+                .unwrap_or(dimension_types[0].clone());
+
+            dimension.find_tag("element").unwrap().clone()
         } else {
             Nbt::End
         };
         (registry_codec, dimension)
     };
 
-    let packet = LoginPacket {
-        registry_codec,
-        v1_16_dimension_codec: dimension,
-        ..Default::default()
-    };
+    let packet = LoginPacket::new_with_dimension(spawn_dimension, registry_codec, dimension);
     client.send_packet(packet).await;
 
     // Send Synchronize Player Position

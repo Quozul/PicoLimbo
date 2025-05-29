@@ -4,7 +4,7 @@
     "version": "PTDL_v2",
     "update_url": null
   },
-  "exported_at": "2025-05-29T11:14:25+02:00",
+  "exported_at": "2025-05-29T13:58:25+02:00",
   "name": "PicoLimbo",
   "author": "quozul@pm.me",
   "description": "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to the most recent ones.",
@@ -13,7 +13,7 @@
     "ghcr.io\/parkervcp\/yolks:alpine": "ghcr.io\/parkervcp\/yolks:alpine"
   },
   "file_denylist": [],
-  "startup": ".\/pico_limbo --bind=\"0.0.0.0:{{SERVER_PORT}}\" --secret-key=\"{{VELOCITY_FORWARDING_SECRET}}\"",
+  "startup": ".\/pico_limbo --bind=\"0.0.0.0:{{SERVER_PORT}}\" --secret-key=\"{{VELOCITY_FORWARDING_SECRET}}\" --spawn-dimension=\"{{SPAWN_DIMENSION}}\"",
   "config": {
     "files": "{}",
     "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
@@ -56,6 +56,16 @@
       "user_viewable": true,
       "user_editable": true,
       "rules": "string|nullable",
+      "field_type": "text"
+    },
+    {
+      "name": "Spawn Dimension",
+      "description": "The name of the dimension to spawn the player in. Possible values are \"overworld\", \"nether\" or \"end\". Note that there is no significant difference between overworld and nether. Default value: \"overworld\"",
+      "env_variable": "SPAWN_DIMENSION",
+      "default_value": "overworld",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:20",
       "field_type": "text"
     }
   ]

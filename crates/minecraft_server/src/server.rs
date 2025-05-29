@@ -1,5 +1,6 @@
 use crate::client::{Client, ClientReadPacketError, SharedClient};
 use crate::event_handler::{Handler, ListenerHandler};
+use minecraft_packets::play::Dimension;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
 use std::collections::HashMap;
@@ -15,6 +16,8 @@ use tracing::{debug, error, info};
 
 pub trait GetDataDirectory {
     fn data_directory(&self) -> &PathBuf;
+
+    fn spawn_dimension(&self) -> &Dimension;
 }
 
 pub struct Server<S>

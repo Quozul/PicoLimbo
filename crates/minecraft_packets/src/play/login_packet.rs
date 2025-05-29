@@ -1,3 +1,4 @@
+use crate::play::data::dimension::Dimension;
 use minecraft_protocol::prelude::*;
 
 /// This is the most important packet, good luck.
@@ -12,14 +13,16 @@ pub struct LoginPacket {
     pub game_mode: u8,
     #[pvn(735..764)]
     pub previous_game_mode: i8,
-    /// Size of the following array.
     /// Identifiers for all dimensions on the server.
     #[pvn(735..)]
     pub v1_16_dimension_names: LengthPaddedVec<Identifier>,
+    /// Represents certain registries that are sent from the server and are applied on the client.
     #[pvn(735..764)]
     pub registry_codec: Nbt,
+    /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
     #[pvn(751..759)]
     pub v1_16_dimension_codec: Nbt,
+    /// Name of the dimension type being spawned into.
     #[pvn(759..764)]
     pub v1_19_dimension_type: Identifier,
     /// Name of the dimension being spawned into.
@@ -31,6 +34,7 @@ pub struct LoginPacket {
     #[pvn(108..735)]
     pub v1_9_1_dimension: i32,
     #[pvn(..108)]
+    /// -1: Nether, 0: Overworld, 1: End
     pub dimension: i8,
     /// First 8 bytes of the SHA-256 hash of the world's seed. Used client side for biome noise
     #[pvn(573..764)]
@@ -143,6 +147,40 @@ impl Default for LoginPacket {
             v_1_20_2_dimension_type: overworld,
             v_1_20_2_hashed_seed: 0,
             difficulty: 0,
+        }
+    }
+}
+
+impl LoginPacket {
+    /// Create a login packet for a given dimension, all other
+    /// fields will be set to their Default::default() values.
+    pub fn new_with_dimension(
+        dimension: &Dimension,
+        registry_codec: Nbt,
+        dimension_codec: Nbt,
+    ) -> Self {
+        let iden = dimension.identifier();
+        Self {
+            // legacy fields
+            dimension: dimension.legacy_i8(),
+            v1_9_1_dimension: dimension.legacy_i32(),
+
+            // dimension names (1.16+)
+            v1_16_world_name: iden.clone(),
+            v1_16_dimension_name: iden.clone(),
+            v_1_20_2_dimension_name: iden.clone(),
+
+            // dimension type identifiers (1.19+, 1.20.2)
+            v1_19_dimension_type: iden.clone(),
+            v_1_20_2_dimension_type: iden.clone(),
+
+            // dimension type index (1.20.5)
+            v_1_20_5_dimension_type: dimension.type_index_1_20_5(),
+
+            // leave absolutely everything else as the default
+            registry_codec,
+            v1_16_dimension_codec: dimension_codec,
+            ..Self::default()
         }
     }
 }
