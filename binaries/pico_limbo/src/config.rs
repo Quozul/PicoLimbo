@@ -37,6 +37,10 @@ pub struct Config {
     /// Name of the dimension to spawn the player in.
     /// Supported: "overworld", "nether" or "end"
     pub spawn_dimension: String,
+
+    pub max_players: u32,
+
+    pub message_of_the_day: String,
 }
 
 impl Default for Config {
@@ -45,6 +49,8 @@ impl Default for Config {
             bind: "127.0.0.1:25565".into(),
             secret_key: "".into(),
             spawn_dimension: "overworld".into(),
+            max_players: 1,
+            message_of_the_day: "A Minecraft Server".into(),
         }
     }
 }

@@ -71,8 +71,11 @@ fn build_state(
             .secret_key(cfg.secret_key);
     }
 
-    server_state_builder.data_directory(asset_directory);
-    server_state_builder.dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default());
+    server_state_builder
+        .data_directory(asset_directory)
+        .dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default())
+        .description_text(&cfg.message_of_the_day)
+        .max_players(cfg.max_players);
 
     server_state_builder.build()
 }

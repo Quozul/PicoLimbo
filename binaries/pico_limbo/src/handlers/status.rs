@@ -7,7 +7,7 @@ use minecraft_packets::status::status_response_packet::StatusResponsePacket;
 use minecraft_server::client::SharedClient;
 
 pub async fn on_status_request(
-    _state: ServerState,
+    state: ServerState,
     client: SharedClient,
     _packet: StatusRequestPacket,
 ) {
@@ -16,7 +16,8 @@ pub async fn on_status_request(
     let status_response = StatusResponse::new(
         version.humanize(),
         version.version_number(),
-        "A Minecraft Server",
+        state.description_text(),
+        state.max_players(),
         false,
     );
     let packet = StatusResponsePacket::from_status_response(&status_response);

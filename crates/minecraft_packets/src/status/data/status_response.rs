@@ -44,6 +44,7 @@ impl StatusResponse {
         version_name: &str,
         version_protocol: u32,
         description_text: &str,
+        max_players: u32,
         enforces_secure_chat: bool,
     ) -> Self {
         let mut description_map = serde_json::Map::new();
@@ -58,7 +59,7 @@ impl StatusResponse {
                 protocol: version_protocol,
             },
             players: Players {
-                max: 1,
+                max: max_players,
                 online: 0,
                 sample: None,
             },

@@ -9,6 +9,8 @@ pub struct ServerState {
     modern_forwarding: bool,
     data_directory: PathBuf,
     spawn_dimension: Dimension,
+    description_text: String,
+    max_players: u32,
 }
 
 impl ServerState {
@@ -23,6 +25,14 @@ impl ServerState {
 
     pub fn is_modern_forwarding(&self) -> bool {
         self.modern_forwarding
+    }
+
+    pub fn description_text(&self) -> &str {
+        &self.description_text
+    }
+
+    pub fn max_players(&self) -> u32 {
+        self.max_players
     }
 }
 
@@ -48,6 +58,8 @@ pub struct ServerStateBuilder {
     modern_forwarding: bool,
     asset_directory: Option<PathBuf>,
     dimension: Option<Dimension>,
+    description_text: String,
+    max_players: u32,
 }
 
 impl ServerStateBuilder {
@@ -81,6 +93,19 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn description_text<S>(&mut self, text: S) -> &mut Self
+    where
+        S: Into<String>,
+    {
+        self.description_text = text.into();
+        self
+    }
+
+    pub fn max_players(&mut self, max_players: u32) -> &mut Self {
+        self.max_players = max_players;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -90,6 +115,8 @@ impl ServerStateBuilder {
                 .asset_directory
                 .ok_or(ServerStateBuildError::MissingAssetDirectory)?,
             spawn_dimension: self.dimension.unwrap_or_default(),
+            description_text: self.description_text,
+            max_players: self.max_players,
         })
     }
 }
