@@ -1,5 +1,5 @@
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
-use minecraft_packets::configuration::client_bound_plugin_message_packet::ClientBoundPluginMessagePacket;
+use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::{
     RegistryDataCodecPacket, RegistryDataPacket,
@@ -8,6 +8,7 @@ use minecraft_packets::play::Dimension;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::login_packet::LoginPacket;
+use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::set_default_spawn_position::SetDefaultSpawnPosition;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_protocol::data::registry::get_all_registries::{
@@ -27,7 +28,7 @@ pub async fn send_configuration_packets(
     spawn_dimension: &Dimension,
 ) {
     // Send Server Brand
-    let packet = ClientBoundPluginMessagePacket::brand("PicoLimbo");
+    let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     client.send_packet(packet).await;
 
     if ProtocolVersion::V1_20_5 <= client.protocol_version() {
@@ -78,8 +79,9 @@ pub async fn send_play_packets(
         };
 
         // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
-        let dimension = if (ProtocolVersion::V1_16_2..=ProtocolVersion::V1_18_2)
-            .contains(&client.protocol_version())
+        let dimension = if client
+            .protocol_version()
+            .between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2)
         {
             let dimension_types = registry_codec
                 .find_tag("minecraft:dimension_type")
@@ -138,5 +140,15 @@ pub async fn send_play_packets(
     if client.protocol_version() >= ProtocolVersion::V1_8 {
         client.update_state(State::Play);
         client.send_keep_alive().await;
+    }
+
+    // The brand is not visible for clients prior to 1.13, no need to send it
+    // The brand is sent during the configuration state after 1.20.2 included
+    if client
+        .protocol_version()
+        .between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20)
+    {
+        let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
+        client.send_packet(packet).await;
     }
 }

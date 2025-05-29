@@ -46,10 +46,12 @@
       },
       "minecraft:set_default_spawn_position": {
         "protocol_id": 80
+      },
+      "minecraft:custom_payload": {
+        "protocol_id": 23
       }
     },
-    "serverbound": {
-    }
+    "serverbound": {}
   },
   "status": {
     "clientbound": {

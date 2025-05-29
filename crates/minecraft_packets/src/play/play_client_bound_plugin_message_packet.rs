@@ -1,13 +1,13 @@
 use minecraft_protocol::prelude::*;
 
 #[derive(Debug, PacketOut)]
-#[packet_id("configuration/clientbound/minecraft:custom_payload")]
-pub struct ClientBoundPluginMessagePacket {
+#[packet_id("play/clientbound/minecraft:custom_payload")]
+pub struct PlayClientBoundPluginMessagePacket {
     channel: Identifier,
     data: LengthPaddedVec<i8>,
 }
 
-impl ClientBoundPluginMessagePacket {
+impl PlayClientBoundPluginMessagePacket {
     pub fn brand(brand: impl ToString) -> Self {
         Self {
             channel: Identifier::minecraft("brand"),

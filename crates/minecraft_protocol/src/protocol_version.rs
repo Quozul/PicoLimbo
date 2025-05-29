@@ -140,6 +140,12 @@ impl Ord for ProtocolVersion {
     }
 }
 
+impl ProtocolVersion {
+    pub fn between_inclusive(self, min_version: Self, max_version: Self) -> bool {
+        self >= min_version && self <= max_version
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
