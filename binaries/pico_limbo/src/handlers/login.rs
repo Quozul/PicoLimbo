@@ -13,7 +13,9 @@ use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::client::SharedClient;
 use minecraft_server::game_profile::GameProfile;
+use minecraft_server::server::GetDataDirectory;
 use rand::Rng;
+use std::path::PathBuf;
 use tracing::info;
 
 pub async fn on_login_start(state: ServerState, client: SharedClient, packet: LoginStartPacket) {
@@ -21,7 +23,7 @@ pub async fn on_login_start(state: ServerState, client: SharedClient, packet: Lo
         login_start_velocity(client, packet).await;
     } else {
         let game_profile: GameProfile = packet.into();
-        fire_login_success(client, game_profile).await;
+        fire_login_success(client, game_profile, state.data_directory()).await;
     }
 }
 
@@ -57,7 +59,7 @@ pub async fn on_custom_query_answer(
             let player_name = String::decode(buf, &mut index).unwrap_or_default();
 
             let game_profile = GameProfile::new(player_name, player_uuid);
-            fire_login_success(client, game_profile).await;
+            fire_login_success(client, game_profile, state.data_directory()).await;
         } else {
             let packet = LoginDisconnectPacket::text("You must connect through a proxy.")
                 .unwrap_or_default();
@@ -79,7 +81,11 @@ async fn login_start_velocity(client: SharedClient, _packet: LoginStartPacket) {
     client.send_packet(packet).await;
 }
 
-async fn fire_login_success(client: SharedClient, game_profile: GameProfile) {
+async fn fire_login_success(
+    client: SharedClient,
+    game_profile: GameProfile,
+    data_location: &PathBuf,
+) {
     let mut client = client.lock().await;
 
     if ProtocolVersion::V1_21_2 <= client.protocol_version() {
@@ -98,8 +104,8 @@ async fn fire_login_success(client: SharedClient, game_profile: GameProfile) {
     );
 
     if ProtocolVersion::V1_20_2 <= client.protocol_version() {
-        send_configuration_packets(client).await;
+        send_configuration_packets(client, data_location).await;
     } else {
-        send_play_packets(client).await;
+        send_play_packets(client, data_location).await;
     }
 }

@@ -13,9 +13,13 @@ use tokio::sync::Mutex;
 use tokio::time::interval;
 use tracing::{debug, error, info};
 
+pub trait GetDataDirectory {
+    fn data_directory(&self) -> &PathBuf;
+}
+
 pub struct Server<S>
 where
-    S: Clone + Sync + Send + 'static,
+    S: Clone + Sync + Send + GetDataDirectory + 'static,
 {
     state: S,
     handlers: HashMap<String, Box<dyn Handler<S>>>,
@@ -23,12 +27,16 @@ where
     packet_map: PacketMap,
 }
 
-impl<S: Clone + Sync + Send + 'static> Server<S> {
-    pub fn new(listen_address: impl ToString, data_location: PathBuf, state: S) -> Self {
+impl<S> Server<S>
+where
+    S: Clone + Sync + Send + GetDataDirectory + 'static,
+{
+    pub fn new(listen_address: impl ToString, state: S) -> Self {
+        let asset_directory = state.data_directory().clone();
         Self {
             state,
             handlers: HashMap::new(),
-            packet_map: PacketMap::new(data_location),
+            packet_map: PacketMap::new(asset_directory),
             listen_address: listen_address.to_string(),
         }
     }

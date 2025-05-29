@@ -29,6 +29,4 @@ WORKDIR /usr/src/app
 COPY data/generated /usr/src/app/data
 COPY --from=builder /usr/local/bin/app /usr/local/bin/app
 
-ENV DATA_DIR=/usr/src/app/data
-
-CMD ["app", "-a", "0.0.0.0:25565"]
+CMD ["app", "-a", "0.0.0.0:25565", "-d", "/usr/src/app/data"]

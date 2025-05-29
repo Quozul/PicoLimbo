@@ -1,16 +1,17 @@
 mod cli;
-mod get_data_directory;
 mod handlers;
+mod server_state;
 mod velocity;
 
 use crate::cli::Cli;
-use crate::get_data_directory::get_data_directory;
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
 use crate::handlers::status::{on_ping_request, on_status_request};
+use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
 use minecraft_server::server::Server;
+use std::path::PathBuf;
 use tracing::Level;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -19,17 +20,11 @@ use tracing_subscriber::util::SubscriberInitExt;
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    enable_logging(cli.debug);
+    enable_logging(cli.verbose);
+    let server_state =
+        build_state(cli.secret_key, cli.data_directory).expect("Failed to initialize server state");
 
-    let secret_key = cli.secret_key.filter(|s| !s.is_empty());
-    let state = if let Some(secret_key) = secret_key {
-        ServerState::modern_forwarding(secret_key.as_bytes())
-    } else {
-        ServerState::no_forwarding()
-    };
-
-    let data_directory = get_data_directory();
-    Server::<ServerState>::new(cli.address, data_directory, state)
+    Server::<ServerState>::new(cli.address, server_state)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)
@@ -55,32 +50,22 @@ fn enable_logging(verbose: u8) {
         .init();
 }
 
-#[derive(Clone)]
-struct ServerState {
-    secret_key: Vec<u8>,
-    modern_forwarding: bool,
-}
+fn build_state(
+    secret_key: Option<String>,
+    asset_directory: PathBuf,
+) -> Result<ServerState, ServerStateBuildError> {
+    let mut server_state_builder = ServerState::builder();
 
-impl ServerState {
-    fn modern_forwarding(secret_key: &[u8]) -> Self {
-        Self {
-            secret_key: secret_key.to_vec(),
-            modern_forwarding: true,
-        }
+    let secret_key = secret_key.filter(|s| !s.is_empty());
+    if let Some(secret_key) = secret_key {
+        server_state_builder
+            .modern_forwarding(true)
+            .secret_key(secret_key);
+    } else {
+        server_state_builder.modern_forwarding(false);
     }
 
-    fn no_forwarding() -> Self {
-        Self {
-            secret_key: Vec::new(),
-            modern_forwarding: false,
-        }
-    }
+    server_state_builder.data_directory(asset_directory);
 
-    fn is_modern_forwarding(&self) -> bool {
-        self.modern_forwarding
-    }
-
-    fn secret_key(&self) -> &[u8] {
-        &self.secret_key
-    }
+    server_state_builder.build()
 }

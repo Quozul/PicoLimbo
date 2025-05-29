@@ -1,4 +1,3 @@
-use crate::get_data_directory::get_data_directory;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
 use minecraft_packets::configuration::client_bound_plugin_message_packet::ClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
@@ -17,22 +16,25 @@ use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::client::Client;
+use std::path::PathBuf;
 use tokio::sync::MutexGuard;
 
 /// Only for <= 1.20.2
-pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
+pub async fn send_configuration_packets(
+    mut client: MutexGuard<'_, Client>,
+    data_location: &PathBuf,
+) {
     // Send Server Brand
     let packet = ClientBoundPluginMessagePacket::brand("PicoLimbo");
     client.send_packet(packet).await;
 
-    let data_location = get_data_directory();
     if ProtocolVersion::V1_20_5 <= client.protocol_version() {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
         client.send_packet(packet).await;
 
         // Send Registry Data
-        let grouped = get_v1_20_5_registries(client.protocol_version(), &data_location);
+        let grouped = get_v1_20_5_registries(client.protocol_version(), data_location);
         for (registry_id, entries) in grouped {
             let packet = RegistryDataPacket {
                 registry_id,
@@ -42,7 +44,7 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
         }
     } else {
         // Only for 1.20.2 and 1.20.3
-        let registry_codec = get_v1_16_2_registry_codec(client.protocol_version(), &data_location);
+        let registry_codec = get_v1_16_2_registry_codec(client.protocol_version(), data_location);
         let packet = RegistryDataCodecPacket { registry_codec };
         client.send_packet(packet).await;
     }
@@ -51,23 +53,22 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>) {
     let packet = FinishConfigurationPacket {};
     client.send_packet(packet).await;
 
-    send_play_packets(client).await;
+    send_play_packets(client, data_location).await;
 }
 
 /// Switch to the Play state and send required packets to spawn the player in the world
-pub async fn send_play_packets(mut client: MutexGuard<'_, Client>) {
+pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, data_location: &PathBuf) {
     let (registry_codec, dimension) = if ProtocolVersion::V1_20_2 <= client.protocol_version() {
         // Since 1.20.2, registries are sent during the configuration state,
         // it is no longer sent in the login packet
         (Nbt::End, Nbt::End)
     } else {
-        let data_location = get_data_directory();
         let registry_codec = if client.protocol_version() == ProtocolVersion::V1_16
             || client.protocol_version() == ProtocolVersion::V1_16_1
         {
-            get_v1_16_registry_codec(&data_location).unwrap()
+            get_v1_16_registry_codec(data_location).unwrap()
         } else {
-            get_v1_16_2_registry_codec(client.protocol_version(), &data_location)
+            get_v1_16_2_registry_codec(client.protocol_version(), data_location)
         };
 
         // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
