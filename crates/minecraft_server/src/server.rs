@@ -3,21 +3,24 @@ use crate::event_handler::{Handler, ListenerHandler};
 use minecraft_packets::play::Dimension;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
+use minecraft_protocol::state::State;
 use std::collections::HashMap;
 use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
 use tokio::sync::Mutex;
-use tokio::time::interval;
+use tokio::time::{Duration, interval};
 use tracing::{debug, error, info};
 
 pub trait GetDataDirectory {
     fn data_directory(&self) -> &PathBuf;
 
     fn spawn_dimension(&self) -> &Dimension;
+
+    fn connected_clients(&self) -> &Arc<AtomicU32>;
 }
 
 pub struct Server<S>
@@ -76,7 +79,7 @@ where
                             let packet_map = packet_map.clone();
                             let state = self.state.clone();
                             tokio::spawn(async move {
-                                if let Err(e) = handle_client(socket, handlers, packet_map, state).await {
+                                if let Err(e) = handle_client(socket, handlers, packet_map, state.clone()).await {
                                     error!("Error handling client {}: {:?}", addr, e);
                                 }
                             });
@@ -96,7 +99,7 @@ where
     }
 }
 
-async fn handle_client<S: Clone>(
+async fn handle_client<S: Clone + GetDataDirectory>(
     socket: TcpStream,
     handlers: Arc<HashMap<String, Box<dyn Handler<S>>>>,
     packet_map: PacketMap,
@@ -114,6 +117,10 @@ async fn handle_client<S: Clone>(
                     Ok(named_packet) => {
                         if let Some(handler) = handlers.get(&named_packet.name) {
                             handler.handle(state.clone(), client.clone(), named_packet).await;
+
+                            if client.lock().await.state() == &State::Play {
+                                state.connected_clients().fetch_add(1, Ordering::SeqCst);
+                            }
                         }
                         // Silently ignore no handler
                     }
@@ -136,6 +143,10 @@ async fn handle_client<S: Clone>(
                 client.lock().await.send_keep_alive().await;
             },
         }
+    }
+
+    if client.lock().await.state() == &State::Play {
+        state.connected_clients().fetch_sub(1, Ordering::SeqCst);
     }
 
     Ok(())

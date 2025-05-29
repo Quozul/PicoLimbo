@@ -44,6 +44,7 @@ impl StatusResponse {
         version_name: &str,
         version_protocol: u32,
         description_text: &str,
+        online_players: u32,
         max_players: u32,
         enforces_secure_chat: bool,
     ) -> Self {
@@ -60,7 +61,7 @@ impl StatusResponse {
             },
             players: Players {
                 max: max_players,
-                online: 0,
+                online: online_players,
                 sample: None,
             },
             description,

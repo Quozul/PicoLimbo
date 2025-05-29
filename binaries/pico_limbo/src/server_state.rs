@@ -1,6 +1,8 @@
 use minecraft_packets::play::Dimension;
 use minecraft_server::server::GetDataDirectory;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
 
 #[derive(Clone, Debug)]
@@ -12,6 +14,7 @@ pub struct ServerState {
     description_text: String,
     max_players: u32,
     welcome_message: String,
+    connected_clients: Arc<AtomicU32>,
 }
 
 impl ServerState {
@@ -43,6 +46,11 @@ impl ServerState {
             Some(self.welcome_message.clone())
         }
     }
+
+    /// Returns the current number of connected clients.
+    pub fn online_players(&self) -> u32 {
+        self.connected_clients.load(Ordering::SeqCst)
+    }
 }
 
 impl GetDataDirectory for ServerState {
@@ -52,6 +60,10 @@ impl GetDataDirectory for ServerState {
 
     fn spawn_dimension(&self) -> &Dimension {
         &self.spawn_dimension
+    }
+
+    fn connected_clients(&self) -> &Arc<AtomicU32> {
+        &self.connected_clients
     }
 }
 
@@ -136,6 +148,7 @@ impl ServerStateBuilder {
             description_text: self.description_text,
             max_players: self.max_players,
             welcome_message: self.welcome_message,
+            connected_clients: Arc::new(AtomicU32::new(0)),
         })
     }
 }

@@ -17,6 +17,7 @@ pub async fn on_status_request(
         version.humanize(),
         version.version_number(),
         state.description_text(),
+        state.online_players(),
         state.max_players(),
         false,
     );
