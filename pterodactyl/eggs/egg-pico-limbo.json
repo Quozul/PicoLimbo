@@ -4,7 +4,7 @@
     "version": "PTDL_v2",
     "update_url": null
   },
-  "exported_at": "2025-05-29T15:48:39+02:00",
+  "exported_at": "2025-05-29T20:40:24+02:00",
   "name": "PicoLimbo",
   "author": "quozul@pm.me",
   "description": "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to the most recent ones.",
@@ -13,9 +13,9 @@
     "ghcr.io\/parkervcp\/yolks:alpine": "ghcr.io\/parkervcp\/yolks:alpine"
   },
   "file_denylist": [],
-  "startup": ".\/pico_limbo --bind=\"0.0.0.0:{{SERVER_PORT}}\"",
+  "startup": ".\/pico_limbo",
   "config": {
-    "files": "{\r\n    \"velocity.toml\": {\r\n        \"parser\": \"file\",\r\n        \"find\": {\r\n            \"bind = \": \"bind = \\\"0.0.0.0:{{server.build.default.port}}\\\"\"\r\n        }\r\n    }\r\n}",
+    "files": "{\r\n    \"server.toml\": {\r\n        \"parser\": \"file\",\r\n        \"find\": {\r\n            \"bind = \": \"bind = \\\"0.0.0.0:{{server.build.default.port}}\\\"\"\r\n        }\r\n    }\r\n}",
     "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
     "logs": "{}",
     "stop": "^C"
