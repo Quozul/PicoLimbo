@@ -7,6 +7,12 @@ on:
       - main
     tags:
       - 'v*'
+    paths:
+      - 'binaries/**'
+      - 'crates/**'
+      - 'data/generated/**'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
   workflow_dispatch:
 
 concurrency:
