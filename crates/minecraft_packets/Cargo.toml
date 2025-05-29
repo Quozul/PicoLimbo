@@ -9,3 +9,4 @@ thiserror = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
+pico_text_component = { path = "../pico_text_component" }

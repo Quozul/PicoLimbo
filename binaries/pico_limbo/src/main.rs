@@ -75,6 +75,7 @@ fn build_state(
         .data_directory(asset_directory)
         .dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default())
         .description_text(&cfg.message_of_the_day)
+        .welcome_message(&cfg.welcome_message)
         .max_players(cfg.max_players);
 
     server_state_builder.build()

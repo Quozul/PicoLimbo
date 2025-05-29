@@ -677,6 +677,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "minecraft_protocol",
+ "pico_text_component",
  "serde",
  "serde_json",
  "thiserror",
@@ -842,6 +843,15 @@ dependencies = [
  "net",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "pico_text_component"
+version = "0.1.0"
+dependencies = [
+ "nbt",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -8,15 +8,12 @@ use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
-use minecraft_packets::play::Dimension;
 use minecraft_protocol::prelude::{DecodePacketField, Uuid};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::client::SharedClient;
 use minecraft_server::game_profile::GameProfile;
-use minecraft_server::server::GetDataDirectory;
 use rand::Rng;
-use std::path::PathBuf;
 use tracing::info;
 
 pub async fn on_login_start(state: ServerState, client: SharedClient, packet: LoginStartPacket) {
@@ -24,13 +21,7 @@ pub async fn on_login_start(state: ServerState, client: SharedClient, packet: Lo
         login_start_velocity(client, packet).await;
     } else {
         let game_profile: GameProfile = packet.into();
-        fire_login_success(
-            client,
-            game_profile,
-            state.data_directory(),
-            state.spawn_dimension(),
-        )
-        .await;
+        fire_login_success(client, game_profile, state).await;
     }
 }
 
@@ -66,13 +57,7 @@ pub async fn on_custom_query_answer(
             let player_name = String::decode(buf, &mut index).unwrap_or_default();
 
             let game_profile = GameProfile::new(player_name, player_uuid);
-            fire_login_success(
-                client,
-                game_profile,
-                state.data_directory(),
-                state.spawn_dimension(),
-            )
-            .await;
+            fire_login_success(client, game_profile, state).await;
         } else {
             let packet = LoginDisconnectPacket::text("You must connect through a proxy.")
                 .unwrap_or_default();
@@ -94,12 +79,7 @@ async fn login_start_velocity(client: SharedClient, _packet: LoginStartPacket) {
     client.send_packet(packet).await;
 }
 
-async fn fire_login_success(
-    client: SharedClient,
-    game_profile: GameProfile,
-    data_location: &PathBuf,
-    spawn_dimension: &Dimension,
-) {
+async fn fire_login_success(client: SharedClient, game_profile: GameProfile, state: ServerState) {
     let mut client = client.lock().await;
 
     if ProtocolVersion::V1_21_2 <= client.protocol_version() {
@@ -118,8 +98,8 @@ async fn fire_login_success(
     );
 
     if ProtocolVersion::V1_20_2 <= client.protocol_version() {
-        send_configuration_packets(client, data_location, spawn_dimension).await;
+        send_configuration_packets(client, state).await;
     } else {
-        send_play_packets(client, data_location, spawn_dimension).await;
+        send_play_packets(client, state).await;
     }
 }

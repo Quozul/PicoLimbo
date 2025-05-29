@@ -38,9 +38,14 @@ pub struct Config {
     /// Supported: "overworld", "nether" or "end"
     pub spawn_dimension: String,
 
+    /// Maximum amount of player displayed in the server list.
     pub max_players: u32,
 
+    /// Description of the server displayed in the server list.
     pub message_of_the_day: String,
+
+    /// Message sent to the player after spawning in the world.
+    pub welcome_message: String,
 }
 
 impl Default for Config {
@@ -51,6 +56,7 @@ impl Default for Config {
             spawn_dimension: "overworld".into(),
             max_players: 1,
             message_of_the_day: "A Minecraft Server".into(),
+            welcome_message: "".into(),
         }
     }
 }

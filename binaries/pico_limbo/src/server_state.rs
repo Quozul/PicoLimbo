@@ -11,6 +11,7 @@ pub struct ServerState {
     spawn_dimension: Dimension,
     description_text: String,
     max_players: u32,
+    welcome_message: String,
 }
 
 impl ServerState {
@@ -33,6 +34,14 @@ impl ServerState {
 
     pub fn max_players(&self) -> u32 {
         self.max_players
+    }
+
+    pub fn welcome_message(&self) -> Option<String> {
+        if self.welcome_message.is_empty() {
+            None
+        } else {
+            Some(self.welcome_message.clone())
+        }
     }
 }
 
@@ -60,6 +69,7 @@ pub struct ServerStateBuilder {
     dimension: Option<Dimension>,
     description_text: String,
     max_players: u32,
+    welcome_message: String,
 }
 
 impl ServerStateBuilder {
@@ -106,6 +116,14 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn welcome_message<S>(&mut self, message: S) -> &mut Self
+    where
+        S: Into<String>,
+    {
+        self.welcome_message = message.into();
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -117,6 +135,7 @@ impl ServerStateBuilder {
             spawn_dimension: self.dimension.unwrap_or_default(),
             description_text: self.description_text,
             max_players: self.max_players,
+            welcome_message: self.welcome_message,
         })
     }
 }
