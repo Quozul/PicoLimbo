@@ -1,9 +1,11 @@
 mod cli;
+mod config;
 mod handlers;
 mod server_state;
 mod velocity;
 
 use crate::cli::Cli;
+use crate::config::Config;
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
@@ -13,7 +15,7 @@ use clap::Parser;
 use minecraft_packets::play::Dimension;
 use minecraft_server::server::Server;
 use std::path::PathBuf;
-use tracing::Level;
+use tracing::{Level, debug};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -22,10 +24,13 @@ use tracing_subscriber::util::SubscriberInitExt;
 async fn main() {
     let cli = Cli::parse();
     enable_logging(cli.verbose);
-    let server_state = build_state(cli.secret_key, cli.data_directory, cli.spawn_dimension)
-        .expect("Failed to initialize server state");
+    let cfg = config::load_or_create(cli.config_path).expect("failed to create configuration file");
+    let bind = cfg.bind.clone();
 
-    Server::<ServerState>::new(cli.bind, server_state)
+    let server_state =
+        build_state(cli.data_directory, cfg).expect("Failed to initialize server state");
+
+    Server::<ServerState>::new(bind, server_state)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)
@@ -52,23 +57,22 @@ fn enable_logging(verbose: u8) {
 }
 
 fn build_state(
-    secret_key: Option<String>,
     asset_directory: PathBuf,
-    dimension_name: String,
+    cfg: Config,
 ) -> Result<ServerState, ServerStateBuildError> {
     let mut server_state_builder = ServerState::builder();
 
-    let secret_key = secret_key.filter(|s| !s.is_empty());
-    if let Some(secret_key) = secret_key {
+    if cfg.secret_key.is_empty() {
+        server_state_builder.modern_forwarding(false);
+    } else {
+        debug!("Enabling modern forwarding");
         server_state_builder
             .modern_forwarding(true)
-            .secret_key(secret_key);
-    } else {
-        server_state_builder.modern_forwarding(false);
+            .secret_key(cfg.secret_key);
     }
 
     server_state_builder.data_directory(asset_directory);
-    server_state_builder.dimension(Dimension::from_name(&dimension_name).unwrap_or_default());
+    server_state_builder.dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default());
 
     server_state_builder.build()
 }

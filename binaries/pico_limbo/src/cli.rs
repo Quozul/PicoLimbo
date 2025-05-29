@@ -10,19 +10,6 @@ shadow!(build);
     about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.5"
 )]
 pub struct Cli {
-    /// Server listening address and port
-    ///
-    /// Specify the IP address and port the server should bind to.
-    /// Use 0.0.0.0 to listen on all network interfaces.
-    #[arg(
-        short = 'b',
-        long = "bind",
-        default_value = "127.0.0.1:25565",
-        value_name = "IP:PORT",
-        help = "Server listening address and port"
-    )]
-    pub bind: String,
-
     /// Enable verbose logging
     #[arg(
         short = 'v',
@@ -31,19 +18,6 @@ pub struct Cli {
         help = "Enable verbose logging (-v for debug, -vv for trace)"
     )]
     pub verbose: u8,
-
-    /// Velocity modern forwarding secret key
-    ///
-    /// When specified, enables Velocity modern forwarding using the provided
-    /// secret key. This must match the secret configured in your Velocity
-    /// proxy configuration. Leave unset to disable proxy support.
-    #[arg(
-        short = 'k',
-        long = "secret-key",
-        value_name = "KEY",
-        help = "Secret key for Velocity modern forwarding (enables proxy support)"
-    )]
-    pub secret_key: Option<String>,
 
     /// Data directory path
     ///
@@ -58,15 +32,13 @@ pub struct Cli {
     )]
     pub data_directory: PathBuf,
 
-    /// Name of the dimension to spawn the player in
-    ///
-    /// Supported dimensions: "overworld", "nether" or "end"
+    /// Path to the TOML configuration file
     #[arg(
-        short = 's',
-        long = "spawn-dimension",
-        value_name = "DIMENSION",
-        default_value = "overworld",
-        help = "Name of the dimension to spawn the player in"
+        short = 'c',
+        long = "config",
+        value_name = "CONFIG_PATH",
+        default_value = "server.toml",
+        help = "Configuration file path"
     )]
-    pub spawn_dimension: String,
+    pub config_path: PathBuf,
 }
