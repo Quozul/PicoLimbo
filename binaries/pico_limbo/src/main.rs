@@ -24,7 +24,7 @@ async fn main() {
     let server_state =
         build_state(cli.secret_key, cli.data_directory).expect("Failed to initialize server state");
 
-    Server::<ServerState>::new(cli.address, server_state)
+    Server::<ServerState>::new(cli.bind, server_state)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)

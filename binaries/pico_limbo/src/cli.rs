@@ -15,18 +15,18 @@ pub struct Cli {
     /// Specify the IP address and port the server should bind to.
     /// Use 0.0.0.0 to listen on all network interfaces.
     #[arg(
-        short,
-        long,
+        short = 'b',
+        long = "bind",
         default_value = "127.0.0.1:25565",
         value_name = "IP:PORT",
         help = "Server listening address and port"
     )]
-    pub address: String,
+    pub bind: String,
 
     /// Enable verbose logging
     #[arg(
-        short, 
-        long, 
+        short = 'v',
+        long = "verbose",
         action = clap::ArgAction::Count,
         help = "Enable verbose logging (-v for debug, -vv for trace)"
     )]
@@ -38,8 +38,8 @@ pub struct Cli {
     /// secret key. This must match the secret configured in your Velocity
     /// proxy configuration. Leave unset to disable proxy support.
     #[arg(
-        short,
-        long,
+        short = 'k',
+        long = "secret-key",
         value_name = "KEY",
         help = "Secret key for Velocity modern forwarding (enables proxy support)"
     )]
