@@ -98,7 +98,7 @@ pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, state: Server
                         })
                         .unwrap()
                 })
-                .map(|element| element.clone())
+                .cloned()
                 .unwrap_or(dimension_types[0].clone());
 
             dimension.find_tag("element").unwrap().clone()
