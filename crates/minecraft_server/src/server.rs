@@ -1,9 +1,10 @@
-use crate::client::{Client, ClientReadPacketError, SharedClient};
+use crate::client::Client;
 use crate::event_handler::{Handler, ListenerHandler};
-use minecraft_packets::play::Dimension;
+use crate::network_entity::ClientReadPacketError;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
 use minecraft_protocol::state::State;
+use net::packet_stream::PacketStreamError;
 use std::collections::HashMap;
 use std::future::Future;
 use std::path::PathBuf;
@@ -11,14 +12,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
-use tokio::sync::Mutex;
 use tokio::time::{Duration, interval};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 pub trait GetDataDirectory {
     fn data_directory(&self) -> &PathBuf;
-
-    fn spawn_dimension(&self) -> &Dimension;
 
     fn connected_clients(&self) -> &Arc<AtomicU32>;
 }
@@ -37,12 +35,11 @@ impl<S> Server<S>
 where
     S: Clone + Sync + Send + GetDataDirectory + 'static,
 {
-    pub fn new(listen_address: impl ToString, state: S) -> Self {
-        let asset_directory = state.data_directory().clone();
+    pub fn new(listen_address: impl ToString, state: S, packet_map: PacketMap) -> Self {
         Self {
             state,
+            packet_map,
             handlers: HashMap::new(),
-            packet_map: PacketMap::new(asset_directory),
             listen_address: listen_address.to_string(),
         }
     }
@@ -50,7 +47,7 @@ where
     pub fn on<T, F, Fut>(mut self, listener_fn: F) -> Self
     where
         T: PacketId + DecodePacket + Send + Sync + 'static,
-        F: Fn(S, SharedClient, T) -> Fut + Send + Sync + 'static,
+        F: Fn(S, Client, T) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
         let packet_name = T::PACKET_NAME.to_string();
@@ -79,9 +76,7 @@ where
                             let packet_map = packet_map.clone();
                             let state = self.state.clone();
                             tokio::spawn(async move {
-                                if let Err(e) = handle_client(socket, handlers, packet_map, state.clone()).await {
-                                    error!("Error handling client {}: {:?}", addr, e);
-                                }
+                                handle_client(socket, handlers, packet_map, state.clone()).await;
                             });
                         }
                         Err(e) => {
@@ -99,55 +94,77 @@ where
     }
 }
 
-async fn handle_client<S: Clone + GetDataDirectory>(
+async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
     socket: TcpStream,
     handlers: Arc<HashMap<String, Box<dyn Handler<S>>>>,
-    packet_map: PacketMap,
-    state: S,
-) -> tokio::io::Result<()> {
-    let client = Arc::new(Mutex::new(Client::new(socket, packet_map)));
+    packet_map_clone: PacketMap,
+    server_state: S,
+) {
+    let client = Client::new(socket, packet_map_clone);
     let mut keep_alive_interval = interval(Duration::from_secs(20));
+    let mut was_in_play_state = false;
 
     loop {
         tokio::select! {
-            packet_result = async {
-                client.lock().await.read_packet().await
-            } => {
+            packet_result = client.read_named_packet() => {
                 match packet_result {
                     Ok(named_packet) => {
+                        let packet_name_cache = named_packet.name.clone();
                         if let Some(handler) = handlers.get(&named_packet.name) {
-                            handler.handle(state.clone(), client.clone(), named_packet).await;
+                            handler.handle(server_state.clone(), client.clone(), named_packet).await;
+                            // TODO: Handle Result from handler.handle here
 
-                            if client.lock().await.state() == &State::Play {
-                                state.connected_clients().fetch_add(1, Ordering::SeqCst);
+                            let current_client_state = client.current_state().await;
+                            if current_client_state == State::Play && !was_in_play_state {
+                                server_state.connected_clients().fetch_add(1, Ordering::SeqCst);
+                                was_in_play_state = true;
+                                let username = client.get_username().await;
+                                info!("{} joined the game", username);
                             }
+                        } else {
+                            debug!("No handler for packet: {}", packet_name_cache);
                         }
-                        // Silently ignore no handler
                     }
                     Err(err) => {
                         match err {
-                            ClientReadPacketError::PacketStream(err) => {
-                                debug!("client disconnected or error reading packet: {:?}", err);
+                            ClientReadPacketError::UnknownPacketName { id, state, protocol, .. } => {
+                                debug!("No packet name found for id 0x{:02X} in state {:?}, protocol {:?}", id, state, protocol);
+                            }
+                            ClientReadPacketError::PacketStream(PacketStreamError::IoError(ref io_err))
+                                if io_err.kind() == tokio::io::ErrorKind::ConnectionReset ||
+                                   io_err.kind() == tokio::io::ErrorKind::BrokenPipe ||
+                                   io_err.kind() == tokio::io::ErrorKind::UnexpectedEof => {
+                                debug!("Client disconnected cleanly: {:?}", err);
                                 break;
                             }
-                            err => {
-                                debug!("{err}");
+                            ClientReadPacketError::PacketStream(PacketStreamError::IoError(io_err)) => {
+                                error!("Client PacketStream IO error: {:?}", io_err);
+                                break;
+                            }
+                            _ => {
+                                warn!("Error reading packet from client: {:?}", err);
+                                break;
                             }
                         }
-
                     }
                 }
             },
 
             _ = keep_alive_interval.tick() => {
-                client.lock().await.send_keep_alive().await;
+                if client.current_state().await == State::Play {
+                    client.send_keep_alive().await;
+                }
             },
         }
     }
 
-    if client.lock().await.state() == &State::Play {
-        state.connected_clients().fetch_sub(1, Ordering::SeqCst);
+    if was_in_play_state {
+        server_state
+            .connected_clients()
+            .fetch_sub(1, Ordering::SeqCst);
+        let username = client.get_username().await;
+        info!("{} left the game", username);
+    } else {
+        debug!("Client session ended (was not in play state).");
     }
-
-    Ok(())
 }

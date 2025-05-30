@@ -1,14 +1,13 @@
 use crate::ServerState;
 use minecraft_packets::play::player_position::PlayerPositionPacket;
 use minecraft_protocol::state::State;
-use minecraft_server::client::SharedClient;
+use minecraft_server::client::Client;
 
 pub async fn on_player_position(
     _state: ServerState,
-    client: SharedClient,
+    client: Client,
     _packet: PlayerPositionPacket,
 ) {
-    let mut client = client.lock().await;
-    client.update_state(State::Play);
+    client.set_state(State::Play).await;
     client.send_keep_alive().await;
 }

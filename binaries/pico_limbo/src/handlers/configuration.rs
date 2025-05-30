@@ -20,21 +20,21 @@ use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::client::Client;
 use minecraft_server::server::GetDataDirectory;
-use tokio::sync::MutexGuard;
 
 /// Only for <= 1.20.2
-pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>, state: ServerState) {
+pub async fn send_configuration_packets(client: Client, state: ServerState) {
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     client.send_packet(packet).await;
+    let protocol_version = client.protocol_version().await;
 
-    if ProtocolVersion::V1_20_5 <= client.protocol_version() {
+    if ProtocolVersion::V1_20_5 <= protocol_version {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
         client.send_packet(packet).await;
 
         // Send Registry Data
-        let grouped = get_v1_20_5_registries(client.protocol_version(), state.data_directory());
+        let grouped = get_v1_20_5_registries(protocol_version, state.data_directory());
         for (registry_id, entries) in grouped {
             let packet = RegistryDataPacket {
                 registry_id,
@@ -44,8 +44,7 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>, stat
         }
     } else {
         // Only for 1.20.2 and 1.20.3
-        let registry_codec =
-            get_v1_16_2_registry_codec(client.protocol_version(), state.data_directory());
+        let registry_codec = get_v1_16_2_registry_codec(&protocol_version, state.data_directory());
         let packet = RegistryDataCodecPacket { registry_codec };
         client.send_packet(packet).await;
     }
@@ -58,23 +57,23 @@ pub async fn send_configuration_packets(mut client: MutexGuard<'_, Client>, stat
 }
 
 /// Switch to the Play state and send required packets to spawn the player in the world
-pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, state: ServerState) {
-    let (registry_codec, dimension) = if ProtocolVersion::V1_20_2 <= client.protocol_version() {
+pub async fn send_play_packets(client: Client, state: ServerState) {
+    let protocol_version = client.protocol_version().await;
+    let (registry_codec, dimension) = if ProtocolVersion::V1_20_2 <= protocol_version {
         // Since 1.20.2, registries are sent during the configuration state,
         // it is no longer sent in the login packet
         (Nbt::End, Nbt::End)
     } else {
-        let registry_codec = if client.protocol_version() == ProtocolVersion::V1_16
-            || client.protocol_version() == ProtocolVersion::V1_16_1
+        let registry_codec = if protocol_version == ProtocolVersion::V1_16
+            || protocol_version == ProtocolVersion::V1_16_1
         {
             get_v1_16_registry_codec(state.data_directory()).unwrap()
         } else {
-            get_v1_16_2_registry_codec(client.protocol_version(), state.data_directory())
+            get_v1_16_2_registry_codec(&protocol_version, state.data_directory())
         };
 
         // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
-        let dimension = if client
-            .protocol_version()
+        let dimension = if protocol_version
             .between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2)
         {
             let dimension_types = registry_codec
@@ -116,39 +115,36 @@ pub async fn send_play_packets(mut client: MutexGuard<'_, Client>, state: Server
     let packet = SynchronizePlayerPositionPacket::default();
     client.send_packet(packet).await;
 
-    if client.protocol_version() >= ProtocolVersion::V1_19 {
+    if protocol_version >= ProtocolVersion::V1_19 {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPosition::default();
         client.send_packet(packet).await;
     }
 
-    if client.protocol_version() >= ProtocolVersion::V1_20_3 {
+    if protocol_version >= ProtocolVersion::V1_20_3 {
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
         client.send_packet(packet).await;
 
         // Send Chunk Data and Update Light
-        let packet = ChunkDataAndUpdateLightPacket::new(client.protocol_version());
+        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version.clone());
         client.send_packet(packet).await;
     }
 
-    if client.protocol_version() >= ProtocolVersion::V1_8 {
-        client.update_state(State::Play);
+    if protocol_version >= ProtocolVersion::V1_8 {
+        client.set_state(State::Play).await;
         client.send_keep_alive().await;
     }
 
     // The brand is not visible for clients prior to 1.13, no need to send it
     // The brand is sent during the configuration state after 1.20.2 included
-    if client
-        .protocol_version()
-        .between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20)
-    {
+    if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
         let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
         client.send_packet(packet).await;
     }
 
     if let Some(content) = state.welcome_message() {
-        if client.protocol_version() >= ProtocolVersion::V1_19 {
+        if protocol_version >= ProtocolVersion::V1_19 {
             let packet = SystemChatMessage::plain_text(content);
             client.send_packet(packet).await;
         }

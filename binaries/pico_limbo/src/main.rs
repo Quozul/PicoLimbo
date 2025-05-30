@@ -13,6 +13,7 @@ use crate::handlers::status::{on_ping_request, on_status_request};
 use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
 use minecraft_packets::play::Dimension;
+use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_server::server::Server;
 use std::path::PathBuf;
 use tracing::{Level, debug};
@@ -28,9 +29,11 @@ async fn main() {
     let bind = cfg.bind.clone();
 
     let server_state =
-        build_state(cli.data_directory, cfg).expect("Failed to initialize server state");
+        build_state(&cli.data_directory, cfg).expect("Failed to initialize server state");
 
-    Server::<ServerState>::new(bind, server_state)
+    let packet_map = PacketMap::new(cli.data_directory);
+
+    Server::<ServerState>::new(bind, server_state, packet_map)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)
@@ -57,7 +60,7 @@ fn enable_logging(verbose: u8) {
 }
 
 fn build_state(
-    asset_directory: PathBuf,
+    asset_directory: &PathBuf,
     cfg: Config,
 ) -> Result<ServerState, ServerStateBuildError> {
     let mut server_state_builder = ServerState::builder();

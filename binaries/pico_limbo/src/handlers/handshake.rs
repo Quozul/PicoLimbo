@@ -2,15 +2,14 @@ use crate::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use minecraft_server::client::SharedClient;
+use minecraft_server::client::Client;
 use thiserror::Error;
 
-pub async fn on_handshake(_state: ServerState, client: SharedClient, packet: HandshakePacket) {
-    let mut client = client.lock().await;
-    client.set_protocol(packet.get_protocol());
+pub async fn on_handshake(_state: ServerState, client: Client, packet: HandshakePacket) {
+    client.set_protocol_version(packet.get_protocol()).await;
 
     if let Ok(state) = packet.get_next_state() {
-        client.update_state(state);
+        client.set_state(state).await;
     }
 }
 

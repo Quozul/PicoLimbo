@@ -51,15 +51,15 @@ impl ServerState {
     pub fn online_players(&self) -> u32 {
         self.connected_clients.load(Ordering::SeqCst)
     }
+
+    pub fn spawn_dimension(&self) -> &Dimension {
+        &self.spawn_dimension
+    }
 }
 
 impl GetDataDirectory for ServerState {
     fn data_directory(&self) -> &PathBuf {
         &self.data_directory
-    }
-
-    fn spawn_dimension(&self) -> &Dimension {
-        &self.spawn_dimension
     }
 
     fn connected_clients(&self) -> &Arc<AtomicU32> {
