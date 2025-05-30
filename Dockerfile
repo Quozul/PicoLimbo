@@ -5,7 +5,7 @@ ARG TARGETPLATFORM
 ARG BINARY_NAME=pico_limbo
 
 WORKDIR /usr/src/app
-COPY --parents ./Cargo.toml ./Cargo.lock ./crates ./binaries ./data/generated ./
+COPY --parents ./Cargo.toml ./Cargo.lock ./crates ./binaries ./
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/app/target \
@@ -17,16 +17,18 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     esac && \
     rustup target add $TARGET && \
     cargo build --release --target $TARGET --bin $BINARY_NAME && \
-    cp target/$TARGET/release/$BINARY_NAME /usr/local/bin/app
+    cp target/$TARGET/release/$BINARY_NAME /usr/local/bin/pico_limbo
 
 FROM alpine
 
-RUN addgroup -S picolimbo && adduser -S picolimbo -G picolimbo
+RUN addgroup -S picolimbo \
+  && adduser -S picolimbo -G picolimbo
+
 USER picolimbo
 
 WORKDIR /usr/src/app
 
-COPY data/generated /usr/src/app/data
-COPY --from=builder /usr/local/bin/app /usr/local/bin/app
+COPY data/generated /usr/src/app/assets
+COPY --from=builder /usr/local/bin/pico_limbo /usr/local/bin/pico_limbo
 
-CMD ["app", "-a", "0.0.0.0:25565", "-d", "/usr/src/app/data"]
+CMD ["pico_limbo"]

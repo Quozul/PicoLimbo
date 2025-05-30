@@ -4,6 +4,6 @@ services:
       context: .
       args:
         BINARY_NAME: pico_limbo
-    image: ghcr.io/quozul/picolimbo:latest
+    image: ghcr.io/quozul/picolimbo:master
     ports:
       - "25565:25565"

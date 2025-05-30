@@ -81,13 +81,13 @@ The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 
 server using the following command:
 
 ```shell
-docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:latest
+docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:master
 ```
 
 You can also mount a custom configuration file:
 
 ```shell
-docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:latest
+docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:master
 ```
 
 ### Using Docker Compose
