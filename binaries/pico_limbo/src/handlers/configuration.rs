@@ -18,9 +18,7 @@ use minecraft_protocol::data::registry::get_all_registries::{
 use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use minecraft_server::client::Client;
-use minecraft_server::event_handler::HandlerError;
-use minecraft_server::server::GetDataDirectory;
+use minecraft_server::prelude::{Client, HandlerError};
 
 /// Only for <= 1.20.2
 pub async fn send_configuration_packets(

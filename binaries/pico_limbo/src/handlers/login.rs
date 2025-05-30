@@ -11,9 +11,7 @@ use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_protocol::prelude::{DecodePacketField, Uuid};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use minecraft_server::client::Client;
-use minecraft_server::event_handler::HandlerError;
-use minecraft_server::game_profile::GameProfile;
+use minecraft_server::prelude::{Client, GameProfile, HandlerError};
 use rand::Rng;
 use tracing::info;
 

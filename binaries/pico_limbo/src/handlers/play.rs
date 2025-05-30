@@ -1,8 +1,7 @@
 use crate::ServerState;
 use minecraft_packets::play::player_position::PlayerPositionPacket;
 use minecraft_protocol::state::State;
-use minecraft_server::client::Client;
-use minecraft_server::event_handler::HandlerError;
+use minecraft_server::prelude::{Client, HandlerError};
 
 pub async fn on_player_position(
     _state: ServerState,

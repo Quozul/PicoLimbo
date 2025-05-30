@@ -1,29 +1,22 @@
 use crate::client::Client;
+use crate::client_inner::ClientReadPacketError;
+use crate::connected_clients::ConnectedClients;
 use crate::event_handler::{Handler, HandlerError, ListenerHandler};
-use crate::network_entity::ClientReadPacketError;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
 use minecraft_protocol::state::State;
 use net::packet_stream::PacketStreamError;
 use std::collections::HashMap;
 use std::future::Future;
-use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
 use tokio::time::{Duration, interval};
 use tracing::{debug, error, info, warn};
 
-pub trait GetDataDirectory {
-    fn data_directory(&self) -> &PathBuf;
-
-    fn connected_clients(&self) -> &Arc<AtomicU32>;
-}
-
 pub struct Server<S>
 where
-    S: Clone + Sync + Send + GetDataDirectory + 'static,
+    S: Clone + Sync + Send + ConnectedClients + 'static,
 {
     state: S,
     handlers: HashMap<String, Box<dyn Handler<S>>>,
@@ -33,7 +26,7 @@ where
 
 impl<S> Server<S>
 where
-    S: Clone + Sync + Send + GetDataDirectory + 'static,
+    S: Clone + Sync + Send + ConnectedClients + 'static,
 {
     pub fn new(listen_address: impl ToString, state: S, packet_map: PacketMap) -> Self {
         Self {
@@ -94,7 +87,7 @@ where
     }
 }
 
-async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
+async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
     socket: TcpStream,
     handlers: Arc<HashMap<String, Box<dyn Handler<S>>>>,
     packet_map_clone: PacketMap,
@@ -123,7 +116,7 @@ async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
 
                             let current_client_state = client.current_state().await;
                             if current_client_state == State::Play && !was_in_play_state {
-                                server_state.connected_clients().fetch_add(1, Ordering::SeqCst);
+                                server_state.increment();
                                 was_in_play_state = true;
                                 let username = client.get_username().await;
                                 info!("{} joined the game", username);
@@ -168,9 +161,7 @@ async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
     }
 
     if was_in_play_state {
-        server_state
-            .connected_clients()
-            .fetch_sub(1, Ordering::SeqCst);
+        server_state.decrement();
         let username = client.get_username().await;
         info!("{} left the game", username);
     } else {

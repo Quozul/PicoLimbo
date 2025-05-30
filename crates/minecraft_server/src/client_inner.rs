@@ -1,14 +1,14 @@
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
-use crate::network_entity::{ClientReadPacketError, ClientSendPacketError};
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use net::packet_stream::PacketStream;
+use net::packet_stream::{PacketStream, PacketStreamError};
 use net::raw_packet::RawPacket;
 use rand::Rng;
+use thiserror::Error;
 use tokio::net::TcpStream;
 use tracing::{debug, error};
 
@@ -187,4 +187,41 @@ impl ClientInner {
     pub fn get_velocity_login_message_id_inner(&self) -> i32 {
         self.message_id
     }
+}
+
+#[derive(Debug, Error)]
+pub enum ClientReadPacketError {
+    #[error(transparent)]
+    PacketStream(#[from] PacketStreamError),
+    #[error("unknown packet id=0x{id:02X} received in state {state}")]
+    UnknownPacketId { id: u8, state: State },
+    #[error(
+        "unknown packet name '{name}' (id=0x{id:02X}) for state {state} & protocol {protocol:?}"
+    )]
+    UnknownPacketName {
+        name: String,
+        id: u8,
+        state: State,
+        protocol: ProtocolVersion,
+    },
+    #[error("empty packet data received in state {state}")]
+    EmptyPacketData { state: State },
+}
+
+#[derive(Debug, Error)]
+pub enum ClientSendPacketError {
+    #[error(
+        "packet '{packet_name}' not found in packet map for version {version:?} / state {state:?}"
+    )]
+    UnmappedPacket {
+        packet_name: String,
+        version: ProtocolVersion,
+        state: State,
+    },
+    #[error("failed to encode packet '{packet_name}'")]
+    EncodingError { packet_name: String },
+    #[error(transparent)]
+    PacketStream(#[from] PacketStreamError),
+    #[error("client protocol version not set, cannot send packet '{packet_name}'")]
+    VersionNotSet { packet_name: String },
 }

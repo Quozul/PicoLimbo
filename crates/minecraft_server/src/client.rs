@@ -1,7 +1,6 @@
-use crate::client_inner::ClientInner;
+use crate::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
-use crate::network_entity::{ClientReadPacketError, ClientSendPacketError};
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;

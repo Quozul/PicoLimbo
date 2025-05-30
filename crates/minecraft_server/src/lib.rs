@@ -1,7 +1,15 @@
-pub mod client;
+mod client;
 mod client_inner;
-pub mod event_handler;
-pub mod game_profile;
-pub mod named_packet;
-pub mod network_entity;
-pub mod server;
+mod connected_clients;
+mod event_handler;
+mod game_profile;
+mod named_packet;
+mod server;
+
+pub mod prelude {
+    pub use crate::client::Client;
+    pub use crate::connected_clients::ConnectedClients;
+    pub use crate::event_handler::HandlerError;
+    pub use crate::game_profile::GameProfile;
+    pub use crate::server::Server;
+}

@@ -14,7 +14,7 @@ use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
 use minecraft_packets::play::Dimension;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
-use minecraft_server::server::Server;
+use minecraft_server::prelude::Server;
 use std::path::PathBuf;
 use tracing::{Level, debug};
 use tracing_subscriber::EnvFilter;

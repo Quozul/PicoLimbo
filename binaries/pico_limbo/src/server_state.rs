@@ -1,5 +1,5 @@
 use minecraft_packets::play::Dimension;
-use minecraft_server::server::GetDataDirectory;
+use minecraft_server::prelude::ConnectedClients;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -55,15 +55,19 @@ impl ServerState {
     pub fn spawn_dimension(&self) -> &Dimension {
         &self.spawn_dimension
     }
-}
 
-impl GetDataDirectory for ServerState {
-    fn data_directory(&self) -> &PathBuf {
+    pub fn data_directory(&self) -> &PathBuf {
         &self.data_directory
     }
+}
 
-    fn connected_clients(&self) -> &Arc<AtomicU32> {
-        &self.connected_clients
+impl ConnectedClients for ServerState {
+    fn increment(&self) {
+        self.connected_clients.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn decrement(&self) {
+        self.connected_clients.fetch_sub(1, Ordering::SeqCst);
     }
 }
 
