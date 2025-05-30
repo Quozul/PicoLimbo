@@ -3,14 +3,21 @@ use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::client::Client;
+use minecraft_server::event_handler::HandlerError;
 use thiserror::Error;
 
-pub async fn on_handshake(_state: ServerState, client: Client, packet: HandshakePacket) {
+pub async fn on_handshake(
+    _state: ServerState,
+    client: Client,
+    packet: HandshakePacket,
+) -> Result<(), HandlerError> {
     client.set_protocol_version(packet.get_protocol()).await;
 
     if let Ok(state) = packet.get_next_state() {
         client.set_state(state).await;
     }
+
+    Ok(())
 }
 
 #[derive(Error, Debug)]

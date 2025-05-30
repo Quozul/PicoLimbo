@@ -1,14 +1,30 @@
 use crate::client::Client;
 use crate::named_packet::NamedPacket;
+use crate::network_entity::ClientSendPacketError;
 use async_trait::async_trait;
-use minecraft_protocol::prelude::DecodePacket;
+use minecraft_protocol::prelude::{DecodePacket, DecodePacketError};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use thiserror::Error;
+use tracing::error;
+
+#[derive(Debug, Error)]
+pub enum HandlerError {
+    #[error("Protocol error: {0}")]
+    Protocol(DecodePacketError),
+    #[error("Client error: {0}")]
+    Client(#[from] ClientSendPacketError),
+}
 
 #[async_trait]
 pub trait Handler<S>: Send + Sync {
-    async fn handle(&self, state: S, client: Client, raw_packet: NamedPacket);
+    async fn handle(
+        &self,
+        state: S,
+        client: Client,
+        raw_packet: NamedPacket,
+    ) -> Result<(), HandlerError>;
 }
 
 pub struct ListenerHandler<T, F> {
@@ -30,11 +46,28 @@ impl<T, F, Fut, S> Handler<S> for ListenerHandler<T, F>
 where
     T: DecodePacket + Send + Sync + 'static,
     F: Fn(S, Client, T) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = ()> + Send + 'static,
+    Fut: Future<Output = Result<(), HandlerError>> + Send + 'static,
     S: Sync + Send + 'static,
 {
-    async fn handle(&self, state: S, client: Client, raw_packet: NamedPacket) {
-        let packet = async { raw_packet.decode(client.protocol_version().await).unwrap() }.await;
-        (self.listener_fn)(state, client, packet).await;
+    async fn handle(
+        &self,
+        state: S,
+        client: Client,
+        raw_packet: NamedPacket,
+    ) -> Result<(), HandlerError> {
+        let packet = async {
+            let protocol_ver_obj = client.protocol_version().await;
+            raw_packet.decode::<T>(protocol_ver_obj)
+        }
+        .await
+        .map_err(|protocol_error| {
+            error!(
+                "Failed to decode packet '{}': {:?}",
+                raw_packet.name, protocol_error
+            );
+            HandlerError::Protocol(protocol_error)
+        })?;
+
+        (self.listener_fn)(state, client, packet).await
     }
 }

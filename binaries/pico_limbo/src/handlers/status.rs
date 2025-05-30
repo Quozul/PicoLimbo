@@ -5,8 +5,13 @@ use minecraft_packets::status::ping_response_packet::PingResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
 use minecraft_server::client::Client;
+use minecraft_server::event_handler::HandlerError;
 
-pub async fn on_status_request(state: ServerState, client: Client, _packet: StatusRequestPacket) {
+pub async fn on_status_request(
+    state: ServerState,
+    client: Client,
+    _packet: StatusRequestPacket,
+) -> Result<(), HandlerError> {
     let version = client.protocol_version().await;
     let status_response = StatusResponse::new(
         version.humanize(),
@@ -17,12 +22,18 @@ pub async fn on_status_request(state: ServerState, client: Client, _packet: Stat
         false,
     );
     let packet = StatusResponsePacket::from_status_response(&status_response);
-    client.send_packet(packet).await;
+    client.send_packet(packet).await?;
+    Ok(())
 }
 
-pub async fn on_ping_request(_state: ServerState, client: Client, packet: PingRequestPacket) {
+pub async fn on_ping_request(
+    _state: ServerState,
+    client: Client,
+    packet: PingRequestPacket,
+) -> Result<(), HandlerError> {
     let packet = PingResponsePacket {
         timestamp: packet.timestamp,
     };
-    client.send_packet(packet).await;
+    client.send_packet(packet).await?;
+    Ok(())
 }

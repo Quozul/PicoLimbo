@@ -1,7 +1,7 @@
 use crate::client_inner::ClientInner;
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
-use crate::network_entity::ClientReadPacketError;
+use crate::network_entity::{ClientReadPacketError, ClientSendPacketError};
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;
@@ -29,10 +29,12 @@ impl Client {
         guard.read_named_packet_inner().await
     }
 
-    pub async fn send_packet(&self, packet: impl EncodePacket + PacketId + Send) {
-        // TODO: Return a Result<(), ClientSendPacketError>
+    pub async fn send_packet(
+        &self,
+        packet: impl EncodePacket + PacketId + Send,
+    ) -> Result<(), ClientSendPacketError> {
         let mut guard = self.acquire_lock().await;
-        let _ = guard.send_encodable_packet_inner(packet).await;
+        guard.send_encodable_packet_inner(packet).await
     }
 
     pub async fn current_state(&self) -> State {
@@ -43,9 +45,8 @@ impl Client {
         self.acquire_lock().await.set_state(new_state);
     }
 
-    pub async fn send_keep_alive(&self) {
-        // TODO: Return a Result<(), ClientSendPacketError>
-        let _ = self.acquire_lock().await.send_keep_alive_inner().await;
+    pub async fn send_keep_alive(&self) -> Result<(), ClientSendPacketError> {
+        self.acquire_lock().await.send_keep_alive_inner().await
     }
 
     pub async fn set_game_profile(&self, profile: GameProfile) {

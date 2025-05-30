@@ -1,5 +1,5 @@
 use crate::client::Client;
-use crate::event_handler::{Handler, ListenerHandler};
+use crate::event_handler::{Handler, HandlerError, ListenerHandler};
 use crate::network_entity::ClientReadPacketError;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
@@ -48,7 +48,7 @@ where
     where
         T: PacketId + DecodePacket + Send + Sync + 'static,
         F: Fn(S, Client, T) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static,
+        Fut: Future<Output = Result<(), HandlerError>> + Send + 'static,
     {
         let packet_name = T::PACKET_NAME.to_string();
         let handler = ListenerHandler::new(listener_fn);
@@ -111,8 +111,15 @@ async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
                     Ok(named_packet) => {
                         let packet_name_cache = named_packet.name.clone();
                         if let Some(handler) = handlers.get(&named_packet.name) {
-                            handler.handle(server_state.clone(), client.clone(), named_packet).await;
-                            // TODO: Handle Result from handler.handle here
+                            if let Err(handler_error) = handler.handle(server_state.clone(), client.clone(), named_packet).await {
+                                error!(
+                                    "Handler for packet '{}' from client {:?} returned an error: {:?}",
+                                    packet_name_cache,
+                                    client.get_username().await,
+                                    handler_error
+                                );
+                                break;
+                            }
 
                             let current_client_state = client.current_state().await;
                             if current_client_state == State::Play && !was_in_play_state {
@@ -152,7 +159,9 @@ async fn handle_client<S: Clone + Sync + Send + GetDataDirectory + 'static>(
 
             _ = keep_alive_interval.tick() => {
                 if client.current_state().await == State::Play {
-                    client.send_keep_alive().await;
+                    if let Err(err) = client.send_keep_alive().await {
+                        error!("Failed to send keep alive: {:?}", err);
+                    }
                 }
             },
         }
