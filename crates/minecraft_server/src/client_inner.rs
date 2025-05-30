@@ -1,21 +1,14 @@
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
-use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use net::packet_stream::{PacketStream, PacketStreamError};
 use net::raw_packet::RawPacket;
-use rand::Rng;
 use thiserror::Error;
 use tokio::net::TcpStream;
 use tracing::{debug, error};
-
-fn get_random_i64() -> i64 {
-    let mut rng = rand::rng();
-    rng.random()
-}
 
 pub struct ClientInner {
     state: State,
@@ -77,7 +70,6 @@ impl ClientInner {
             }
         });
 
-        // FIXME: I may want to move this to the Client struct
         if let Some(packet_id) = raw_packet.packet_id() {
             let packet_name = self.get_packet_name_from_id_internal(packet_id, &current_version)?;
             debug!("Received packet {} (id=0x{:02X})", packet_name, packet_id);
@@ -149,15 +141,6 @@ impl ClientInner {
             self.state, new_state
         );
         self.state = new_state;
-    }
-
-    pub async fn send_keep_alive_inner(&mut self) -> Result<(), ClientSendPacketError> {
-        // FIXME: Move this logic to Client struct
-        if self.state == State::Play {
-            let packet = ClientBoundKeepAlivePacket::new(get_random_i64());
-            self.send_encodable_packet_inner(packet).await?;
-        }
-        Ok(())
     }
 
     pub fn set_game_profile_inner(&mut self, profile: GameProfile) {

@@ -1,10 +1,12 @@
 use crate::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
+use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
+use rand::Rng;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
@@ -45,7 +47,12 @@ impl Client {
     }
 
     pub async fn send_keep_alive(&self) -> Result<(), ClientSendPacketError> {
-        self.acquire_lock().await.send_keep_alive_inner().await
+        let mut inner = self.acquire_lock().await;
+        if inner.current_state() == &State::Play {
+            let packet = ClientBoundKeepAlivePacket::new(get_random_i64());
+            inner.send_encodable_packet_inner(packet).await?;
+        }
+        Ok(())
     }
 
     pub async fn set_game_profile(&self, profile: GameProfile) {
@@ -92,4 +99,9 @@ impl Client {
     async fn acquire_lock(&self) -> tokio::sync::MutexGuard<'_, ClientInner> {
         self.inner.lock().await
     }
+}
+
+fn get_random_i64() -> i64 {
+    let mut rng = rand::rng();
+    rng.random()
 }
