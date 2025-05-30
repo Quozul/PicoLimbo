@@ -51,7 +51,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            bind: "127.0.0.1:25565".into(),
+            bind: "0.0.0.0:25565".into(),
             secret_key: "".into(),
             spawn_dimension: "overworld".into(),
             max_players: 1,
