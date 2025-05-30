@@ -702,7 +702,6 @@ dependencies = [
 name = "minecraft_server"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "minecraft_packets",
  "minecraft_protocol",

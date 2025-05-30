@@ -12,4 +12,3 @@ net = { path = "../net" }
 thiserror = "2.0"
 rand = "0.9.0"
 async-trait = "0.1"
-anyhow = { version = "1.0" }

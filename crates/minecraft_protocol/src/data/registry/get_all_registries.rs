@@ -109,7 +109,7 @@ pub fn get_v1_20_5_registries(
 }
 
 /// Way to get registries since 1.16.2 up until 1.20.3
-pub fn get_v1_16_2_registry_codec(protocol_version: ProtocolVersion, data_location: &Path) -> Nbt {
+pub fn get_v1_16_2_registry_codec(protocol_version: &ProtocolVersion, data_location: &Path) -> Nbt {
     let grouped = get_v1_20_5_registries(protocol_version.clone(), data_location)
         .iter()
         .map(|(registry_id, entries)| {
