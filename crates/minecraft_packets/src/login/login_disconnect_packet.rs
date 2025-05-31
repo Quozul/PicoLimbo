@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::*;
-use serde::Serialize;
+use pico_text_component::prelude::PlainText;
 
 #[derive(Debug, PacketOut)]
 #[packet_id("login/clientbound/minecraft:login_disconnect")]
@@ -16,23 +16,10 @@ impl Default for LoginDisconnectPacket {
 }
 
 impl LoginDisconnectPacket {
-    pub fn text(text: impl ToString) -> serde_json::Result<LoginDisconnectPacket> {
-        let component = TextComponent::new(text);
-        Ok(Self {
-            reason: serde_json::to_string(&component)?,
-        })
-    }
-}
-
-#[derive(Serialize)]
-pub struct TextComponent {
-    text: String,
-}
-
-impl TextComponent {
-    pub fn new(text: impl ToString) -> Self {
+    pub fn text(text: impl Into<String>) -> LoginDisconnectPacket {
+        let component = PlainText::new(text);
         Self {
-            text: text.to_string(),
+            reason: component.to_json(),
         }
     }
 }
