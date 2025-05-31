@@ -39,12 +39,14 @@ pub async fn on_login_start(
 }
 
 pub async fn on_login_acknowledged(
-    _state: ServerState,
+    state: ServerState,
     client: Client,
     _packet: LoginAcknowledgedPacket,
 ) -> Result<(), HandlerError> {
-    if client.protocol_version().await >= ProtocolVersion::V1_20_2 {
+    let protocol_version = client.protocol_version().await;
+    if protocol_version >= ProtocolVersion::V1_20_2 {
         client.set_state(State::Configuration).await;
+        send_configuration_packets(client, state).await?;
     }
     Ok(())
 }
@@ -112,9 +114,7 @@ async fn fire_login_success(
         game_profile.uuid()
     );
 
-    if ProtocolVersion::V1_20_2 <= protocol_version {
-        send_configuration_packets(client, state).await?;
-    } else {
+    if protocol_version <= ProtocolVersion::V1_20 {
         send_play_packets(client, state).await?;
     }
     Ok(())

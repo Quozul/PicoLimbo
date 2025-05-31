@@ -1,4 +1,5 @@
 use crate::server_state::ServerState;
+use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
@@ -56,6 +57,14 @@ pub async fn send_configuration_packets(
     let packet = FinishConfigurationPacket {};
     client.send_packet(packet).await?;
 
+    Ok(())
+}
+
+pub async fn on_acknowledge_finish_configuration(
+    state: ServerState,
+    client: Client,
+    _packet: AcknowledgeConfigurationPacket,
+) -> Result<(), HandlerError> {
     send_play_packets(client, state).await?;
     Ok(())
 }

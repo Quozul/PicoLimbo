@@ -6,6 +6,7 @@ mod velocity;
 
 use crate::cli::Cli;
 use crate::config::{Config, ConfigError};
+use crate::handlers::configuration::on_acknowledge_finish_configuration;
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
@@ -48,6 +49,7 @@ async fn main() -> ExitCode {
         .on(on_login_acknowledged)
         .on(on_custom_query_answer)
         .on(on_player_position)
+        .on(on_acknowledge_finish_configuration)
         .run()
         .await;
 

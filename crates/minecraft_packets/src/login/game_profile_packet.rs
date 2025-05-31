@@ -1,7 +1,8 @@
 use crate::login::login_success_packet::Property;
 use minecraft_protocol::prelude::*;
 
-/// For versions after 1.21.2 (included), use the GameProfilePacket.
+/// This is the equivalent of LoginSuccessPacket but for versions before 1.21.2.
+/// For versions prior to 1.20.2, this packet changes the state to Play.
 #[derive(Debug, PacketOut)]
 #[packet_id("login/clientbound/minecraft:game_profile")]
 pub struct GameProfilePacket {
