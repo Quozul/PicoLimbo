@@ -79,7 +79,8 @@ fn build_state(
         .dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default())
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
-        .max_players(cfg.server_list.max_players);
+        .max_players(cfg.server_list.max_players)
+        .show_online_player_count(cfg.server_list.show_online_player_count);
 
     server_state_builder.build()
 }

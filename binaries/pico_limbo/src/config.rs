@@ -25,6 +25,9 @@ pub struct ServerListConfig {
 
     /// Description of the server displayed in the server list.
     pub message_of_the_day: String,
+
+    /// Set to false to always show 0 online players
+    pub show_online_player_count: bool,
 }
 
 impl Default for ServerListConfig {
@@ -32,6 +35,7 @@ impl Default for ServerListConfig {
         Self {
             max_players: 20,
             message_of_the_day: "A Minecraft Server".into(),
+            show_online_player_count: true,
         }
     }
 }

@@ -15,6 +15,7 @@ pub struct ServerState {
     max_players: u32,
     welcome_message: String,
     connected_clients: Arc<AtomicU32>,
+    show_online_player_count: bool,
 }
 
 impl ServerState {
@@ -49,7 +50,11 @@ impl ServerState {
 
     /// Returns the current number of connected clients.
     pub fn online_players(&self) -> u32 {
-        self.connected_clients.load(Ordering::SeqCst)
+        if self.show_online_player_count {
+            self.connected_clients.load(Ordering::SeqCst)
+        } else {
+            0
+        }
     }
 
     pub fn spawn_dimension(&self) -> &Dimension {
@@ -86,6 +91,7 @@ pub struct ServerStateBuilder {
     description_text: String,
     max_players: u32,
     welcome_message: String,
+    show_online_player_count: bool,
 }
 
 impl ServerStateBuilder {
@@ -140,6 +146,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn show_online_player_count(&mut self, show: bool) -> &mut Self {
+        self.show_online_player_count = show;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -153,6 +164,7 @@ impl ServerStateBuilder {
             max_players: self.max_players,
             welcome_message: self.welcome_message,
             connected_clients: Arc::new(AtomicU32::new(0)),
+            show_online_player_count: self.show_online_player_count,
         })
     }
 }
