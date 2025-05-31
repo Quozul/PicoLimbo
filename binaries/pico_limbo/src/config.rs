@@ -74,7 +74,7 @@ impl Default for Config {
             secret_key: "".into(),
             spawn_dimension: "overworld".into(),
             server_list: ServerListConfig::default(),
-            welcome_message: "".into(),
+            welcome_message: "Welcome to PicoLimbo!".into(),
         }
     }
 }

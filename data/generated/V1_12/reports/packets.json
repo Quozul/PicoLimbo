@@ -40,10 +40,12 @@
       },
       "minecraft:player_position": {
         "protocol_id": 46
+      },
+      "minecraft:legacy_chat_message": {
+        "protocol_id": 15
       }
     },
-    "serverbound": {
-    }
+    "serverbound": {}
   },
   "status": {
     "clientbound": {
