@@ -5,7 +5,7 @@ mod server_state;
 mod velocity;
 
 use crate::cli::Cli;
-use crate::config::Config;
+use crate::config::{Config, ConfigError};
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
@@ -16,16 +16,23 @@ use minecraft_packets::play::Dimension;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_server::prelude::Server;
 use std::path::PathBuf;
-use tracing::{Level, debug};
+use std::process::ExitCode;
+use tracing::{Level, debug, error};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> ExitCode {
     let cli = Cli::parse();
     enable_logging(cli.verbose);
-    let cfg = config::load_or_create(cli.config_path).expect("failed to create configuration file");
+
+    let cfg = if let Some(cfg) = load_configuration(&cli.config_path) {
+        cfg
+    } else {
+        return ExitCode::FAILURE;
+    };
+
     let bind = cfg.bind.clone();
 
     let server_state =
@@ -43,6 +50,8 @@ async fn main() {
         .on(on_player_position)
         .run()
         .await;
+
+    ExitCode::SUCCESS
 }
 
 fn enable_logging(verbose: u8) {
@@ -57,6 +66,23 @@ fn enable_logging(verbose: u8) {
         .with(EnvFilter::from_default_env().add_directive(log_level.into()))
         .with(tracing_subscriber::fmt::layer().with_target(false))
         .init();
+}
+
+fn load_configuration(config_path: &PathBuf) -> Option<Config> {
+    let cfg = config::load_or_create(config_path);
+    match cfg {
+        Err(ConfigError::TomlDeserialize(message, ..)) => {
+            error!("Failed to load configuration: {}", message);
+        }
+        Err(ConfigError::Io(message, ..)) => {
+            error!("Failed to load configuration: {}", message);
+        }
+        Err(ConfigError::TomlSerialize(message, ..)) => {
+            error!("Failed to save default configuration file: {}", message);
+        }
+        Ok(cfg) => return Some(cfg),
+    }
+    None
 }
 
 fn build_state(
