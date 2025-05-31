@@ -23,36 +23,33 @@ packets required for client login and maintaining connection (keep-alive) withou
 When idle, PicoLimbo uses almost no resources: 0% CPU and less than 10 MB of memory, making it extremely lightweight.
 
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
-through 1.21.5**, excluding snapshots, with only 24 implemented packets covering over 45 Minecraft versions.
+through 1.21.5**, excluding snapshots, with only 27 implemented packets covering over 45 Minecraft versions.
 
 ## Features
 
 ### ⚙️ Highly Configurable
 
-PicoLimbo uses a simple TOML configuration file (`server.toml` by default) for easy setup and customization. Set a
-welcome message for players, default spawn dimension, custom server list Message Of The Day and more.  
+Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
+MOTD, and more.  
 👉 See the [Configuration](#example-configuration-file) section for full details.
 
-### 🚀 Velocity Proxy Support
+### 🔀 Built-in Proxy Support
 
-Built-in support for [Velocity](https://papermc.io/software/velocity) Modern Forwarding ensures seamless integration
-with your Velocity proxy. Just set the
-`secret_key` in your configuration to enable secure forwarded player info.
+Seamlessly integrates with major Minecraft proxies:
 
-### 🔀 BungeeCord Support
-
-PicoLimbo also supports [BungeeCord](https://www.spigotmc.org/wiki/bungeecord/) proxy by default. Because BungeeCord
-connections are insecure by default, no additional configuration is required to use it with PicoLimbo.
+- Velocity (Modern Forwarding)
+- BungeeCord (Legacy Forwarding)
+- BungeeGuard & BungeeGuardPlus authentication
 
 ### 🎮 Wide Version Compatibility
 
-One binary, multiple Minecraft versions! PicoLimbo supports **Minecraft 1.7.2 through 1.21.5** natively — no ViaVersion
-or ViaBackwards needed. *(Snapshots are not supported.)*
+Supports all Minecraft versions from **1.7.2 to 1.21.5** natively — no need for ViaVersion or additional compatibility
+layers.
 
-### ⚡ Lightweight and Efficient
+### ⚡ Ultra-Lightweight & Highly Scalable
 
-PicoLimbo is designed to be extremely lightweight, consuming **0% CPU while idle** and using **less than 10 MB of memory
-**, making it perfect for low-resource environments and always-on servers.
+Uses **0% CPU while idle** and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous
+runtime and efficient design.
 
 ![PicoLimbo.png](./docs/assets/PicoLimbo.png)  
 *The screenshot shows just a few of the supported Minecraft versions.*
@@ -64,7 +61,7 @@ PicoLimbo is designed to be extremely lightweight, consuming **0% CPU while idle
 ### 🚀 Pterodactyl (Recommended)
 
 For users running the Pterodactyl panel, deployment is simplified with the provided [egg file](./pterodactyl/eggs). This
-egg is built on the lightweight Alpine base image, ensuring efficient resource usage.
+egg is built on the lightweight Alpine base image.
 
 The egg supports additional installation configuration through the following environment variables:
 
@@ -78,13 +75,10 @@ The egg supports additional installation configuration through the following env
   date.
     - Default: *(empty)*
 
-Velocity Modern Forwarding can be enabled by configuring the `secret_key` in the server’s `server.toml` configuration
-file as usual.
+### 🐋 Using Docker
 
-### Using Docker
-
-The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 architectures. You can easily start the
-server using the following command:
+The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 architectures. You can start the server
+using the following command:
 
 ```shell
 docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:master
@@ -96,16 +90,22 @@ You can also mount a custom configuration file:
 docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:master
 ```
 
-### Using Docker Compose
+> [!NOTE]
+> The `master` tag image is updated on every push to the repository. For production or stable setups, consider using a
+> fixed version tag instead.  
+> A list of available tags can be found on the
+> [GitHub Packages page](https://github.com/Quozul/PicoLimbo/pkgs/container/picolimbo/versions?filters%5Bversion_type%5D=tagged).
+
+#### Using Docker Compose
 
 For a more managed and scalable setup, use Docker Compose. A sample [docker-compose.yml file](./docker-compose.yml) is
-available in the repository. Simply download the `docker-compose.yml` file and run:
+available in the repository. Download the `docker-compose.yml` file and run:
 
 ```shell
 docker compose up
 ```
 
-### Binary / Standalone
+### 📦 Binary / Standalone
 
 > [!IMPORTANT]
 > Ensure the `assets` directory is placed alongside the PicoLimbo binary, as it contains essential files required for
@@ -114,7 +114,7 @@ docker compose up
 #### GitHub Releases
 
 Download pre-compiled binaries for multiple platforms from
-the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases). No Java or other dependencies required.
+the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases). No Java or other dependencies are required.
 
 #### Compiling from Source with Cargo
 
@@ -128,7 +128,44 @@ cargo install --git https://github.com/Quozul/PicoLimbo.git pico_limbo
 
 ## Documentation
 
-### Command Line Usage
+### 🔧 Example Configuration File
+
+A default configuration file will be automatically generated the first time you start the server.
+
+```toml
+# Server bind address and port
+bind = "0.0.0.0:25565"
+
+# Default spawn dimension: "overworld", "nether", or "end"
+spawn_dimension = "overworld"
+
+# Welcome message sent to players after spawning
+welcome_message = "Welcome to PicoLimbo!"
+
+[forwarding.velocity]
+# Enable Velocity Modern Forwarding
+enabled = false
+# Shared secret for Velocity proxy
+secret = ""
+
+[forwarding.bungee_cord]
+# Enable BungeeCord forwarding
+enabled = false
+# Enable BungeeGuard (requires BungeeCord to be enabled)
+bungee_guard = false
+# List of valid BungeeGuard tokens for authenticating incoming players
+tokens = []
+
+[server_list]
+# Maximum count shown in your server list, does not affect the player limit
+max_players = 20
+# MOTD displayed in server lists
+message_of_the_day = "A Minecraft Server"
+# Show actual online player count in your server list?
+show_online_player_count = true
+```
+
+### ⌨️ Command Line Usage
 
 1. Run the server:
    ```bash
@@ -143,28 +180,6 @@ cargo install --git https://github.com/Quozul/PicoLimbo.git pico_limbo
    pico_limbo -v  # Debug logging
    pico_limbo -vv # Trace logging
    ```
-
-### Example Configuration File
-
-A default configuration file will be automatically generated the first time you start the server.
-
-```toml
-# Server binding address and port
-bind = "0.0.0.0:25565"
-
-# Velocity Modern Forwarding secret key (optional)
-secret_key = ""
-
-# Spawn dimension (overworld, nether, or end)
-spawn_dimension = "overworld"
-
-# Server list settings
-max_players = 500
-message_of_the_day = "§aWelcome to PicoLimbo"
-
-# Welcome message sent to players after spawning, only sent to 1.19+ clients
-welcome_message = "§7You are now in the limbo server."
-```
 
 ---
 

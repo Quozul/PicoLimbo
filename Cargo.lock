@@ -691,7 +691,6 @@ dependencies = [
  "macros",
  "nbt",
  "packet_serializer",
- "serde",
  "serde_json",
  "thiserror",
  "uuid",
@@ -743,7 +742,6 @@ dependencies = [
 name = "net"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "minecraft_protocol",
  "thiserror",
  "tokio",
@@ -821,6 +819,7 @@ dependencies = [
  "minecraft_server",
  "rand",
  "serde",
+ "serde_json",
  "sha2",
  "shadow-rs",
  "subtle",
@@ -1465,11 +1464,13 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.16.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
+checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom",
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]

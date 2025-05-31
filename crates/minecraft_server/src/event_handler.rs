@@ -15,6 +15,14 @@ pub enum HandlerError {
     Protocol(String),
     #[error(transparent)]
     Client(#[from] ClientSendPacketError),
+    #[error("Handler error: {0}")]
+    Custom(String),
+}
+
+impl HandlerError {
+    pub fn custom(msg: impl Into<String>) -> Self {
+        Self::Custom(msg.into())
+    }
 }
 
 #[async_trait]

@@ -7,6 +7,7 @@ use minecraft_protocol::state::State;
 use net::packet_stream::{PacketStream, PacketStreamError};
 use net::raw_packet::RawPacket;
 use thiserror::Error;
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tracing::{debug, error};
 
@@ -170,6 +171,10 @@ impl ClientInner {
     pub fn get_velocity_login_message_id_inner(&self) -> i32 {
         self.message_id
     }
+
+    pub async fn shutdown(&mut self) -> std::io::Result<()> {
+        self.packet_stream.get_stream().shutdown().await
+    }
 }
 
 #[derive(Debug, Error)]
@@ -207,4 +212,6 @@ pub enum ClientSendPacketError {
     PacketStream(#[from] PacketStreamError),
     #[error("client protocol version not set, cannot send packet '{packet_name}'")]
     VersionNotSet { packet_name: String },
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }

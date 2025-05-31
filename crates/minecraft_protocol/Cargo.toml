@@ -11,5 +11,4 @@ uuid = { version = "1.13", features = ["v4"] }
 nbt = { path = "../pico_nbt" }
 walkdir = "2.5.0"
 serde_json = "1.0"
-serde = "1.0"
 anyhow = "1.0"

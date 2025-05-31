@@ -1,4 +1,5 @@
 use crate::ServerState;
+use crate::forwarding::check_bungee_cord::check_bungee_cord;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
@@ -6,14 +7,20 @@ use minecraft_server::prelude::{Client, HandlerError};
 use thiserror::Error;
 
 pub async fn on_handshake(
-    _state: ServerState,
+    state: ServerState,
     client: Client,
     packet: HandshakePacket,
 ) -> Result<(), HandlerError> {
     client.set_protocol_version(packet.get_protocol()).await;
 
-    if let Ok(state) = packet.get_next_state() {
-        client.set_state(state).await;
+    if let Ok(next_state) = packet.get_next_state() {
+        client.set_state(next_state).await;
+
+        if client.current_state().await == State::Login
+            && !check_bungee_cord(state, packet.hostname)?
+        {
+            client.kick("You must connect through a proxy.").await?;
+        }
     }
 
     Ok(())
@@ -21,7 +28,7 @@ pub async fn on_handshake(
 
 #[derive(Error, Debug)]
 #[error("unknown state {0}")]
-pub struct UnknownStateError(i32);
+struct UnknownStateError(i32);
 
 trait GetStateProtocol {
     fn get_next_state(&self) -> Result<State, UnknownStateError>;

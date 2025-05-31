@@ -40,6 +40,25 @@ impl Default for ServerListConfig {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct ModernForwardingConfig {
+    pub enabled: bool,
+    pub secret: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct BungeeCordForwardingConfig {
+    pub enabled: bool,
+    pub bungee_guard: bool,
+    pub tokens: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Forwarding {
+    pub velocity: ModernForwardingConfig,
+    pub bungee_cord: BungeeCordForwardingConfig,
+}
+
 /// Application configuration, serializable to/from TOML.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -50,12 +69,7 @@ pub struct Config {
     /// Use 0.0.0.0 to listen on all network interfaces.
     pub bind: String,
 
-    /// Secret key for Velocity modern forwarding (enables proxy support)
-    ///
-    /// When specified, enables Velocity modern forwarding using the provided
-    /// secret key. This must match the secret configured in your Velocity
-    /// proxy configuration. Leave unset to disable proxy support.
-    pub secret_key: String,
+    pub forwarding: Forwarding,
 
     /// Name of the dimension to spawn the player in.
     /// Supported: "overworld", "nether" or "end"
@@ -71,10 +85,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             bind: "0.0.0.0:25565".into(),
-            secret_key: "".into(),
             spawn_dimension: "overworld".into(),
             server_list: ServerListConfig::default(),
             welcome_message: "Welcome to PicoLimbo!".into(),
+            forwarding: Forwarding::default(),
         }
     }
 }

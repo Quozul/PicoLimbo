@@ -7,7 +7,6 @@ edition = "2024"
 tokio = { version = "1.45", features = ["io-util", "test-util", "macros"] }
 minecraft_protocol = { path = "../minecraft_protocol" }
 thiserror = "2.0"
-anyhow = "1.0"
 
 [dev-dependencies]
 tokio-test = "0.4.4"

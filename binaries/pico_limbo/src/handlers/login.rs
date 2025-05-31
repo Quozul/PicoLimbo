@@ -1,11 +1,10 @@
 use crate::ServerState;
+use crate::forwarding::check_velocity_key_integrity::check_velocity_key_integrity;
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
-use crate::velocity::check_velocity_key_integrity::check_velocity_key_integrity;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
-use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_protocol::prelude::{DecodePacketField, Uuid};
@@ -24,11 +23,11 @@ pub async fn on_login_start(
         let is_modern_forwarding_supported =
             client.protocol_version().await >= ProtocolVersion::V1_13;
         if is_modern_forwarding_supported {
-            login_start_velocity(client, packet).await?;
+            login_start_velocity(client).await?;
         } else {
-            let packet =
-                LoginDisconnectPacket::text("Your client does not support modern forwarding.");
-            client.send_packet(packet).await?;
+            client
+                .kick("Your client does not support modern forwarding.")
+                .await?;
         }
     } else {
         let game_profile: GameProfile = packet.into();
@@ -59,10 +58,13 @@ pub async fn on_custom_query_answer(
     let client_message_id = client.get_velocity_login_message_id().await;
 
     if state.is_modern_forwarding() && packet.message_id.value() == client_message_id {
+        let secret_key = state
+            .secret_key()
+            .map_err(|_| HandlerError::custom("No secret key"))?;
         let buf = &packet.data;
         let mut index = 0;
         let is_valid =
-            check_velocity_key_integrity(buf, state.secret_key(), &mut index).unwrap_or_default();
+            check_velocity_key_integrity(buf, &secret_key, &mut index).unwrap_or_default();
         if is_valid {
             let _address = String::decode(buf, &mut index).unwrap_or_default();
             let player_uuid = Uuid::decode(buf, &mut index).unwrap_or_default();
@@ -71,17 +73,13 @@ pub async fn on_custom_query_answer(
             let game_profile = GameProfile::new(player_name, player_uuid);
             fire_login_success(client, game_profile, state).await?;
         } else {
-            let packet = LoginDisconnectPacket::text("You must connect through a proxy.");
-            client.send_packet(packet).await?;
+            client.kick("You must connect through a proxy.").await?;
         }
     }
     Ok(())
 }
 
-async fn login_start_velocity(
-    client: Client,
-    _packet: LoginStartPacket,
-) -> Result<(), HandlerError> {
+async fn login_start_velocity(client: Client) -> Result<(), HandlerError> {
     let message_id = {
         let mut rng = rand::rng();
         rng.random()
