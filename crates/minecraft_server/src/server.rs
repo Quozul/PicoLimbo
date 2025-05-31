@@ -111,7 +111,7 @@ async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
                         if let Some(handler) = handlers.get(&named_packet.name) {
                             if let Err(handler_error) = handler.handle(server_state.clone(), client.clone(), named_packet).await {
                                 error!(
-                                    "Handler for packet '{}' from client {:?} returned an error: {:?}",
+                                    "Handler for packet '{}' from client {:?} returned an error: {}",
                                     packet_name_cache,
                                     client.get_username().await,
                                     handler_error
