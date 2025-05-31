@@ -1,5 +1,5 @@
 use crate::ServerState;
-use minecraft_packets::play::player_position::PlayerPositionPacket;
+use minecraft_packets::play::player_position_packet::PlayerPositionPacket;
 use minecraft_protocol::state::State;
 use minecraft_server::prelude::{Client, HandlerError};
 

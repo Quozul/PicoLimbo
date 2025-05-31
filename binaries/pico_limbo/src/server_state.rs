@@ -5,10 +5,26 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
 
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum ForwardingMode {
+    #[default]
+    Disabled,
+    Legacy,
+    BungeeGuard {
+        tokens: Vec<String>,
+    },
+    Modern {
+        secret: Vec<u8>,
+    },
+}
+
+#[derive(Debug, Error)]
+#[error("secret key not set")]
+pub struct MisconfiguredForwardingError;
+
 #[derive(Clone, Debug)]
 pub struct ServerState {
-    secret_key: Vec<u8>,
-    modern_forwarding: bool,
+    forwarding_mode: ForwardingMode,
     data_directory: PathBuf,
     spawn_dimension: Dimension,
     description_text: String,
@@ -24,12 +40,30 @@ impl ServerState {
         ServerStateBuilder::default()
     }
 
-    pub fn secret_key(&self) -> &[u8] {
-        &self.secret_key
+    pub fn is_legacy_forwarding(&self) -> bool {
+        matches!(self.forwarding_mode, ForwardingMode::Legacy)
     }
 
     pub fn is_modern_forwarding(&self) -> bool {
-        self.modern_forwarding
+        matches!(self.forwarding_mode, ForwardingMode::Modern { .. })
+    }
+
+    pub fn secret_key(&self) -> Result<Vec<u8>, MisconfiguredForwardingError> {
+        match self.forwarding_mode.clone() {
+            ForwardingMode::Modern { secret } => Ok(secret),
+            _ => Err(MisconfiguredForwardingError),
+        }
+    }
+
+    pub fn is_bungee_guard_forwarding(&self) -> bool {
+        matches!(self.forwarding_mode, ForwardingMode::BungeeGuard { .. })
+    }
+
+    pub fn tokens(&self) -> Result<Vec<String>, MisconfiguredForwardingError> {
+        match self.forwarding_mode.clone() {
+            ForwardingMode::BungeeGuard { tokens } => Ok(tokens),
+            _ => Err(MisconfiguredForwardingError),
+        }
     }
 
     pub fn description_text(&self) -> &str {
@@ -84,8 +118,7 @@ pub enum ServerStateBuildError {
 
 #[derive(Default, Debug)]
 pub struct ServerStateBuilder {
-    secret_key: Option<Vec<u8>>,
-    modern_forwarding: bool,
+    forwarding_mode: ForwardingMode,
     asset_directory: Option<PathBuf>,
     dimension: Option<Dimension>,
     description_text: String,
@@ -95,18 +128,26 @@ pub struct ServerStateBuilder {
 }
 
 impl ServerStateBuilder {
-    /// Set the secret key. If you never call this, it'll default to `Vec::new()`.
-    pub fn secret_key<K>(&mut self, key: K) -> &mut Self
-    where
-        K: Into<Vec<u8>>,
-    {
-        self.secret_key = Some(key.into());
+    pub fn enable_legacy_forwarding(&mut self) -> &mut Self {
+        self.forwarding_mode = ForwardingMode::Legacy;
         self
     }
 
-    /// Enable or disable modern forwarding. Defaults to `false`.
-    pub fn modern_forwarding(&mut self, enabled: bool) -> &mut Self {
-        self.modern_forwarding = enabled;
+    pub fn enable_bungee_guard_forwarding(&mut self, tokens: Vec<String>) -> &mut Self {
+        self.forwarding_mode = ForwardingMode::BungeeGuard { tokens };
+        self
+    }
+
+    pub fn enable_modern_forwarding<K>(&mut self, key: K) -> &mut Self
+    where
+        K: Into<Vec<u8>>,
+    {
+        self.forwarding_mode = ForwardingMode::Modern { secret: key.into() };
+        self
+    }
+
+    pub fn disable_forwarding(&mut self) -> &mut Self {
+        self.forwarding_mode = ForwardingMode::Disabled;
         self
     }
 
@@ -154,8 +195,7 @@ impl ServerStateBuilder {
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
-            secret_key: self.secret_key.unwrap_or_default(),
-            modern_forwarding: self.modern_forwarding,
+            forwarding_mode: self.forwarding_mode,
             data_directory: self
                 .asset_directory
                 .ok_or(ServerStateBuildError::MissingAssetDirectory)?,

@@ -1,8 +1,8 @@
 mod cli;
 mod config;
+mod forwarding;
 mod handlers;
 mod server_state;
-mod velocity;
 
 use crate::cli::Cli;
 use crate::config::{Config, ConfigError};
@@ -93,13 +93,19 @@ fn build_state(
 ) -> Result<ServerState, ServerStateBuildError> {
     let mut server_state_builder = ServerState::builder();
 
-    if cfg.secret_key.is_empty() {
-        server_state_builder.modern_forwarding(false);
-    } else {
+    if cfg.forwarding.velocity.enabled {
         debug!("Enabling modern forwarding");
-        server_state_builder
-            .modern_forwarding(true)
-            .secret_key(cfg.secret_key);
+        server_state_builder.enable_modern_forwarding(cfg.forwarding.velocity.secret);
+    } else if cfg.forwarding.bungee_cord.enabled {
+        if cfg.forwarding.bungee_cord.bungee_guard {
+            debug!("Enabling BungeeGuard forwarding");
+            server_state_builder.enable_bungee_guard_forwarding(cfg.forwarding.bungee_cord.tokens);
+        } else {
+            debug!("Enabling legacy (BungeeCord) forwarding");
+            server_state_builder.enable_legacy_forwarding();
+        }
+    } else {
+        server_state_builder.disable_forwarding();
     }
 
     server_state_builder

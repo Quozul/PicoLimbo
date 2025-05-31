@@ -1,6 +1,7 @@
 use crate::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
 use crate::game_profile::GameProfile;
 use crate::named_packet::NamedPacket;
+use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
@@ -52,6 +53,19 @@ impl Client {
             let packet = ClientBoundKeepAlivePacket::new(get_random_i64());
             inner.send_encodable_packet_inner(packet).await?;
         }
+        Ok(())
+    }
+
+    pub async fn kick<T>(&self, reason: T) -> Result<(), ClientSendPacketError>
+    where
+        T: Into<String>,
+    {
+        let mut inner = self.acquire_lock().await;
+        if inner.current_state() == &State::Login {
+            let packet = LoginDisconnectPacket::text(reason);
+            inner.send_encodable_packet_inner(packet).await?;
+        }
+        inner.shutdown().await?;
         Ok(())
     }
 
