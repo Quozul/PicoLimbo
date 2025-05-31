@@ -35,8 +35,14 @@ welcome message for players, default spawn dimension, custom server list Message
 
 ### 🚀 Velocity Proxy Support
 
-Built-in support for Velocity Modern Forwarding ensures seamless integration with your Velocity proxy. Just set the
+Built-in support for [Velocity](https://papermc.io/software/velocity) Modern Forwarding ensures seamless integration
+with your Velocity proxy. Just set the
 `secret_key` in your configuration to enable secure forwarded player info.
+
+### 🔀 BungeeCord Support
+
+PicoLimbo also supports [BungeeCord](https://www.spigotmc.org/wiki/bungeecord/) proxy by default. Because BungeeCord
+connections are insecure by default, no additional configuration is required to use it with PicoLimbo.
 
 ### 🎮 Wide Version Compatibility
 
