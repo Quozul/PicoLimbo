@@ -51,9 +51,14 @@ where
     }
 
     pub async fn run(self) {
-        let listener = TcpListener::bind(&self.listen_address)
-            .await
-            .expect("Failed to bind address");
+        let listener = match TcpListener::bind(&self.listen_address).await {
+            Ok(sock) => sock,
+            Err(err) => {
+                error!("Failed to bind to {}: {}", self.listen_address, err);
+                std::process::exit(1);
+            }
+        };
+
         info!("Listening on: {}", self.listen_address);
 
         let handlers = Arc::new(self.handlers);
