@@ -2,7 +2,7 @@ use crate::client::Client;
 use crate::client_inner::ClientSendPacketError;
 use crate::named_packet::NamedPacket;
 use async_trait::async_trait;
-use minecraft_protocol::prelude::{DecodePacket, DecodePacketError};
+use minecraft_protocol::prelude::DecodePacket;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -11,9 +11,9 @@ use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum HandlerError {
-    #[error("Protocol error: {0}")]
-    Protocol(DecodePacketError),
-    #[error("Client error: {0}")]
+    #[error("Failed to decode packet '{0}'")]
+    Protocol(String),
+    #[error(transparent)]
     Client(#[from] ClientSendPacketError),
 }
 
@@ -60,13 +60,7 @@ where
             raw_packet.decode::<T>(protocol_ver_obj)
         }
         .await
-        .map_err(|protocol_error| {
-            error!(
-                "Failed to decode packet '{}': {:?}",
-                raw_packet.name, protocol_error
-            );
-            HandlerError::Protocol(protocol_error)
-        })?;
+        .map_err(|_| HandlerError::Protocol(raw_packet.name))?;
 
         (self.listener_fn)(state, client, packet).await
     }
