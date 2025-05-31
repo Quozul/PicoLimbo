@@ -21,7 +21,15 @@ pub async fn on_login_start(
     packet: LoginStartPacket,
 ) -> Result<(), HandlerError> {
     if state.is_modern_forwarding() {
-        login_start_velocity(client, packet).await?;
+        let is_modern_forwarding_supported =
+            client.protocol_version().await >= ProtocolVersion::V1_13;
+        if is_modern_forwarding_supported {
+            login_start_velocity(client, packet).await?;
+        } else {
+            let packet =
+                LoginDisconnectPacket::text("Your client does not support modern forwarding.");
+            client.send_packet(packet).await?;
+        }
     } else {
         let game_profile: GameProfile = packet.into();
         fire_login_success(client, game_profile, state).await?;
@@ -61,8 +69,7 @@ pub async fn on_custom_query_answer(
             let game_profile = GameProfile::new(player_name, player_uuid);
             fire_login_success(client, game_profile, state).await?;
         } else {
-            let packet = LoginDisconnectPacket::text("You must connect through a proxy.")
-                .unwrap_or_default();
+            let packet = LoginDisconnectPacket::text("You must connect through a proxy.");
             client.send_packet(packet).await?;
         }
     }
