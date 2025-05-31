@@ -43,6 +43,9 @@
       },
       "minecraft:custom_payload": {
         "protocol_id": 25
+      },
+      "minecraft:legacy_chat_message": {
+        "protocol_id": 15
       }
     },
     "serverbound": {}

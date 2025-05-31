@@ -49,6 +49,9 @@
       },
       "minecraft:custom_payload": {
         "protocol_id": 22
+      },
+      "minecraft:system_chat": {
+        "protocol_id": 98
       }
     },
     "serverbound": {}

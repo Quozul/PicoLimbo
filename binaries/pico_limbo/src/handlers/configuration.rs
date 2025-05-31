@@ -7,6 +7,7 @@ use minecraft_packets::configuration::registry_data_packet::{
 };
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
+use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessage;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::set_default_spawn_position::SetDefaultSpawnPosition;
@@ -149,6 +150,9 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
     if let Some(content) = state.welcome_message() {
         if protocol_version >= ProtocolVersion::V1_19 {
             let packet = SystemChatMessage::plain_text(content);
+            client.send_packet(packet).await?;
+        } else {
+            let packet = LegacyChatMessage::system(content);
             client.send_packet(packet).await?;
         }
     }
