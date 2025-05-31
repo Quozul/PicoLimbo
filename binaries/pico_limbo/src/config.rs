@@ -17,6 +17,25 @@ pub enum ConfigError {
     TomlDeserialize(#[from] toml::de::Error),
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ServerListConfig {
+    /// Maximum amount of player displayed in the server list.
+    pub max_players: u32,
+
+    /// Description of the server displayed in the server list.
+    pub message_of_the_day: String,
+}
+
+impl Default for ServerListConfig {
+    fn default() -> Self {
+        Self {
+            max_players: 20,
+            message_of_the_day: "A Minecraft Server".into(),
+        }
+    }
+}
+
 /// Application configuration, serializable to/from TOML.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -38,11 +57,7 @@ pub struct Config {
     /// Supported: "overworld", "nether" or "end"
     pub spawn_dimension: String,
 
-    /// Maximum amount of player displayed in the server list.
-    pub max_players: u32,
-
-    /// Description of the server displayed in the server list.
-    pub message_of_the_day: String,
+    pub server_list: ServerListConfig,
 
     /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
@@ -54,8 +69,7 @@ impl Default for Config {
             bind: "0.0.0.0:25565".into(),
             secret_key: "".into(),
             spawn_dimension: "overworld".into(),
-            max_players: 1,
-            message_of_the_day: "A Minecraft Server".into(),
+            server_list: ServerListConfig::default(),
             welcome_message: "".into(),
         }
     }
