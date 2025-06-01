@@ -152,9 +152,7 @@ impl Default for LoginPacket {
 }
 
 impl LoginPacket {
-    /// Create a login packet for a given dimension, all other
-    /// fields will be set to their Default::default() values.
-    pub fn new_with_dimension(
+    pub fn new_with_codecs(
         dimension: &Dimension,
         registry_codec: Nbt,
         dimension_codec: Nbt,
@@ -182,6 +180,10 @@ impl LoginPacket {
             v1_16_dimension_codec: dimension_codec,
             ..Self::default()
         }
+    }
+
+    pub fn new_with_dimension(dimension: &Dimension) -> Self {
+        Self::new_with_codecs(dimension, Nbt::End, Nbt::End)
     }
 }
 

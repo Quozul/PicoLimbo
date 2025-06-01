@@ -21,6 +21,7 @@ use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::prelude::{Client, HandlerError};
+use thiserror::Error;
 
 /// Only for <= 1.20.2
 pub async fn send_configuration_packets(
@@ -72,56 +73,21 @@ pub async fn on_acknowledge_finish_configuration(
 /// Switch to the Play state and send required packets to spawn the player in the world
 pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(), HandlerError> {
     let protocol_version = client.protocol_version().await;
-    let (registry_codec, dimension) = if ProtocolVersion::V1_20_2 <= protocol_version {
-        // Since 1.20.2, registries are sent during the configuration state,
-        // it is no longer sent in the login packet
-        (Nbt::End, Nbt::End)
-    } else {
-        let registry_codec = if protocol_version == ProtocolVersion::V1_16
-            || protocol_version == ProtocolVersion::V1_16_1
-        {
-            get_v1_16_registry_codec(state.data_directory()).unwrap()
-        } else {
-            get_v1_16_2_registry_codec(&protocol_version, state.data_directory())
-        };
-
-        // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
-        let dimension = if protocol_version
-            .between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2)
-        {
-            let dimension_types = registry_codec
-                .find_tag("minecraft:dimension_type")
-                .unwrap()
-                .find_tag("value")
-                .unwrap()
-                .get_vec()
-                .unwrap();
-
-            let dimension = dimension_types
-                .iter()
-                .find(|element| {
-                    element
-                        .find_tag("name".to_string())
-                        .map(|name| match name {
-                            Nbt::String { value, .. } => {
-                                value == &state.spawn_dimension().identifier().to_string()
-                            }
-                            _ => false,
-                        })
-                        .unwrap()
-                })
-                .cloned()
-                .unwrap_or(dimension_types[0].clone());
-
-            dimension.find_tag("element").unwrap().clone()
-        } else {
-            Nbt::End
-        };
-        (registry_codec, dimension)
-    };
 
     let packet =
-        LoginPacket::new_with_dimension(state.spawn_dimension(), registry_codec, dimension);
+        if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
+            match construct_registry_data(&protocol_version, &state) {
+                Ok((registry_codec, dimension)) => {
+                    LoginPacket::new_with_codecs(state.spawn_dimension(), registry_codec, dimension)
+                }
+                Err(e) => {
+                    client.kick("Disconnected").await?;
+                    return Err(HandlerError::custom(e.to_string()));
+                }
+            }
+        } else {
+            LoginPacket::new_with_dimension(state.spawn_dimension())
+        };
     client.send_packet(packet).await?;
 
     // Send Synchronize Player Position
@@ -167,4 +133,69 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
     }
 
     Ok(())
+}
+
+fn construct_registry_data(
+    protocol_version: &ProtocolVersion,
+    state: &ServerState,
+) -> Result<(Nbt, Nbt), RegistryError> {
+    let registry_codec = if *protocol_version == ProtocolVersion::V1_16
+        || *protocol_version == ProtocolVersion::V1_16_1
+    {
+        get_v1_16_registry_codec(state.data_directory())
+            .map_err(|_| RegistryError::CodecConstruction)?
+    } else {
+        get_v1_16_2_registry_codec(protocol_version, state.data_directory())
+    };
+
+    // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
+    let dimension =
+        if protocol_version.between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2) {
+            let dimension_types = registry_codec
+                .find_tag("minecraft:dimension_type")
+                .ok_or(RegistryError::MissingDimensionType)?
+                .find_tag("value")
+                .ok_or(RegistryError::MissingValue)?
+                .get_vec()
+                .ok_or(RegistryError::InvalidVecFormat)?;
+
+            let dimension = dimension_types
+                .iter()
+                .find(|element| {
+                    element
+                        .find_tag("name".to_string())
+                        .map(|name| match name {
+                            Nbt::String { value, .. } => {
+                                value == &state.spawn_dimension().identifier().to_string()
+                            }
+                            _ => false,
+                        })
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .unwrap_or_else(|| dimension_types.first().cloned().unwrap_or(Nbt::End));
+
+            dimension
+                .find_tag("element")
+                .ok_or(RegistryError::MissingElement)?
+                .clone()
+        } else {
+            Nbt::End
+        };
+
+    Ok((registry_codec, dimension))
+}
+
+#[derive(Debug, Error)]
+pub enum RegistryError {
+    #[error("Failed to construct registry codec")]
+    CodecConstruction,
+    #[error("Missing dimension type in registry")]
+    MissingDimensionType,
+    #[error("Missing value tag in registry")]
+    MissingValue,
+    #[error("Invalid vector format in registry")]
+    InvalidVecFormat,
+    #[error("Missing element tag in dimension")]
+    MissingElement,
 }
