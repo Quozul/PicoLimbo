@@ -11,7 +11,7 @@ use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessage;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
-use minecraft_packets::play::set_default_spawn_position::SetDefaultSpawnPosition;
+use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPosition;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessage;
 use minecraft_protocol::data::registry::get_all_registries::{
