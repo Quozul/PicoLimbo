@@ -40,21 +40,16 @@ impl ClientInner {
     ) -> Result<String, ClientReadPacketError> {
         self.packet_map
             .get_packet_name(version, &self.state, packet_id)
-            .map_err(|err_from_map| {
-                error!("PacketMap error looking up packet id 0x{:02X} for state {:?}, protocol {:?}: {:?}", packet_id, self.state, version, err_from_map);
-                ClientReadPacketError::UnknownPacketId {
-                    id: packet_id,
-                    state: self.state.clone(),
-                }
+            .map_err(|_| ClientReadPacketError::UnknownPacketId {
+                id: packet_id,
+                state: self.state.clone(),
             })
             .and_then(|opt_name| {
-                opt_name.ok_or_else(|| {
-                    ClientReadPacketError::UnknownPacketName {
-                        name: format!("Unregistered ID 0x{:02X}", packet_id),
-                        id: packet_id,
-                        state: self.state.clone(),
-                        protocol: version.clone(),
-                    }
+                opt_name.ok_or_else(|| ClientReadPacketError::UnknownPacketName {
+                    name: format!("Unregistered ID 0x{:02X}", packet_id),
+                    id: packet_id,
+                    state: self.state.clone(),
+                    protocol: version.clone(),
                 })
             })
     }

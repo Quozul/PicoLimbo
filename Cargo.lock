@@ -691,6 +691,7 @@ dependencies = [
  "macros",
  "nbt",
  "packet_serializer",
+ "serde",
  "serde_json",
  "thiserror",
  "uuid",

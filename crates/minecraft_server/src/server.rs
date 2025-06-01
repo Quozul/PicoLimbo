@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
 use tokio::time::{Duration, interval};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 pub struct Server<S>
 where
@@ -111,9 +111,8 @@ async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
                         if let Some(handler) = handlers.get(&named_packet.name) {
                             if let Err(handler_error) = handler.handle(server_state.clone(), client.clone(), named_packet).await {
                                 error!(
-                                    "Handler for packet '{}' from client {:?} returned an error: {}",
+                                    "Handler for packet '{}' returned an error: {}",
                                     packet_name_cache,
-                                    client.get_username().await,
                                     handler_error
                                 );
                                 break;
@@ -133,7 +132,7 @@ async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
                     Err(err) => {
                         match err {
                             ClientReadPacketError::UnknownPacketName { id, state, protocol, .. } => {
-                                debug!("No packet name found for id 0x{:02X} in state {:?}, protocol {:?}", id, state, protocol);
+                                debug!("Unknown packet received 0x{:02X} in state {:?}, protocol {:?}", id, state, protocol);
                             }
                             ClientReadPacketError::PacketStream(PacketStreamError::IoError(ref io_err))
                                 if io_err.kind() == tokio::io::ErrorKind::ConnectionReset ||
@@ -147,7 +146,7 @@ async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
                                 break;
                             }
                             _ => {
-                                warn!("Error reading packet from client: {:?}", err);
+                                error!("Error reading packet from client: {:?}", err);
                                 break;
                             }
                         }

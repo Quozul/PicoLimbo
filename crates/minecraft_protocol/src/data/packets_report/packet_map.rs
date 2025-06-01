@@ -1,10 +1,43 @@
+use crate::data::packets_report::raw_packet_data::RawPacketData;
 use crate::protocol_version::ProtocolVersion;
 use crate::state::State;
-use anyhow::anyhow;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, PoisonError, RwLock};
+
+/// Custom error type for PacketMap operations.
+#[derive(thiserror::Error, Debug)]
+pub enum PacketMapError {
+    #[error("Failed to read packet mapping file '{path}': {source}")]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("Failed to parse packet mapping JSON: {source}")]
+    Json {
+        #[source]
+        source: serde_json::Error,
+    },
+    #[error("Failed to acquire read lock on cached mappings: {0}")]
+    ReadLockPoisoned(String),
+    #[error("Failed to acquire write lock on cached mappings: {0}")]
+    WriteLockPoisoned(String),
+    #[error("Protocol version '{0}' reports path is empty or invalid")]
+    InvalidProtocolReportsPath(u32),
+}
+
+impl<T> From<PoisonError<std::sync::RwLockReadGuard<'_, T>>> for PacketMapError {
+    fn from(err: PoisonError<std::sync::RwLockReadGuard<'_, T>>) -> Self {
+        PacketMapError::ReadLockPoisoned(err.to_string())
+    }
+}
+
+impl<T> From<PoisonError<std::sync::RwLockWriteGuard<'_, T>>> for PacketMapError {
+    fn from(err: PoisonError<std::sync::RwLockWriteGuard<'_, T>>) -> Self {
+        PacketMapError::WriteLockPoisoned(err.to_string())
+    }
+}
 
 type CachedMappings = Arc<RwLock<HashMap<u32, Arc<HashMap<String, u8>>>>>;
 
@@ -38,7 +71,7 @@ impl PacketMap {
         &self,
         protocol_version: &ProtocolVersion,
         packet_path: &'static str,
-    ) -> anyhow::Result<Option<u8>> {
+    ) -> Result<Option<u8>, PacketMapError> {
         let mapping = self.get_mapping(protocol_version)?;
         Ok(mapping.get(packet_path).copied())
     }
@@ -53,7 +86,7 @@ impl PacketMap {
         protocol_version: &ProtocolVersion,
         state: &State,
         packet_id: u8,
-    ) -> anyhow::Result<Option<String>> {
+    ) -> Result<Option<String>, PacketMapError> {
         let mapping = self.get_mapping(protocol_version)?;
         let prefix = format!("{state}/serverbound");
         Ok(mapping
@@ -66,13 +99,10 @@ impl PacketMap {
     fn get_mapping(
         &self,
         protocol_version: &ProtocolVersion,
-    ) -> anyhow::Result<Arc<HashMap<String, u8>>> {
+    ) -> Result<Arc<HashMap<String, u8>>, PacketMapError> {
         {
             // Try a quick lookup under a read lock.
-            let cache = self
-                .cached_mappings
-                .read()
-                .map_err(|e| anyhow!("Failed to acquire read lock: {}", e))?;
+            let cache = self.cached_mappings.read()?;
             if let Some(mapping) = cache.get(&protocol_version.version_number()) {
                 return Ok(mapping.clone());
             }
@@ -87,17 +117,20 @@ impl PacketMap {
         let mapping_arc = Arc::new(mapping);
 
         // Cache the new mapping.
-        let mut cache = self
-            .cached_mappings
-            .write()
-            .map_err(|e| anyhow!("Failed to acquire write lock: {}", e))?;
+        let mut cache = self.cached_mappings.write()?;
         cache.insert(protocol_version.version_number(), mapping_arc.clone());
         Ok(mapping_arc)
     }
 
     /// Loads the mapping from the JSON file at the given path.
-    fn load_mapping_from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<HashMap<String, u8>> {
-        let data = std::fs::read_to_string(path)?;
+    fn load_mapping_from_file<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<HashMap<String, u8>, PacketMapError> {
+        let path_buf = path.as_ref().to_path_buf();
+        let data = std::fs::read_to_string(&path_buf).map_err(|e| PacketMapError::Io {
+            path: path_buf,
+            source: e,
+        })?;
         Self::parse_json(&data)
     }
 
@@ -118,35 +151,17 @@ impl PacketMap {
     ///
     /// For each packet, the composite key is built as:
     /// `"state/direction/packet_name"`.
-    fn parse_json(json_str: &str) -> anyhow::Result<HashMap<String, u8>> {
-        let value: Value = serde_json::from_str(json_str)?;
+    fn parse_json(json_str: &str) -> Result<HashMap<String, u8>, PacketMapError> {
+        let raw_data: RawPacketData =
+            serde_json::from_str(json_str).map_err(|e| PacketMapError::Json { source: e })?;
+
         let mut mapping = HashMap::new();
 
-        let states = value
-            .as_object()
-            .ok_or_else(|| anyhow!("Expected a JSON object at the top level"))?;
-        for (state, state_value) in states {
-            let directions = state_value
-                .as_object()
-                .ok_or_else(|| anyhow!("Expected state value to be an object"))?;
-            for (direction, direction_value) in directions {
-                let packets = direction_value
-                    .as_object()
-                    .ok_or_else(|| anyhow!("Expected direction value to be an object"))?;
-                for (packet_name, packet_value) in packets {
-                    let packet_obj = packet_value
-                        .as_object()
-                        .ok_or_else(|| anyhow!("Expected packet value to be an object"))?;
-                    if let Some(protocol_id_value) = packet_obj.get("protocol_id") {
-                        let protocol_id = protocol_id_value
-                            .as_u64()
-                            .ok_or_else(|| anyhow!("protocol_id is not a valid u64"))?;
-                        if protocol_id > u8::MAX as u64 {
-                            return Err(anyhow!("protocol_id is out of u8 range"));
-                        }
-                        let key = format!("{state}/{direction}/{packet_name}");
-                        mapping.insert(key, protocol_id as u8);
-                    }
+        for (state, directions) in raw_data.0 {
+            for (direction, packets) in directions {
+                for (packet_name, packet_info) in packets {
+                    let key = format!("{state}/{direction}/{packet_name}");
+                    mapping.insert(key, packet_info.protocol_id);
                 }
             }
         }
