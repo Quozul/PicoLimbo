@@ -28,7 +28,7 @@ const AVAILABLE_REGISTRIES: [&str; 15] = [
     "minecraft:wolf_sound_variant",
 ];
 
-const REGISTRIES_TO_SEND: [&str; 15] = [
+const REGISTRIES_TO_SEND: [&str; 16] = [
     "banner_pattern",
     "chat_type",
     "damage_type",
@@ -38,6 +38,7 @@ const REGISTRIES_TO_SEND: [&str; 15] = [
     "trim_pattern",
     "wolf_variant",
     "worldgen/biome",
+    "worldgen\\biome",
     // Added in 1.21.5
     "cat_variant",
     "chicken_variant",
@@ -50,7 +51,8 @@ const REGISTRIES_TO_SEND: [&str; 15] = [
 fn get_version_directory(protocol_version: ProtocolVersion, data_location: &Path) -> PathBuf {
     data_location
         .join(protocol_version.data())
-        .join("data/minecraft")
+        .join("data")
+        .join("minecraft")
 }
 
 /// Way to get registries since 1.20.5
@@ -77,7 +79,8 @@ pub fn get_v1_20_5_registries(
             let registry_id = {
                 let suffix = path.strip_prefix(&version_directory).ok()?;
                 let parent_dir = suffix.parent()?;
-                let registry_str = format!("minecraft:{}", parent_dir.to_string_lossy());
+                let registry_str =
+                    format!("minecraft:{}", parent_dir.to_string_lossy()).replace("\\", "/");
                 if !AVAILABLE_REGISTRIES.contains(&registry_str.as_str()) {
                     return None;
                 }
