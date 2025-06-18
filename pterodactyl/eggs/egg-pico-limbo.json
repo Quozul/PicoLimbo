@@ -30,7 +30,7 @@
   "variables": [
     {
       "name": "Version",
-      "description": "The Git tag of the release you want to install. Can be a stable or prerelease tag (e.g. \u201cv1.21.5\u201d). If set to \u201clatest\u201d (or unset and no prerelease flag), the installer picks the newest stable release.",
+      "description": "The Git tag of the release you want to install. Can be a stable or prerelease tag (e.g. \u201cv1.21.6\u201d). If set to \u201clatest\u201d (or unset and no prerelease flag), the installer picks the newest stable release.",
       "env_variable": "VERSION",
       "default_value": "latest",
       "user_viewable": true,

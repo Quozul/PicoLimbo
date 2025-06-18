@@ -6,7 +6,7 @@
 [![Discord](https://img.shields.io/discord/1373364651118694585)](https://discord.gg/M2a9dxJPRy)
 
 An ultra-lightweight, multi-version Minecraft limbo server written in Rust.
-It currently supports all Minecraft versions from 1.7.2 through 1.21.5.
+It currently supports all Minecraft versions from 1.7.2 through 1.21.6.
 
 ---
 
@@ -23,7 +23,8 @@ packets required for client login and maintaining connection (keep-alive) withou
 When idle, PicoLimbo uses almost no resources: 0% CPU and less than 10 MB of memory, making it extremely lightweight.
 
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
-through 1.21.5**, excluding snapshots, with only 27 implemented packets covering over 45 Minecraft versions.
+through 1.21.6**, excluding snapshots, with only 27 implemented packets covering over 46 different protocol versions or
+74 Minecraft versions.
 
 ## Features
 
@@ -31,7 +32,7 @@ through 1.21.5**, excluding snapshots, with only 27 implemented packets covering
 
 Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
 MOTD, and more.  
-👉 See the [Configuration](#-example-configuration-file) section for full details.
+See the [Configuration](#-example-configuration-file) section for full details.
 
 ### 🔀 Built-in Proxy Support
 
@@ -43,7 +44,7 @@ Seamlessly integrates with major Minecraft proxies:
 
 ### 🎮 Wide Version Compatibility
 
-Supports all Minecraft versions from **1.7.2 to 1.21.5** natively — no need for ViaVersion or additional compatibility
+Supports all Minecraft versions from **1.7.2 to 1.21.6** natively, no need for ViaVersion or additional compatibility
 layers.
 
 ### ⚡ Ultra-Lightweight & Highly Scalable
@@ -66,7 +67,7 @@ egg is built on the lightweight Alpine base image.
 The egg supports additional installation configuration through the following environment variables:
 
 - **VERSION**  
-  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.5`).
+  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.6`).
     - Default: `latest`
     - When set to `latest` (or left unset without enabling prerelease), the installer selects the newest stable release.
 
@@ -98,8 +99,8 @@ docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/serve
 
 #### Using Docker Compose
 
-For a more managed and scalable setup, use Docker Compose. A sample [docker-compose.yml file](./docker-compose.yml) is
-available in the repository. Download the `docker-compose.yml` file and run:
+A sample [docker-compose.yml file](./docker-compose.yml) is available in the repository. Download the
+`docker-compose.yml` file and run:
 
 ```shell
 docker compose up
@@ -185,11 +186,11 @@ show_online_player_count = true
 
 ## Similar Projects
 
-- [Limbo](https://github.com/LOOHP/Limbo) — Supports only one Minecraft version at a time
-- [NanoLimbo](https://github.com/Nan1t/NanoLimbo) — Actively maintained
+- [Limbo](https://github.com/LOOHP/Limbo): Supports only one Minecraft version at a time
+- [NanoLimbo](https://github.com/Nan1t/NanoLimbo): Actively maintained
   (see [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo/tree/feature/1.21.2))
-- [TyphoonLimbo](https://github.com/TyphoonMC/TyphoonLimbo) — No longer actively maintained
-- [LiteLimbo](https://github.com/ThomasOM/LiteLimbo) — No longer actively maintained
+- [TyphoonLimbo](https://github.com/TyphoonMC/TyphoonLimbo): No longer actively maintained
+- [LiteLimbo](https://github.com/ThomasOM/LiteLimbo): No longer actively maintained
 
 ---
 

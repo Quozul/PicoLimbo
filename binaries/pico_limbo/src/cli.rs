@@ -7,7 +7,7 @@ shadow!(build);
 #[derive(Parser)]
 #[command(
     version = build::CLAP_LONG_VERSION,
-    about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.5"
+    about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.6"
 )]
 pub struct Cli {
     /// Enable verbose logging
