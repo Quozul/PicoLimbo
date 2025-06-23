@@ -1,6 +1,6 @@
 [package]
 name = "pico_limbo"
-version = "1.21.5"
+version = "1.21.6"
 edition = "2024"
 build = "build.rs"
 
