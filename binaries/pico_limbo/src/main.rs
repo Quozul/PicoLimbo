@@ -13,7 +13,6 @@ use crate::handlers::play::on_player_position;
 use crate::handlers::status::{on_ping_request, on_status_request};
 use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
-use minecraft_packets::play::Dimension;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_server::prelude::Server;
 use std::path::PathBuf;
@@ -110,7 +109,7 @@ fn build_state(
 
     server_state_builder
         .data_directory(asset_directory)
-        .dimension(Dimension::from_name(&cfg.spawn_dimension).unwrap_or_default())
+        .dimension(cfg.spawn_dimension.into())
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
         .max_players(cfg.server_list.max_players)

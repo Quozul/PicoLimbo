@@ -137,7 +137,8 @@ A default configuration file will be automatically generated the first time you 
 # Server bind address and port
 bind = "0.0.0.0:25565"
 
-# Default spawn dimension: "overworld", "nether", or "end"
+# Default spawn dimension
+# Allowed values: "overworld", "nether", or "end"
 spawn_dimension = "overworld"
 
 # Welcome message sent to players after spawning

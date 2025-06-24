@@ -14,7 +14,7 @@ pub struct BungeeCordForwardingConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Forwarding {
+pub struct ForwardingConfig {
     pub velocity: ModernForwardingConfig,
     pub bungee_cord: BungeeCordForwardingConfig,
 }

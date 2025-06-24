@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use thiserror::Error;
 
 #[derive(Default, Debug, Clone, Copy)]
 pub enum Dimension {
@@ -7,12 +6,6 @@ pub enum Dimension {
     Overworld,
     Nether,
     End,
-}
-
-#[derive(Error, Debug)]
-pub enum DimensionError {
-    #[error("unknown dimension {0}")]
-    UnknownDimension(String),
 }
 
 impl Dimension {
@@ -47,15 +40,6 @@ impl Dimension {
             Dimension::Overworld => Identifier::minecraft("overworld"),
             Dimension::Nether => Identifier::minecraft("the_nether"),
             Dimension::End => Identifier::minecraft("the_end"),
-        }
-    }
-
-    pub fn from_name(name: &str) -> Result<Dimension, DimensionError> {
-        match name {
-            "overworld" => Ok(Dimension::Overworld),
-            "nether" => Ok(Dimension::Nether),
-            "end" => Ok(Dimension::End),
-            _ => Err(DimensionError::UnknownDimension(name.to_string())),
         }
     }
 }

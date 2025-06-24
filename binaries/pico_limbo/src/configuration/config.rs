@@ -1,6 +1,7 @@
-use crate::configuration::forwarding::Forwarding;
+use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
+use crate::configuration::spawn_dimension::SpawnDimensionConfig;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
@@ -30,11 +31,11 @@ pub struct Config {
     /// Use 0.0.0.0 to listen on all network interfaces.
     pub bind: String,
 
-    pub forwarding: Forwarding,
+    pub forwarding: ForwardingConfig,
 
     /// Name of the dimension to spawn the player in.
     /// Supported: "overworld", "nether" or "end"
-    pub spawn_dimension: String,
+    pub spawn_dimension: SpawnDimensionConfig,
 
     pub server_list: ServerListConfig,
 
@@ -50,10 +51,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             bind: "0.0.0.0:25565".into(),
-            spawn_dimension: "overworld".into(),
+            spawn_dimension: SpawnDimensionConfig::default(),
             server_list: ServerListConfig::default(),
             welcome_message: "Welcome to PicoLimbo!".into(),
-            forwarding: Forwarding::default(),
+            forwarding: ForwardingConfig::default(),
             default_game_mode: GameModeConfig::default(),
         }
     }
