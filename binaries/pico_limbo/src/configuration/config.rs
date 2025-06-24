@@ -1,3 +1,6 @@
+use crate::configuration::forwarding::Forwarding;
+use crate::configuration::game_mode::GameModeConfig;
+use crate::configuration::server_list::ServerListConfig;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
@@ -15,48 +18,6 @@ pub enum ConfigError {
 
     #[error("TOML deserialization error: {0}")]
     TomlDeserialize(#[from] toml::de::Error),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ServerListConfig {
-    /// Maximum amount of player displayed in the server list.
-    pub max_players: u32,
-
-    /// Description of the server displayed in the server list.
-    pub message_of_the_day: String,
-
-    /// Set to false to always show 0 online players
-    pub show_online_player_count: bool,
-}
-
-impl Default for ServerListConfig {
-    fn default() -> Self {
-        Self {
-            max_players: 20,
-            message_of_the_day: "A Minecraft Server".into(),
-            show_online_player_count: true,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct ModernForwardingConfig {
-    pub enabled: bool,
-    pub secret: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct BungeeCordForwardingConfig {
-    pub enabled: bool,
-    pub bungee_guard: bool,
-    pub tokens: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Forwarding {
-    pub velocity: ModernForwardingConfig,
-    pub bungee_cord: BungeeCordForwardingConfig,
 }
 
 /// Application configuration, serializable to/from TOML.
@@ -79,6 +40,10 @@ pub struct Config {
 
     /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
+
+    /// Sets the default game mode for players
+    /// Valid values are: "survival", "creative", "adventure" or "spectator"
+    pub default_game_mode: GameModeConfig,
 }
 
 impl Default for Config {
@@ -89,6 +54,7 @@ impl Default for Config {
             server_list: ServerListConfig::default(),
             welcome_message: "Welcome to PicoLimbo!".into(),
             forwarding: Forwarding::default(),
+            default_game_mode: GameModeConfig::default(),
         }
     }
 }

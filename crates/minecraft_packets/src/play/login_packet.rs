@@ -6,105 +6,105 @@ use minecraft_protocol::prelude::*;
 #[packet_id("play/clientbound/minecraft:login")]
 pub struct LoginPacket {
     /// The player's Entity ID (EID).
-    pub entity_id: i32,
+    entity_id: i32,
     #[pvn(751..)]
-    pub is_hardcore: bool,
+    is_hardcore: bool,
     #[pvn(..764)]
-    pub game_mode: u8,
+    game_mode: u8,
     #[pvn(735..764)]
-    pub previous_game_mode: i8,
+    previous_game_mode: i8,
     /// Identifiers for all dimensions on the server.
     #[pvn(735..)]
-    pub v1_16_dimension_names: LengthPaddedVec<Identifier>,
+    v1_16_dimension_names: LengthPaddedVec<Identifier>,
     /// Represents certain registries that are sent from the server and are applied on the client.
     #[pvn(735..764)]
-    pub registry_codec: Nbt,
+    registry_codec: Nbt,
     /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
     #[pvn(751..759)]
-    pub v1_16_dimension_codec: Nbt,
+    v1_16_dimension_codec: Nbt,
     /// Name of the dimension type being spawned into.
     #[pvn(759..764)]
-    pub v1_19_dimension_type: Identifier,
+    v1_19_dimension_type: Identifier,
     /// Name of the dimension being spawned into.
     #[pvn(735..751)]
-    pub v1_16_dimension_name: Identifier,
+    v1_16_dimension_name: Identifier,
     #[pvn(735..764)]
-    pub v1_16_world_name: Identifier,
+    v1_16_world_name: Identifier,
     /// -1: Nether, 0: Overworld, 1: End; also, note that this is not a VarInt but instead a regular int.
     #[pvn(108..735)]
-    pub v1_9_1_dimension: i32,
+    v1_9_1_dimension: i32,
     #[pvn(..108)]
     /// -1: Nether, 0: Overworld, 1: End
-    pub dimension: i8,
+    dimension: i8,
     /// First 8 bytes of the SHA-256 hash of the world's seed. Used client side for biome noise
     #[pvn(573..764)]
-    pub hashed_seed: i64,
+    hashed_seed: i64,
     /// Was once used by the client to draw the player list, but now is ignored.
     #[pvn(735..)]
-    pub v1_16_max_players: VarInt,
+    v1_16_max_players: VarInt,
     /// 0: peaceful, 1: easy, 2: normal, 3: hard
     #[pvn(..477)]
-    pub difficulty: u8,
+    difficulty: u8,
     #[pvn(..735)]
-    pub max_players: u8,
+    max_players: u8,
     /// default, flat, largeBiomes, amplified, customized, buffet, default_1_1
     #[pvn(..735)]
-    pub level_type: String,
+    level_type: String,
     /// Render distance (2-32).
     #[pvn(477..)]
-    pub view_distance: VarInt,
+    view_distance: VarInt,
     /// The distance that the client will process specific things, such as entities.
     #[pvn(757..)]
-    pub simulation_distance: VarInt,
+    simulation_distance: VarInt,
     /// If true, a Notchian client shows reduced information on the debug screen. For servers in development, this should almost always be false.
     #[pvn(47..)]
-    pub reduced_debug_info: bool,
+    reduced_debug_info: bool,
     /// Set to false when the doImmediateRespawn gamerule is true.
     #[pvn(573..)]
-    pub enable_respawn_screen: bool,
+    enable_respawn_screen: bool,
     /// Whether players can only craft recipes they have already unlocked. Currently unused by the client.
     #[pvn(764..)]
-    pub v_1_20_2_do_limited_crafting: bool,
+    v_1_20_2_do_limited_crafting: bool,
     /// The ID of the type of dimension in the minecraft:dimension_type registry, defined by the Registry Data packet.
     /// 0: overworld, 1: overworld_caves, 2: the_end, 3: the_nether
     #[pvn(766..)]
-    pub v_1_20_5_dimension_type: VarInt,
+    v_1_20_5_dimension_type: VarInt,
     #[pvn(764..766)]
-    pub v_1_20_2_dimension_type: Identifier,
+    v_1_20_2_dimension_type: Identifier,
     /// Name of the dimension being spawned into.
     #[pvn(764..)]
-    pub v_1_20_2_dimension_name: Identifier,
+    v_1_20_2_dimension_name: Identifier,
     /// First 8 bytes of the SHA-256 hash of the world's seed. Used client side for biome noise
     #[pvn(764..)]
-    pub v_1_20_2_hashed_seed: i64,
+    v_1_20_2_hashed_seed: i64,
     /// 0: Survival, 1: Creative, 2: Adventure, 3: Spectator.
     #[pvn(764..)]
-    pub v_1_20_2_game_mode: u8,
+    v_1_20_2_game_mode: u8,
     /// -1: Undefined (null), 0: Survival, 1: Creative, 2: Adventure, 3: Spectator. The previous game mode. Vanilla client uses this for the debug (F3 + N & F3 + F4) game mode switch. (More information needed)
     #[pvn(764..)]
-    pub v_1_20_2_previous_game_mode: i8,
+    v_1_20_2_previous_game_mode: i8,
     /// True if the world is a debug mode world; debug mode worlds cannot be modified and have predefined blocks.
     #[pvn(735..)]
-    pub is_debug: bool,
+    is_debug: bool,
     /// True if the world is a superflat world; flat worlds have different void fog and a horizon at y=0 instead of y=63.
     #[pvn(735..)]
-    pub is_flat: bool,
+    is_flat: bool,
     /// If true, then the next two fields are present.
     #[pvn(759..)]
-    pub has_death_location: bool,
+    has_death_location: bool,
     /// Name of the dimension the player died in.
     #[pvn(759..)]
-    pub death_dimension_name: Option<Identifier>,
+    death_dimension_name: Option<Identifier>,
     /// The location that the player died at.
     #[pvn(759..)]
-    pub death_location: Option<Position>,
+    death_location: Option<Position>,
     /// The number of ticks until the player can use the portal again.
     #[pvn(763..)]
-    pub portal_cooldown: VarInt,
+    portal_cooldown: VarInt,
     #[pvn(768..)]
-    pub sea_level: VarInt,
+    sea_level: VarInt,
     #[pvn(766..)]
-    pub enforces_secure_chat: bool,
+    enforces_secure_chat: bool,
 }
 
 impl Default for LoginPacket {
@@ -184,6 +184,12 @@ impl LoginPacket {
 
     pub fn new_with_dimension(dimension: &Dimension) -> Self {
         Self::new_with_codecs(dimension, Nbt::End, Nbt::End)
+    }
+
+    pub fn set_game_mode(mut self, game_mode: u8) -> Self {
+        self.game_mode = game_mode;
+        self.v_1_20_2_game_mode = game_mode;
+        self
     }
 }
 

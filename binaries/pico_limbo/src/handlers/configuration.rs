@@ -74,20 +74,22 @@ pub async fn on_acknowledge_finish_configuration(
 pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(), HandlerError> {
     let protocol_version = client.protocol_version().await;
 
-    let packet =
-        if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
-            match construct_registry_data(&protocol_version, &state) {
-                Ok((registry_codec, dimension)) => {
-                    LoginPacket::new_with_codecs(state.spawn_dimension(), registry_codec, dimension)
-                }
-                Err(e) => {
-                    client.kick("Disconnected").await?;
-                    return Err(HandlerError::custom(e.to_string()));
-                }
+    let packet = if protocol_version
+        .between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20)
+    {
+        match construct_registry_data(&protocol_version, &state) {
+            Ok((registry_codec, dimension)) => {
+                LoginPacket::new_with_codecs(state.spawn_dimension(), registry_codec, dimension)
+                    .set_game_mode(state.game_mode())
             }
-        } else {
-            LoginPacket::new_with_dimension(state.spawn_dimension())
-        };
+            Err(e) => {
+                client.kick("Disconnected").await?;
+                return Err(HandlerError::custom(e.to_string()));
+            }
+        }
+    } else {
+        LoginPacket::new_with_dimension(state.spawn_dimension()).set_game_mode(state.game_mode())
+    };
     client.send_packet(packet).await?;
 
     // Send Synchronize Player Position

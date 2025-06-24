@@ -32,6 +32,7 @@ pub struct ServerState {
     welcome_message: String,
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
+    game_mode: u8,
 }
 
 impl ServerState {
@@ -98,6 +99,10 @@ impl ServerState {
     pub fn data_directory(&self) -> &PathBuf {
         &self.data_directory
     }
+
+    pub fn game_mode(&self) -> u8 {
+        self.game_mode
+    }
 }
 
 impl ConnectedClients for ServerState {
@@ -125,6 +130,7 @@ pub struct ServerStateBuilder {
     max_players: u32,
     welcome_message: String,
     show_online_player_count: bool,
+    game_mode: u8,
 }
 
 impl ServerStateBuilder {
@@ -192,6 +198,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn game_mode(&mut self, game_mode: u8) -> &mut Self {
+        self.game_mode = game_mode;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -205,6 +216,7 @@ impl ServerStateBuilder {
             welcome_message: self.welcome_message,
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
+            game_mode: self.game_mode,
         })
     }
 }

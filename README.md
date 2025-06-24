@@ -143,6 +143,10 @@ spawn_dimension = "overworld"
 # Welcome message sent to players after spawning
 welcome_message = "Welcome to PicoLimbo!"
 
+# Sets the game mode for new players
+# Allowed values: "survival", "creative", or "adventure"
+default_game_mode = "spectator"
+
 [forwarding.velocity]
 # Enable Velocity Modern Forwarding
 enabled = false

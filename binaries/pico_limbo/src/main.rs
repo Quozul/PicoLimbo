@@ -1,11 +1,11 @@
 mod cli;
-mod config;
+mod configuration;
 mod forwarding;
 mod handlers;
 mod server_state;
 
 use crate::cli::Cli;
-use crate::config::{Config, ConfigError};
+use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::handlers::configuration::on_acknowledge_finish_configuration;
 use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
@@ -71,7 +71,7 @@ fn enable_logging(verbose: u8) {
 }
 
 fn load_configuration(config_path: &PathBuf) -> Option<Config> {
-    let cfg = config::load_or_create(config_path);
+    let cfg = load_or_create(config_path);
     match cfg {
         Err(ConfigError::TomlDeserialize(message, ..)) => {
             error!("Failed to load configuration: {}", message);
@@ -114,7 +114,8 @@ fn build_state(
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
         .max_players(cfg.server_list.max_players)
-        .show_online_player_count(cfg.server_list.show_online_player_count);
+        .show_online_player_count(cfg.server_list.show_online_player_count)
+        .game_mode(cfg.default_game_mode.into());
 
     server_state_builder.build()
 }
