@@ -46,6 +46,9 @@
       },
       "minecraft:legacy_chat_message": {
         "protocol_id": 14
+      },
+      "minecraft:commands": {
+        "protocol_id": 17
       }
     },
     "serverbound": {}

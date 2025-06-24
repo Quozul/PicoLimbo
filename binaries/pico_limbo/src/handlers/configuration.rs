@@ -7,6 +7,7 @@ use minecraft_packets::configuration::registry_data_packet::{
     RegistryDataCodecPacket, RegistryDataPacket,
 };
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
+use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessage;
 use minecraft_packets::play::login_packet::LoginPacket;
@@ -99,6 +100,11 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
     if protocol_version >= ProtocolVersion::V1_19 {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPosition::default();
+        client.send_packet(packet).await?;
+    }
+
+    if protocol_version >= ProtocolVersion::V1_13 {
+        let packet = CommandsPacket::empty();
         client.send_packet(packet).await?;
     }
 

@@ -52,6 +52,9 @@
       },
       "minecraft:system_chat": {
         "protocol_id": 96
+      },
+      "minecraft:commands": {
+        "protocol_id": 14
       }
     },
     "serverbound": {}
