@@ -16,8 +16,8 @@ pub enum VelocityKeyIntegrityError {
     InvalidVarInt(#[from] VarIntParseError),
     #[error(transparent)]
     InvalidLength(#[from] InvalidLength),
-    #[error("buffer too short to contain signature")]
-    BufferTooShort,
+    #[error("buffer too short to contain signature, received {0} bytes")]
+    BufferTooShort(usize),
 }
 
 /// Checks the integrity of the forwarded message using an HMAC signature.
@@ -42,7 +42,7 @@ pub fn check_velocity_key_integrity(
     index: &mut usize,
 ) -> Result<bool, VelocityKeyIntegrityError> {
     if buf.len() < 32 {
-        return Err(VelocityKeyIntegrityError::BufferTooShort);
+        return Err(VelocityKeyIntegrityError::BufferTooShort(buf.len()));
     }
 
     // Extract the signature (first 32 bytes) and the payload.

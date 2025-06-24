@@ -12,7 +12,7 @@ use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::prelude::{Client, GameProfile, HandlerError};
 use rand::Rng;
-use tracing::info;
+use tracing::{error, info};
 
 pub async fn on_login_start(
     state: ServerState,
@@ -64,7 +64,10 @@ pub async fn on_custom_query_answer(
         let buf = &packet.data;
         let mut index = 0;
         let is_valid =
-            check_velocity_key_integrity(buf, &secret_key, &mut index).unwrap_or_default();
+            check_velocity_key_integrity(buf, &secret_key, &mut index).unwrap_or_else(|error| {
+                error!("Invalid Velocity Key: {}", error);
+                false
+            });
         if is_valid {
             let _address = String::decode(buf, &mut index).unwrap_or_default();
             let player_uuid = Uuid::decode(buf, &mut index).unwrap_or_default();
