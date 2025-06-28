@@ -156,6 +156,7 @@ impl LoginPacket {
         dimension: &Dimension,
         registry_codec: Nbt,
         dimension_codec: Nbt,
+        dimension_type: i32,
     ) -> Self {
         let iden = dimension.identifier();
         Self {
@@ -173,7 +174,7 @@ impl LoginPacket {
             v_1_20_2_dimension_type: iden.clone(),
 
             // dimension type index (1.20.5)
-            v_1_20_5_dimension_type: dimension.type_index_1_20_5(),
+            v_1_20_5_dimension_type: dimension_type.into(),
 
             // leave absolutely everything else as the default
             registry_codec,
@@ -182,8 +183,8 @@ impl LoginPacket {
         }
     }
 
-    pub fn new_with_dimension(dimension: &Dimension) -> Self {
-        Self::new_with_codecs(dimension, Nbt::End, Nbt::End)
+    pub fn new_with_dimension(dimension: &Dimension, dimension_type: i32) -> Self {
+        Self::new_with_codecs(dimension, Nbt::End, Nbt::End, dimension_type)
     }
 
     pub fn set_game_mode(mut self, game_mode: u8) -> Self {
