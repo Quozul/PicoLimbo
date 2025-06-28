@@ -64,58 +64,60 @@ impl EncodePacketField for ChunkSection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use minecraft_protocol::protocol_version::ProtocolVersion;
+    use std::collections::HashMap;
 
-    #[test]
-    fn test_chunk_section_before_1_21_5() {
-        let chunk_section = ChunkSection::void(1);
+    fn expected_snapshots() -> HashMap<u32, Vec<u8>> {
+        HashMap::from([
+            (
+                770,
+                vec![
+                    /* Block count */
+                    0x00, 0x00,
+                    /* Block states */
+                    /* Bits Per Entry */
+                    0x00, /* Palette */
+                    /* Value */
+                    0x00, /* Biomes */
+                    /* Bits Per Entry */
+                    0x00, /* Value */
+                    0x7F,
+                ],
+            ),
+            (
+                769,
+                vec![
+                    /* Block count */
+                    0x00, 0x00,
+                    /* Block states */
+                    /* Bits Per Entry */
+                    0x00, /* Palette */
+                    /* Value */
+                    0x00, /* Data Array Length */
+                    0x00, /* Biomes */
+                    /* Bits Per Entry */
+                    0x00, /* Value */
+                    0x7F, /* Data Array Length */
+                    0x00,
+                ],
+            ),
+        ])
+    }
 
-        let mut buffer = Vec::new();
-        chunk_section.encode(&mut buffer, 769).unwrap();
-
-        assert_eq!(
-            buffer,
-            vec![
-                /* Block count */
-                0x00, 0x00,
-                /* Block states */
-                /* Bits Per Entry */
-                0x00, /* Palette */
-                /* Value */
-                0x00, /* Data Array Length */
-                0x00, /* Biomes */
-                /* Bits Per Entry */
-                0x00, /* Value */
-                0x01, /* Data Array Length */
-                0x00
-            ]
-        );
-        assert_eq!(buffer.len(), 8);
+    fn create_packet() -> ChunkSection {
+        let biome_id = 127;
+        ChunkSection::void(biome_id)
     }
 
     #[test]
-    fn test_chunk_section_after_1_21_5() {
-        let chunk_section = ChunkSection::void(0);
+    fn chunk_data_and_update_light_packets() {
+        let snapshots = expected_snapshots();
 
-        let mut buffer = Vec::new();
-        chunk_section.encode(&mut buffer, 770).unwrap();
-
-        assert_eq!(
-            buffer,
-            vec![
-                /* Block count */
-                0x00, 0x00,
-                /* Block states */
-                /* Bits Per Entry */
-                0x00, /* Palette */
-                /* Value */
-                0x00, /* Data Array Length */
-                0x00, /* Biomes */
-                /* Bits Per Entry */
-                0x00, /* Value */
-                0x00, /* Data Array Length */
-                0x00
-            ]
-        );
-        assert_eq!(buffer.len(), 8);
+        for (version, expected_bytes) in snapshots {
+            let packet = create_packet();
+            let mut bytes = Vec::new();
+            packet.encode(&mut bytes, version).unwrap();
+            assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
+        }
     }
 }

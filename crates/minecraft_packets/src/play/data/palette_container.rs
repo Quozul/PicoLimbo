@@ -1,4 +1,5 @@
 use minecraft_protocol::prelude::*;
+use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -9,20 +10,20 @@ pub enum PaletteContainer {
         bits_per_entry: u8,
         value: VarInt,
         /// Present but of length 0 when Bits Per Entry is 0.
-        data: LengthPaddedVec<i64>,
+        data: Vec<i64>,
     },
     Indirect {
         /// Should be 4-8 for blocks or 1-3 for biomes
         bits_per_entry: u8,
         /// Mapping of IDs in the registry to indices of this array.
         palette: LengthPaddedVec<VarInt>,
-        data: LengthPaddedVec<i64>,
+        data: Vec<i64>,
     },
     /// Registry IDs are stored directly as entries in the Data Array.
     Direct {
         /// Should be 15 for blocks or 6 for biomes
         bits_per_entry: u8,
-        data: LengthPaddedVec<i64>,
+        data: Vec<i64>,
     },
 }
 
@@ -31,7 +32,7 @@ impl PaletteContainer {
         Self::SingleValued {
             bits_per_entry: 0,
             value: VarInt::default(),
-            data: Vec::new().into(),
+            data: Vec::new(),
         }
     }
 
@@ -39,29 +40,19 @@ impl PaletteContainer {
         Self::SingleValued {
             bits_per_entry: 0,
             value,
-            data: Vec::new().into(),
+            data: Vec::new(),
         }
     }
 }
 
 #[derive(Error, Debug)]
 pub enum PaletteContainerError {
-    #[error("error while decoding a palette")]
-    EncodeError,
+    #[error("error while encoding data field")]
+    VecEncodeError(#[from] VecEncodeError),
+    #[error("error while encoding palette field")]
+    LengthPaddedVecEncodeError(#[from] LengthPaddedVecEncodeError),
     #[error("invalid palette container error")]
-    Infallible,
-}
-
-impl From<std::convert::Infallible> for PaletteContainerError {
-    fn from(_: std::convert::Infallible) -> Self {
-        PaletteContainerError::Infallible
-    }
-}
-
-impl From<LengthPaddedVecEncodeError> for PaletteContainerError {
-    fn from(_: LengthPaddedVecEncodeError) -> Self {
-        PaletteContainerError::EncodeError
-    }
+    Infallible(#[from] std::convert::Infallible),
 }
 
 impl EncodePacketField for PaletteContainer {
@@ -76,6 +67,9 @@ impl EncodePacketField for PaletteContainer {
             } => {
                 bits_per_entry.encode(bytes, protocol_version)?;
                 value.encode(bytes, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
+                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                }
                 data.encode(bytes, protocol_version)?;
             }
             PaletteContainer::Indirect {
@@ -85,6 +79,9 @@ impl EncodePacketField for PaletteContainer {
             } => {
                 bits_per_entry.encode(bytes, protocol_version)?;
                 palette.encode(bytes, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
+                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                }
                 data.encode(bytes, protocol_version)?;
             }
             PaletteContainer::Direct {
@@ -92,6 +89,9 @@ impl EncodePacketField for PaletteContainer {
                 data,
             } => {
                 bits_per_entry.encode(bytes, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
+                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                }
                 data.encode(bytes, protocol_version)?;
             }
         }
