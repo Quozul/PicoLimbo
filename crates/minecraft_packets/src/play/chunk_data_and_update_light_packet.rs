@@ -30,7 +30,7 @@ pub struct ChunkDataAndUpdateLightPacket {
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn new(protocol_version: ProtocolVersion) -> Self {
+    pub fn new(protocol_version: ProtocolVersion, biome_id: i32) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
             value: vec![0; 37],
@@ -39,7 +39,7 @@ impl ChunkDataAndUpdateLightPacket {
             name: None,
             value: vec![long_array_tag],
         };
-        let data = vec![ChunkSection::void(protocol_version.clone()); 24];
+        let data = vec![ChunkSection::void(biome_id); 24];
         let mut encoded_data = Vec::<u8>::new();
         data.encode(&mut encoded_data, protocol_version.version_number())
             .unwrap();
@@ -177,7 +177,12 @@ mod tests {
     }
 
     fn create_packet(protocol_version: ProtocolVersion) -> ChunkDataAndUpdateLightPacket {
-        ChunkDataAndUpdateLightPacket::new(protocol_version)
+        let biome_id = if protocol_version >= ProtocolVersion::V1_21_5 {
+            0
+        } else {
+            1
+        };
+        ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id)
     }
 
     #[test]
@@ -187,7 +192,7 @@ mod tests {
         for (version, expected_bytes) in snapshots {
             let packet = create_packet(ProtocolVersion::from(version as i32));
             let bytes = packet.encode(version).unwrap();
-            assert_eq!(bytes, expected_bytes, "Mismatch for version {}", version);
+            assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }
     }
 }

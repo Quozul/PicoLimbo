@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -36,13 +35,7 @@ impl PaletteContainer {
         }
     }
 
-    pub fn biomes_void(protocol_version: ProtocolVersion) -> Self {
-        let value = if protocol_version >= ProtocolVersion::V1_21_5 {
-            VarInt::new(0)
-        } else {
-            VarInt::new(1)
-        };
-
+    pub fn single_valued(value: VarInt) -> Self {
         Self::SingleValued {
             bits_per_entry: 0,
             value,

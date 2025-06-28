@@ -55,6 +55,47 @@ fn get_version_directory(protocol_version: ProtocolVersion, data_location: &Path
         .join("minecraft")
 }
 
+fn get_entry_index(
+    protocol_version: ProtocolVersion,
+    data_location: &Path,
+    subdirectory: &str,
+    entry_name: &str,
+    default: usize,
+) -> usize {
+    let directory = get_version_directory(protocol_version, data_location).join(subdirectory);
+
+    if !directory.is_dir() {
+        return 1;
+    }
+
+    directory.read_dir().map_or(default, |entries| {
+        entries
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let path = entry.path();
+                if path.is_file() {
+                    path.file_stem()
+                        .and_then(|stem| stem.to_str())
+                        .map(|s| s.to_string())
+                } else {
+                    None
+                }
+            })
+            .position(|entry| entry == entry_name)
+            .unwrap_or(default)
+    })
+}
+
+pub fn get_the_void_index(protocol_version: ProtocolVersion, data_location: &Path) -> usize {
+    get_entry_index(
+        protocol_version,
+        data_location,
+        "worldgen/biome",
+        "the_void",
+        1,
+    )
+}
+
 /// Way to get registries since 1.20.5
 pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,

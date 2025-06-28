@@ -16,7 +16,8 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessage;
 use minecraft_protocol::data::registry::get_all_registries::{
-    get_v1_16_2_registry_codec, get_v1_16_registry_codec, get_v1_20_5_registries,
+    get_the_void_index, get_v1_16_2_registry_codec, get_v1_16_registry_codec,
+    get_v1_20_5_registries,
 };
 use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
@@ -114,7 +115,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         client.send_packet(packet).await?;
 
         // Send Chunk Data and Update Light
-        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version.clone());
+        let biome_id = get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
+        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version.clone(), biome_id);
         client.send_packet(packet).await?;
     }
 

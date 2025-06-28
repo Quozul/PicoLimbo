@@ -1,6 +1,5 @@
 use crate::play::data::palette_container::{PaletteContainer, PaletteContainerError};
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -14,11 +13,11 @@ pub struct ChunkSection {
 }
 
 impl ChunkSection {
-    pub fn void(protocol_version: ProtocolVersion) -> Self {
+    pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,
             block_states: PaletteContainer::blocks_void(),
-            biomes: PaletteContainer::biomes_void(protocol_version),
+            biomes: PaletteContainer::single_valued(biome_id.into()),
         }
     }
 }
@@ -68,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_chunk_section_before_1_21_5() {
-        let chunk_section = ChunkSection::void(ProtocolVersion::V1_21_4);
+        let chunk_section = ChunkSection::void(1);
 
         let mut buffer = Vec::new();
         chunk_section.encode(&mut buffer, 769).unwrap();
@@ -95,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_chunk_section_after_1_21_5() {
-        let chunk_section = ChunkSection::void(ProtocolVersion::V1_21_5);
+        let chunk_section = ChunkSection::void(0);
 
         let mut buffer = Vec::new();
         chunk_section.encode(&mut buffer, 770).unwrap();
