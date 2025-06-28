@@ -46,7 +46,7 @@ impl ClientInner {
             })
             .and_then(|opt_name| {
                 opt_name.ok_or_else(|| ClientReadPacketError::UnknownPacketName {
-                    name: format!("Unregistered ID 0x{:02X}", packet_id),
+                    name: format!("Unregistered ID 0x{packet_id:02X}"),
                     id: packet_id,
                     state: self.state.clone(),
                     protocol: version.clone(),

@@ -96,6 +96,20 @@ pub fn get_the_void_index(protocol_version: ProtocolVersion, data_location: &Pat
     )
 }
 
+pub fn get_dimension_type_index(
+    protocol_version: ProtocolVersion,
+    data_location: &Path,
+    dimension_name: String,
+) -> usize {
+    get_entry_index(
+        protocol_version,
+        data_location,
+        "dimension_type",
+        &dimension_name,
+        0,
+    )
+}
+
 /// Way to get registries since 1.20.5
 pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,

@@ -64,7 +64,6 @@ impl EncodePacketField for ChunkSection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use minecraft_protocol::protocol_version::ProtocolVersion;
     use std::collections::HashMap;
 
     fn expected_snapshots() -> HashMap<u32, Vec<u8>> {

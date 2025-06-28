@@ -16,8 +16,8 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessage;
 use minecraft_protocol::data::registry::get_all_registries::{
-    get_the_void_index, get_v1_16_2_registry_codec, get_v1_16_registry_codec,
-    get_v1_20_5_registries,
+    get_dimension_type_index, get_the_void_index, get_v1_16_2_registry_codec,
+    get_v1_16_registry_codec, get_v1_20_5_registries,
 };
 use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
@@ -76,22 +76,31 @@ pub async fn on_acknowledge_finish_configuration(
 pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(), HandlerError> {
     let protocol_version = client.protocol_version().await;
 
-    let packet = if protocol_version
-        .between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20)
-    {
-        match construct_registry_data(&protocol_version, &state) {
-            Ok((registry_codec, dimension)) => {
-                LoginPacket::new_with_codecs(state.spawn_dimension(), registry_codec, dimension)
-                    .set_game_mode(state.game_mode())
+    let dimension_type = get_dimension_type_index(
+        protocol_version.clone(),
+        state.data_directory(),
+        state.spawn_dimension().identifier().thing,
+    ) as i32;
+
+    let packet =
+        if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
+            match construct_registry_data(&protocol_version, &state) {
+                Ok((registry_codec, dimension)) => LoginPacket::new_with_codecs(
+                    state.spawn_dimension(),
+                    registry_codec,
+                    dimension,
+                    dimension_type,
+                )
+                .set_game_mode(state.game_mode()),
+                Err(e) => {
+                    client.kick("Disconnected").await?;
+                    return Err(HandlerError::custom(e.to_string()));
+                }
             }
-            Err(e) => {
-                client.kick("Disconnected").await?;
-                return Err(HandlerError::custom(e.to_string()));
-            }
-        }
-    } else {
-        LoginPacket::new_with_dimension(state.spawn_dimension()).set_game_mode(state.game_mode())
-    };
+        } else {
+            LoginPacket::new_with_dimension(state.spawn_dimension(), dimension_type)
+                .set_game_mode(state.game_mode())
+        };
     client.send_packet(packet).await?;
 
     // Send Synchronize Player Position
