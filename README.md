@@ -57,135 +57,27 @@ runtime and efficient design.
 
 ---
 
-## Getting Started
+## Quick Start
 
-### 🚀 Pterodactyl (Recommended)
-
-For users running the Pterodactyl panel, deployment is simplified with the provided [egg file](./pterodactyl/eggs). This
-egg is built on the lightweight Alpine base image.
-
-The egg supports additional installation configuration through the following environment variables:
-
-- **VERSION**  
-  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.6`).
-    - Default: `latest`
-    - When set to `latest` (or left unset without enabling prerelease), the installer selects the newest stable release.
-
-- **USE_PRERELEASE**  
-  When set to `true`, the installer ignores stable releases and installs the newest prerelease based on publication
-  date.
-    - Default: *(empty)*
-
-### 🐋 Using Docker
-
-The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 architectures. You can start the server
-using the following command:
+### Docker
 
 ```shell
 docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:master
 ```
 
-You can also mount a custom configuration file:
+### Binary
 
-```shell
-docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:master
-```
+Download from [GitHub Releases](https://github.com/Quozul/PicoLimbo/releases)
 
-> [!NOTE]
-> The `master` tag image is updated on every push to the repository. For production or stable setups, consider using a
-> fixed version tag instead.  
-> A list of available tags can be found on the
-> [GitHub Packages page](https://github.com/Quozul/PicoLimbo/pkgs/container/picolimbo/versions?filters%5Bversion_type%5D=tagged).
-
-#### Using Docker Compose
-
-A sample [docker-compose.yml file](./docker-compose.yml) is available in the repository. Download the
-`docker-compose.yml` file and run:
-
-```shell
-docker compose up
-```
-
-### 📦 Binary / Standalone
-
-> [!IMPORTANT]
-> Ensure the `assets` directory is placed alongside the PicoLimbo binary, as it contains essential files required for
-> server execution.
-
-#### GitHub Releases
-
-Download pre-compiled binaries for multiple platforms from
-the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases). No Java or other dependencies are required.
-
-#### Compiling from Source with Cargo
-
-To build PicoLimbo from source, you can use Cargo:
-
-```bash
-cargo install --git https://github.com/Quozul/PicoLimbo.git pico_limbo
-```
-
----
+For more detailed installation and configuration instructions, please refer to
+the [documentation website](https://picolimbo.quozul.dev/).
 
 ## Documentation
 
-### 🔧 Example Configuration File
+**Complete documentation is available at [https://picolimbo.quozul.dev/](https://picolimbo.quozul.dev/)**
 
-A default configuration file will be automatically generated the first time you start the server.
-
-```toml
-# Server bind address and port
-bind = "0.0.0.0:25565"
-
-# Default spawn dimension
-# Allowed values: "overworld", "nether", or "end"
-spawn_dimension = "overworld"
-
-# Welcome message sent to players after spawning
-welcome_message = "Welcome to PicoLimbo!"
-
-# Sets the game mode for new players
-# Allowed values: "survival", "creative", or "adventure"
-default_game_mode = "spectator"
-
-[forwarding.velocity]
-# Enable Velocity Modern Forwarding
-enabled = false
-# Shared secret for Velocity proxy
-secret = ""
-
-[forwarding.bungee_cord]
-# Enable BungeeCord forwarding
-enabled = false
-# Enable BungeeGuard (requires BungeeCord to be enabled)
-bungee_guard = false
-# List of valid BungeeGuard tokens for authenticating incoming players
-tokens = []
-
-[server_list]
-# Maximum count shown in your server list, does not affect the player limit
-max_players = 20
-# MOTD displayed in server lists
-message_of_the_day = "A Minecraft Server"
-# Show actual online player count in your server list?
-show_online_player_count = true
-```
-
-### ⌨️ Command Line Usage
-
-1. Run the server:
-   ```bash
-   pico_limbo
-   ```
-2. Use a custom configuration file:
-   ```bash
-   pico_limbo --config /path/to/custom/config.toml
-   ```
-3. Enable verbose logging:
-   ```bash
-   pico_limbo -v  # Debug logging
-   pico_limbo -vv # Trace logging
-   ```
+For detailed installation instructions, configuration options, and usage examples, please visit the documentation
+website.
 
 ---
 
