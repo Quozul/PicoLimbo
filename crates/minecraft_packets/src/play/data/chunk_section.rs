@@ -1,6 +1,6 @@
 use crate::play::data::palette_container::{PaletteContainer, PaletteContainerError};
-use crate::play::data::structure::Structure;
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::Structure;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]

@@ -1,8 +1,10 @@
 use crate::play::data::chunk_section::ChunkSection;
-use crate::play::data::structure::Structure;
 use minecraft_protocol::prelude::*;
 use minecraft_protocol::protocol_version::ProtocolVersion;
+use pico_structures::prelude::Structure;
+use std::path::Path;
 use thiserror::Error;
+use tracing::error;
 
 #[derive(Debug)]
 pub struct ChunkData {
@@ -94,7 +96,12 @@ impl ChunkData {
 
         for i in 0..24 {
             let section = if i == 12 {
-                let structure = Structure::new(1, 0, void_biome_index);
+                let structure =
+                    Structure::from_structure_file(Path::new("./target/plains_small_house_1"))
+                        .map_err(|err| {
+                            error!("{}", err);
+                        })
+                        .unwrap();
                 ChunkSection::from_structure(structure)
             } else {
                 ChunkSection::void(void_biome_index)

@@ -1,9 +1,9 @@
 [package]
-name = "nbt"
+name = "pico_structures"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-serde_json = "1.0"
+nbt = { path = "../pico_nbt" }
 thiserror = "2.0"
 tracing = "0.1"

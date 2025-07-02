@@ -677,10 +677,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "minecraft_protocol",
+ "pico_structures",
  "pico_text_component",
  "serde",
  "serde_json",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -737,6 +739,8 @@ name = "nbt"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -842,6 +846,15 @@ dependencies = [
  "net",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "pico_structures"
+version = "0.1.0"
+dependencies = [
+ "nbt",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
