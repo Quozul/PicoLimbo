@@ -1,2 +1,6 @@
 /.idea
+/data/servers
+/docs/.vitepress/cache
+/docs/.vitepress/dist
 /target
+node_modules/
