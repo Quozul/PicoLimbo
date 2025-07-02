@@ -98,7 +98,7 @@ impl ChunkData {
             let section = if i == 12 {
                 let structure = Structure::from_structure_file(Path::new(structure))
                     .map_err(|err| {
-                        error!("{}", err);
+                        error!("{err}");
                     })
                     .unwrap();
                 ChunkSection::from_structure(structure, void_biome_index)

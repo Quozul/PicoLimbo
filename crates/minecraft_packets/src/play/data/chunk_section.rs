@@ -2,6 +2,7 @@ use crate::play::data::palette_container::{PaletteContainer, PaletteContainerErr
 use minecraft_protocol::prelude::*;
 use pico_structures::prelude::Structure;
 use thiserror::Error;
+use tracing::trace;
 
 #[derive(Debug, Clone)]
 pub struct ChunkSection {
@@ -13,104 +14,69 @@ pub struct ChunkSection {
     pub biomes: PaletteContainer,
 }
 
+const SECTION_HEIGHT: i64 = 16;
+const SECTION_WIDTH: i64 = 16;
+
 impl ChunkSection {
     pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,
             block_states: PaletteContainer::blocks_void(),
-            biomes: PaletteContainer::single_valued(biome_id.into()),
+            biomes: PaletteContainer::single_valued(biome_id),
         }
     }
 
-    pub fn from_structure(structure: Structure, biome_id: i32) -> Self {
-        // Collect all unique blocks and biomes
-        let mut block_palette = Vec::new();
+    pub fn from_structure(structure: Structure, biome_id: i32) -> ChunkSection {
+        let block_count: i16 = structure.count_non_air_blocks() as i16;
+        let structure_palette: Vec<i32> = structure.get_palette();
+        // FIXME: Figure out why this works for 4 and 8 only
+        let bits_per_block: i64 = 8; //(structure_palette.len() as f32).log2().ceil() as i64;
 
-        // First pass: collect all unique block and biome IDs
-        for y in 0..16 {
-            for z in 0..16 {
-                for x in 0..16 {
-                    let block_id = structure.get_block_at(x, y, z);
-                    if !block_palette.contains(&block_id) {
-                        block_palette.push(block_id);
+        trace!(
+            "bits_per_block={bits_per_block} structure_palette={:?}",
+            structure_palette
+        );
+
+        let total_bits = (16 * 16 * 16) * bits_per_block as usize;
+        let data_length = total_bits.div_ceil(64);
+        let mut data = vec![0i64; data_length];
+
+        let individual_value_mask = (1 << bits_per_block) - 1;
+
+        for y in 0..SECTION_HEIGHT {
+            for z in 0..SECTION_WIDTH {
+                for x in 0..SECTION_WIDTH {
+                    let block_number: i64 = (((y * SECTION_HEIGHT) + z) * SECTION_WIDTH) + x;
+                    let start_long: i64 = (block_number * bits_per_block) / 64;
+                    let start_offset: i64 = (block_number * bits_per_block) % 64;
+                    let end_long: i64 = ((block_number + 1) * bits_per_block - 1) / 64;
+
+                    let mut value: i64 =
+                        structure.get_block_at(x as i32, y as i32, z as i32) as i64;
+                    value &= individual_value_mask;
+
+                    data[start_long as usize] |= value << start_offset;
+
+                    if start_long != end_long {
+                        data[end_long as usize] = value >> (64 - start_offset);
                     }
                 }
             }
         }
 
-        // Determine bits per entry based on palette size
-        let block_bits_per_entry = if block_palette.len() == 1 {
-            0 // Single valued
-        } else {
-            std::cmp::max(4, (block_palette.len() as f64).log2().ceil() as u8)
+        let block_states = PaletteContainer::Indirect {
+            bits_per_entry: bits_per_block as u8,
+            palette: structure_palette
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<VarInt>>()
+                .into(),
+            data,
         };
 
-        let mut block_count = 0i16;
+        let biomes = PaletteContainer::single_valued(biome_id);
 
-        // Create block states container
-        let block_states = if block_palette.len() == 1 {
-            // Single valued palette
-            if block_palette[0] != 0 {
-                // Assuming 0 is air
-                block_count = 4096;
-            }
-            PaletteContainer::SingleValued {
-                bits_per_entry: 0,
-                value: VarInt::new(block_palette[0]),
-                data: Vec::new(),
-            }
-        } else {
-            // Indirect palette
-            let mut palette = Vec::new();
-            for &block_id in &block_palette {
-                palette.push(VarInt::new(block_id));
-            }
-
-            // Calculate data array size
-            let total_bits = 4096 * block_bits_per_entry as usize;
-            let data_size = total_bits.div_ceil(64); // Ceiling division by 64
-            let mut data = vec![0i64; data_size];
-
-            // Fill data array
-            for y in 0..16 {
-                for z in 0..16 {
-                    for x in 0..16 {
-                        let block_id = structure.get_block_at(x, y, z);
-                        let palette_index =
-                            block_palette.iter().position(|&id| id == block_id).unwrap();
-
-                        if block_id != 0 {
-                            // Assuming 0 is air
-                            block_count += 1;
-                        }
-
-                        // Calculate position in data array
-                        let block_number = ((y * 16) + z) * 16 + x;
-                        let start_long = (block_number * block_bits_per_entry as i32) / 64;
-                        let start_offset = (block_number * block_bits_per_entry as i32) % 64;
-
-                        // Set the bits in the data array
-                        if start_long < data.len() as i32 {
-                            data[start_long as usize] |= (palette_index as i64) << start_offset;
-                        }
-                    }
-                }
-            }
-
-            PaletteContainer::Indirect {
-                bits_per_entry: block_bits_per_entry,
-                palette: palette.into(),
-                data,
-            }
-        };
-
-        let biomes = PaletteContainer::SingleValued {
-            bits_per_entry: 0,
-            value: VarInt::new(biome_id),
-            data: Vec::new(),
-        };
-
-        Self {
+        ChunkSection {
             block_count,
             block_states,
             biomes,

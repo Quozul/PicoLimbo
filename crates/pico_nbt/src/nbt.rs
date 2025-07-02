@@ -157,7 +157,7 @@ impl Nbt {
         }
     }
 
-    pub(crate) fn get_name(&self) -> Option<String> {
+    pub fn get_name(&self) -> Option<String> {
         match self {
             Nbt::End => None,
             Nbt::Byte { name, .. } => name.clone(),

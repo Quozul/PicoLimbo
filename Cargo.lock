@@ -853,6 +853,10 @@ name = "pico_structures"
 version = "0.1.0"
 dependencies = [
  "nbt",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
  "thiserror",
  "tracing",
 ]

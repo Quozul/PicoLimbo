@@ -9,8 +9,6 @@ pub enum PaletteContainer {
         /// Should always be 0 for Single valued palette
         bits_per_entry: u8,
         value: VarInt,
-        /// Present but of length 0 when Bits Per Entry is 0.
-        data: Vec<i64>,
     },
     Indirect {
         /// Should be 4-8 for blocks or 1-3 for biomes
@@ -32,15 +30,13 @@ impl PaletteContainer {
         Self::SingleValued {
             bits_per_entry: 0,
             value: VarInt::default(),
-            data: Vec::new(),
         }
     }
 
-    pub fn single_valued(value: VarInt) -> Self {
+    pub fn single_valued(value: impl Into<VarInt>) -> Self {
         Self::SingleValued {
             bits_per_entry: 0,
-            value,
-            data: Vec::new(),
+            value: value.into(),
         }
     }
 }
@@ -63,14 +59,12 @@ impl EncodePacketField for PaletteContainer {
             PaletteContainer::SingleValued {
                 bits_per_entry,
                 value,
-                data,
             } => {
                 bits_per_entry.encode(bytes, protocol_version)?;
                 value.encode(bytes, protocol_version)?;
                 if protocol_version < ProtocolVersion::V1_21_5.version_number() {
-                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                    VarInt::new(0).encode(bytes, protocol_version)?;
                 }
-                data.encode(bytes, protocol_version)?;
             }
             PaletteContainer::Indirect {
                 bits_per_entry,
