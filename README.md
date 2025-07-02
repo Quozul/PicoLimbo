@@ -44,7 +44,7 @@ Seamlessly integrates with major Minecraft proxies:
 
 ### 🎮 Wide Version Compatibility
 
-Supports all Minecraft versions from **1.7.2 to 1.21.6** natively, no need for ViaVersion or additional compatibility
+Supports all Minecraft versions from **1.7.2 to 1.21.7** natively, no need for ViaVersion or additional compatibility
 layers.
 
 ### ⚡ Ultra-Lightweight & Highly Scalable
