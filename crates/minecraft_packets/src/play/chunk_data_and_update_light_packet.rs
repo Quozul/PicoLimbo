@@ -24,11 +24,11 @@ impl ChunkDataAndUpdateLightPacket {
         }
     }
 
-    pub fn new(chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
+    pub fn new(structure: &str, chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
         Self {
             chunk_x,
             chunk_z,
-            chunk_data: ChunkData::all_stone(biome_index),
+            chunk_data: ChunkData::all_stone(structure, biome_index),
             light_data: LightData::new_with_level(15),
         }
     }

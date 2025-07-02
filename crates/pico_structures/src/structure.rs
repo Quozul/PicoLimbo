@@ -51,10 +51,6 @@ impl Structure {
 
         get_block_id(&block_name).unwrap_or(0)
     }
-
-    pub fn get_biome_at(&self, x: i32, y: i32, z: i32) -> i32 {
-        0
-    }
 }
 
 fn get_block_id(block_name: &str) -> Option<i32> {
