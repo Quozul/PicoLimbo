@@ -49,6 +49,9 @@
       },
       "minecraft:commands": {
         "protocol_id": 17
+      },
+      "minecraft:level_chunk_with_light": {
+        "protocol_id": 34
       }
     },
     "serverbound": {}

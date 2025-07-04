@@ -1,6 +1,7 @@
 use crate::play::data::chunk_data::ChunkData;
 use crate::play::data::light_data::LightData;
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::Structure;
 
 /// This packet is only mandatory for versions above 1.20.3,
 /// thus the packet is only implemented to work on versions after 1.20.3.
@@ -11,6 +12,10 @@ pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,
     chunk_data: ChunkData,
+    /// If edges should be trusted for light updates.
+    /// Up until 1.19.4 included
+    #[pvn(..763)]
+    trust_edges: bool,
     light_data: LightData,
 }
 
@@ -20,15 +25,17 @@ impl ChunkDataAndUpdateLightPacket {
             chunk_x,
             chunk_z,
             chunk_data: ChunkData::void(biome_index),
+            trust_edges: true,
             light_data: LightData::default(),
         }
     }
 
-    pub fn new(structure: &str, chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
+    pub fn new(structure: &Structure, chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
         Self {
             chunk_x,
             chunk_z,
             chunk_data: ChunkData::all_stone(structure, biome_index),
+            trust_edges: true,
             light_data: LightData::new_with_level(15),
         }
     }

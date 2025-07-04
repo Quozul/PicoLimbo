@@ -861,6 +861,7 @@ dependencies = [
  "minecraft_packets",
  "minecraft_protocol",
  "minecraft_server",
+ "pico_structures",
  "rand",
  "serde",
  "serde_json",

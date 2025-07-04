@@ -11,5 +11,5 @@ pub mod prelude {
     #[cfg(feature = "binary_writer")]
     pub use crate::binary_writer::BinaryWriter;
     #[cfg(feature = "string_indexer")]
-    pub use crate::string_indexer::string_indexer::StringIndexer;
+    pub use crate::string_indexer::indexer::StringIndexer;
 }

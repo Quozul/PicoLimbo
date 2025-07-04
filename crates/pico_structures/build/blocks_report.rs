@@ -1,45 +1,3 @@
-/*
-{
-  "minecraft:acacia_button": {
-    "properties": {
-      "face": [
-        "floor",
-        "wall",
-        "ceiling"
-      ],
-      "facing": [
-        "north",
-        "south",
-        "west",
-        "east"
-      ],
-      "powered": [
-        "true",
-        "false"
-      ]
-    },
-    "states": [
-      {
-        "properties": {
-          "face": "wall",
-          "facing": "north",
-          "powered": "false"
-        },
-        "id": 5408,
-        "default": true
-      },
-      {
-        "properties": {
-          "face": "wall",
-          "facing": "south",
-          "powered": "true"
-        },
-        "id": 5409
-      }
-    ]
-  }
-}
-*/
 use pico_codegen::prelude::{BinaryWriter, StringIndexer};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -53,8 +11,6 @@ struct BlockState {
     #[serde(default)]
     default: bool,
     id: u32,
-    #[serde(default)]
-    properties: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Debug)]

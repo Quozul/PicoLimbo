@@ -14,10 +14,15 @@ pub enum StructureError {
 pub struct Structure {
     structure_nbt: Nbt,
     palette: Vec<i32>,
+    version: String,
 }
 
 impl Structure {
-    pub fn from_structure_file(path: &Path) -> Result<Self, StructureError> {
+    pub fn from_structure_file(
+        path: &Path,
+        version: impl ToString,
+    ) -> Result<Self, StructureError> {
+        let version = version.to_string();
         let structure_nbt = Nbt::from_file(path)?;
         let palette: Vec<i32> = structure_nbt
             .find_tag("palette")
@@ -25,20 +30,21 @@ impl Structure {
             .get_vec()
             .unwrap()
             .iter()
-            .map(Self::get_block_id_from_nbt)
+            .map(|nbt| Self::get_block_id_from_nbt(nbt, &version))
             .collect::<HashSet<i32>>()
             .into_iter()
             .collect();
         Ok(Self {
             structure_nbt,
             palette,
+            version,
         })
     }
 
     pub fn get_block_at(&self, x: i32, y: i32, z: i32) -> i32 {
         if self.is_out_of_bounds(x, y, z) {
             return self
-                .get_index_in_palette(Self::get_air())
+                .get_index_in_palette(Self::get_air(&self.version))
                 .unwrap_or_default();
         }
 
@@ -67,7 +73,7 @@ impl Structure {
             .unwrap_or(0);
 
         let block = palette.get(palette_index as usize).unwrap();
-        self.get_index_in_palette(Self::get_block_id_from_nbt(block))
+        self.get_index_in_palette(Self::get_block_id_from_nbt(block, &self.version))
             .unwrap_or_default()
     }
 
@@ -129,17 +135,17 @@ impl Structure {
         x >= max_x || y >= max_y || z >= max_z
     }
 
-    fn get_air() -> i32 {
-        Self::get_block_id_from_str("minecraft:air")
+    fn get_air(version: &str) -> i32 {
+        Self::get_block_id_from_str("minecraft:air", version)
     }
 
-    fn get_block_id_from_nbt(block: &Nbt) -> i32 {
+    fn get_block_id_from_nbt(block: &Nbt, version: &str) -> i32 {
         let block_name = block.find_tag("Name").unwrap().get_string().unwrap();
-        Self::get_block_id_from_str(&block_name)
+        Self::get_block_id_from_str(&block_name, version)
     }
 
-    fn get_block_id_from_str(block_name: &str) -> i32 {
-        let bytes = get_version_bytes("V1_21_7").unwrap();
+    fn get_block_id_from_str(block_name: &str, version: &str) -> i32 {
+        let bytes = get_version_bytes(version).unwrap();
         let num_blocks = bytes.len() / 6;
         let string_id = string_to_index(block_name).unwrap();
         let mut reader = BinaryReader::new(bytes);

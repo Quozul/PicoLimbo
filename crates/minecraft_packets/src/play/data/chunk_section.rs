@@ -26,7 +26,7 @@ impl ChunkSection {
         }
     }
 
-    pub fn from_structure(structure: Structure, biome_id: i32) -> ChunkSection {
+    pub fn from_structure(structure: &Structure, biome_id: i32) -> ChunkSection {
         let block_count: i16 = structure.count_non_air_blocks() as i16;
         let structure_palette: Vec<i32> = structure.get_palette();
         // FIXME: Figure out why this works for 4 and 8 only

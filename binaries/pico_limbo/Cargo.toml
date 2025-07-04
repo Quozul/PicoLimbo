@@ -11,6 +11,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }
 minecraft_packets = { path = "../../crates/minecraft_packets" }
 minecraft_server = { path = "../../crates/minecraft_server" }
+pico_structures = { path = "../../crates/pico_structures" }
 thiserror = "2.0"
 clap = { version = "4.5", features = ["derive"] }
 hmac = "0.12.1"

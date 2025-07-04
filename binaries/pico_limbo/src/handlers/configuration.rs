@@ -6,15 +6,12 @@ use minecraft_packets::configuration::finish_configuration_packet::FinishConfigu
 use minecraft_packets::configuration::registry_data_packet::{
     RegistryDataCodecPacket, RegistryDataPacket,
 };
-use minecraft_packets::play::chunk_batch_finished_packet::ChunkBatchFinishedPacket;
-use minecraft_packets::play::chunk_batch_start_packet::ChunkBatchStartPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessage;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
-use minecraft_packets::play::set_center_chunk_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPosition;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessage;
@@ -26,8 +23,10 @@ use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use minecraft_server::prelude::{Client, HandlerError};
+use pico_structures::prelude::Structure;
+use std::path::Path;
 use thiserror::Error;
-use tracing::trace;
+use tracing::error;
 
 /// Only for <= 1.20.2
 pub async fn send_configuration_packets(
@@ -126,32 +125,28 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
         client.send_packet(packet).await?;
+    }
 
-        let packet = ChunkBatchStartPacket::default();
-        client.send_packet(packet).await?;
+    // Send Chunk Data and Update Light
+    let void_biome_index =
+        get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
 
-        // Send Chunk Data and Update Light
-        let mut chunk_count = 0;
-        let void_biome_index =
-            get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
-        trace!("the_void biome index: {void_biome_index}");
-        for x in -5..=6 {
-            for z in -5..=6 {
-                let packet = if x == 0 && z == 0 {
-                    ChunkDataAndUpdateLightPacket::new(state.structure(), x, z, void_biome_index)
-                } else {
-                    ChunkDataAndUpdateLightPacket::void(x, z, void_biome_index)
-                };
-                client.send_packet(packet).await?;
-                chunk_count += 1;
-            }
+    let structure =
+        Structure::from_structure_file(Path::new(state.structure()), protocol_version.to_string())
+            .map_err(|err| {
+                error!("{err}");
+            })
+            .unwrap();
+
+    for x in -5..=6 {
+        for z in -5..=6 {
+            let packet = if x == 0 && z == 0 {
+                ChunkDataAndUpdateLightPacket::new(&structure, x, z, void_biome_index)
+            } else {
+                ChunkDataAndUpdateLightPacket::void(x, z, void_biome_index)
+            };
+            client.send_packet(packet).await?;
         }
-
-        let packet = ChunkBatchFinishedPacket::new(chunk_count);
-        client.send_packet(packet).await?;
-
-        let packet = SetCenterChunkPacket::new(0, 0);
-        client.send_packet(packet).await?;
     }
 
     if protocol_version >= ProtocolVersion::V1_8 {
