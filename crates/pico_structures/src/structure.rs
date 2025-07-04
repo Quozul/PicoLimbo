@@ -130,6 +130,7 @@ impl Structure {
 
     fn get_air() -> i32 {
         SearchState::new()
+            .version("V1_21_7")
             .block_name("minecraft:air")
             .build()
             .unwrap_or_default()
@@ -138,7 +139,7 @@ impl Structure {
     fn get_block_id_from_nbt(block: &Nbt) -> i32 {
         let block_name = block.find_tag("Name").unwrap().get_string().unwrap();
         let mut search_block_state = SearchState::new();
-        search_block_state.block_name(block_name);
+        search_block_state.version("V1_21_7").block_name(block_name);
         if let Some(properties) = block.find_tag("Properties").map(|p| p.get_vec().unwrap()) {
             for property in properties {
                 let property_name = property.get_name().unwrap();
