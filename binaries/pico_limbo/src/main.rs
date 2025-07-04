@@ -41,7 +41,7 @@ async fn main() -> ExitCode {
 
     let packet_map = PacketMap::new(cli.data_directory);
 
-    Server::<ServerState>::new(bind, server_state, packet_map)
+    Server::new(bind, server_state, packet_map)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)

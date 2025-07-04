@@ -2,6 +2,7 @@ use crate::server::client::Client;
 use crate::server::client_inner::ClientReadPacketError;
 use crate::server::connected_clients::ConnectedClients;
 use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
+use crate::server_state::ServerState;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
 use minecraft_protocol::state::State;
@@ -14,21 +15,15 @@ use tokio::signal;
 use tokio::time::{Duration, interval};
 use tracing::{debug, error, info};
 
-pub struct Server<S>
-where
-    S: Clone + Sync + Send + ConnectedClients + 'static,
-{
-    state: S,
-    handlers: HashMap<String, Box<dyn Handler<S>>>,
+pub struct Server {
+    state: ServerState,
+    handlers: HashMap<String, Box<dyn Handler>>,
     listen_address: String,
     packet_map: PacketMap,
 }
 
-impl<S> Server<S>
-where
-    S: Clone + Sync + Send + ConnectedClients + 'static,
-{
-    pub fn new(listen_address: impl ToString, state: S, packet_map: PacketMap) -> Self {
+impl Server {
+    pub fn new(listen_address: impl ToString, state: ServerState, packet_map: PacketMap) -> Self {
         Self {
             state,
             packet_map,
@@ -40,7 +35,7 @@ where
     pub fn on<T, F, Fut>(mut self, listener_fn: F) -> Self
     where
         T: PacketId + DecodePacket + Send + Sync + 'static,
-        F: Fn(S, Client, T) -> Fut + Send + Sync + 'static,
+        F: Fn(ServerState, Client, T) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<(), HandlerError>> + Send + 'static,
     {
         let packet_name = T::PACKET_NAME.to_string();
@@ -92,11 +87,11 @@ where
     }
 }
 
-async fn handle_client<S: Clone + Sync + Send + ConnectedClients + 'static>(
+async fn handle_client(
     socket: TcpStream,
-    handlers: Arc<HashMap<String, Box<dyn Handler<S>>>>,
+    handlers: Arc<HashMap<String, Box<dyn Handler>>>,
     packet_map_clone: PacketMap,
-    server_state: S,
+    server_state: ServerState,
 ) {
     let client = Client::new(socket, packet_map_clone);
     let mut keep_alive_interval = interval(Duration::from_secs(20));

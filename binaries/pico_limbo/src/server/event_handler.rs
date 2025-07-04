@@ -1,6 +1,7 @@
 use crate::server::client::Client;
 use crate::server::client_inner::ClientSendPacketError;
 use crate::server::named_packet::NamedPacket;
+use crate::server_state::ServerState;
 use async_trait::async_trait;
 use minecraft_protocol::prelude::DecodePacket;
 use std::future::Future;
@@ -26,10 +27,10 @@ impl HandlerError {
 }
 
 #[async_trait]
-pub trait Handler<S>: Send + Sync {
+pub trait Handler: Send + Sync {
     async fn handle(
         &self,
-        state: S,
+        state: ServerState,
         client: Client,
         raw_packet: NamedPacket,
     ) -> Result<(), HandlerError>;
@@ -50,16 +51,15 @@ impl<T, F> ListenerHandler<T, F> {
 }
 
 #[async_trait]
-impl<T, F, Fut, S> Handler<S> for ListenerHandler<T, F>
+impl<T, F, Fut> Handler for ListenerHandler<T, F>
 where
     T: DecodePacket + Send + Sync + 'static,
-    F: Fn(S, Client, T) -> Fut + Send + Sync + 'static,
+    F: Fn(ServerState, Client, T) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Result<(), HandlerError>> + Send + 'static,
-    S: Sync + Send + 'static,
 {
     async fn handle(
         &self,
-        state: S,
+        state: ServerState,
         client: Client,
         raw_packet: NamedPacket,
     ) -> Result<(), HandlerError> {
