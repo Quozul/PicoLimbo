@@ -1,5 +1,3 @@
-mod binary_reader;
-mod binary_writer;
 mod nbt;
 mod nbt_context;
 mod nbt_from_bytes;

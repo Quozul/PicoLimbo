@@ -1,4 +1,5 @@
 use nbt::prelude::{Nbt, NbtDecodeError};
+use pico_codegen::prelude::BinaryReader;
 use std::collections::HashSet;
 use std::path::Path;
 use thiserror::Error;
@@ -129,26 +130,30 @@ impl Structure {
     }
 
     fn get_air() -> i32 {
-        SearchState::new()
-            .version("V1_21_7")
-            .block_name("minecraft:air")
-            .build()
-            .unwrap_or_default()
+        Self::get_block_id_from_str("minecraft:air")
     }
 
     fn get_block_id_from_nbt(block: &Nbt) -> i32 {
         let block_name = block.find_tag("Name").unwrap().get_string().unwrap();
-        let mut search_block_state = SearchState::new();
-        search_block_state.version("V1_21_7").block_name(block_name);
-        if let Some(properties) = block.find_tag("Properties").map(|p| p.get_vec().unwrap()) {
-            for property in properties {
-                let property_name = property.get_name().unwrap();
-                let property_value = property.get_string().unwrap();
-                search_block_state.property(property_name, property_value);
+        Self::get_block_id_from_str(&block_name)
+    }
+
+    fn get_block_id_from_str(block_name: &str) -> i32 {
+        let bytes = get_version_bytes("V1_21_7").unwrap();
+        let num_blocks = bytes.len() / 6;
+        let string_id = string_to_index(block_name).unwrap();
+        let mut reader = BinaryReader::new(bytes);
+
+        for _i in 0..num_blocks {
+            let block_name_id = reader.read_u16();
+            let block_id = reader.read_u32();
+            if block_name_id == string_id {
+                return block_id as i32;
             }
         }
-        search_block_state.build().unwrap_or(Self::get_air())
+
+        0
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/blocks.rs"));
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));

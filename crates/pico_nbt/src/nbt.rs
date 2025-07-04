@@ -1,6 +1,6 @@
-use crate::binary_writer::BinaryWriter;
 use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
+use pico_codegen::prelude::BinaryWriter;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -91,7 +91,7 @@ impl Nbt {
     }
 
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
-        let mut writer = BinaryWriter::new();
+        let mut writer = BinaryWriter::default();
         let context = NbtContext::root();
         self.to_bytes_tag(&mut writer, context, nbt_features);
         writer.into_inner()

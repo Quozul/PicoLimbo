@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 serde_json = "1.0"
 thiserror = "2.0"
-tracing = "0.1"
+pico_codegen = { path = "../pico_codegen", features = ["binary_writer", "binary_reader"] }

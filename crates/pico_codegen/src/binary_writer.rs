@@ -1,4 +1,4 @@
-pub(crate) trait WriteBytes {
+pub trait WriteBytes {
     fn write(&self, out: &mut Vec<u8>);
 }
 
@@ -15,7 +15,7 @@ macro_rules! impl_int {
     }
 }
 
-impl_int!(u8, i8, i16, i32, i64, f32, f64);
+impl_int!(u8, i8, u16, i16, u32, i32, i64, f32, f64);
 
 impl<T: WriteBytes> WriteBytes for [T] {
     #[inline]
@@ -52,18 +52,20 @@ impl<T: WriteBytes + ?Sized> WriteBytes for &T {
     }
 }
 
-pub(crate) struct BinaryWriter(Vec<u8>);
+pub struct BinaryWriter(Vec<u8>);
 
-impl BinaryWriter {
-    pub(crate) fn new() -> Self {
+impl Default for BinaryWriter {
+    fn default() -> Self {
         Self(Vec::with_capacity(1024))
     }
+}
 
-    pub(crate) fn write<T: WriteBytes>(&mut self, v: T) {
+impl BinaryWriter {
+    pub fn write<T: WriteBytes>(&mut self, v: T) {
         v.write(&mut self.0);
     }
 
-    pub(crate) fn into_inner(self) -> Vec<u8> {
+    pub fn into_inner(self) -> Vec<u8> {
         self.0
     }
 }
@@ -75,7 +77,7 @@ mod tests {
     #[test]
     fn test_unsigned_byte() {
         // Given
-        let mut writer = BinaryWriter::new();
+        let mut writer = BinaryWriter::default();
 
         // When
         writer.write(0_u8);
@@ -87,7 +89,7 @@ mod tests {
     #[test]
     fn test_string() {
         // Given
-        let mut writer = BinaryWriter::new();
+        let mut writer = BinaryWriter::default();
         let input = "hello world".to_string();
 
         // When
@@ -106,7 +108,7 @@ mod tests {
     #[test]
     fn test_vec() {
         // Given
-        let mut writer = BinaryWriter::new();
+        let mut writer = BinaryWriter::default();
         let input = vec![1_u8, 2, 3];
 
         // When
