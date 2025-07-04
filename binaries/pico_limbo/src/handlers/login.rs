@@ -1,6 +1,9 @@
 use crate::ServerState;
 use crate::forwarding::check_velocity_key_integrity::check_velocity_key_integrity;
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
+use crate::server::client::Client;
+use crate::server::event_handler::HandlerError;
+use crate::server::game_profile::GameProfile;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;
@@ -10,7 +13,6 @@ use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_protocol::prelude::{DecodePacketField, Uuid};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use minecraft_server::prelude::{Client, GameProfile, HandlerError};
 use rand::Rng;
 use tracing::{error, info};
 

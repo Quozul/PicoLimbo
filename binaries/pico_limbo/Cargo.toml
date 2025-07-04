@@ -10,7 +10,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }
 minecraft_packets = { path = "../../crates/minecraft_packets" }
-minecraft_server = { path = "../../crates/minecraft_server" }
+net = { path = "../../crates/net" }
 thiserror = "2.0"
 clap = { version = "4.5", features = ["derive"] }
 hmac = "0.12.1"
@@ -21,6 +21,7 @@ shadow-rs = { version = "1.1", features = ["metadata"] }
 toml = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+async-trait = "0.1.88"
 
 [build-dependencies]
 shadow-rs = "1.1"

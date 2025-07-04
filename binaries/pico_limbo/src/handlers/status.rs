@@ -1,10 +1,11 @@
 use crate::ServerState;
+use crate::server::client::Client;
+use crate::server::event_handler::HandlerError;
 use minecraft_packets::status::data::status_response::StatusResponse;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PingResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
-use minecraft_server::prelude::{Client, HandlerError};
 
 pub async fn on_status_request(
     state: ServerState,

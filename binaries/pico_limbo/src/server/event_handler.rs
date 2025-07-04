@@ -1,6 +1,6 @@
-use crate::client::Client;
-use crate::client_inner::ClientSendPacketError;
-use crate::named_packet::NamedPacket;
+use crate::server::client::Client;
+use crate::server::client_inner::ClientSendPacketError;
+use crate::server::named_packet::NamedPacket;
 use async_trait::async_trait;
 use minecraft_protocol::prelude::DecodePacket;
 use std::future::Future;

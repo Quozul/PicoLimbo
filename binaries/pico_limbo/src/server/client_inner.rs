@@ -1,5 +1,5 @@
-use crate::game_profile::GameProfile;
-use crate::named_packet::NamedPacket;
+use crate::server::game_profile::GameProfile;
+use crate::server::named_packet::NamedPacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;

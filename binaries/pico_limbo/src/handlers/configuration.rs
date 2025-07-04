@@ -1,3 +1,5 @@
+use crate::server::client::Client;
+use crate::server::event_handler::HandlerError;
 use crate::server_state::ServerState;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
@@ -22,7 +24,6 @@ use minecraft_protocol::data::registry::get_all_registries::{
 use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
-use minecraft_server::prelude::{Client, HandlerError};
 use thiserror::Error;
 
 /// Only for <= 1.20.2

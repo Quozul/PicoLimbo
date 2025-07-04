@@ -1,5 +1,5 @@
+use crate::server::event_handler::HandlerError;
 use crate::server_state::{MisconfiguredForwardingError, ServerState};
-use minecraft_server::prelude::HandlerError;
 use serde::Deserialize;
 use serde_json::Error as JsonError;
 use thiserror::Error;

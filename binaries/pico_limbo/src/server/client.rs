@@ -1,6 +1,6 @@
-use crate::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
-use crate::game_profile::GameProfile;
-use crate::named_packet::NamedPacket;
+use crate::server::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
+use crate::server::game_profile::GameProfile;
+use crate::server::named_packet::NamedPacket;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;

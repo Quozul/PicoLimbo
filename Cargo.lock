@@ -699,20 +699,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "minecraft_server"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "minecraft_packets",
- "minecraft_protocol",
- "net",
- "rand",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -813,11 +799,12 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 name = "pico_limbo"
 version = "1.21.7"
 dependencies = [
+ "async-trait",
  "clap",
  "hmac",
  "minecraft_packets",
  "minecraft_protocol",
- "minecraft_server",
+ "net",
  "rand",
  "serde",
  "serde_json",

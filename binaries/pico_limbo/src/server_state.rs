@@ -1,5 +1,5 @@
+use crate::server::connected_clients::ConnectedClients;
 use minecraft_packets::play::Dimension;
-use minecraft_server::prelude::ConnectedClients;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};

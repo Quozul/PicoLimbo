@@ -1,7 +1,7 @@
-use crate::client::Client;
-use crate::client_inner::ClientReadPacketError;
-use crate::connected_clients::ConnectedClients;
-use crate::event_handler::{Handler, HandlerError, ListenerHandler};
+use crate::server::client::Client;
+use crate::server::client_inner::ClientReadPacketError;
+use crate::server::connected_clients::ConnectedClients;
+use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
 use minecraft_protocol::state::State;
