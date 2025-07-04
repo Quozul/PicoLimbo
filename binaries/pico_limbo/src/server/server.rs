@@ -1,6 +1,5 @@
 use crate::server::client::Client;
 use crate::server::client_inner::ClientReadPacketError;
-use crate::server::connected_clients::ConnectedClients;
 use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
 use crate::server_state::ServerState;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;

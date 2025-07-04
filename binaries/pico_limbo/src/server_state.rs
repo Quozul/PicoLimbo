@@ -1,4 +1,3 @@
-use crate::server::connected_clients::ConnectedClients;
 use minecraft_packets::play::Dimension;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -103,14 +102,12 @@ impl ServerState {
     pub fn game_mode(&self) -> u8 {
         self.game_mode
     }
-}
 
-impl ConnectedClients for ServerState {
-    fn increment(&self) {
+    pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
 
-    fn decrement(&self) {
+    pub fn decrement(&self) {
         self.connected_clients.fetch_sub(1, Ordering::SeqCst);
     }
 }
