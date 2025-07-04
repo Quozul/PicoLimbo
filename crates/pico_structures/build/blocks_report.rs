@@ -11,6 +11,8 @@ struct BlockState {
     #[serde(default)]
     default: bool,
     id: u32,
+    #[serde(default)]
+    properties: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -35,6 +37,14 @@ impl Block {
 
     pub fn get_all_states(&self) -> impl Iterator<Item = String> + '_ {
         self.properties.values().flatten().cloned()
+    }
+
+    pub fn get_state_count(&self) -> usize {
+        self.states.len()
+    }
+
+    pub fn get_properties_count(&self) -> usize {
+        self.properties.len()
     }
 }
 
@@ -67,12 +77,38 @@ impl BlocksReport {
             .collect::<HashSet<_>>()
     }
 
+    pub fn get_block_count(&self) -> u16 {
+        self.0.len() as u16
+    }
+
     pub fn to_bytes(&self, indexer: &StringIndexer) -> Vec<u8> {
-        let mut binary_writer = BinaryWriter::default();
+        let mut writer = BinaryWriter::default();
+        writer.write(self.get_block_count());
         for (block_name, block) in &self.0 {
-            binary_writer.write(indexer.get_index(block_name).unwrap());
-            binary_writer.write(block.get_default_id().unwrap());
+            writer.write(indexer.get_index(block_name).unwrap());
+            writer.write(block.get_default_id().unwrap());
+
+            writer.write(block.get_properties_count() as u16);
+            writer.write(block.get_state_count() as u16);
+
+            for state in block.states.iter() {
+                let property_ids =
+                    state
+                        .properties
+                        .iter()
+                        .map(|(property_name, property_value)| {
+                            let name_id = indexer.get_index(property_name).unwrap();
+                            let value_id = indexer.get_index(property_value).unwrap();
+                            (name_id, value_id)
+                        });
+                for (name_id, value_id) in property_ids {
+                    writer.write(name_id);
+                    writer.write(value_id);
+                }
+
+                writer.write(state.id);
+            }
         }
-        binary_writer.into_inner()
+        writer.into_inner()
     }
 }

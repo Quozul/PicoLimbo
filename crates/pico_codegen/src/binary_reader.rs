@@ -49,6 +49,15 @@ impl<'a> BinaryReader<'a> {
         self.read_string().ok().filter(|s| !s.is_empty())
     }
 
+    pub fn skip<T>(&mut self) {
+        let size = size_of::<T>();
+        self.index += size;
+    }
+
+    pub fn skip_bytes(&mut self, count: usize) {
+        self.index += count;
+    }
+
     impl_read_number!(read_i8, i8);
     impl_read_number!(read_u8, u8);
     impl_read_number!(read_i16, i16);

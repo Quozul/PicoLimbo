@@ -1,3 +1,4 @@
+mod search_block_state;
 mod structure;
 
 pub mod prelude {
