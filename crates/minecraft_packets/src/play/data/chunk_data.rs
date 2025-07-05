@@ -87,7 +87,7 @@ impl ChunkData {
         }
     }
 
-    pub fn all_stone(structure: &Structure, void_biome_index: i32) -> Self {
+    pub fn from_structure(structure: &Structure, void_biome_index: i32) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
             value: vec![0; 37],
@@ -99,7 +99,7 @@ impl ChunkData {
 
         let mut data = Vec::new();
 
-        for i in 0..24 {
+        for _i in 0..24 {
             let section = ChunkSection::from_structure(structure, void_biome_index);
             data.push(section);
         }

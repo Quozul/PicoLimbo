@@ -27,8 +27,8 @@ impl ChunkSection {
     }
 
     pub fn from_structure(structure: &Structure, biome_id: i32) -> ChunkSection {
-        let block_count: i16 = structure.count_non_air_blocks() as i16;
-        let structure_palette: Vec<i32> = structure.get_palette();
+        let block_count: i16 = structure.get_solid_block_count() as i16;
+        let structure_palette = structure.get_palette();
         // FIXME: Figure out why this works for 4 and 8 only
         let bits_per_block: i64 = 8; //(structure_palette.len() as f32).log2().ceil() as i64;
 
@@ -61,11 +61,7 @@ impl ChunkSection {
 
         let block_states = PaletteContainer::Indirect {
             bits_per_entry: bits_per_block as u8,
-            palette: structure_palette
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<VarInt>>()
-                .into(),
+            palette: structure_palette.clone().into(),
             data,
         };
 

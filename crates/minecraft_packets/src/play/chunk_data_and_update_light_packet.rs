@@ -41,12 +41,17 @@ impl ChunkDataAndUpdateLightPacket {
         }
     }
 
-    pub fn new(structure: &Structure, chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
+    pub fn from_structure(
+        structure: &Structure,
+        chunk_x: i32,
+        chunk_z: i32,
+        biome_index: i32,
+    ) -> Self {
         Self {
             chunk_x,
             chunk_z,
             primary_bit_mask: LengthPaddedVec::default(),
-            chunk_data: ChunkData::all_stone(structure, biome_index),
+            chunk_data: ChunkData::from_structure(structure, biome_index),
             trust_edges: true,
             v1_18_light_data: LightData::new_with_level(15),
         }

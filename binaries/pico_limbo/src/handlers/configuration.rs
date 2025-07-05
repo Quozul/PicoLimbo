@@ -132,7 +132,7 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
 
     let structure =
-        Structure::from_structure_file(Path::new(state.structure()), protocol_version.clone())
+        Structure::load_structure_file(Path::new(state.structure()), protocol_version.clone())
             .map_err(|err| {
                 error!("{err}");
             })
@@ -140,7 +140,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
 
     for x in -5..=6 {
         for z in -5..=6 {
-            let packet = ChunkDataAndUpdateLightPacket::new(&structure, x, z, void_biome_index);
+            let packet =
+                ChunkDataAndUpdateLightPacket::from_structure(&structure, x, z, void_biome_index);
             client.send_packet(packet).await?;
         }
     }
