@@ -27,10 +27,7 @@ pub enum PaletteContainer {
 
 impl PaletteContainer {
     pub fn blocks_void() -> Self {
-        Self::SingleValued {
-            bits_per_entry: 0,
-            value: VarInt::default(),
-        }
+        Self::single_valued(0)
     }
 
     pub fn single_valued(value: impl Into<VarInt>) -> Self {

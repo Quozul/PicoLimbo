@@ -1,8 +1,8 @@
 use crate::play::data::palette_container::{PaletteContainer, PaletteContainerError};
 use minecraft_protocol::prelude::*;
+use minecraft_protocol::protocol_version::ProtocolVersion;
 use pico_structures::prelude::Structure;
 use thiserror::Error;
-use tracing::trace;
 
 #[derive(Debug, Clone)]
 pub struct ChunkSection {
@@ -31,11 +31,6 @@ impl ChunkSection {
         let structure_palette: Vec<i32> = structure.get_palette();
         // FIXME: Figure out why this works for 4 and 8 only
         let bits_per_block: i64 = 8; //(structure_palette.len() as f32).log2().ceil() as i64;
-
-        trace!(
-            "bits_per_block={bits_per_block} structure_palette={:?}",
-            structure_palette
-        );
 
         let total_bits = (16 * 16 * 16) * bits_per_block as usize;
         let data_length = total_bits.div_ceil(64);
@@ -118,7 +113,9 @@ impl EncodePacketField for ChunkSection {
     fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
         self.block_count.encode(bytes, protocol_version)?;
         self.block_states.encode(bytes, protocol_version)?;
-        self.biomes.encode(bytes, protocol_version)?;
+        if protocol_version >= ProtocolVersion::V1_18.version_number() {
+            self.biomes.encode(bytes, protocol_version)?;
+        }
         Ok(())
     }
 }

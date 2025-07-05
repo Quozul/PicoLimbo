@@ -11,12 +11,22 @@ use pico_structures::prelude::Structure;
 pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,
+
+    /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
+    /// Up until 1.17.1 included
+    #[pvn(..757)]
+    primary_bit_mask: LengthPaddedVec<i64>,
+
     chunk_data: ChunkData,
+
     /// If edges should be trusted for light updates.
     /// Up until 1.19.4 included
-    #[pvn(..763)]
+    #[pvn(757..763)]
     trust_edges: bool,
-    light_data: LightData,
+
+    // TODO: Implement Update Light packet for versions prior to 1.18
+    #[pvn(757..)]
+    v1_18_light_data: LightData,
 }
 
 impl ChunkDataAndUpdateLightPacket {
@@ -24,9 +34,10 @@ impl ChunkDataAndUpdateLightPacket {
         Self {
             chunk_x,
             chunk_z,
+            primary_bit_mask: LengthPaddedVec::default(),
             chunk_data: ChunkData::void(biome_index),
             trust_edges: true,
-            light_data: LightData::default(),
+            v1_18_light_data: LightData::default(),
         }
     }
 
@@ -34,9 +45,10 @@ impl ChunkDataAndUpdateLightPacket {
         Self {
             chunk_x,
             chunk_z,
+            primary_bit_mask: LengthPaddedVec::default(),
             chunk_data: ChunkData::all_stone(structure, biome_index),
             trust_edges: true,
-            light_data: LightData::new_with_level(15),
+            v1_18_light_data: LightData::new_with_level(15),
         }
     }
 }

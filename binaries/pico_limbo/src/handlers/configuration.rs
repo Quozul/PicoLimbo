@@ -140,11 +140,7 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
 
     for x in -5..=6 {
         for z in -5..=6 {
-            let packet = if x == 0 && z == 0 {
-                ChunkDataAndUpdateLightPacket::new(&structure, x, z, void_biome_index)
-            } else {
-                ChunkDataAndUpdateLightPacket::void(x, z, void_biome_index)
-            };
+            let packet = ChunkDataAndUpdateLightPacket::new(&structure, x, z, void_biome_index);
             client.send_packet(packet).await?;
         }
     }

@@ -9,6 +9,11 @@ use tracing::error;
 pub struct ChunkData {
     height_maps: Nbt,
     v1_21_5_height_maps: LengthPaddedVec<HeightMap>,
+
+    /// Biome IDs, ordered by x then z then y, in 4×4×4 blocks.
+    /// Up until 1.17.5 included
+    biomes: LengthPaddedVec<VarInt>,
+
     /// Size of Data in bytes!
     /// LengthPaddedVec prefixes with the number of elements!
     data: Vec<ChunkSection>,
@@ -76,6 +81,7 @@ impl ChunkData {
                 height_map_type: VarInt::new(4), // Motionblock type
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
+            biomes: vec![VarInt::new(127); 1024].into(),
             data: vec![ChunkSection::void(biome_index); 24],
             block_entities: Vec::new().into(),
         }
@@ -94,11 +100,7 @@ impl ChunkData {
         let mut data = Vec::new();
 
         for i in 0..24 {
-            let section = if i == 12 {
-                ChunkSection::from_structure(structure, void_biome_index)
-            } else {
-                ChunkSection::void(void_biome_index)
-            };
+            let section = ChunkSection::from_structure(structure, void_biome_index);
             data.push(section);
         }
 
@@ -109,6 +111,7 @@ impl ChunkData {
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
             data,
+            biomes: LengthPaddedVec::default(),
             block_entities: Vec::new().into(),
         }
     }
@@ -130,12 +133,19 @@ impl EncodePacketField for ChunkData {
     type Error = ChunkDataError;
 
     fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+        // Encode height maps, version agnostic
         if protocol_version >= ProtocolVersion::V1_21_5.version_number() {
             self.v1_21_5_height_maps.encode(bytes, protocol_version)?;
         } else {
             self.height_maps.encode(bytes, protocol_version)?;
         }
 
+        // Encode biomes
+        if protocol_version <= ProtocolVersion::V1_17_1.version_number() {
+            self.biomes.encode(bytes, protocol_version)?;
+        }
+
+        // Encode data
         let mut encoded_data = Vec::<u8>::new();
         self.data.encode(&mut encoded_data, protocol_version)?;
 
@@ -148,6 +158,7 @@ impl EncodePacketField for ChunkData {
 
         bytes.extend_from_slice(&chunk_sections_payload);
 
+        // Encode block entities
         self.block_entities.encode(bytes, protocol_version)?;
 
         Ok(())
