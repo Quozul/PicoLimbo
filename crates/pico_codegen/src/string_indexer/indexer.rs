@@ -1,4 +1,6 @@
+use crate::prelude::{BinaryReader, BinaryWriter};
 use std::collections::HashSet;
+use std::string::FromUtf8Error;
 
 pub struct StringIndexer {
     pub(crate) strings: Vec<String>,
@@ -36,6 +38,28 @@ impl StringIndexer {
     pub fn strings(&self) -> &[String] {
         &self.strings
     }
+
+    #[cfg(feature = "binary_writer")]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut writer = BinaryWriter::default();
+        let string_count = self.strings.len();
+        writer.write(string_count as u16);
+        for string in &self.strings {
+            writer.write(string);
+        }
+        writer.into_inner()
+    }
+
+    #[cfg(feature = "binary_reader")]
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, FromUtf8Error> {
+        let mut reader = BinaryReader::new(bytes);
+        let string_count = reader.read_u16() as usize;
+        let mut strings = Vec::with_capacity(string_count);
+        for _ in 0..string_count {
+            strings.push(reader.read_string()?);
+        }
+        Ok(Self { strings })
+    }
 }
 
 impl StringIndexer {
@@ -47,5 +71,35 @@ impl StringIndexer {
     /// Create from a Vec of string-like items
     pub fn from_vec<S: Into<String>>(strings: Vec<S>) -> Self {
         Self::new(strings.into_iter().map(|s| s.into()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::StringIndexer;
+
+    #[test]
+    fn test_to_bytes() {
+        // Given
+        let strings = vec!["a", "b"];
+        let indexer = StringIndexer::new(strings);
+
+        // When
+        let bytes = indexer.to_bytes();
+
+        // Then
+        assert_eq!(bytes, &[0, 2, 0, 1, 97, 0, 1, 98]);
+    }
+
+    #[test]
+    fn test_from_bytes() {
+        // Given
+        let bytes = &[0, 2, 0, 1, 97, 0, 1, 98];
+
+        // When
+        let indexer = StringIndexer::from_bytes(bytes).unwrap();
+
+        // Then
+        assert_eq!(indexer.strings, vec!["a", "b"]);
     }
 }

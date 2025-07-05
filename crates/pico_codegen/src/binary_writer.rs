@@ -15,7 +15,7 @@ macro_rules! impl_int {
     }
 }
 
-impl_int!(u8, i8, u16, i16, u32, i32, i64, f32, f64);
+impl_int!(u8, i8, u16, i16, u32, i32, i64, usize, f32, f64);
 
 impl<T: WriteBytes> WriteBytes for [T] {
     #[inline]

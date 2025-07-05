@@ -67,6 +67,7 @@ impl<'a> BinaryReader<'a> {
     impl_read_number!(read_i64, i64);
     impl_read_number!(read_f32, f32);
     impl_read_number!(read_f64, f64);
+    impl_read_number!(read_usize, usize);
     impl_read_array!(read_byte_array, i8, read_i8);
     impl_read_array!(read_int_array, i32, read_i32);
     impl_read_array!(read_long_array, i64, read_i64);

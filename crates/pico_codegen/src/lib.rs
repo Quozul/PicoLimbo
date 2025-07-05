@@ -1,5 +1,5 @@
 #[cfg(feature = "binary_reader")]
-pub mod binary_reader;
+mod binary_reader;
 #[cfg(feature = "binary_writer")]
 mod binary_writer;
 #[cfg(feature = "string_indexer")]

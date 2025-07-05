@@ -7,14 +7,13 @@ build = "build/main.rs"
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-quote = "1.0"
-proc-macro2 = "1.0"
 thiserror = "2.0"
-pico_codegen = { path = "../pico_codegen", features = ["codegen", "string_indexer", "binary_writer"] }
+pico_codegen = { path = "../pico_codegen", features = ["string_indexer", "binary_writer"] }
+minecraft_protocol = { path = "../minecraft_protocol" }
 rayon = "1.10"
 
 [dependencies]
 nbt = { path = "../pico_nbt" }
 thiserror = "2.0"
-tracing = "0.1"
-pico_codegen = { path = "../pico_codegen" }
+pico_codegen = { path = "../pico_codegen", features = ["string_indexer", "binary_reader"] }
+minecraft_protocol = { path = "../minecraft_protocol" }

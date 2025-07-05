@@ -1,5 +1,5 @@
 use crate::prelude::Nbt;
-use pico_codegen::binary_reader::BinaryReader;
+use pico_codegen::prelude::BinaryReader;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;

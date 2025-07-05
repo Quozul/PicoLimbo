@@ -1,4 +1,5 @@
-use pico_codegen::binary_reader::BinaryReader;
+use minecraft_protocol::protocol_version::ProtocolVersion;
+use pico_codegen::prelude::{BinaryReader, StringIndexer};
 
 #[derive(Debug, Default)]
 struct Property {
@@ -27,7 +28,7 @@ impl BlockName {
 #[derive(Debug, Default)]
 pub struct SearchState {
     block_name: BlockName,
-    version: String,
+    version: ProtocolVersion,
     properties: Vec<Property>,
 }
 
@@ -41,8 +42,8 @@ impl SearchState {
         self
     }
 
-    pub fn version(&mut self, version: impl ToString) -> &mut Self {
-        self.version = version.to_string();
+    pub fn version(&mut self, version: ProtocolVersion) -> &mut Self {
+        self.version = version;
         self
     }
 
@@ -54,7 +55,7 @@ impl SearchState {
     }
 
     pub fn find(&mut self) -> Option<i32> {
-        let bytes = get_version_bytes(&self.version).unwrap();
+        let bytes = get_version_bytes(self.version.version_number() as u16).unwrap();
         let mut reader = BinaryReader::new(bytes);
         let num_blocks = reader.read_u16();
 
@@ -105,7 +106,28 @@ impl SearchState {
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+static DATA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/blocks.bin"));
+
+fn get_version_bytes<'a>(version: u16) -> Option<&'a [u8]> {
+    let mut reader = BinaryReader::new(DATA);
+    let version_count = reader.read_u16();
+    for _ in 0..version_count {
+        let version_number = reader.read_u16();
+        let index = reader.read_usize();
+        if version_number == version {
+            return Some(&DATA[index..]);
+        }
+    }
+    None
+}
+
+fn string_to_index(name: &str) -> Option<u16> {
+    let mut reader = BinaryReader::new(DATA);
+    let version_count = reader.read_u16();
+    let header_size = size_of::<u16>() /*version count*/ + version_count as usize * (size_of::<u16>() /*pvn*/ + size_of::<usize>()/*index*/);
+    let indexer = StringIndexer::from_bytes(&DATA[header_size..]).ok()?;
+    indexer.get_index(name)
+}
 
 fn compare_vecs(vec1: &[(u16, u16)], vec2: &[(u16, u16)]) -> bool {
     if vec1.len() != vec2.len() {

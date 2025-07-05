@@ -847,10 +847,6 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 [[package]]
 name = "pico_codegen"
 version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
-]
 
 [[package]]
 name = "pico_limbo"
@@ -892,15 +888,13 @@ dependencies = [
 name = "pico_structures"
 version = "0.1.0"
 dependencies = [
+ "minecraft_protocol",
  "nbt",
  "pico_codegen",
- "proc-macro2",
- "quote",
  "rayon",
  "serde",
  "serde_json",
  "thiserror",
- "tracing",
 ]
 
 [[package]]

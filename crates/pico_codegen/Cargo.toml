@@ -4,12 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-proc-macro2 = { version = "1.0", optional = true }
-quote = { version = "1.0", optional = true }
 
 [features]
 default = []
-codegen = ["proc-macro2", "quote"]
 binary_writer = []
 string_indexer = []
 binary_reader = []
