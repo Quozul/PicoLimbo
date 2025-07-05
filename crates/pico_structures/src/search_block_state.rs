@@ -52,10 +52,6 @@ impl SearchState {
 
         blocks_reports
             .get_version(protocol_version_number, self.block_name)
-            .map(|block| {
-                block
-                    .find_matching_state_id(expected_properties)
-                    .unwrap_or(block.get_default_id())
-            })
+            .map(|block| block.find_matching_state_id(expected_properties))
     }
 }

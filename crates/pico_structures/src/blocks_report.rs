@@ -25,16 +25,17 @@ impl BlocksReport {
     pub fn find_matching_state_id(
         &self,
         expected_properties: Vec<(PropertyName, PropertyValue)>,
-    ) -> Option<StateId> {
+    ) -> StateId {
+        if self.states.is_empty() {
+            return self.default_id;
+        }
+
         for state in &self.states {
             if state.properties == expected_properties {
-                return Some(state.state_id);
+                return state.state_id;
             }
         }
-        None
-    }
 
-    pub fn get_default_id(&self) -> StateId {
         self.default_id
     }
 }
@@ -89,28 +90,35 @@ fn read_version(index: usize) -> HashMap<BlockId, BlocksReport> {
     for _ in 0..num_blocks {
         let block_id = reader.read_u16();
         let default_id = reader.read_u32();
-        let property_count = reader.read_u16();
         let state_count = reader.read_u16();
 
-        let mut states = Vec::with_capacity(state_count as usize);
+        let states = if state_count > 0 {
+            let property_count = reader.read_u16();
 
-        for _ in 0..state_count {
-            let mut properties = Vec::new();
+            let mut states = Vec::with_capacity(state_count as usize);
 
-            for _ in 0..property_count {
-                let property_name = reader.read_u16();
-                let property_value = reader.read_u16();
-                properties.push((property_name, property_value));
+            for _ in 0..state_count {
+                let mut properties = Vec::new();
+
+                for _ in 0..property_count {
+                    let property_name = reader.read_u16();
+                    let property_value = reader.read_u16();
+                    properties.push((property_name, property_value));
+                }
+
+                let state_id = reader.read_u32();
+
+                properties.sort();
+                states.push(BlockState {
+                    properties,
+                    state_id,
+                });
             }
 
-            let state_id = reader.read_u32();
-
-            properties.sort();
-            states.push(BlockState {
-                properties,
-                state_id,
-            });
-        }
+            states
+        } else {
+            Vec::new()
+        };
 
         let block = BlocksReport { states, default_id };
         blocks.insert(block_id, block);

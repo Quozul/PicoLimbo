@@ -15,6 +15,25 @@ struct BlockState {
     properties: HashMap<String, String>,
 }
 
+impl BlockState {
+    fn write_bytes(&self, indexer: &StringIndexer, writer: &mut BinaryWriter) {
+        let property_ids = self
+            .properties
+            .iter()
+            .map(|(property_name, property_value)| {
+                let name_id = indexer.get_index(property_name).unwrap();
+                let value_id = indexer.get_index(property_value).unwrap();
+                (name_id, value_id)
+            });
+        for (name_id, value_id) in property_ids {
+            writer.write(name_id);
+            writer.write(value_id);
+        }
+
+        writer.write(self.id);
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct Block {
     #[serde(default)]
@@ -88,25 +107,16 @@ impl BlocksReport {
             writer.write(indexer.get_index(block_name).unwrap());
             writer.write(block.get_default_id().unwrap());
 
-            writer.write(block.get_properties_count() as u16);
-            writer.write(block.get_state_count() as u16);
+            let state_count = block.get_state_count();
+            if state_count <= 1 {
+                writer.write(0u16);
+            } else {
+                writer.write(block.get_state_count() as u16);
+                writer.write(block.get_properties_count() as u16);
 
-            for state in block.states.iter() {
-                let property_ids =
-                    state
-                        .properties
-                        .iter()
-                        .map(|(property_name, property_value)| {
-                            let name_id = indexer.get_index(property_name).unwrap();
-                            let value_id = indexer.get_index(property_value).unwrap();
-                            (name_id, value_id)
-                        });
-                for (name_id, value_id) in property_ids {
-                    writer.write(name_id);
-                    writer.write(value_id);
+                for state in block.states.iter() {
+                    state.write_bytes(indexer, &mut writer);
                 }
-
-                writer.write(state.id);
             }
         }
         writer.into_inner()
