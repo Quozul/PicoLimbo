@@ -1,3 +1,4 @@
+mod blocks_report;
 mod search_block_state;
 mod structure;
 

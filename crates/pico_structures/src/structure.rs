@@ -1,3 +1,4 @@
+use crate::blocks_report::BlocksReports;
 use crate::search_block_state::SearchState;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use nbt::prelude::{Nbt, NbtDecodeError};
@@ -11,18 +12,21 @@ pub enum StructureError {
     Nbt(#[from] NbtDecodeError),
 }
 
-#[derive(Debug)]
 pub struct Structure {
     structure_nbt: Nbt,
     palette: Vec<i32>,
     version: ProtocolVersion,
+    blocks_reports: BlocksReports,
 }
 
 impl Structure {
+    const AIR: i32 = 0;
+
     pub fn from_structure_file(
         path: &Path,
         version: ProtocolVersion,
     ) -> Result<Self, StructureError> {
+        let blocks_reports = BlocksReports::new().unwrap_or_default();
         let structure_nbt = Nbt::from_file(path)?;
         let palette: Vec<i32> = structure_nbt
             .find_tag("palette")
@@ -30,7 +34,7 @@ impl Structure {
             .get_vec()
             .unwrap()
             .iter()
-            .map(|nbt| Self::get_block_id_from_nbt(nbt, version.clone()))
+            .map(|nbt| Self::get_block_id_from_nbt(nbt, version.clone(), &blocks_reports))
             .collect::<HashSet<i32>>()
             .into_iter()
             .collect();
@@ -38,14 +42,13 @@ impl Structure {
             structure_nbt,
             palette,
             version,
+            blocks_reports,
         })
     }
 
     pub fn get_block_at(&self, x: i32, y: i32, z: i32) -> i32 {
         if self.is_out_of_bounds(x, y, z) {
-            return self
-                .get_index_in_palette(Self::get_air(self.version.clone()))
-                .unwrap_or_default();
+            return self.get_index_in_palette(Self::AIR).unwrap_or_default();
         }
 
         let palette: Vec<Nbt> = self
@@ -73,8 +76,12 @@ impl Structure {
             .unwrap_or(0);
 
         let block = palette.get(palette_index as usize).unwrap();
-        self.get_index_in_palette(Self::get_block_id_from_nbt(block, self.version.clone()))
-            .unwrap_or_default()
+        self.get_index_in_palette(Self::get_block_id_from_nbt(
+            block,
+            self.version.clone(),
+            &self.blocks_reports,
+        ))
+        .unwrap_or_default()
     }
 
     pub fn get_palette(&self) -> Vec<i32> {
@@ -135,27 +142,26 @@ impl Structure {
         x >= max_x || y >= max_y || z >= max_z
     }
 
-    fn get_air(version: ProtocolVersion) -> i32 {
-        SearchState::new()
-            .block_name("minecraft:air")
-            .version(version)
-            .find()
-            .unwrap_or_default()
-    }
-
-    fn get_block_id_from_nbt(block: &Nbt, version: ProtocolVersion) -> i32 {
+    fn get_block_id_from_nbt(
+        block: &Nbt,
+        version: ProtocolVersion,
+        blocks_reports: &BlocksReports,
+    ) -> i32 {
         let block_name = block.find_tag("Name").unwrap().get_string().unwrap();
         let mut search_block_state = SearchState::new();
         search_block_state
             .version(version.clone())
-            .block_name(block_name);
+            .block_name(blocks_reports, block_name);
         if let Some(properties) = block.find_tag("Properties").map(|p| p.get_vec().unwrap()) {
             for property in properties {
                 let property_name = property.get_name().unwrap();
                 let property_value = property.get_string().unwrap();
-                search_block_state.property(property_name, property_value);
+                search_block_state.property(blocks_reports, property_name, property_value);
             }
         }
-        search_block_state.find().unwrap_or(Self::get_air(version))
+        search_block_state
+            .find(blocks_reports)
+            .map(|x| x as i32)
+            .unwrap_or(Self::AIR)
     }
 }

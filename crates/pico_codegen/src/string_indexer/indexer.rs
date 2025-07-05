@@ -2,6 +2,7 @@ use crate::prelude::{BinaryReader, BinaryWriter};
 use std::collections::HashSet;
 use std::string::FromUtf8Error;
 
+#[derive(Clone, Default)]
 pub struct StringIndexer {
     pub(crate) strings: Vec<String>,
 }

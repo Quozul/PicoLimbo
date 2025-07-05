@@ -17,3 +17,4 @@ nbt = { path = "../pico_nbt" }
 thiserror = "2.0"
 pico_codegen = { path = "../pico_codegen", features = ["string_indexer", "binary_reader"] }
 minecraft_protocol = { path = "../minecraft_protocol" }
+tracing = "0.1"

@@ -13,5 +13,8 @@ members = [
     "crates/net",
     "crates/minecraft_server",
     "binaries/pico_limbo",
-    "binaries/pico_ping", "crates/pico_text_component", "crates/pico_structures", "crates/pico_codegen",
+    "binaries/pico_ping",
+    "crates/pico_text_component",
+    "crates/pico_structures",
+    "crates/pico_codegen",
 ]
