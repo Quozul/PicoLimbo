@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 minecraft_packets = { path = "../../crates/minecraft_packets" }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }
+pico_structures = { path = "../../crates/pico_structures" }
 net = { path = "../../crates/net" }
 async-trait = { workspace = true }
 clap = { workspace = true }

@@ -43,6 +43,9 @@
       },
       "minecraft:legacy_chat_message": {
         "protocol_id": 15
+      },
+      "minecraft:level_chunk_with_light": {
+        "protocol_id": 32
       }
     },
     "serverbound": {}

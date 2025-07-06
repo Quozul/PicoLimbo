@@ -24,7 +24,10 @@ use minecraft_protocol::data::registry::get_all_registries::{
 use minecraft_protocol::prelude::Nbt;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
+use pico_structures::prelude::Structure;
+use std::path::Path;
 use thiserror::Error;
+use tracing::error;
 
 /// Only for <= 1.20.2
 pub async fn send_configuration_packets(
@@ -123,11 +126,28 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
         client.send_packet(packet).await?;
+    }
 
-        // Send Chunk Data and Update Light
-        let biome_id = get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
-        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version.clone(), biome_id);
-        client.send_packet(packet).await?;
+    // Send Chunk Data and Update Light
+    let void_biome_index =
+        get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
+
+    let structure =
+        Structure::load_structure_file(Path::new(state.structure()), protocol_version.clone())
+            .map_err(|err| {
+                error!("{err}");
+            })
+            .unwrap();
+
+    for x in -5..=6 {
+        for z in -5..=6 {
+            let packet = if z == 0 && x == 0 {
+                ChunkDataAndUpdateLightPacket::from_structure(&structure, x, z, void_biome_index)
+            } else {
+                ChunkDataAndUpdateLightPacket::void(x, z, void_biome_index)
+            };
+            client.send_packet(packet).await?;
+        }
     }
 
     if protocol_version >= ProtocolVersion::V1_8 {

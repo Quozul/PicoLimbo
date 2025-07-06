@@ -1,0 +1,20 @@
+[package]
+name = "pico_structures"
+version = "0.1.0"
+edition = "2024"
+build = "build/main.rs"
+
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+pico_codegen = { path = "../pico_codegen", features = ["string_indexer", "binary_writer"] }
+minecraft_protocol = { path = "../minecraft_protocol" }
+rayon = "1.10"
+
+[dependencies]
+nbt = { path = "../pico_nbt" }
+thiserror = "2.0"
+pico_codegen = { path = "../pico_codegen", features = ["string_indexer", "binary_reader"] }
+minecraft_protocol = { path = "../minecraft_protocol" }
+tracing = "0.1"
