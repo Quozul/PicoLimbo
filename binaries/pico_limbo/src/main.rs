@@ -12,7 +12,7 @@ use crate::handlers::handshake::on_handshake;
 use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
 use crate::handlers::play::on_player_position;
 use crate::handlers::status::{on_ping_request, on_status_request};
-use crate::server::server::Server;
+use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuildError};
 use clap::Parser;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
