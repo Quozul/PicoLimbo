@@ -31,8 +31,7 @@ through 1.21.7**, excluding snapshots, with only 28 implemented packets covering
 ### ⚙️ Highly Configurable
 
 Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
-MOTD, and more.  
-See the [Configuration](#-example-configuration-file) section for full details.
+MOTD, and more.
 
 ### 🔀 Built-in Proxy Support
 

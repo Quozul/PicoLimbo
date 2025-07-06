@@ -29,7 +29,7 @@ without consuming significant system resources.
 ## What PicoLimbo Will Not Do
 
 - Replace your main game server
-- Support plugins or mods for other servers
+- Support plugins or mods
 - Replicate all Minecraft features
 - Generate, load or interact with a world
 
