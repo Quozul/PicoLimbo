@@ -32,6 +32,7 @@ pub struct ServerState {
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
     game_mode: u8,
+    structure: String,
 }
 
 impl ServerState {
@@ -103,6 +104,10 @@ impl ServerState {
         self.game_mode
     }
 
+    pub fn structure(&self) -> &str {
+        &self.structure
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -128,6 +133,7 @@ pub struct ServerStateBuilder {
     welcome_message: String,
     show_online_player_count: bool,
     game_mode: u8,
+    structure: String,
 }
 
 impl ServerStateBuilder {
@@ -200,6 +206,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn structure(&mut self, structure: String) -> &mut Self {
+        self.structure = structure;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
         Ok(ServerState {
@@ -214,6 +225,7 @@ impl ServerStateBuilder {
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
+            structure: self.structure,
         })
     }
 }

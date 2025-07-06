@@ -45,6 +45,8 @@ pub struct Config {
     /// Sets the default game mode for players
     /// Valid values are: "survival", "creative", "adventure" or "spectator"
     pub default_game_mode: GameModeConfig,
+
+    pub structure: String,
 }
 
 impl Default for Config {
@@ -56,6 +58,7 @@ impl Default for Config {
             welcome_message: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
             default_game_mode: GameModeConfig::default(),
+            structure: "plains_small_house_1".into(),
         }
     }
 }

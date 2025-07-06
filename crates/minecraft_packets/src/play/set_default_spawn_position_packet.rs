@@ -12,7 +12,7 @@ pub struct SetDefaultSpawnPosition {
 impl Default for SetDefaultSpawnPosition {
     fn default() -> Self {
         Self {
-            location: Position::new(0.0, 384.0, 0.0),
+            location: Position::new(0.5, 208.0, 0.5),
             angle: 0.0,
         }
     }

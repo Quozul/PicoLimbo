@@ -85,7 +85,8 @@ fn build_state(
         .welcome_message(&cfg.welcome_message)
         .max_players(cfg.server_list.max_players)
         .show_online_player_count(cfg.server_list.show_online_player_count)
-        .game_mode(cfg.default_game_mode.into());
+        .game_mode(cfg.default_game_mode.into())
+        .structure(cfg.structure);
 
     server_state_builder.build()
 }

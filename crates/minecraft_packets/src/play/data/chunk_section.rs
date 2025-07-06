@@ -1,5 +1,7 @@
 use crate::play::data::palette_container::{PaletteContainer, PaletteContainerError};
 use minecraft_protocol::prelude::*;
+use minecraft_protocol::protocol_version::ProtocolVersion;
+use pico_structures::prelude::Structure;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -12,12 +14,63 @@ pub struct ChunkSection {
     pub biomes: PaletteContainer,
 }
 
+const SECTION_HEIGHT: i64 = 16;
+const SECTION_WIDTH: i64 = 16;
+
 impl ChunkSection {
     pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,
             block_states: PaletteContainer::blocks_void(),
-            biomes: PaletteContainer::single_valued(biome_id.into()),
+            biomes: PaletteContainer::single_valued(biome_id),
+        }
+    }
+
+    pub fn from_structure(structure: &Structure, biome_id: i32) -> ChunkSection {
+        let block_count: i16 = structure.get_solid_block_count() as i16;
+        let structure_palette = structure.get_palette();
+        // FIXME: Figure out why this works for 4 and 8 only
+        let bits_per_block: i64 = 8; //(structure_palette.len() as f32).log2().ceil() as i64;
+
+        let total_bits = (16 * 16 * 16) * bits_per_block as usize;
+        let data_length = total_bits.div_ceil(64);
+        let mut data = vec![0i64; data_length];
+
+        let individual_value_mask = (1 << bits_per_block) - 1;
+
+        for y in 0..SECTION_HEIGHT {
+            for z in 0..SECTION_WIDTH {
+                for x in 0..SECTION_WIDTH {
+                    let block_number: i64 = (((y * SECTION_HEIGHT) + z) * SECTION_WIDTH) + x;
+                    let start_long: i64 = (block_number * bits_per_block) / 64;
+                    let start_offset: i64 = (block_number * bits_per_block) % 64;
+                    let end_long: i64 = ((block_number + 1) * bits_per_block - 1) / 64;
+
+                    let mut value: i64 =
+                        structure.get_block_at(x as i32, y as i32, z as i32) as i64;
+                    value &= individual_value_mask;
+
+                    data[start_long as usize] |= value << start_offset;
+
+                    if start_long != end_long {
+                        data[end_long as usize] = value >> (64 - start_offset);
+                    }
+                }
+            }
+        }
+
+        let block_states = PaletteContainer::Indirect {
+            bits_per_entry: bits_per_block as u8,
+            palette: structure_palette.clone().into(),
+            data,
+        };
+
+        let biomes = PaletteContainer::single_valued(biome_id);
+
+        ChunkSection {
+            block_count,
+            block_states,
+            biomes,
         }
     }
 }
@@ -56,7 +109,9 @@ impl EncodePacketField for ChunkSection {
     fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.block_count.encode(bytes, protocol_version)?;
         self.block_states.encode(bytes, protocol_version)?;
-        self.biomes.encode(bytes, protocol_version)?;
+        if protocol_version >= ProtocolVersion::V1_18.version_number() {
+            self.biomes.encode(bytes, protocol_version)?;
+        }
         Ok(())
     }
 }

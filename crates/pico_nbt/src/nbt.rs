@@ -1,6 +1,6 @@
-use crate::binary_writer::BinaryWriter;
 use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
+use pico_codegen::prelude::BinaryWriter;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -93,7 +93,7 @@ impl Nbt {
     }
 
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
-        let mut writer = BinaryWriter::new();
+        let mut writer = BinaryWriter::default();
         let context = NbtContext::root();
         self.to_bytes_tag(&mut writer, context, nbt_features);
         writer.into_inner()
@@ -113,6 +113,20 @@ impl Nbt {
         match self {
             Self::Compound { value, .. } => Some(value.clone()),
             Self::List { value, .. } => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_int(&self) -> Option<i32> {
+        match self {
+            Self::Int { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Self::String { value, .. } => Some(value.clone()),
             _ => None,
         }
     }
@@ -145,7 +159,7 @@ impl Nbt {
         }
     }
 
-    pub(crate) fn get_name(&self) -> Option<String> {
+    pub fn get_name(&self) -> Option<String> {
         match self {
             Nbt::End => None,
             Nbt::Byte { name, .. } => name.clone(),

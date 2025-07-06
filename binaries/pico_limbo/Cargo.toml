@@ -22,6 +22,7 @@ ping_util = [
 [dependencies]
 minecraft_packets = { path = "../../crates/minecraft_packets" }
 minecraft_protocol = { path = "../../crates/minecraft_protocol" }
+pico_structures = { path = "../../crates/pico_structures" }
 net = { path = "../../crates/net" }
 anyhow = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
