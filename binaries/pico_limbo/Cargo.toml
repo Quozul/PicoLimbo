@@ -4,19 +4,19 @@ version = "1.21.7"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-minecraft_protocol = { path = "../../crates/minecraft_protocol" }
 minecraft_packets = { path = "../../crates/minecraft_packets" }
+minecraft_protocol = { path = "../../crates/minecraft_protocol" }
 net = { path = "../../crates/net" }
-thiserror = "2.0"
-clap = { version = "4.5", features = ["derive"] }
-hmac = "0.12.1"
-sha2 = "0.10.8"
-subtle = "2.6.1"
-rand = "0.9.0"
-toml = "0.8"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-async-trait = "0.1.88"
+async-trait = { workspace = true }
+clap = { workspace = true }
+hmac = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

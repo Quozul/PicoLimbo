@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.45", features = ["io-util", "test-util", "macros"] }
 minecraft_protocol = { path = "../minecraft_protocol" }
-thiserror = "2.0"
+thiserror = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
 tokio-test = "0.4.4"
