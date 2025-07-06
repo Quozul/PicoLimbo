@@ -2,7 +2,6 @@
 name = "pico_limbo"
 version = "1.21.7"
 edition = "2024"
-build = "build.rs"
 
 [dependencies]
 tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
@@ -17,11 +16,7 @@ hmac = "0.12.1"
 sha2 = "0.10.8"
 subtle = "2.6.1"
 rand = "0.9.0"
-shadow-rs = { version = "1.1", features = ["metadata"] }
 toml = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 async-trait = "0.1.88"
-
-[build-dependencies]
-shadow-rs = "1.1"

@@ -1,13 +1,9 @@
 use clap::Parser;
-use shadow_rs::shadow;
 use std::path::PathBuf;
-
-shadow!(build);
 
 #[derive(Parser)]
 #[command(
-    version = build::CLAP_LONG_VERSION,
-    about = "A lightweight Minecraft server written from scratch in Rust supporting Minecraft versions from 1.7.2 up to 1.21.6"
+    about = "A lightweight Minecraft server written in Rust supporting all Minecraft versions"
 )]
 pub struct Cli {
     /// Enable verbose logging
