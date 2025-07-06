@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 macros = { path = "../macros" }
 nbt = { path = "../pico_nbt" }
-packet_serializer = { path = "../packet_serializer" }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

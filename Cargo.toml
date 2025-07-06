@@ -8,7 +8,6 @@ members = [
     "crates/macros",
     "crates/pico_nbt",
     "crates/minecraft_protocol",
-    "crates/packet_serializer",
     "crates/minecraft_packets",
     "crates/net",
     "binaries/pico_limbo",
