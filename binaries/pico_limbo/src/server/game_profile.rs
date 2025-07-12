@@ -29,8 +29,8 @@ impl GameProfile {
 impl From<LoginStartPacket> for GameProfile {
     fn from(value: LoginStartPacket) -> Self {
         Self {
-            username: value.name,
-            uuid: value.player_uuid,
+            username: value.name(),
+            uuid: value.uuid(),
         }
     }
 }
