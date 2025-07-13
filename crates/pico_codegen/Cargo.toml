@@ -7,6 +7,8 @@ edition = "2024"
 
 [features]
 default = []
-binary_writer = []
-string_indexer = []
 binary_reader = []
+binary_writer = []
+length_prefixed = []
+string_indexer = ["length_prefixed"]
+var_int = []

@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-pico_codegen = { path = "../pico_codegen", features = ["binary_writer", "binary_reader"] }
+pico_codegen = { path = "../pico_codegen", features = ["binary_writer", "binary_reader", "length_prefixed"] }

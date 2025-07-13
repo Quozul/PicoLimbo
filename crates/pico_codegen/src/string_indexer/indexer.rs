@@ -1,5 +1,6 @@
 use crate::binary_reader::BinaryReaderError;
-use crate::prelude::{BinaryReader, BinaryWriter};
+use crate::binary_writer::BinaryWriterError;
+use crate::prelude::{BinaryReader, BinaryWriter, ShortPrefixed};
 use std::collections::HashSet;
 
 #[derive(Clone, Default)]
@@ -41,24 +42,27 @@ impl StringIndexer {
     }
 
     #[cfg(feature = "binary_writer")]
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, BinaryWriterError> {
         let mut writer = BinaryWriter::default();
-        let string_count = self.strings.len();
-        writer.write(string_count as u16);
-        for string in &self.strings {
-            writer.write(string);
-        }
-        writer.into_inner()
+        let strings = self
+            .strings
+            .iter()
+            .map(ShortPrefixed::string)
+            .collect::<Vec<ShortPrefixed<String>>>();
+        let prefixed = ShortPrefixed::new(strings);
+        writer.write(&prefixed)?;
+        Ok(writer.into_inner())
     }
 
     #[cfg(feature = "binary_reader")]
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, BinaryReaderError> {
         let mut reader = BinaryReader::new(bytes);
-        let string_count = reader.read::<u16>()? as usize;
-        let mut strings = Vec::with_capacity(string_count);
-        for _ in 0..string_count {
-            strings.push(reader.read::<String>()?);
-        }
+        let strings = reader
+            .read::<ShortPrefixed<Vec<ShortPrefixed<String>>>>()?
+            .into_inner()
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
         Ok(Self { strings })
     }
 }
@@ -86,7 +90,7 @@ mod tests {
         let indexer = StringIndexer::new(strings);
 
         // When
-        let bytes = indexer.to_bytes();
+        let bytes = indexer.to_bytes().unwrap();
 
         // Then
         assert_eq!(bytes, &[0, 2, 0, 1, 97, 0, 1, 98]);

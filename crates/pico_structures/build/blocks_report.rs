@@ -1,4 +1,4 @@
-use pico_codegen::prelude::{BinaryWriter, StringIndexer};
+use pico_codegen::prelude::{BinaryWriter, BinaryWriterError, StringIndexer};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -16,7 +16,11 @@ struct BlockState {
 }
 
 impl BlockState {
-    fn write_bytes(&self, indexer: &StringIndexer, writer: &mut BinaryWriter) {
+    fn write_bytes(
+        &self,
+        indexer: &StringIndexer,
+        writer: &mut BinaryWriter,
+    ) -> Result<(), BinaryWriterError> {
         let property_ids = self
             .properties
             .iter()
@@ -26,11 +30,12 @@ impl BlockState {
                 (name_id, value_id)
             });
         for (name_id, value_id) in property_ids {
-            writer.write(name_id);
-            writer.write(value_id);
+            writer.write(&name_id)?;
+            writer.write(&value_id)?;
         }
 
-        writer.write(self.id);
+        writer.write(&self.id)?;
+        Ok(())
     }
 }
 
@@ -100,25 +105,25 @@ impl BlocksReport {
         self.0.len() as u16
     }
 
-    pub fn to_bytes(&self, indexer: &StringIndexer) -> Vec<u8> {
+    pub fn to_bytes(&self, indexer: &StringIndexer) -> Result<Vec<u8>, BinaryWriterError> {
         let mut writer = BinaryWriter::default();
-        writer.write(self.get_block_count());
+        writer.write(&self.get_block_count())?;
         for (block_name, block) in &self.0 {
-            writer.write(indexer.get_index(block_name).unwrap());
-            writer.write(block.get_default_id().unwrap());
+            writer.write(&indexer.get_index(block_name).unwrap())?;
+            writer.write(&block.get_default_id().unwrap())?;
 
             let state_count = block.get_state_count();
             if state_count <= 1 {
-                writer.write(0u16);
+                writer.write(&0u16)?;
             } else {
-                writer.write(block.get_state_count() as u16);
-                writer.write(block.get_properties_count() as u16);
+                writer.write(&(block.get_state_count() as u16))?;
+                writer.write(&(block.get_properties_count() as u16))?;
 
                 for state in block.states.iter() {
-                    state.write_bytes(indexer, &mut writer);
+                    state.write_bytes(indexer, &mut writer)?;
                 }
             }
         }
-        writer.into_inner()
+        Ok(writer.into_inner())
     }
 }

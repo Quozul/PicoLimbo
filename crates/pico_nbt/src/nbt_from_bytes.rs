@@ -1,5 +1,5 @@
 use crate::prelude::Nbt;
-use pico_codegen::prelude::{BinaryReader, BinaryReaderError};
+use pico_codegen::prelude::{BinaryReader, BinaryReaderError, Prefixed};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
@@ -21,6 +21,7 @@ impl From<BinaryReaderError> for NbtDecodeError {
     fn from(error: BinaryReaderError) -> Self {
         match error {
             BinaryReaderError::UnexpectedEof => Self::UnexpectedEof,
+            BinaryReaderError::Io(err) => Self::Io(err),
             BinaryReaderError::InvalidUtf8(source) => Self::InvalidUtf8(source),
         }
     }
@@ -68,7 +69,8 @@ fn parse_with_type(reader: &mut BinaryReader, tag_type: u8, skip_name: bool) -> 
     let name = if skip_name || tag_type == 0 {
         None
     } else {
-        let name: String = reader.read()?;
+        let name = reader.read::<Prefixed<i16, String>>()?;
+        let name = name.to_string();
         if name.is_empty() { None } else { Some(name) }
     };
 
@@ -103,7 +105,8 @@ fn parse_with_type(reader: &mut BinaryReader, tag_type: u8, skip_name: bool) -> 
             Ok(Nbt::ByteArray { name, value })
         }
         8 => {
-            let value = reader.read()?;
+            let value = reader.read::<Prefixed<i16, String>>()?;
+            let value = value.to_string();
             Ok(Nbt::String { name, value })
         }
         9 => {
