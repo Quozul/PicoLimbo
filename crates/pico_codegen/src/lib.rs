@@ -18,10 +18,10 @@ pub mod prelude {
     pub use crate::binary_writer::{BinaryWriter, BinaryWriterError};
     #[cfg(feature = "length_prefixed")]
     pub use crate::length_prefixed::prefixed::{IntPrefixed, Prefixed, ShortPrefixed};
+    #[cfg(all(feature = "length_prefixed", feature = "var_int"))]
+    pub use crate::length_prefixed::var_int::VarIntPrefixed;
     #[cfg(feature = "string_indexer")]
     pub use crate::string_indexer::indexer::StringIndexer;
     #[cfg(feature = "var_int")]
     pub use crate::var_int::VarInt;
-    #[cfg(all(feature = "length_prefixed", feature = "var_int"))]
-    pub use crate::var_int::VarIntPrefixed;
 }

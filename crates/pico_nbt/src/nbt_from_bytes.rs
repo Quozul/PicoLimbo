@@ -23,6 +23,7 @@ impl From<BinaryReaderError> for NbtDecodeError {
             BinaryReaderError::UnexpectedEof => Self::UnexpectedEof,
             BinaryReaderError::Io(err) => Self::Io(err),
             BinaryReaderError::InvalidUtf8(source) => Self::InvalidUtf8(source),
+            _ => unreachable!(),
         }
     }
 }

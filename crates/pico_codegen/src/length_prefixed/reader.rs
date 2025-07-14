@@ -1,5 +1,5 @@
 use crate::binary_reader::ReadBytes;
-use crate::prelude::{BinaryReader, BinaryReaderError, Prefixed};
+use crate::prelude::{BinaryReader, BinaryReaderError, Prefixed, VarInt};
 
 pub trait ReadLengthPrefix: Sized + ReadBytes {
     fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError>;
@@ -36,15 +36,26 @@ where
     }
 }
 
+fn from_i32(len: i32) -> Result<usize, BinaryReaderError> {
+    len.try_into().map_err(|_| {
+        BinaryReaderError::Io(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid length: negative or too large for usize",
+        ))
+    })
+}
+
 impl ReadLengthPrefix for i32 {
     fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
-        let len: i32 = reader.read()?;
-        len.try_into().map_err(|_| {
-            BinaryReaderError::Io(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Invalid length: negative or too large for usize",
-            ))
-        })
+        let len = reader.read()?;
+        from_i32(len)
+    }
+}
+
+impl ReadLengthPrefix for VarInt {
+    fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
+        let len = reader.read::<VarInt>()?.inner();
+        from_i32(len)
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::binary_reader::{BinaryReader, BinaryReaderError, ReadBytes};
-use crate::prelude::Prefixed;
+use crate::binary_writer::WriteBytes;
+use crate::prelude::{BinaryWriter, BinaryWriterError};
 
 pub const SEGMENT_BITS: u8 = 0x7F;
 pub const CONTINUE_BIT: u8 = 0x80;
@@ -49,9 +50,24 @@ impl ReadBytes for VarInt {
     }
 }
 
-/// Strings and Arrays in Network format are prefixed with their length as a VarInt
-#[cfg(feature = "length_prefixed")]
-pub type VarIntPrefixed<T> = Prefixed<VarInt, T>;
+#[cfg(feature = "binary_writer")]
+impl WriteBytes for VarInt {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryWriterError> {
+        let mut value = self.0 as u32;
+        loop {
+            let mut temp = (value & (SEGMENT_BITS as u32)) as u8;
+            value >>= 7;
+            if value != 0 {
+                temp |= CONTINUE_BIT;
+            }
+            writer.write(&temp)?;
+            if value == 0 {
+                break;
+            }
+        }
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {

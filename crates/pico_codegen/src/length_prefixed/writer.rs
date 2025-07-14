@@ -1,5 +1,5 @@
 use crate::binary_writer::WriteBytes;
-use crate::prelude::{BinaryWriter, BinaryWriterError, Prefixed};
+use crate::prelude::{BinaryWriter, BinaryWriterError, Prefixed, VarInt};
 
 pub trait WriteLengthPrefix: Sized + WriteBytes {
     fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError>;
@@ -60,14 +60,18 @@ where
     }
 }
 
+fn get_i32(len: usize) -> Result<i32, BinaryWriterError> {
+    len.try_into().map_err(|_| {
+        BinaryWriterError::Io(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Length exceeds i32::MAX",
+        ))
+    })
+}
+
 impl WriteLengthPrefix for i32 {
     fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
-        let len_i32: i32 = len.try_into().map_err(|_| {
-            BinaryWriterError::Io(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Length exceeds i32::MAX",
-            ))
-        })?;
+        let len_i32 = get_i32(len)?;
         writer.write(&len_i32)
     }
 }
@@ -81,5 +85,14 @@ impl WriteLengthPrefix for i16 {
             ))
         })?;
         writer.write(&len_i16)
+    }
+}
+
+#[cfg(feature = "var_int")]
+impl WriteLengthPrefix for VarInt {
+    fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
+        let len_i32 = get_i32(len)?;
+        let var_int = VarInt::new(len_i32);
+        writer.write(&var_int)
     }
 }

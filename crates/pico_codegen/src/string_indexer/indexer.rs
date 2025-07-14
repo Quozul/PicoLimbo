@@ -1,6 +1,6 @@
 use crate::binary_reader::BinaryReaderError;
 use crate::binary_writer::BinaryWriterError;
-use crate::prelude::{BinaryReader, BinaryWriter, ShortPrefixed};
+use crate::prelude::{BinaryReader, BinaryWriter, VarIntPrefixed};
 use std::collections::HashSet;
 
 #[derive(Clone, Default)]
@@ -47,9 +47,9 @@ impl StringIndexer {
         let strings = self
             .strings
             .iter()
-            .map(ShortPrefixed::string)
-            .collect::<Vec<ShortPrefixed<String>>>();
-        let prefixed = ShortPrefixed::new(strings);
+            .map(VarIntPrefixed::string)
+            .collect::<Vec<_>>();
+        let prefixed = VarIntPrefixed::new(strings);
         writer.write(&prefixed)?;
         Ok(writer.into_inner())
     }
@@ -58,7 +58,7 @@ impl StringIndexer {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, BinaryReaderError> {
         let mut reader = BinaryReader::new(bytes);
         let strings = reader
-            .read::<ShortPrefixed<Vec<ShortPrefixed<String>>>>()?
+            .read::<VarIntPrefixed<Vec<VarIntPrefixed<String>>>>()?
             .into_inner()
             .into_iter()
             .map(|s| s.to_string())
@@ -93,13 +93,13 @@ mod tests {
         let bytes = indexer.to_bytes().unwrap();
 
         // Then
-        assert_eq!(bytes, &[0, 2, 0, 1, 97, 0, 1, 98]);
+        assert_eq!(bytes, &[2, 1, 97, 1, 98]);
     }
 
     #[test]
     fn test_from_bytes() {
         // Given
-        let bytes = &[0, 2, 0, 1, 97, 0, 1, 98];
+        let bytes = &[2, 1, 97, 1, 98];
 
         // When
         let indexer = StringIndexer::from_bytes(bytes).unwrap();
