@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactored ProtocolVersion enum to be a `repr(i32)`, possibly providing slightly better performances
+- Updated versioning scheme to include Minecraft version compatibility.
 
 ### Fixed
 

@@ -2,9 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
-      - main
     tags:
       - 'v*'
     paths:
@@ -14,7 +11,6 @@ on:
       - 'Cargo.lock'
       - 'Cargo.toml'
       - 'Dockerfile'
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -275,8 +271,6 @@ jobs:
           docker buildx imagetools inspect ghcr.io/${{ env.REPO_LC }}:${{ steps.meta.outputs.version }}
 
   release:
-    if: github.event_name == 'push' && (contains(github.ref, 'refs/heads/') || contains(github.ref, 'refs/tags/'))
-
     permissions:
       contents: write
 
@@ -296,21 +290,9 @@ jobs:
       - name: Generate release info
         id: release_info
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            # Tag push - use tag name and set prerelease to false
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-            echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-            echo "release_name=Release ${TAG_NAME}" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-          else
-            # Branch push - generate tag and set prerelease to true
-            BRANCH_NAME=${GITHUB_REF#refs/heads/}
-            SHORT_SHA=${GITHUB_SHA:0:7}
-            TAG_NAME="${BRANCH_NAME}-${SHORT_SHA}"
-            echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-            echo "release_name=Release ${TAG_NAME}" >> $GITHUB_OUTPUT
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-          fi
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "release_name=Release ${TAG_NAME}" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -327,5 +309,4 @@ jobs:
           tag_name: ${{ steps.release_info.outputs.tag_name }}
           name: ${{ steps.release_info.outputs.release_name }}
           draft: false
-          prerelease: ${{ steps.release_info.outputs.prerelease }}
           files: ./artifacts/*

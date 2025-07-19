@@ -18,19 +18,19 @@ members = [
 [workspace.dependencies]
 anyhow = "1.0.98"
 async-trait = "0.1.88"
-clap = { version = "4.5.40", features = ["derive"] }
+clap = { version = "4.5.41", features = ["derive"] }
 hmac = "0.12.1"
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
 rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
+serde_json = "1.0.141"
 sha2 = "0.10.9"
 subtle = "2.6.1"
 syn = "2.0.104"
 thiserror = "2.0.12"
 tokio = { version = "1.46.1", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
-toml = "0.8.23"
+toml = "0.9.2"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 uuid = { version = "1.17.0", features = ["v4"] }
