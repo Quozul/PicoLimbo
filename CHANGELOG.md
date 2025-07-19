@@ -5,12 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.1+mc1.21.8] - 2025-07-19
 
 ### Changed
 
-- Refactored ProtocolVersion enum to be a `repr(i32)`, possibly providing slightly better performances
-- Updated versioning scheme to include Minecraft version compatibility.
+- Updated versioning scheme to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+  - We'll start with 1.3.1 as we had 3 versions with minor changes before and this one fixes a compatibility issue with ViaVersion
 
 ### Fixed
 
