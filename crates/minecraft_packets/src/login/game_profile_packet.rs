@@ -6,10 +6,7 @@ use minecraft_protocol::prelude::*;
 #[derive(Debug, PacketOut)]
 #[packet_id("login/clientbound/minecraft:game_profile")]
 pub struct GameProfilePacket {
-    #[pvn(735..)]
-    v1_16_uuid: Uuid,
-    #[pvn(..735)]
-    uuid: String,
+    uuid: Uuid,
     username: String,
     #[pvn(759..)]
     properties: LengthPaddedVec<Property>,
@@ -20,8 +17,7 @@ pub struct GameProfilePacket {
 impl GameProfilePacket {
     pub fn new(uuid: Uuid, username: impl ToString) -> Self {
         Self {
-            v1_16_uuid: uuid,
-            uuid: uuid.to_string(),
+            uuid,
             username: username.to_string(),
             properties: Vec::new().into(),
             strict_error_handling: false,

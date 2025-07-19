@@ -20,8 +20,19 @@ impl DecodePacketField for Uuid {
 impl EncodePacketField for Uuid {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, _protocol_version: u32) -> Result<(), Self::Error> {
-        bytes.extend_from_slice(self.as_bytes());
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+        if protocol_version >= 735 {
+            // Since 1.16 (inclusive), UUIDs are sent as bytes
+            bytes.extend_from_slice(self.as_bytes());
+        } else if protocol_version >= 5 {
+            // Since 1.7.6 (inclusive), UUIDs are sent as strings separated by dashes
+            let string = self.to_string();
+            string.encode(bytes, protocol_version)?;
+        } else {
+            // Before 1.7.6 (exclusive), UUIDs are sent as strings without the dashes
+            let string = self.to_string().replace("-", "");
+            string.encode(bytes, protocol_version)?;
+        }
         Ok(())
     }
 }
