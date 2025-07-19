@@ -1,6 +1,6 @@
 [package]
 name = "pico_limbo"
-version = "1.21.7"
+version = "1.21.8"
 edition = "2024"
 
 [dependencies]

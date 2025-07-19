@@ -7,7 +7,7 @@ For users running the Pterodactyl panel, deployment is simplified with the provi
 The egg supports additional installation configuration through the following environment variables:
 
 - **VERSION**
-  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.7`).
+  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.8`).
     - Default: `latest`
     - When set to `latest` (or left unset without enabling prerelease), the installer selects the newest stable release.
 
