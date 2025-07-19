@@ -84,6 +84,10 @@ impl Client {
             .unwrap_or(Self::ANONYMOUS.to_owned())
     }
 
+    pub async fn set_any_version(&self) {
+        self.acquire_lock().await.set_any_version();
+    }
+
     pub async fn set_protocol_version(&self, protocol_version: ProtocolVersion) {
         self.acquire_lock()
             .await
@@ -107,6 +111,10 @@ impl Client {
         self.acquire_lock()
             .await
             .get_velocity_login_message_id_inner()
+    }
+
+    pub async fn is_any_version(&self) -> bool {
+        self.acquire_lock().await.is_any_version()
     }
 
     #[inline]

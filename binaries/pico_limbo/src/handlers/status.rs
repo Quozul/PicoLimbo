@@ -6,16 +6,29 @@ use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PingResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
+use minecraft_protocol::protocol_version::ProtocolVersion;
 
 pub async fn on_status_request(
     state: ServerState,
     client: Client,
     _packet: StatusRequestPacket,
 ) -> Result<(), HandlerError> {
-    let version = client.protocol_version().await;
+    let (version_string, version_number) = if client.is_any_version().await {
+        let oldest = ProtocolVersion::oldest();
+        let latest = ProtocolVersion::latest();
+        let version_string = format!("{oldest}-{latest}");
+        (version_string, -1)
+    } else {
+        let protocol_version = client.protocol_version().await;
+        (
+            protocol_version.humanize().to_string(),
+            protocol_version.version_number() as i32,
+        )
+    };
+
     let status_response = StatusResponse::new(
-        version.humanize(),
-        version.version_number(),
+        version_string,
+        version_number,
         state.description_text(),
         state.online_players(),
         state.max_players(),

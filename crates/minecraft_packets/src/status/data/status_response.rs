@@ -4,7 +4,7 @@ use serde_json::Value;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Version {
     pub name: String,
-    pub protocol: u32,
+    pub protocol: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,8 +41,8 @@ fn get_default_enforces_secure_chat() -> bool {
 
 impl StatusResponse {
     pub fn new(
-        version_name: &str,
-        version_protocol: u32,
+        version_name: String,
+        version_protocol: i32,
         description_text: &str,
         online_players: u32,
         max_players: u32,
@@ -56,7 +56,7 @@ impl StatusResponse {
         let description = Value::Object(description_map);
         StatusResponse {
             version: Version {
-                name: version_name.to_string(),
+                name: version_name,
                 protocol: version_protocol,
             },
             players: Players {

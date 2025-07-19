@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Do not always serialize as dynamic list if possible for >=1.21.5, which could cause incompatibilities with some proxy plugins (e.g. PacketEvents)
 - UUID is misencoded for <1.7.6 preventing connection to PicoLimbo through Velocity when using 1.7.6 or older clients
 - Invalid string decoding could cause a crash of the server if a player tries to connect with a Unicode username
+- Accept -1 protocol version number during handshake to improve support with ViaVersion
 
 ### Removed
 

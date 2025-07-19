@@ -12,7 +12,11 @@ pub async fn on_handshake(
     client: Client,
     packet: HandshakePacket,
 ) -> Result<(), HandlerError> {
-    client.set_protocol_version(packet.get_protocol()).await;
+    if packet.is_any_version() {
+        client.set_any_version().await;
+    } else {
+        client.set_protocol_version(packet.get_protocol()).await;
+    }
 
     if let Ok(next_state) = packet.get_next_state() {
         client.set_state(next_state).await;
@@ -34,6 +38,7 @@ struct UnknownStateError(i32);
 trait GetStateProtocol {
     fn get_next_state(&self) -> Result<State, UnknownStateError>;
     fn get_protocol(&self) -> ProtocolVersion;
+    fn is_any_version(&self) -> bool;
 }
 
 impl GetStateProtocol for HandshakePacket {
@@ -49,5 +54,9 @@ impl GetStateProtocol for HandshakePacket {
 
     fn get_protocol(&self) -> ProtocolVersion {
         ProtocolVersion::from(self.protocol.value())
+    }
+
+    fn is_any_version(&self) -> bool {
+        self.protocol.value() == -1
     }
 }

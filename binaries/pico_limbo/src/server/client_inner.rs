@@ -155,6 +155,11 @@ impl ClientInner {
         self.version = Some(protocol_version);
     }
 
+    pub fn set_any_version(&mut self) {
+        debug!("ClientInner protocol version set to any");
+        self.version = None;
+    }
+
     pub fn protocol_version_inner(&self) -> Option<ProtocolVersion> {
         self.version.clone()
     }
@@ -165,6 +170,10 @@ impl ClientInner {
 
     pub fn get_velocity_login_message_id_inner(&self) -> i32 {
         self.message_id
+    }
+
+    pub fn is_any_version(&self) -> bool {
+        self.version.is_none()
     }
 
     pub async fn shutdown(&mut self) -> std::io::Result<()> {

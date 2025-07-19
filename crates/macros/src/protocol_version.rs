@@ -227,6 +227,10 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             pub fn latest() -> Self {
                 #enum_ident::#max_variant_ident
             }
+
+            pub fn oldest() -> Self {
+                #enum_ident::#min_variant_ident
+            }
         }
     };
 
