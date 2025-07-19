@@ -1,4 +1,4 @@
-use crate::data_types::var_int::{CONTINUE_BIT, VarInt};
+use crate::data_types::var_int::VarInt;
 use crate::prelude::{DecodePacketField, EncodePacketField};
 use thiserror::Error;
 
@@ -30,23 +30,15 @@ impl DecodePacketField for String {
             return Err(DecodeStringError::StringTooLarge);
         }
 
-        while (bytes[*index] & CONTINUE_BIT) != 0 {
-            *index += 1;
-        }
-
-        if *index + length > bytes.len() {
-            return Err(DecodeStringError::InvalidOffset);
-        }
-
         let string_bytes = bytes
             .get(*index..*index + length)
             .ok_or(DecodeStringError::NotEnoughBytes)?;
-        let result =
-            std::str::from_utf8(string_bytes).map_err(DecodeStringError::InvalidUtf8String)?;
+
+        let result_str = std::str::from_utf8(string_bytes)?;
 
         *index += length;
 
-        Ok(result.to_string())
+        Ok(result_str.to_string())
     }
 }
 
@@ -62,12 +54,40 @@ impl EncodePacketField for String {
 
 #[cfg(test)]
 mod test {
-    use crate::prelude::EncodePacketField;
+    use crate::prelude::{DecodePacketField, EncodePacketField};
 
     #[test]
     fn test_encode_string() {
         let mut bytes = Vec::new();
         "hello".to_string().encode(&mut bytes, 0).unwrap();
         assert_eq!(bytes, vec![5, 104, 101, 108, 108, 111]);
+    }
+
+    #[test]
+    fn test_decode_unicode_string() {
+        // Given
+        let mut bytes = Vec::new();
+        // ("unicode" in Russian)
+        "юникод".to_string().encode(&mut bytes, 0).unwrap();
+        let mut index = 0;
+
+        // When
+        let decoded = String::decode(&bytes, &mut index).unwrap();
+
+        // Then
+        assert_eq!("юникод", decoded);
+    }
+
+    #[test]
+    fn test_decode_ascii_string() {
+        // Given
+        let bytes = vec![5, 104, 101, 108, 108, 111];
+        let mut index = 0;
+
+        // When
+        let decoded = String::decode(&bytes, &mut index).unwrap();
+
+        // Then
+        assert_eq!("hello", decoded);
     }
 }

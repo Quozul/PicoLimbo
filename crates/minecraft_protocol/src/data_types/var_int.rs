@@ -2,8 +2,8 @@ use crate::prelude::EncodePacketField;
 use crate::traits::decode_packet_field::DecodePacketField;
 use thiserror::Error;
 
-pub const SEGMENT_BITS: u8 = 0x7F;
-pub const CONTINUE_BIT: u8 = 0x80;
+const SEGMENT_BITS: u8 = 0x7F;
+const CONTINUE_BIT: u8 = 0x80;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum VarIntParseError {
