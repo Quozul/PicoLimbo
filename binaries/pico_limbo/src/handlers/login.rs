@@ -1,9 +1,9 @@
-use crate::ServerState;
 use crate::forwarding::check_velocity_key_integrity::check_velocity_key_integrity;
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
 use crate::server::game_profile::GameProfile;
+use crate::server_state::ServerState;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;

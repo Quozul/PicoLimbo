@@ -1,6 +1,6 @@
-use crate::ServerState;
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
+use crate::server_state::ServerState;
 use minecraft_packets::play::player_position_packet::PlayerPositionPacket;
 use minecraft_protocol::state::State;
 

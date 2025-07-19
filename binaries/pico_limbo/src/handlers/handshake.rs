@@ -1,7 +1,7 @@
-use crate::ServerState;
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
+use crate::server_state::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;

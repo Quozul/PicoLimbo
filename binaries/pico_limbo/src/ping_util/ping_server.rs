@@ -1,9 +1,4 @@
-mod cli;
-mod parse_host_port;
-
-use crate::cli::Cli;
-use crate::parse_host_port::{parse_host_port, parse_socket_addr};
-use clap::Parser;
+use crate::ping_util::parse_host_port::{parse_host_port, parse_socket_addr};
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
@@ -11,20 +6,40 @@ use minecraft_protocol::prelude::DecodePacket;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use net::packet_stream::PacketStream;
 use net::raw_packet::RawPacket;
+use std::process::ExitCode;
 use std::str::FromStr;
 use tokio::net::TcpStream;
+use tracing::{error, info, warn};
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
-    let server_address = &cli.address;
+pub async fn parse_cli_for_ping(address: String, json: bool, version: Option<String>) -> ExitCode {
+    let protocol_version = version
+        .map(|version_string| {
+            ProtocolVersion::from_str(&version_string)
+                .map_err(|_| warn!("Unknown version provided, fallback to latest version."))
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
 
-    let protocol_version = if let Some(version) = cli.version {
-        ProtocolVersion::from_str(&version)?
+    let result = print_server_status(&address, protocol_version, json)
+        .await
+        .map_err(|err| {
+            error!("{}", err);
+        })
+        .is_ok();
+
+    if result {
+        ExitCode::SUCCESS
     } else {
-        ProtocolVersion::latest()
-    };
+        error!("Could not ping the server.");
+        ExitCode::FAILURE
+    }
+}
 
+async fn print_server_status(
+    server_address: &str,
+    protocol_version: ProtocolVersion,
+    json: bool,
+) -> anyhow::Result<()> {
     let mut packet_reader = {
         let socket_addr = parse_socket_addr(server_address)?;
         let stream = TcpStream::connect(socket_addr).await?;
@@ -52,10 +67,10 @@ async fn main() -> anyhow::Result<()> {
         status_response_packet.status_response()?
     };
 
-    if cli.json {
+    if json {
         serde_json::to_writer_pretty(std::io::stdout(), &status_response)?;
     } else {
-        println!(
+        info!(
             "Version: {} (protocol {})",
             status_response.version.name, status_response.version.protocol
         );
@@ -69,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
             _ => "Player list is empty".to_string(),
         };
 
-        println!(
+        info!(
             "Players ({}/{}): {}",
             status_response.players.online, status_response.players.max, player_sample
         );
