@@ -1,0 +1,101 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Support for 1.21.8
+
+### Changed
+
+- Refactor to simplify the Server struct
+- Updated the README and the documentation
+
+### Fixed
+
+- Invalid login start packet between 1.19 and 1.20.1
+- Do not always serialize as dynamic list if possible for >=1.21.5, which could cause incompatibilities with some proxy plugins (e.g. PacketEvents)
+- UUID is misencoded for <1.7.6 preventing connection to PicoLimbo through Velocity when using 1.7.6 or older clients
+- Invalid string decoding could cause a crash of the server if a player tries to connect with a Unicode username
+
+### Removed
+
+- Removed the build script from pico_limbo binary for faster build times, this removes the detailed version number available when using the help command
+
+
+## [v1.21.7] - 2025-06-30
+
+### Added
+
+- Support for 1.21.7
+- Customizable default game mode in configuration
+- Commands auto-completion when running behind a proxy #16
+- Added error message in server's console when modern forwarding failed to help debug issues
+
+### Changed
+
+- Improved de-serialization of spawn dimension configuration
+
+### Fixed
+
+- Send correct biome index in minecraft:login play packet
+- Correctly implement the palette container data type according to 1.21.5 specs
+- Send correct dimension type for 1.20.5, resulting in correct world height and clouds being visible
+
+## [v1.21.6] - 2025-06-23
+
+### Added
+
+- Command-line argument to configure the data directory path
+- Introduced a configuration file for easier setup
+- Configurable default spawn dimension in the configuration file
+- Customizable server Message of the Day (MOTD) and maximum player count (display only) through the configuration file.
+- Configurable welcome message sent to players upon login
+- Support for BungeeCord and BungeeGuard forwarding
+- Added support for 1.21.6
+
+### Changed
+
+- Improved documentation in the README and CLI help
+- Online player count is now included in the server's status response
+- The Pterodactyl egg file includes additional environment variables to easily configure
+- Docker images and standalone binaries are now available for **Linux/arm64**, in addition to Linux/amd64, Windows, and macOS (M-series Macs)
+- The default listening address is now set to 0.0.0.0
+- Improved error logging for clearer diagnostics
+- Direct connection kicks for pre-1.13 clients when modern forwarding is enabled but they attempt to bypass the proxy
+- Refined login sequence to strictly follow Minecraft standards required by BungeeCord
+
+### Fixed
+
+- Fixed issue where the server brand was not sent to clients prior to Minecraft 1.20.2
+- Resolved an issue that caused crashes whenever a null byte was sent to the server during handshake
+- Fixed incorrect Docker image tag in README and docker-compose.yml
+- Removed invalid CLI argument in Dockerfile preventing the server from starting
+- Enhanced stability and reduced server crashes (panics)
+- `worldgen/biome` registry not being sent when running on windows causing a Network Protocol Error on the client
+
+## [v1.21.5-4] - 2025-05-15
+
+- Fixed Docker image not including the assets directory
+- Update Pterodactyl egg to use Alpine
+
+## [v1.21.5-2] - 2025-05-15
+
+- Add project license
+- Enable LTO and set codegen-units to 1 for optimized builds
+- Build for musl Linux to be used in Pterodactyl
+- Remove build for Apple Intel because it is an aging platform
+- Assets is no longer bundled in the binary
+
+## [v1.21.5-2] - 2025-05-07
+
+- Bundle assets into the binary
+
+## [v1.21.5-1] - 2025-05-07
+
+- First official release of PicoLimbo.
