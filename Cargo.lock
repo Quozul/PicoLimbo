@@ -483,6 +483,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 name = "pico_limbo"
 version = "1.3.2+mc1.21.8"
 dependencies = [
+ "anyhow",
  "async-trait",
  "clap",
  "hmac",
@@ -499,19 +500,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "pico_ping"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "minecraft_packets",
- "minecraft_protocol",
- "net",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

@@ -1,6 +1,6 @@
-use crate::ServerState;
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
+use crate::server_state::ServerState;
 use minecraft_packets::status::data::status_response::StatusResponse;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PingResponsePacket;

@@ -11,7 +11,6 @@ members = [
     "crates/minecraft_packets",
     "crates/net",
     "binaries/pico_limbo",
-    "binaries/pico_ping",
     "crates/pico_text_component",
 ]
 

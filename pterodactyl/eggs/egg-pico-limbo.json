@@ -13,7 +13,7 @@
     "ghcr.io\/parkervcp\/yolks:alpine": "ghcr.io\/parkervcp\/yolks:alpine"
   },
   "file_denylist": [],
-  "startup": ".\/pico_limbo",
+  "startup": ".\/pico_limbo server",
   "config": {
     "files": "{\r\n    \"server.toml\": {\r\n        \"parser\": \"file\",\r\n        \"find\": {\r\n            \"bind = \": \"bind = \\\"0.0.0.0:{{server.build.default.port}}\\\"\"\r\n        }\r\n    }\r\n}",
     "startup": "{\r\n    \"done\": \"Listening on:\"\r\n}",
