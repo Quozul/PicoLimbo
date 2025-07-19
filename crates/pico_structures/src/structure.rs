@@ -39,7 +39,7 @@ impl Structure {
 
         let palette: Vec<i32> = palette_nbt
             .iter()
-            .map(|nbt| Self::get_block_id_from_nbt(nbt, version.clone(), &blocks_reports))
+            .map(|nbt| Self::get_block_id_from_nbt(nbt, version, &blocks_reports))
             .collect::<HashSet<i32>>()
             .into_iter()
             .collect();
@@ -75,7 +75,7 @@ impl Structure {
 
             let palette_index = block.find_tag("state").unwrap().get_int().unwrap() as usize;
             let block_nbt = &palette_nbt[palette_index];
-            let block_id = Self::get_block_id_from_nbt(block_nbt, version.clone(), &blocks_reports);
+            let block_id = Self::get_block_id_from_nbt(block_nbt, version, &blocks_reports);
 
             let final_palette_index = block_id_to_palette_index
                 .get(&block_id)
@@ -151,7 +151,7 @@ impl Structure {
         let block_name = block.find_tag("Name").unwrap().get_string().unwrap();
         let mut search_block_state = SearchState::new();
         search_block_state
-            .version(version.clone())
+            .version(version)
             .block_name(blocks_reports, block_name);
         if let Some(properties) = block.find_tag("Properties").map(|p| p.get_vec().unwrap()) {
             for property in properties {
