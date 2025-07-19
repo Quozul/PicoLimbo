@@ -8,7 +8,7 @@ Snapshots and pre-releases are not supported.
 
 | Game Version  | Protocol version | Supported          |
 |---------------|------------------|--------------------|
-| 1.21.7        | 772              | :white_check_mark: |
+| 1.21.7-1.21.8 | 772              | :white_check_mark: |
 | 1.21.6        | 771              | :white_check_mark: |
 | 1.21.5        | 770              | :white_check_mark: |
 | 1.21.4        | 769              | :white_check_mark: |
@@ -55,3 +55,17 @@ Snapshots and pre-releases are not supported.
 | 1.8-1.8.9     | 47               | :white_check_mark: |
 | 1.7.6-1.7.10  | 5                | :white_check_mark: |
 | 1.7.2-1.7.5   | 4                | :white_check_mark: |
+
+## 1.7 Snapshots
+
+The first stable release of the 1.7.x range is 1.7.2. Below is a table of the versions from the netty rewrite (13w41a)
+to the latest 1.7.x snapshot (1.7.1-pre), right before the first stable release (1.7.2).
+
+| Game Version        | Protocol version | Supported                           |
+|---------------------|------------------|-------------------------------------|
+| 1.7-pre - 1.7.1-pre | 3                | Works, but not officially supported |
+| 13w43a              | 2                | Works, but not officially supported |
+| 13w42a - 13w42b     | 1                | Works, but not officially supported |
+| 13w41a - 13w41b     | 0                | Not supported                       |
+
+Do not expect support for any versions before the Netty rewrite. Minecraft version 1.6.4 and older are not supported.

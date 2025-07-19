@@ -6,7 +6,7 @@
 [![Discord](https://img.shields.io/discord/1373364651118694585)](https://discord.gg/M2a9dxJPRy)
 
 An ultra-lightweight, multi-version Minecraft limbo server written in Rust.
-It currently supports all Minecraft versions from 1.7.2 through 1.21.7.
+It currently supports all Minecraft versions from 1.7.2 through 1.21.8.
 
 ---
 
@@ -23,7 +23,7 @@ packets required for client login and maintaining connection (keep-alive) withou
 When idle, PicoLimbo uses almost no resources: 0% CPU and less than 10 MB of memory, making it extremely lightweight.
 
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
-through 1.21.7**, excluding snapshots, with only 28 implemented packets covering over 47 different protocol versions or
+through 1.21.8**, excluding snapshots, with only 28 implemented packets covering over 47 different protocol versions or
 75 Minecraft versions.
 
 ## Features
@@ -43,7 +43,7 @@ Seamlessly integrates with major Minecraft proxies:
 
 ### 🎮 Wide Version Compatibility
 
-Supports all Minecraft versions from **1.7.2 to 1.21.7** natively, no need for ViaVersion or additional compatibility
+Supports all Minecraft versions from **1.7.2 to 1.21.8** natively, no need for ViaVersion or additional compatibility
 layers.
 
 ### ⚡ Ultra-Lightweight & Highly Scalable

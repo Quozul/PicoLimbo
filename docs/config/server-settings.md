@@ -23,7 +23,7 @@ spawn_dimension = "overworld"
 :::
 
 Possible values:
-```toml
+```
 overworld
 nether
 end
@@ -40,6 +40,14 @@ welcome_message = "Welcome to PicoLimbo!"
 ```
 :::
 
+Welcome message can be disabled by setting an empty string.
+
+:::code-group
+```toml [server.toml]
+welcome_message = ""
+```
+:::
+
 ## Default Gamemode
 
 The default game mode for players.
@@ -51,7 +59,7 @@ default_game_mode = "spectator"
 :::
 
 Possible values:
-```toml
+```
 survival
 creative
 adventure
