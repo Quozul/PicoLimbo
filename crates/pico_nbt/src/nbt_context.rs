@@ -22,7 +22,8 @@ impl NbtContext {
     }
 
     pub fn should_include_tag_name(&self, nbt_features: NbtFeatures) -> bool {
-        !(self.is_in_list || nbt_features.is_nameless_available() && self.is_root)
+        let is_nameless_root = nbt_features.is_nameless_available() && self.is_root;
+        !self.is_in_list && !is_nameless_root
     }
 
     pub fn should_include_tag_type(&self) -> bool {

@@ -57,6 +57,8 @@ pub enum Nbt {
 }
 
 impl Nbt {
+    const COMPOUND_TAG_TYPE: u8 = 10;
+
     pub fn nameless_compound(value: Vec<Nbt>) -> Nbt {
         Self::Compound { name: None, value }
     }
@@ -72,7 +74,7 @@ impl Nbt {
         Self::List {
             name: Some(name.to_string()),
             value,
-            tag_type: 10,
+            tag_type: Self::COMPOUND_TAG_TYPE,
         }
     }
 
@@ -137,7 +139,7 @@ impl Nbt {
             Nbt::ByteArray { .. } => 7,
             Nbt::String { .. } => 8,
             Nbt::List { .. } => 9,
-            Nbt::Compound { .. } => 10,
+            Nbt::Compound { .. } => Self::COMPOUND_TAG_TYPE,
             Nbt::IntArray { .. } => 11,
             Nbt::LongArray { .. } => 12,
         }
@@ -216,9 +218,13 @@ impl Nbt {
             Nbt::List {
                 value, tag_type, ..
             } => {
+                let is_same_type = is_vec_of_same_type(value);
+                let is_dynamic_lists_enabled =
+                    !is_same_type && nbt_features.is_dynamic_lists_available();
+
                 // Write the type of the list
-                if nbt_features.is_dynamic_lists_available() {
-                    writer.write(10_u8);
+                if is_dynamic_lists_enabled {
+                    writer.write(Self::COMPOUND_TAG_TYPE);
                 } else {
                     writer.write(*tag_type);
                 };
@@ -228,8 +234,8 @@ impl Nbt {
 
                 // Write each tag in the list
                 for next_tag in value {
-                    if nbt_features.is_dynamic_lists_available() {
-                        let is_compound = next_tag.get_tag_type() == 10;
+                    if is_dynamic_lists_enabled {
+                        let is_compound = next_tag.get_tag_type() == Self::COMPOUND_TAG_TYPE;
                         if is_compound {
                             next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
                         } else {
@@ -258,6 +264,20 @@ impl Nbt {
             }
         };
     }
+}
+
+fn is_vec_of_same_type(value: &Vec<Nbt>) -> bool {
+    let mut prev: Option<u8> = None;
+    for tag in value {
+        let curr = tag.get_tag_type();
+        if let Some(p) = prev {
+            if p != curr {
+                return false;
+            }
+        }
+        prev = Some(curr);
+    }
+    true
 }
 
 #[cfg(test)]
@@ -345,47 +365,134 @@ mod test {
         assert_eq!(serialized, expected);
     }
 
-    #[test]
-    fn test_nbt_list_heterogenous_type() {
-        // Given
-        let features = NbtFeatures::builder().dynamic_lists().build();
-        let nbt = Nbt::List {
-            name: None,
-            value: vec![
+    mod dynamic_lists {
+        use crate::nbt::Nbt;
+        use crate::nbt_version::NbtFeatures;
+
+        #[test]
+        fn test_nbt_list_heterogenous_type() {
+            // Given
+            let features = NbtFeatures::builder().dynamic_lists().build();
+            let nbt = Nbt::List {
+                name: None,
+                value: vec![
+                    Nbt::Int {
+                        name: Some("test".to_string()), // Name is not encoded
+                        value: 123,
+                    },
+                    Nbt::Short {
+                        name: Some("test".to_string()), // Name is not encoded
+                        value: 42,
+                    },
+                ],
+                tag_type: 3, // This is ignored in this case
+            };
+            let expected = vec![
+                9, // List own tag type
+                0, 0,  // List name length
+                10, // Content tag type
+                0, 0, 0, 2, // List length
+                // First element
+                3, // Compound tag type
+                0, 4, // Length of the name
+                116, 101, 115, 116, // Name of the compound tag
+                0, 0, 0, 123, // Compound value
+                0,   // End tag type
+                // Second element
+                2, // Compound tag type
+                0, 4, // Length of the name
+                116, 101, 115, 116, // Name of the compound tag
+                0, 42, // Compound value
+                0,  // End tag type
+            ];
+
+            // When
+            let serialized = nbt.to_bytes(features);
+
+            // Then
+            assert_eq!(serialized, expected);
+        }
+
+        #[test]
+        fn test_nbt_list_same_type_but_feature_enabled() {
+            // Given
+            let features = NbtFeatures::builder().dynamic_lists().build();
+            let nbt = Nbt::List {
+                name: None,
+                value: vec![
+                    Nbt::Int {
+                        name: Some("foo".to_string()), // Name is not encoded
+                        value: 123,
+                    },
+                    Nbt::Int {
+                        name: Some("bar".to_string()), // Name is not encoded
+                        value: 42,
+                    },
+                ],
+                tag_type: 3, // This is ignored in this case
+            };
+            let expected = vec![
+                9, // List own tag type
+                0, 0, // List name length
+                3, // Content tag type
+                0, 0, 0, 2, // List length
+                // First element
+                0, 0, 0, 123, // Tag value
+                // Second element
+                0, 0, 0, 42, // Tag value
+            ];
+
+            // When
+            let serialized = nbt.to_bytes(features);
+
+            // Then
+            assert_eq!(serialized, expected);
+        }
+    }
+
+    mod is_vec_of_same_type {
+        use crate::nbt::{Nbt, is_vec_of_same_type};
+
+        #[test]
+        fn test_is_vec_of_same_type() {
+            // Given
+            let vec = vec![
                 Nbt::Int {
-                    name: Some("test".to_string()),
+                    name: Some("foo".to_string()),
+                    value: 123,
+                },
+                Nbt::Int {
+                    name: Some("bar".to_string()),
+                    value: 42,
+                },
+            ];
+
+            // When
+            let result = is_vec_of_same_type(&vec);
+
+            // Then
+            assert!(result);
+        }
+
+        #[test]
+        fn test_is_vec_not_of_same_type() {
+            // Given
+            let vec = vec![
+                Nbt::Int {
+                    name: Some("foo".to_string()),
                     value: 123,
                 },
                 Nbt::Short {
-                    name: Some("test".to_string()),
+                    name: Some("bar".to_string()),
                     value: 42,
                 },
-            ],
-            tag_type: 3, // This is ignored in this case
-        };
-        let expected = vec![
-            9, // List own tag type
-            0, 0,  // List name length
-            10, // Content tag type
-            0, 0, 0, 2, // List length
-            // First element
-            3, // Compound tag type
-            0, 4, // Length of the name
-            116, 101, 115, 116, // Name of the compound tag
-            0, 0, 0, 123, // Compound value
-            0,   // End tag type
-            // Second element
-            2, // Compound tag type
-            0, 4, // Length of the name
-            116, 101, 115, 116, // Name of the compound tag
-            0, 42, // Compound value
-            0,  // End tag type
-        ];
+            ];
 
-        // When
-        let serialized = nbt.to_bytes(features);
+            // When
+            let result = is_vec_of_same_type(&vec);
 
-        // Then
-        assert_eq!(serialized, expected);
+            // Then
+            assert!(!result);
+        }
     }
 }
