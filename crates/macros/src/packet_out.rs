@@ -42,7 +42,7 @@ pub fn expand_parse_out_packet_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl EncodePacket for #name {
-            fn encode(&self, protocol_version: u32) -> anyhow::Result<Vec<u8>> {
+            fn encode(&self, protocol_version: i32) -> anyhow::Result<Vec<u8>> {
                 let mut bytes = Vec::new();
                 #(#field_parsers)*
                 Ok(bytes)

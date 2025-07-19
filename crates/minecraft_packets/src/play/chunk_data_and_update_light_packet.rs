@@ -73,7 +73,7 @@ pub struct BlockEntity {
 impl EncodePacketField for BlockEntity {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, _bytes: &mut Vec<u8>, _protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, _bytes: &mut Vec<u8>, _protocol_version: i32) -> Result<(), Self::Error> {
         // Nothing to encode
         Ok(())
     }
@@ -89,7 +89,7 @@ pub struct Light {
 impl EncodePacketField for Light {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         let size = VarInt::new(self.block_light_array.len() as i32);
         size.encode(bytes, protocol_version)?;
         for &value in &self.block_light_array {
@@ -108,7 +108,7 @@ pub struct HeightMap {
 impl EncodePacketField for HeightMap {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.height_map_type.encode(bytes, protocol_version)?;
         self.data.encode(bytes, protocol_version).unwrap(); // TODO: Replace unwrap
         Ok(())
@@ -120,7 +120,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn expected_snapshots() -> HashMap<u32, Vec<u8>> {
+    fn expected_snapshots() -> HashMap<i32, Vec<u8>> {
         HashMap::from([
             (
                 770,
@@ -188,7 +188,7 @@ mod tests {
         let snapshots = expected_snapshots();
 
         for (version, expected_bytes) in snapshots {
-            let packet = create_packet(ProtocolVersion::from(version as i32));
+            let packet = create_packet(ProtocolVersion::from(version));
             let bytes = packet.encode(version).unwrap();
             assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }

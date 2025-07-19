@@ -52,7 +52,7 @@ pub async fn send_configuration_packets(
         }
     } else {
         // Only for 1.20.2 and 1.20.3
-        let registry_codec = get_v1_16_2_registry_codec(&protocol_version, state.data_directory());
+        let registry_codec = get_v1_16_2_registry_codec(protocol_version, state.data_directory());
         let packet = RegistryDataCodecPacket { registry_codec };
         client.send_packet(packet).await?;
     }
@@ -78,14 +78,14 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
     let protocol_version = client.protocol_version().await;
 
     let dimension_type = get_dimension_type_index(
-        protocol_version.clone(),
+        protocol_version,
         state.data_directory(),
         state.spawn_dimension().identifier().thing,
     ) as i32;
 
     let packet =
         if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
-            match construct_registry_data(&protocol_version, &state) {
+            match construct_registry_data(protocol_version, &state) {
                 Ok((registry_codec, dimension)) => LoginPacket::new_with_codecs(
                     state.spawn_dimension(),
                     registry_codec,
@@ -125,8 +125,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         client.send_packet(packet).await?;
 
         // Send Chunk Data and Update Light
-        let biome_id = get_the_void_index(protocol_version.clone(), state.data_directory()) as i32;
-        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version.clone(), biome_id);
+        let biome_id = get_the_void_index(protocol_version, state.data_directory()) as i32;
+        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
         client.send_packet(packet).await?;
     }
 
@@ -156,11 +156,11 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
 }
 
 fn construct_registry_data(
-    protocol_version: &ProtocolVersion,
+    protocol_version: ProtocolVersion,
     state: &ServerState,
 ) -> Result<(Nbt, Nbt), RegistryError> {
-    let registry_codec = if *protocol_version == ProtocolVersion::V1_16
-        || *protocol_version == ProtocolVersion::V1_16_1
+    let registry_codec = if protocol_version == ProtocolVersion::V1_16
+        || protocol_version == ProtocolVersion::V1_16_1
     {
         get_v1_16_registry_codec(state.data_directory())
             .map_err(|_| RegistryError::CodecConstruction)?

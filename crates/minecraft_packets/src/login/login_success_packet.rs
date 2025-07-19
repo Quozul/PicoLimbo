@@ -31,7 +31,7 @@ pub struct Property {
 impl EncodePacketField for Property {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.name.encode(bytes, protocol_version)?;
         self.value.encode(bytes, protocol_version)?;
         self.is_signed.encode(bytes, protocol_version)?;

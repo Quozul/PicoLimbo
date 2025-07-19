@@ -53,7 +53,7 @@ impl From<PaletteContainerError> for ChunkSectionError {
 impl EncodePacketField for ChunkSection {
     type Error = ChunkSectionError;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.block_count.encode(bytes, protocol_version)?;
         self.block_states.encode(bytes, protocol_version)?;
         self.biomes.encode(bytes, protocol_version)?;
@@ -66,7 +66,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn expected_snapshots() -> HashMap<u32, Vec<u8>> {
+    fn expected_snapshots() -> HashMap<i32, Vec<u8>> {
         HashMap::from([
             (
                 770,

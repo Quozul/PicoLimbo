@@ -39,7 +39,7 @@ impl<T> From<PoisonError<std::sync::RwLockWriteGuard<'_, T>>> for PacketMapError
     }
 }
 
-type CachedMappings = Arc<RwLock<HashMap<u32, Arc<HashMap<String, u8>>>>>;
+type CachedMappings = Arc<RwLock<HashMap<i32, Arc<HashMap<String, u8>>>>>;
 
 /// A mapping from composite packet names (like "handshake/serverbound/minecraft:intention")
 /// to their packet IDs. This structure also caches the mapping per protocol version,
@@ -69,7 +69,7 @@ impl PacketMap {
     /// `"handshake/serverbound/minecraft:intention"`.
     pub fn get_packet_id(
         &self,
-        protocol_version: &ProtocolVersion,
+        protocol_version: ProtocolVersion,
         packet_path: &'static str,
     ) -> Result<Option<u8>, PacketMapError> {
         let mapping = self.get_mapping(protocol_version)?;
@@ -83,7 +83,7 @@ impl PacketMap {
     /// look for a key starting with `"handshake/serverbound"` whose value is `0`.
     pub fn get_packet_name(
         &self,
-        protocol_version: &ProtocolVersion,
+        protocol_version: ProtocolVersion,
         state: &State,
         packet_id: u8,
     ) -> Result<Option<String>, PacketMapError> {
@@ -98,7 +98,7 @@ impl PacketMap {
     /// Retrieves (or loads and caches) the mapping for the specified protocol version.
     fn get_mapping(
         &self,
-        protocol_version: &ProtocolVersion,
+        protocol_version: ProtocolVersion,
     ) -> Result<Arc<HashMap<String, u8>>, PacketMapError> {
         {
             // Try a quick lookup under a read lock.
@@ -220,7 +220,7 @@ mod tests {
         let protocol_version = ProtocolVersion::V1_21_4;
         let packet_name = "handshake/serverbound/minecraft:intention";
 
-        let packet_id = packet_map.get_packet_id(&protocol_version, packet_name);
+        let packet_id = packet_map.get_packet_id(protocol_version, packet_name);
         assert_eq!(packet_id.unwrap().unwrap(), 0);
     }
 
@@ -230,7 +230,7 @@ mod tests {
         let protocol_version = ProtocolVersion::V1_21_4;
         let packet_name = "handshake/serverbound/minecraft:foo";
 
-        let packet_id = packet_map.get_packet_id(&protocol_version, packet_name);
+        let packet_id = packet_map.get_packet_id(protocol_version, packet_name);
         assert!(packet_id.unwrap().is_none());
     }
 
@@ -241,7 +241,7 @@ mod tests {
         let state = State::Handshake;
         let packet_id = 0;
 
-        let packet_name = packet_map.get_packet_name(&protocol_version, &state, packet_id);
+        let packet_name = packet_map.get_packet_name(protocol_version, &state, packet_id);
         assert_eq!(
             packet_name.unwrap().unwrap(),
             "handshake/serverbound/minecraft:intention".to_string()

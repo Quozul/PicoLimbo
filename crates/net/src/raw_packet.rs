@@ -12,7 +12,7 @@ pub enum RawPacketError {
     #[error("invalid packet length")]
     InvalidPacketLength,
     #[error("failed to encode packet {id} for version {version}")]
-    EncodePacket { id: u8, version: u32 },
+    EncodePacket { id: u8, version: i32 },
 }
 
 impl RawPacket {
@@ -29,7 +29,7 @@ impl RawPacket {
     /// Creates a new raw packet from a serializable packet struct.
     pub fn from_packet<T>(
         packet_id: u8,
-        version_number: u32,
+        version_number: i32,
         packet: &T,
     ) -> Result<Self, RawPacketError>
     where

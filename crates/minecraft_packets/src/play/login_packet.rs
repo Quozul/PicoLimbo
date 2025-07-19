@@ -199,7 +199,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn expected_snapshots() -> HashMap<u32, Vec<u8>> {
+    fn expected_snapshots() -> HashMap<i32, Vec<u8>> {
         HashMap::from([
             (
                 769,

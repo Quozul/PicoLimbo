@@ -36,7 +36,7 @@ impl ClientInner {
     fn get_packet_name_from_id_internal(
         &self,
         packet_id: u8,
-        version: &ProtocolVersion,
+        version: ProtocolVersion,
     ) -> Result<String, ClientReadPacketError> {
         self.packet_map
             .get_packet_name(version, &self.state, packet_id)
@@ -49,7 +49,7 @@ impl ClientInner {
                     name: format!("Unregistered ID 0x{packet_id:02X}"),
                     id: packet_id,
                     state: self.state.clone(),
-                    protocol: version.clone(),
+                    protocol: version,
                 })
             })
     }
@@ -57,7 +57,7 @@ impl ClientInner {
     pub async fn read_named_packet_inner(&mut self) -> Result<NamedPacket, ClientReadPacketError> {
         let raw_packet = self.packet_stream.read_packet().await?;
 
-        let current_version = self.version.clone().unwrap_or_else(|| {
+        let current_version = self.version.unwrap_or_else(|| {
             if self.state == State::Handshake {
                 ProtocolVersion::default()
             } else {
@@ -67,7 +67,7 @@ impl ClientInner {
         });
 
         if let Some(packet_id) = raw_packet.packet_id() {
-            let packet_name = self.get_packet_name_from_id_internal(packet_id, &current_version)?;
+            let packet_name = self.get_packet_name_from_id_internal(packet_id, current_version)?;
             debug!("Received packet {} (id=0x{:02X})", packet_name, packet_id);
             Ok(NamedPacket {
                 name: packet_name,
@@ -86,7 +86,6 @@ impl ClientInner {
     ) -> Result<(), ClientSendPacketError> {
         let version = self
             .version
-            .clone()
             .ok_or_else(|| ClientSendPacketError::VersionNotSet {
                 packet_name: packet.get_packet_name().to_string(),
             })?;
@@ -95,7 +94,7 @@ impl ClientInner {
 
         let packet_id = self
             .packet_map
-            .get_packet_id(&version, packet_name_str)
+            .get_packet_id(version, packet_name_str)
             .map_err(|e| {
                 error!(
                     "Error looking up packet_id for {}: {:?}",
@@ -103,13 +102,13 @@ impl ClientInner {
                 );
                 ClientSendPacketError::UnmappedPacket {
                     packet_name: packet_name_str.to_owned(),
-                    version: version.clone(),
+                    version,
                     state: self.state.clone(),
                 }
             })?
             .ok_or_else(|| ClientSendPacketError::UnmappedPacket {
                 packet_name: packet_name_str.to_owned(),
-                version: version.clone(),
+                version,
                 state: self.state.clone(),
             })?;
 
@@ -155,13 +154,8 @@ impl ClientInner {
         self.version = Some(protocol_version);
     }
 
-    pub fn set_any_version(&mut self) {
-        debug!("ClientInner protocol version set to any");
-        self.version = None;
-    }
-
     pub fn protocol_version_inner(&self) -> Option<ProtocolVersion> {
-        self.version.clone()
+        self.version
     }
 
     pub fn set_velocity_login_message_id_inner(&mut self, message_id: i32) {
@@ -170,10 +164,6 @@ impl ClientInner {
 
     pub fn get_velocity_login_message_id_inner(&self) -> i32 {
         self.message_id
-    }
-
-    pub fn is_any_version(&self) -> bool {
-        self.version.is_none()
     }
 
     pub async fn shutdown(&mut self) -> std::io::Result<()> {

@@ -42,7 +42,7 @@ pub enum NodeError {
 impl EncodePacketField for Node {
     type Error = NodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.flags.encode(bytes, protocol_version)?;
         self.children.encode(bytes, protocol_version)?;
         Ok(())

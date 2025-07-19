@@ -45,7 +45,7 @@ impl DecodePacketField for String {
 impl EncodePacketField for String {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         VarInt::new(self.len() as i32).encode(bytes, protocol_version)?;
         bytes.extend_from_slice(self.as_bytes());
         Ok(())

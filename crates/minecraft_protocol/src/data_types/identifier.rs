@@ -67,7 +67,7 @@ impl DecodePacketField for Identifier {
 impl EncodePacketField for Identifier {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         let string = format!("{}:{}", self.namespace, self.thing);
         string.encode(bytes, protocol_version)
     }

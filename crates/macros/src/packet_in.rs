@@ -52,7 +52,7 @@ pub fn expand_parse_packet_in_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl DecodePacket for #name {
-            fn decode(bytes: &[u8], protocol_version: u32) -> Result<Self, DecodePacketError> {
+            fn decode(bytes: &[u8], protocol_version: i32) -> Result<Self, DecodePacketError> {
                 let mut index = 0;
                 #(#field_parsers)*
 

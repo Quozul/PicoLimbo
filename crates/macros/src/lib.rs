@@ -22,5 +22,5 @@ pub fn parse_out_packet_derive(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Pvn, attributes(pvn, default))]
 pub fn protocol_version_derive(input: TokenStream) -> TokenStream {
-    protocol_version::expand_protocol_version_derive(input)
+    protocol_version::expand::expand_protocol_version_derive(input)
 }

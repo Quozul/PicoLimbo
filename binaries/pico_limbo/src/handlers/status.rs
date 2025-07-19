@@ -22,7 +22,7 @@ pub async fn on_status_request(
         let protocol_version = client.protocol_version().await;
         (
             protocol_version.humanize().to_string(),
-            protocol_version.version_number() as i32,
+            protocol_version.version_number(),
         )
     };
 

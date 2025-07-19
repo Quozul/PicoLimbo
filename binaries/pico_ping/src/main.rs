@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
 
     {
         let (hostname, port) = parse_host_port(server_address);
-        let handshake_packet = HandshakePacket::status(protocol_version.clone(), hostname, port);
+        let handshake_packet = HandshakePacket::status(protocol_version, hostname, port);
         let packet =
             RawPacket::from_packet(0, protocol_version.version_number(), &handshake_packet)?;
         packet_reader.write_packet(packet).await?;

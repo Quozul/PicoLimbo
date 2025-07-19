@@ -83,7 +83,7 @@ pub enum LengthPaddedVecEncodeError {
 impl<T: EncodePacketField> EncodePacketField for LengthPaddedVec<T> {
     type Error = LengthPaddedVecEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         VarInt::new(self.0.len() as i32)
             .encode(bytes, protocol_version)
             .map_err(|_| LengthPaddedVecEncodeError::EncodeError)?;

@@ -20,7 +20,7 @@ impl DecodePacketField for Uuid {
 impl EncodePacketField for Uuid {
     type Error = std::convert::Infallible;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         if protocol_version >= 735 {
             // Since 1.16 (inclusive), UUIDs are sent as bytes
             bytes.extend_from_slice(self.as_bytes());

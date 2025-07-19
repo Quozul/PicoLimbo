@@ -11,7 +11,7 @@ pub enum VecEncodeError {
 impl<T: EncodePacketField> EncodePacketField for Vec<T> {
     type Error = VecEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         for value in self {
             value
                 .encode(bytes, protocol_version)

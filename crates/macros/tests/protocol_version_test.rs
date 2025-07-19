@@ -1,17 +1,13 @@
 #[cfg(test)]
 mod tests {
     use macros::Pvn;
-    use std::str::FromStr;
 
-    #[derive(Default, Debug, Pvn, Eq, PartialEq)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd, Pvn)]
     pub enum ProtocolVersion {
         #[default]
-        #[pvn(769)]
-        V1_21_4,
-        #[pvn(768)]
-        V1_21_2,
-        #[pvn(767)]
-        V1_21,
+        V1_21_4 = 769,
+        V1_21_2 = 768,
+        V1_21 = 767,
     }
 
     #[test]

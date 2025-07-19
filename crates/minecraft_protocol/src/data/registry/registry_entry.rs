@@ -21,7 +21,7 @@ pub enum RegistryEntryEncodeError {
 impl EncodePacketField for RegistryEntry {
     type Error = RegistryEntryEncodeError;
 
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: u32) -> Result<(), Self::Error> {
+    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         self.entry_id
             .encode(bytes, protocol_version)
             .map_err(|_| RegistryEntryEncodeError::Identifier)?;
