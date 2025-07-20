@@ -75,7 +75,7 @@ pub async fn on_custom_query_answer(
             let player_uuid = Uuid::decode(buf, &mut index).unwrap_or_default();
             let player_name = String::decode(buf, &mut index).unwrap_or_default();
 
-            let game_profile = GameProfile::new(player_name, player_uuid);
+            let game_profile = GameProfile::new(&player_name, player_uuid);
             fire_login_success(client, game_profile, state).await?;
         } else {
             client.kick("You must connect through a proxy.").await?;

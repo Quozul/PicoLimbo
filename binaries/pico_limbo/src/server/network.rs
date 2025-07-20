@@ -22,7 +22,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(listen_address: impl ToString, state: ServerState, packet_map: PacketMap) -> Self {
+    pub fn new(listen_address: &impl ToString, state: ServerState, packet_map: PacketMap) -> Self {
         Self {
             state,
             packet_map,
@@ -86,6 +86,7 @@ impl Server {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn handle_client(
     socket: TcpStream,
     handlers: Arc<HashMap<String, Box<dyn Handler>>>,

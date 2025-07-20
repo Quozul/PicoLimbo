@@ -18,7 +18,7 @@ pub async fn on_handshake(
         client.set_state(next_state).await;
 
         if client.current_state().await == State::Login
-            && !check_bungee_cord(state, packet.hostname)?
+            && !check_bungee_cord(&state, &packet.hostname)?
         {
             client.kick("You must connect through a proxy.").await?;
         }

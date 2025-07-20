@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum ForwardingMode {
     #[default]
     Disabled,
@@ -35,16 +35,16 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    /// Start building a new ServerState.
+    /// Start building a new `ServerState`.
     pub fn builder() -> ServerStateBuilder {
         ServerStateBuilder::default()
     }
 
-    pub fn is_legacy_forwarding(&self) -> bool {
+    pub const fn is_legacy_forwarding(&self) -> bool {
         matches!(self.forwarding_mode, ForwardingMode::Legacy)
     }
 
-    pub fn is_modern_forwarding(&self) -> bool {
+    pub const fn is_modern_forwarding(&self) -> bool {
         matches!(self.forwarding_mode, ForwardingMode::Modern { .. })
     }
 
@@ -55,7 +55,7 @@ impl ServerState {
         }
     }
 
-    pub fn is_bungee_guard_forwarding(&self) -> bool {
+    pub const fn is_bungee_guard_forwarding(&self) -> bool {
         matches!(self.forwarding_mode, ForwardingMode::BungeeGuard { .. })
     }
 
@@ -70,7 +70,7 @@ impl ServerState {
         &self.description_text
     }
 
-    pub fn max_players(&self) -> u32 {
+    pub const fn max_players(&self) -> u32 {
         self.max_players
     }
 
@@ -91,15 +91,15 @@ impl ServerState {
         }
     }
 
-    pub fn spawn_dimension(&self) -> &Dimension {
+    pub const fn spawn_dimension(&self) -> &Dimension {
         &self.spawn_dimension
     }
 
-    pub fn data_directory(&self) -> &PathBuf {
+    pub const fn data_directory(&self) -> &PathBuf {
         &self.data_directory
     }
 
-    pub fn game_mode(&self) -> u8 {
+    pub const fn game_mode(&self) -> u8 {
         self.game_mode
     }
 
@@ -164,7 +164,7 @@ impl ServerStateBuilder {
     }
 
     /// Set the spawn dimension
-    pub fn dimension(&mut self, dimension: Dimension) -> &mut Self {
+    pub const fn dimension(&mut self, dimension: Dimension) -> &mut Self {
         self.dimension = Some(dimension);
         self
     }
@@ -177,7 +177,7 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn max_players(&mut self, max_players: u32) -> &mut Self {
+    pub const fn max_players(&mut self, max_players: u32) -> &mut Self {
         self.max_players = max_players;
         self
     }
@@ -190,12 +190,12 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn show_online_player_count(&mut self, show: bool) -> &mut Self {
+    pub const fn show_online_player_count(&mut self, show: bool) -> &mut Self {
         self.show_online_player_count = show;
         self
     }
 
-    pub fn game_mode(&mut self, game_mode: u8) -> &mut Self {
+    pub const fn game_mode(&mut self, game_mode: u8) -> &mut Self {
         self.game_mode = game_mode;
         self
     }

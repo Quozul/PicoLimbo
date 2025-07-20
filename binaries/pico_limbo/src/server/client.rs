@@ -53,6 +53,7 @@ impl Client {
             let packet = ClientBoundKeepAlivePacket::new(get_random_i64());
             inner.send_encodable_packet_inner(packet).await?;
         }
+        drop(inner);
         Ok(())
     }
 
@@ -66,6 +67,7 @@ impl Client {
             inner.send_encodable_packet_inner(packet).await?;
         }
         inner.shutdown().await?;
+        drop(inner);
         Ok(())
     }
 
@@ -78,10 +80,10 @@ impl Client {
     }
 
     pub async fn get_username(&self) -> String {
-        self.game_profile()
-            .await
-            .map(|profile| profile.username().to_owned())
-            .unwrap_or(Self::ANONYMOUS.to_owned())
+        self.game_profile().await.map_or_else(
+            || Self::ANONYMOUS.to_owned(),
+            |profile| profile.username().to_owned(),
+        )
     }
 
     pub async fn set_protocol_version(&self, protocol_version: ProtocolVersion) {

@@ -56,15 +56,7 @@ impl ClientInner {
 
     pub async fn read_named_packet_inner(&mut self) -> Result<NamedPacket, ClientReadPacketError> {
         let raw_packet = self.packet_stream.read_packet().await?;
-
-        let current_version = self.version.unwrap_or_else(|| {
-            if self.state == State::Handshake {
-                ProtocolVersion::default()
-            } else {
-                error!("CRITICAL: Protocol version not set while reading packet in state {:?}. This will likely lead to errors.", self.state);
-                ProtocolVersion::default()
-            }
-        });
+        let current_version = self.version.unwrap_or_default();
 
         if let Some(packet_id) = raw_packet.packet_id() {
             let packet_name = self.get_packet_name_from_id_internal(packet_id, current_version)?;
@@ -126,7 +118,7 @@ impl ClientInner {
         Ok(())
     }
 
-    pub fn current_state(&self) -> &State {
+    pub const fn current_state(&self) -> &State {
         &self.state
     }
 
@@ -142,7 +134,7 @@ impl ClientInner {
         self.game_profile = Some(profile);
     }
 
-    pub fn game_profile_inner(&self) -> Option<&GameProfile> {
+    pub const fn game_profile_inner(&self) -> Option<&GameProfile> {
         self.game_profile.as_ref()
     }
 
@@ -154,15 +146,15 @@ impl ClientInner {
         self.version = Some(protocol_version);
     }
 
-    pub fn protocol_version_inner(&self) -> Option<ProtocolVersion> {
+    pub const fn protocol_version_inner(&self) -> Option<ProtocolVersion> {
         self.version
     }
 
-    pub fn set_velocity_login_message_id_inner(&mut self, message_id: i32) {
+    pub const fn set_velocity_login_message_id_inner(&mut self, message_id: i32) {
         self.message_id = message_id;
     }
 
-    pub fn get_velocity_login_message_id_inner(&self) -> i32 {
+    pub const fn get_velocity_login_message_id_inner(&self) -> i32 {
         self.message_id
     }
 
