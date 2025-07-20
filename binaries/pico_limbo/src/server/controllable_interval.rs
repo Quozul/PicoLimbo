@@ -31,10 +31,9 @@ impl ControllableInterval {
     /// Any task currently waiting on `tick()` will be woken up and will
     /// start waiting for the new interval.
     pub async fn set_interval(&self, period: Duration) {
-        let mut state = self.state.lock().await;
         let mut new_interval = tokio::time::interval(period);
         new_interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
-        state.interval = Some(new_interval);
+        self.state.lock().await.interval = Some(new_interval);
         self.notify.notify_waiters();
     }
 
@@ -46,10 +45,9 @@ impl ControllableInterval {
     /// Any task currently waiting on `tick()` will be woken up and will
     /// start waiting for the new interval to begin.
     pub async fn set_interval_at(&self, start: Instant, period: Duration) {
-        let mut state = self.state.lock().await;
         let mut new_interval = tokio::time::interval_at(start, period);
         new_interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
-        state.interval = Some(new_interval);
+        self.state.lock().await.interval = Some(new_interval);
         self.notify.notify_waiters();
     }
 
@@ -58,8 +56,7 @@ impl ControllableInterval {
     /// Any task currently waiting on `tick()` will be woken up and will
     /// wait indefinitely until a new interval is set.
     pub async fn clear_interval(&self) {
-        let mut state = self.state.lock().await;
-        state.interval = None;
+        self.state.lock().await.interval = None;
         // Notify any waiting tasks that the interval has been cleared.
         self.notify.notify_waiters();
     }
@@ -84,7 +81,7 @@ impl ControllableInterval {
                         _ = interval.tick() => {
                             break;
                         }
-                        _ = notified => {
+                        () = notified => {
                             continue;
                         }
                     }

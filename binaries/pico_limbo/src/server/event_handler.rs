@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use minecraft_protocol::prelude::DecodePacket;
 use std::future::Future;
 use std::marker::PhantomData;
+use std::num::TryFromIntError;
 use std::sync::Arc;
 use thiserror::Error;
 use tracing::error;
@@ -16,6 +17,8 @@ pub enum HandlerError {
     Protocol(String),
     #[error(transparent)]
     Client(#[from] ClientSendPacketError),
+    #[error(transparent)]
+    CastError(#[from] TryFromIntError),
     #[error("Handler error: {0}")]
     Custom(String),
 }

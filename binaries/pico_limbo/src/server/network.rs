@@ -21,7 +21,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(listen_address: impl ToString, state: ServerState, packet_map: PacketMap) -> Self {
+    pub fn new(listen_address: &impl ToString, state: ServerState, packet_map: PacketMap) -> Self {
         Self {
             state,
             packet_map,
@@ -76,7 +76,7 @@ impl Server {
                     }
                 },
 
-                _ = shutdown_signal() => {
+                () = shutdown_signal() => {
                     info!("Shutdown signal received, shutting down gracefully.");
                     break;
                 }
@@ -85,6 +85,7 @@ impl Server {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 async fn handle_client(
     socket: TcpStream,
     handlers: Arc<HashMap<String, Box<dyn Handler>>>,
@@ -146,7 +147,7 @@ async fn handle_client(
                 }
             },
 
-            _ = client.keep_alive_tick() => {
+            () = client.keep_alive_tick() => {
                 if let Err(err) = client.send_keep_alive().await {
                     match err {
                         ClientSendPacketError::UnmappedPacket { packet_name, state, version, .. } => {

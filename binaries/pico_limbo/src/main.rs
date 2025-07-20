@@ -1,3 +1,4 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 mod cli;
 #[cfg(feature = "server")]
 mod configuration;
@@ -44,7 +45,6 @@ fn enable_logging(verbose: u8) {
     let log_level = match verbose {
         0 => Level::INFO,
         1 => Level::DEBUG,
-        2 => Level::TRACE,
         _ => Level::TRACE,
     };
 

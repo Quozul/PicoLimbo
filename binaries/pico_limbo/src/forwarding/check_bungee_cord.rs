@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_json::Error as JsonError;
 use thiserror::Error;
 
-pub fn check_bungee_cord(state: ServerState, hostname: String) -> Result<bool, BungeeGuardError> {
+pub fn check_bungee_cord(state: &ServerState, hostname: &str) -> Result<bool, BungeeGuardError> {
     if state.is_legacy_forwarding() {
         Ok(hostname.contains('\0'))
     } else if state.is_bungee_guard_forwarding() {
@@ -14,10 +14,7 @@ pub fn check_bungee_cord(state: ServerState, hostname: String) -> Result<bool, B
     }
 }
 
-fn check_bungee_guard_token(
-    state: ServerState,
-    hostname: String,
-) -> Result<bool, BungeeGuardError> {
+fn check_bungee_guard_token(state: &ServerState, hostname: &str) -> Result<bool, BungeeGuardError> {
     const BUNGEE_GUARD_TOKEN_PROPERTY_NAME: &str = "bungeeguard-token";
     let parts: Vec<&str> = hostname.split('\0').collect();
 
@@ -53,6 +50,6 @@ pub enum BungeeGuardError {
 
 impl From<BungeeGuardError> for HandlerError {
     fn from(e: BungeeGuardError) -> Self {
-        HandlerError::custom(e.to_string())
+        Self::custom(e.to_string())
     }
 }

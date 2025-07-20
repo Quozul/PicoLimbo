@@ -11,9 +11,7 @@ use std::process::ExitCode;
 use tracing::{debug, error};
 
 pub async fn start_server(data_directory: PathBuf, config_path: PathBuf) -> ExitCode {
-    let cfg = if let Some(cfg) = load_configuration(&config_path) {
-        cfg
-    } else {
+    let Some(cfg) = load_configuration(&config_path) else {
         return ExitCode::FAILURE;
     };
 
@@ -24,7 +22,7 @@ pub async fn start_server(data_directory: PathBuf, config_path: PathBuf) -> Exit
 
     let packet_map = PacketMap::new(data_directory);
 
-    Server::new(bind, server_state, packet_map)
+    Server::new(&bind, server_state, packet_map)
         .on(on_handshake)
         .on(on_status_request)
         .on(on_ping_request)

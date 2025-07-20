@@ -13,9 +13,9 @@ pub enum SpawnDimensionConfig {
 impl From<SpawnDimensionConfig> for Dimension {
     fn from(dimension: SpawnDimensionConfig) -> Self {
         match dimension {
-            SpawnDimensionConfig::Overworld => Dimension::Overworld,
-            SpawnDimensionConfig::Nether => Dimension::Nether,
-            SpawnDimensionConfig::End => Dimension::End,
+            SpawnDimensionConfig::Overworld => Self::Overworld,
+            SpawnDimensionConfig::Nether => Self::Nether,
+            SpawnDimensionConfig::End => Self::End,
         }
     }
 }

@@ -82,7 +82,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         protocol_version,
         state.data_directory(),
         state.spawn_dimension().identifier().thing,
-    ) as i32;
+    );
+    let dimension_type = i32::try_from(dimension_type)?;
 
     let packet =
         if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
@@ -137,7 +138,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         client.send_packet(packet).await?;
 
         // Send Chunk Data and Update Light
-        let biome_id = get_the_void_index(protocol_version, state.data_directory()) as i32;
+        let biome_id = get_the_void_index(protocol_version, state.data_directory());
+        let biome_id = i32::try_from(biome_id)?;
         let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
         client.send_packet(packet).await?;
     }
@@ -194,13 +196,12 @@ fn construct_registry_data(
                 .find(|element| {
                     element
                         .find_tag("name".to_string())
-                        .map(|name| match name {
+                        .is_some_and(|name| match name {
                             Nbt::String { value, .. } => {
                                 value == &state.spawn_dimension().identifier().to_string()
                             }
                             _ => false,
                         })
-                        .unwrap_or(false)
                 })
                 .cloned()
                 .unwrap_or_else(|| dimension_types.first().cloned().unwrap_or(Nbt::End));

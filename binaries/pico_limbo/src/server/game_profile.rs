@@ -8,12 +8,10 @@ pub struct GameProfile {
 }
 
 impl GameProfile {
-    pub fn new(username: String, uuid: Uuid) -> Self {
-        let username = if let Some(first_32) = username.get(..16) {
-            first_32.to_string()
-        } else {
-            username
-        };
+    pub fn new(username: &str, uuid: Uuid) -> Self {
+        let username = username
+            .get(..16)
+            .map_or(username.to_string(), std::string::ToString::to_string);
         Self { username, uuid }
     }
 
@@ -21,7 +19,7 @@ impl GameProfile {
         &self.username
     }
 
-    pub fn uuid(&self) -> Uuid {
+    pub const fn uuid(&self) -> Uuid {
         self.uuid
     }
 }

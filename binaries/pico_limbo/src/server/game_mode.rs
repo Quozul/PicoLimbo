@@ -1,6 +1,6 @@
 use crate::configuration::game_mode_config::GameModeConfig;
 
-#[derive(Default, Clone, Debug, PartialEq, Copy)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Copy)]
 #[repr(u8)]
 pub enum GameMode {
     Survival = 0,
@@ -13,16 +13,16 @@ pub enum GameMode {
 impl From<GameModeConfig> for GameMode {
     fn from(value: GameModeConfig) -> Self {
         match value {
-            GameModeConfig::Survival => GameMode::Survival,
-            GameModeConfig::Creative => GameMode::Creative,
-            GameModeConfig::Adventure => GameMode::Adventure,
-            GameModeConfig::Spectator => GameMode::Spectator,
+            GameModeConfig::Survival => Self::Survival,
+            GameModeConfig::Creative => Self::Creative,
+            GameModeConfig::Adventure => Self::Adventure,
+            GameModeConfig::Spectator => Self::Spectator,
         }
     }
 }
 
 impl GameMode {
-    pub fn value(self) -> u8 {
+    pub const fn value(self) -> u8 {
         self as u8
     }
 }
