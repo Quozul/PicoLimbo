@@ -1,4 +1,6 @@
-use minecraft_protocol::prelude::{EncodePacket, PacketId};
+use minecraft_protocol::prelude::{
+    BinaryWriter, BinaryWriterError, EncodePacket, PacketId, ProtocolVersion,
+};
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -31,19 +33,15 @@ impl RawPacket {
         packet_id: u8,
         version_number: i32,
         packet: &T,
-    ) -> Result<Self, RawPacketError>
+    ) -> Result<Self, BinaryWriterError>
     where
         T: EncodePacket + PacketId,
     {
-        let mut data = vec![packet_id];
-        let encoded_packet =
-            packet
-                .encode(version_number)
-                .map_err(|_| RawPacketError::EncodePacket {
-                    id: packet_id,
-                    version: version_number,
-                })?;
-        data.extend_from_slice(&encoded_packet);
+        let mut writer = BinaryWriter::new();
+        writer.write(&packet_id)?;
+        packet.encode(&mut writer, ProtocolVersion::from(version_number))?;
+
+        let data = writer.into_inner();
         Ok(Self { data })
     }
 

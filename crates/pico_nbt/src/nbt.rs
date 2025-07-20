@@ -117,20 +117,6 @@ impl Nbt {
         }
     }
 
-    pub fn get_int(&self) -> Option<i32> {
-        match self {
-            Self::Int { value, .. } => Some(*value),
-            _ => None,
-        }
-    }
-
-    pub fn get_string(&self) -> Option<String> {
-        match self {
-            Self::String { value, .. } => Some(value.clone()),
-            _ => None,
-        }
-    }
-
     pub fn set_name(&self, name: String) -> Nbt {
         match self {
             Nbt::Compound { value, .. } => Nbt::Compound {

@@ -1,8 +1,7 @@
-use crate::play::data::palette_container::{PaletteContainer, PaletteContainerError};
+use crate::play::data::palette_container::PaletteContainer;
 use minecraft_protocol::prelude::*;
-use thiserror::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PacketOut)]
 pub struct ChunkSection {
     /// Number of non-air blocks present in the chunk section.
     pub block_count: i16,
@@ -19,45 +18,6 @@ impl ChunkSection {
             block_states: PaletteContainer::blocks_void(),
             biomes: PaletteContainer::single_valued(biome_id.into()),
         }
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum ChunkSectionError {
-    #[error("error while decoding a palette")]
-    EncodeError,
-    #[error("invalid palette container error")]
-    Infallible,
-    #[error("error while decoding a palette container")]
-    PaletteContainerError,
-}
-
-impl From<std::convert::Infallible> for ChunkSectionError {
-    fn from(_: std::convert::Infallible) -> Self {
-        ChunkSectionError::Infallible
-    }
-}
-
-impl<T: DecodePacketField> From<LengthPaddedVecDecodeError<T>> for ChunkSectionError {
-    fn from(_: LengthPaddedVecDecodeError<T>) -> Self {
-        ChunkSectionError::EncodeError
-    }
-}
-
-impl From<PaletteContainerError> for ChunkSectionError {
-    fn from(_: PaletteContainerError) -> Self {
-        ChunkSectionError::PaletteContainerError
-    }
-}
-
-impl EncodePacketField for ChunkSection {
-    type Error = ChunkSectionError;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        self.block_count.encode(bytes, protocol_version)?;
-        self.block_states.encode(bytes, protocol_version)?;
-        self.biomes.encode(bytes, protocol_version)?;
-        Ok(())
     }
 }
 
@@ -114,8 +74,11 @@ mod tests {
 
         for (version, expected_bytes) in snapshots {
             let packet = create_packet();
-            let mut bytes = Vec::new();
-            packet.encode(&mut bytes, version).unwrap();
+            let mut writer = BinaryWriter::new();
+            packet
+                .encode(&mut writer, ProtocolVersion::from(version))
+                .unwrap();
+            let bytes = writer.into_inner();
             assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }
     }

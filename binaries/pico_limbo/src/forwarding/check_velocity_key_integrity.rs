@@ -1,6 +1,6 @@
 use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
-use minecraft_protocol::prelude::{DecodePacketField, VarInt, VarIntParseError};
+use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, VarInt};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
 use thiserror::Error;
@@ -13,11 +13,11 @@ pub enum VelocityKeyIntegrityError {
     #[error("invalid forward version {0}")]
     InvalidForwardingVersion(i32),
     #[error(transparent)]
-    InvalidVarInt(#[from] VarIntParseError),
-    #[error(transparent)]
     InvalidLength(#[from] InvalidLength),
     #[error("buffer too short to contain signature, received {0} bytes")]
     BufferTooShort(usize),
+    #[error(transparent)]
+    BinaryReader(#[from] BinaryReaderError),
 }
 
 /// Checks the integrity of the forwarded message using an HMAC signature.
@@ -37,22 +37,25 @@ pub enum VelocityKeyIntegrityError {
 /// * `Ok(false)` if the computed signature does not match the provided signature.
 /// * An error if the input buffer is malformed or the version is unsupported.
 pub fn check_velocity_key_integrity(
-    buf: &[u8],
+    reader: &mut BinaryReader,
     secret_key: &[u8],
-    index: &mut usize,
 ) -> Result<bool, VelocityKeyIntegrityError> {
-    if buf.len() < 32 {
-        return Err(VelocityKeyIntegrityError::BufferTooShort(buf.len()));
+    if reader.remaining() < 32 {
+        return Err(VelocityKeyIntegrityError::BufferTooShort(
+            reader.remaining(),
+        ));
     }
 
     // Extract the signature (first 32 bytes) and the payload.
-    let signature = &buf[..32];
-    *index += 32;
-    let payload = &buf[32..];
+    let mut signature = vec![0u8; 32];
+    reader.read_bytes(&mut signature)?;
+
+    let mut payload = vec![0u8; reader.remaining()];
+    reader.read_bytes(&mut payload)?;
 
     // Compute HMAC-SHA256 over the payload.
     let mut mac = HmacSha256::new_from_slice(secret_key)?;
-    mac.update(payload);
+    mac.update(&payload);
     let computed_signature = mac.finalize().into_bytes();
 
     // Use constant-time equality to compare signatures.
@@ -61,7 +64,8 @@ pub fn check_velocity_key_integrity(
     }
 
     // Read the version from the beginning of the payload.
-    let version = VarInt::decode(buf, index)?.value();
+    let mut payload_reader = BinaryReader::new(&payload);
+    let version = payload_reader.read::<VarInt>()?.inner();
     if version != 1 {
         return Err(VelocityKeyIntegrityError::InvalidForwardingVersion(version));
     }

@@ -94,10 +94,10 @@ pub struct LoginPacket {
     has_death_location: bool,
     /// Name of the dimension the player died in.
     #[pvn(759..)]
-    death_dimension_name: Option<Identifier>,
+    death_dimension_name: Omitted<Identifier>,
     /// The location that the player died at.
     #[pvn(759..)]
-    death_location: Option<Position>,
+    death_location: Omitted<Position>,
     /// The number of ticks until the player can use the portal again.
     #[pvn(763..)]
     portal_cooldown: VarInt,
@@ -115,7 +115,7 @@ impl Default for LoginPacket {
             is_hardcore: false,
             game_mode: 3,
             previous_game_mode: -1,
-            v1_16_dimension_names: Vec::new().into(),
+            v1_16_dimension_names: LengthPaddedVec::default(),
             registry_codec: Nbt::End,
             v1_16_max_players: VarInt::new(1),
             max_players: 1,
@@ -138,8 +138,8 @@ impl Default for LoginPacket {
             is_debug: false,
             is_flat: false,
             has_death_location: false,
-            death_dimension_name: None,
-            death_location: None,
+            death_dimension_name: Omitted::None,
+            death_location: Omitted::None,
             portal_cooldown: VarInt::default(),
             sea_level: VarInt::default(),
             enforces_secure_chat: false,
@@ -550,7 +550,11 @@ mod tests {
         let packet = create_packet();
 
         for (version, expected_bytes) in snapshots {
-            let bytes = packet.encode(version).unwrap();
+            let mut writer = BinaryWriter::new();
+            packet
+                .encode(&mut writer, ProtocolVersion::from(version))
+                .unwrap();
+            let bytes = writer.into_inner();
             assert_eq!(bytes, expected_bytes, "Mismatch for version {}", version);
         }
     }

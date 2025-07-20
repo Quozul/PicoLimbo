@@ -30,15 +30,15 @@ pub fn expand_parse_packet_in_derive(input: TokenStream) -> TokenStream {
 
         if let Some(version_range) = version_range {
             quote! {
-                let #field_name: #field_type = if (#version_range).contains(&protocol_version) {
-                    <#field_type as DecodePacketField>::decode(bytes, &mut index).map_err(|_| DecodePacketError)?
+                let #field_name: #field_type = if (#version_range).contains(&protocol_version.version_number()) {
+                    <#field_type as DecodePacket>::decode(reader, protocol_version)?
                 } else {
                     Default::default()
                 };
             }
         } else {
             quote! {
-                let #field_name = <#field_type as DecodePacketField>::decode(bytes, &mut index).map_err(|_| DecodePacketError)?;
+                let #field_name = <#field_type as DecodePacket>::decode(reader, protocol_version)?;
             }
         }
     });
@@ -52,8 +52,7 @@ pub fn expand_parse_packet_in_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl DecodePacket for #name {
-            fn decode(bytes: &[u8], protocol_version: i32) -> Result<Self, DecodePacketError> {
-                let mut index = 0;
+            fn decode(reader: &mut BinaryReader, protocol_version: ProtocolVersion) -> Result<Self, BinaryReaderError> {
                 #(#field_parsers)*
 
                 Ok(Self {

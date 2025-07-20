@@ -2,7 +2,7 @@ use crate::binary_writer::WriteBytes;
 use crate::prelude::{BinaryWriter, BinaryWriterError, Prefixed};
 
 pub trait WriteLengthPrefix: Sized + WriteBytes {
-    fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError>;
+    fn write_from_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError>;
 }
 
 fn write_slice<L, T>(writer: &mut BinaryWriter, slice: &[T]) -> Result<(), BinaryWriterError>
@@ -10,7 +10,7 @@ where
     L: WriteLengthPrefix,
     T: WriteBytes,
 {
-    L::write_usize(writer, slice.len())?;
+    L::write_from_usize(writer, slice.len())?;
     for item in slice {
         item.write(writer)?;
     }
@@ -70,14 +70,14 @@ pub(crate) fn get_i32(len: usize) -> Result<i32, BinaryWriterError> {
 }
 
 impl WriteLengthPrefix for i32 {
-    fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
+    fn write_from_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
         let len_i32 = get_i32(len)?;
         writer.write(&len_i32)
     }
 }
 
 impl WriteLengthPrefix for i16 {
-    fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
+    fn write_from_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
         let len_i16: i16 = len.try_into().map_err(|_| {
             BinaryWriterError::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,

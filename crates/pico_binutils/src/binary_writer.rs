@@ -1,4 +1,5 @@
 use std::io::Write;
+use thiserror::Error;
 
 pub trait WriteBytes {
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryWriterError>;
@@ -7,15 +8,10 @@ pub trait WriteBytes {
 #[derive(Debug, Default)]
 pub struct BinaryWriter(pub(crate) Vec<u8>);
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum BinaryWriterError {
-    Io(std::io::Error),
-}
-
-impl From<std::io::Error> for BinaryWriterError {
-    fn from(err: std::io::Error) -> Self {
-        BinaryWriterError::Io(err)
-    }
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 impl BinaryWriter {
@@ -25,6 +21,10 @@ impl BinaryWriter {
 
     pub fn write<T: WriteBytes + ?Sized>(&mut self, value: &T) -> Result<(), BinaryWriterError> {
         value.write(self)
+    }
+
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> Result<usize, BinaryWriterError> {
+        self.0.write(bytes).map_err(BinaryWriterError::from)
     }
 
     pub fn into_inner(self) -> Vec<u8> {

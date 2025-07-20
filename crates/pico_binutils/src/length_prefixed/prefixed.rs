@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct Prefixed<L, T>(pub(crate) T, pub(crate) PhantomData<L>);
 
 impl<L> Prefixed<L, String> {
@@ -23,6 +23,10 @@ impl<L, T> Prefixed<L, T> {
 
     pub fn into_inner(self) -> T {
         self.0
+    }
+
+    pub fn inner(&self) -> &T {
+        &self.0
     }
 }
 

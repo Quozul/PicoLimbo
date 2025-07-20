@@ -1,66 +1,58 @@
-use crate::prelude::{DecodePacketField, EncodePacketField};
-use std::fmt::Debug;
-use thiserror::Error;
+use crate::prelude::{DecodePacket, EncodePacket};
+use crate::protocol_version::ProtocolVersion;
+use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
 
-#[derive(Error, Debug)]
-#[error("invalid vec no length error")]
-pub enum VecEncodeError {
-    EncodeError,
-}
-
-impl<T: EncodePacketField> EncodePacketField for Vec<T> {
-    type Error = VecEncodeError;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
+impl<T: EncodePacket> EncodePacket for Vec<T> {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
         for value in self {
-            value
-                .encode(bytes, protocol_version)
-                .map_err(|_| VecEncodeError::EncodeError)?;
+            value.encode(writer, protocol_version)?;
         }
         Ok(())
     }
 }
 
-#[derive(Error, Debug)]
-pub enum VecDecodeError<T: DecodePacketField> {
-    #[error("vec length is invalid")]
-    InvalidVecLength,
-    #[error("error while decoding a value from the vec; error={0}")]
-    DecodeError(T::Error),
-}
-
 /// Decoding a vec u8 implies reading elements until the buffer is exhausted.
-impl DecodePacketField for Vec<u8> {
-    type Error = VecDecodeError<u8>;
-
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let vec = bytes.get(*index..).unwrap_or_default();
-        let length = vec.len();
-
-        *index += length;
-
-        Ok(vec.to_vec())
+impl DecodePacket for Vec<u8> {
+    fn decode(
+        reader: &mut BinaryReader,
+        _protocol_version: ProtocolVersion,
+    ) -> Result<Self, BinaryReaderError> {
+        let remaining_count = reader.remaining();
+        let mut buffer = vec![0u8; remaining_count];
+        let bytes_read = reader.read_bytes(&mut buffer)?;
+        if bytes_read != remaining_count {
+            Err(BinaryReaderError::UnexpectedEof)
+        } else {
+            Ok(buffer)
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::data_types::var_int::VarInt;
-    use crate::prelude::EncodePacketField;
+    use crate::prelude::EncodePacket;
+    use crate::protocol_version::ProtocolVersion;
+    use pico_binutils::prelude::{BinaryWriter, VarInt};
 
     #[test]
     fn test_vec_encode() {
         let vec = vec![VarInt::new(1), VarInt::new(2)];
-        let mut bytes = Vec::new();
-        vec.encode(&mut bytes, 0).unwrap();
+        let mut writer = BinaryWriter::new();
+        vec.encode(&mut writer, ProtocolVersion::Any).unwrap();
+        let bytes = writer.into_inner();
         assert_eq!(bytes, vec![0x01, 0x02]);
     }
 
     #[test]
     fn test_vec_encode_empty() {
         let vec = Vec::<VarInt>::new();
-        let mut bytes = Vec::new();
-        vec.encode(&mut bytes, 0).unwrap();
+        let mut writer = BinaryWriter::new();
+        vec.encode(&mut writer, ProtocolVersion::Any).unwrap();
+        let bytes = writer.into_inner();
         assert!(bytes.is_empty());
     }
 }

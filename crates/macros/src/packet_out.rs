@@ -29,23 +29,22 @@ pub fn expand_parse_out_packet_derive(input: TokenStream) -> TokenStream {
 
         if let Some(version_range) = version_range {
             quote! {
-                if (#version_range).contains(&protocol_version) {
-                    self.#field_name.encode(&mut bytes, protocol_version)?;
+                if (#version_range).contains(&protocol_version.version_number()) {
+                    self.#field_name.encode(writer, protocol_version)?;
                 }
             }
         } else {
             quote! {
-                self.#field_name.encode(&mut bytes, protocol_version)?;
+                self.#field_name.encode(writer, protocol_version)?;
             }
         }
     });
 
     let expanded = quote! {
         impl EncodePacket for #name {
-            fn encode(&self, protocol_version: i32) -> anyhow::Result<Vec<u8>> {
-                let mut bytes = Vec::new();
+            fn encode(&self, writer: &mut BinaryWriter, protocol_version: ProtocolVersion) -> Result<(), BinaryWriterError> {
                 #(#field_parsers)*
-                Ok(bytes)
+                Ok(())
             }
         }
     };

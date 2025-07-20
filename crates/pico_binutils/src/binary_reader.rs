@@ -1,5 +1,6 @@
 use std::io::{Cursor, Read};
 use std::string::FromUtf8Error;
+use thiserror::Error;
 
 pub trait ReadBytes: Sized {
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryReaderError>;
@@ -15,15 +16,31 @@ impl<'a> BinaryReader<'a> {
     pub fn read<T: ReadBytes>(&mut self) -> Result<T, BinaryReaderError> {
         T::read(self)
     }
+
+    pub fn read_bytes(&mut self, buf: &mut [u8]) -> Result<usize, BinaryReaderError> {
+        self.0.read(buf).map_err(BinaryReaderError::from)
+    }
+
+    pub fn remaining(&self) -> usize {
+        let total_len = self.0.get_ref().len();
+        let current_pos = self.0.position() as usize;
+        total_len.saturating_sub(current_pos)
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum BinaryReaderError {
+    #[error("unexpected eof")]
     UnexpectedEof,
+    #[error(transparent)]
     Io(std::io::Error),
-    InvalidUtf8(FromUtf8Error),
+    #[error(transparent)]
+    InvalidUtf8(#[from] FromUtf8Error),
     #[cfg(feature = "var_int")]
+    #[error("var int too big")]
     VarIntTooBig,
+    #[error("custom error")]
+    Custom,
 }
 
 impl From<std::io::Error> for BinaryReaderError {
@@ -32,12 +49,6 @@ impl From<std::io::Error> for BinaryReaderError {
             std::io::ErrorKind::UnexpectedEof => BinaryReaderError::UnexpectedEof,
             _ => BinaryReaderError::Io(err),
         }
-    }
-}
-
-impl From<FromUtf8Error> for BinaryReaderError {
-    fn from(err: FromUtf8Error) -> Self {
-        BinaryReaderError::InvalidUtf8(err)
     }
 }
 
@@ -61,20 +72,6 @@ macro_rules! impl_read_int {
 }
 
 impl_read_int!(u8, i8, u16, i16, u32, i32, i64, usize, f32, f64);
-
-impl<T: ReadBytes> ReadBytes for Vec<T> {
-    #[inline]
-    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryReaderError> {
-        let length: i32 = reader.read()?;
-        let mut vec = Vec::with_capacity(length as usize);
-
-        for _ in 0..length {
-            vec.push(reader.read()?);
-        }
-
-        Ok(vec)
-    }
-}
 
 #[cfg(test)]
 mod tests {

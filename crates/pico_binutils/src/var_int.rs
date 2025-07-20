@@ -1,11 +1,11 @@
 use crate::binary_reader::{BinaryReader, BinaryReaderError, ReadBytes};
 use crate::binary_writer::WriteBytes;
-use crate::length_prefixed::writer::WriteLengthPrefix;
 use crate::prelude::{BinaryWriter, BinaryWriterError};
 
 pub const SEGMENT_BITS: u8 = 0x7F;
 pub const CONTINUE_BIT: u8 = 0x80;
 
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
 pub struct VarInt(i32);
 
 impl VarInt {
@@ -21,6 +21,12 @@ impl VarInt {
 impl From<i32> for VarInt {
     fn from(value: i32) -> Self {
         VarInt(value)
+    }
+}
+
+impl From<i64> for VarInt {
+    fn from(value: i64) -> Self {
+        Self::new(value as i32)
     }
 }
 

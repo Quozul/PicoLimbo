@@ -1,6 +1,5 @@
 use minecraft_protocol::prelude::*;
 use minecraft_protocol::protocol_version::ProtocolVersion;
-use thiserror::Error;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -45,54 +44,46 @@ impl PaletteContainer {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum PaletteContainerError {
-    #[error("error while encoding data field")]
-    VecEncodeError(#[from] VecEncodeError),
-    #[error("error while encoding palette field")]
-    LengthPaddedVecEncodeError(#[from] LengthPaddedVecEncodeError),
-    #[error("invalid palette container error")]
-    Infallible(#[from] std::convert::Infallible),
-}
-
-impl EncodePacketField for PaletteContainer {
-    type Error = PaletteContainerError;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
+impl EncodePacket for PaletteContainer {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
         match self {
             PaletteContainer::SingleValued {
                 bits_per_entry,
                 value,
                 data,
             } => {
-                bits_per_entry.encode(bytes, protocol_version)?;
-                value.encode(bytes, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
-                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                bits_per_entry.encode(writer, protocol_version)?;
+                value.encode(writer, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5 {
+                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
-                data.encode(bytes, protocol_version)?;
+                data.encode(writer, protocol_version)?;
             }
             PaletteContainer::Indirect {
                 bits_per_entry,
                 palette,
                 data,
             } => {
-                bits_per_entry.encode(bytes, protocol_version)?;
-                palette.encode(bytes, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
-                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                bits_per_entry.encode(writer, protocol_version)?;
+                palette.encode(writer, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5 {
+                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
-                data.encode(bytes, protocol_version)?;
+                data.encode(writer, protocol_version)?;
             }
             PaletteContainer::Direct {
                 bits_per_entry,
                 data,
             } => {
-                bits_per_entry.encode(bytes, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5.version_number() {
-                    VarInt::new(data.len() as i32).encode(bytes, protocol_version)?;
+                bits_per_entry.encode(writer, protocol_version)?;
+                if protocol_version < ProtocolVersion::V1_21_5 {
+                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
-                data.encode(bytes, protocol_version)?;
+                data.encode(writer, protocol_version)?;
             }
         }
         Ok(())

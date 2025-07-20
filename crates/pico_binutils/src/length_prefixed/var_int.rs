@@ -7,8 +7,10 @@ use crate::prelude::{Prefixed, VarInt};
 /// Strings and Arrays in Network format are prefixed with their length as a VarInt
 pub type VarIntPrefixed<T> = Prefixed<VarInt, T>;
 
+pub type VarIntPrefixedString = VarIntPrefixed<String>;
+
 impl WriteLengthPrefix for VarInt {
-    fn write_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
+    fn write_from_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
         let len_i32 = get_i32(len)?;
         let var_int = VarInt::new(len_i32);
         writer.write(&var_int)
@@ -16,7 +18,7 @@ impl WriteLengthPrefix for VarInt {
 }
 
 impl ReadLengthPrefix for VarInt {
-    fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
+    fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
         let len = reader.read::<VarInt>()?.inner();
         from_i32(len)
     }

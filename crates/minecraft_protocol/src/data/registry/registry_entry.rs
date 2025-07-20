@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use thiserror::Error;
+use crate::protocol_version::ProtocolVersion;
+use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
 
 #[derive(Debug)]
 pub struct RegistryEntry {
@@ -10,27 +11,17 @@ pub struct RegistryEntry {
     pub nbt: Option<Nbt>,
 }
 
-#[derive(Debug, Error)]
-pub enum RegistryEntryEncodeError {
-    #[error("failed to encode identifier")]
-    Identifier,
-    #[error("failed to encode pico_nbt")]
-    Infallible,
-}
+impl EncodePacket for RegistryEntry {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        self.entry_id.encode(writer, protocol_version)?;
+        self.has_data.encode(writer, protocol_version)?;
 
-impl EncodePacketField for RegistryEntry {
-    type Error = RegistryEntryEncodeError;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        self.entry_id
-            .encode(bytes, protocol_version)
-            .map_err(|_| RegistryEntryEncodeError::Identifier)?;
-        self.has_data
-            .encode(bytes, protocol_version)
-            .map_err(|_| RegistryEntryEncodeError::Infallible)?;
         if let Some(nbt) = &self.nbt {
-            nbt.encode(bytes, protocol_version)
-                .map_err(|_| RegistryEntryEncodeError::Infallible)?;
+            nbt.encode(writer, protocol_version)?;
         }
         Ok(())
     }

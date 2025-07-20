@@ -11,13 +11,14 @@ impl ConfigurationClientBoundPluginMessagePacket {
     pub fn brand(brand: impl ToString) -> Self {
         Self {
             channel: Identifier::minecraft("brand"),
-            data: brand
-                .to_string()
-                .as_bytes()
-                .iter()
-                .map(|&b| b as i8)
-                .collect::<Vec<_>>()
-                .into(),
+            data: LengthPaddedVec::new(
+                brand
+                    .to_string()
+                    .as_bytes()
+                    .iter()
+                    .map(|&b| b as i8)
+                    .collect::<Vec<_>>(),
+            ),
         }
     }
 }

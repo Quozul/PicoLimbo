@@ -15,7 +15,7 @@ impl LoginSuccessPacket {
         Self {
             uuid,
             username: username.to_string(),
-            properties: Vec::new().into(),
+            properties: LengthPaddedVec::default(),
         }
     }
 }
@@ -28,15 +28,17 @@ pub struct Property {
     pub signature: Option<String>,
 }
 
-impl EncodePacketField for Property {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        self.name.encode(bytes, protocol_version)?;
-        self.value.encode(bytes, protocol_version)?;
-        self.is_signed.encode(bytes, protocol_version)?;
+impl EncodePacket for Property {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        self.name.encode(writer, protocol_version)?;
+        self.value.encode(writer, protocol_version)?;
+        self.is_signed.encode(writer, protocol_version)?;
         if let Some(signature) = &self.signature {
-            signature.encode(bytes, protocol_version)?;
+            signature.encode(writer, protocol_version)?;
         }
         Ok(())
     }

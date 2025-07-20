@@ -1,26 +1,21 @@
 use minecraft_protocol::prelude::*;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum PacketLengthParseError {
-    #[error("could not deserialize_packet the var int, the length might be incomplete")]
-    IncompleteLength,
     #[error("packet_in length cannot be negative")]
     NegativeLength,
     #[error("packet_in length is too large")]
     PacketTooLarge,
+    #[error(transparent)]
+    BinaryReader(#[from] BinaryReaderError),
 }
 
 pub const MAXIMUM_PACKET_LENGTH: usize = 2_097_151;
 
 pub fn get_packet_length(bytes: &[u8]) -> Result<usize, PacketLengthParseError> {
-    let mut packet_start_index = 0;
-    let packet_length = VarInt::decode(bytes, &mut packet_start_index)
-        .map_err(|err| match err {
-            VarIntParseError::VarIntTooLarge => PacketLengthParseError::PacketTooLarge,
-            VarIntParseError::InvalidVarIntLength => PacketLengthParseError::IncompleteLength,
-        })?
-        .value();
+    let mut reader = BinaryReader::new(bytes);
+    let packet_length = reader.read::<VarInt>()?.inner();
 
     if packet_length >= 0 {
         let packet_length = packet_length as usize;
@@ -50,24 +45,30 @@ mod tests {
     fn test_get_packet_length_invalid_var_int() {
         let bytes = vec![0xdd];
         let result = get_packet_length(&bytes);
-        assert_eq!(
+        assert!(matches!(
             result.unwrap_err(),
-            PacketLengthParseError::IncompleteLength
-        );
+            PacketLengthParseError::BinaryReader(_)
+        ));
     }
 
     #[test]
     fn test_get_packet_length_too_large_var_int() {
         let bytes = vec![0xff, 0xff, 0xff, 0xff, 0xff];
         let result = get_packet_length(&bytes);
-        assert_eq!(result.unwrap_err(), PacketLengthParseError::PacketTooLarge);
+        assert!(matches!(
+            result.unwrap_err(),
+            PacketLengthParseError::BinaryReader(_)
+        ));
     }
 
     #[test]
     fn test_get_packet_length_negative_length() {
         let bytes = vec![0xff, 0xff, 0xff, 0xff, 0x0f];
         let result = get_packet_length(&bytes);
-        assert_eq!(result.unwrap_err(), PacketLengthParseError::NegativeLength);
+        assert!(matches!(
+            result.unwrap_err(),
+            PacketLengthParseError::NegativeLength
+        ));
     }
 
     #[test]
@@ -81,6 +82,9 @@ mod tests {
     fn test_get_packet_length_too_large_length() {
         let bytes = vec![0xff, 0xff, 0xff, 0xff, 0x07];
         let result = get_packet_length(&bytes);
-        assert_eq!(result.unwrap_err(), PacketLengthParseError::PacketTooLarge);
+        assert!(matches!(
+            result.unwrap_err(),
+            PacketLengthParseError::PacketTooLarge
+        ));
     }
 }

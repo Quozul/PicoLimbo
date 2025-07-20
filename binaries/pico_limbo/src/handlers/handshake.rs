@@ -38,7 +38,7 @@ trait GetStateProtocol {
 
 impl GetStateProtocol for HandshakePacket {
     fn get_next_state(&self) -> Result<State, UnknownStateError> {
-        let state = self.next_state.value();
+        let state = self.next_state.inner();
         match state {
             1 => Ok(State::Status),
             2 => Ok(State::Login),
@@ -48,10 +48,10 @@ impl GetStateProtocol for HandshakePacket {
     }
 
     fn get_protocol(&self) -> ProtocolVersion {
-        if self.protocol.value() == -1 {
+        if self.protocol.inner() == -1 {
             ProtocolVersion::Any
         } else {
-            ProtocolVersion::from(self.protocol.value())
+            ProtocolVersion::from(self.protocol.inner())
         }
     }
 }

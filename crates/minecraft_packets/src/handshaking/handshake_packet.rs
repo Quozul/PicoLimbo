@@ -25,20 +25,23 @@ impl HandshakePacket {
 #[cfg(test)]
 mod tests {
     use crate::handshaking::handshake_packet::HandshakePacket;
-    use minecraft_protocol::prelude::{DecodePacket, EncodePacket, VarInt};
+    use minecraft_protocol::prelude::{
+        BinaryReader, BinaryWriter, DecodePacket, EncodePacket, ProtocolVersion, VarInt,
+    };
 
     #[test]
     fn test_handshake_packet_decode() {
         let handshake_snapshot = [
             129, 6, 9, 108, 111, 99, 97, 108, 104, 111, 115, 116, 99, 221, 1,
         ];
-        let protocol_version = 769;
+        let mut reader = BinaryReader::new(&handshake_snapshot);
+        let protocol_version = ProtocolVersion::V1_21_4;
         let expected_protocol = VarInt::new(769);
         let expected_hostname = "localhost".to_string();
         let expected_port = 25565;
         let expected_next_state = VarInt::new(1);
 
-        let packet = HandshakePacket::decode(&handshake_snapshot, protocol_version).unwrap();
+        let packet = HandshakePacket::decode(&mut reader, protocol_version).unwrap();
 
         assert_eq!(expected_protocol, packet.protocol);
         assert_eq!(expected_hostname, packet.hostname);
@@ -48,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_handshake_packet_encode() {
-        let protocol_version = 769;
+        let protocol_version = ProtocolVersion::V1_21_4;
         let protocol = VarInt::new(769);
         let hostname = "localhost".to_string();
         let port = 25565;
@@ -64,7 +67,9 @@ mod tests {
             next_state,
         };
 
-        let encoded = packet.encode(protocol_version).unwrap();
+        let mut writer = BinaryWriter::new();
+        packet.encode(&mut writer, protocol_version).unwrap();
+        let encoded = writer.into_inner();
 
         assert_eq!(expected_bytes, encoded);
     }
