@@ -19,7 +19,7 @@ impl GameProfilePacket {
         Self {
             uuid,
             username: username.to_string(),
-            properties: Vec::new().into(),
+            properties: LengthPaddedVec::default(),
             strict_error_handling: false,
         }
     }

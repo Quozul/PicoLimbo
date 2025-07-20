@@ -2,7 +2,6 @@ use crate::get_packet_length::{MAXIMUM_PACKET_LENGTH, PacketLengthParseError, ge
 use crate::raw_packet::RawPacket;
 use minecraft_protocol::prelude::*;
 use minecraft_protocol::protocol_version::ProtocolVersion;
-use std::convert::Infallible;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
@@ -40,12 +39,12 @@ where
             Err(PacketLengthParseError::PacketTooLarge)?;
         }
 
-        let mut var_int_bytes = Vec::new();
         let var_int = VarInt::new(packet_length as i32);
-        var_int.encode(
-            &mut var_int_bytes,
-            ProtocolVersion::default().version_number(),
-        )?;
+        let mut writer = BinaryWriter::new();
+        var_int
+            .encode(&mut writer, ProtocolVersion::default())
+            .map_err(PacketStreamError::BinaryWriter)?;
+        let var_int_bytes = writer.into_inner();
 
         if let Some(packet_id) = packet.packet_id() {
             self.stream.write_all(&var_int_bytes).await?;
@@ -72,12 +71,14 @@ where
 
             match get_packet_length(&var_int_buf) {
                 Ok(length) => return Ok(length),
-                Err(PacketLengthParseError::IncompleteLength) => continue,
+                Err(PacketLengthParseError::BinaryReader(BinaryReaderError::UnexpectedEof)) => {
+                    continue;
+                }
                 Err(e) => return Err(e.into()),
             }
         }
 
-        Err(PacketLengthParseError::IncompleteLength.into())
+        Err(PacketLengthParseError::BinaryReader(BinaryReaderError::UnexpectedEof).into())
     }
 }
 
@@ -87,12 +88,12 @@ pub enum PacketStreamError {
     IoError(#[from] tokio::io::Error),
     #[error(transparent)]
     VarInt(#[from] PacketLengthParseError),
-    #[error(transparent)]
-    Infallible(#[from] Infallible),
     #[error("empty packet")]
     EmptyPacket,
     #[error("missing packet id")]
     MissingPacketId,
+    #[error("binary writer")]
+    BinaryWriter(BinaryWriterError),
 }
 
 #[cfg(test)]

@@ -97,8 +97,14 @@ pub enum ProtocolVersion {
 }
 
 impl ProtocolVersion {
+    #[inline]
     pub fn between_inclusive(&self, min_version: Self, max_version: Self) -> bool {
         self >= &min_version && self <= &max_version
+    }
+
+    #[inline]
+    pub fn is_after_inclusive(&self, other: Self) -> bool {
+        self >= &other
     }
 
     pub fn before_inclusive(&self, max_version: Self) -> bool {

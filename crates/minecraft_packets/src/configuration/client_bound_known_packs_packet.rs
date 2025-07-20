@@ -10,7 +10,7 @@ pub struct ClientBoundKnownPacksPacket {
 impl Default for ClientBoundKnownPacksPacket {
     fn default() -> Self {
         Self {
-            known_packs: vec![KnownPack::default()].into(),
+            known_packs: LengthPaddedVec::new(vec![KnownPack::default()]),
         }
     }
 }

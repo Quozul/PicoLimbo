@@ -1,39 +1,44 @@
-use crate::prelude::{DecodePacketField, EncodePacketField};
-use thiserror::Error;
+use crate::prelude::{DecodePacket, EncodePacket};
+use crate::protocol_version::ProtocolVersion;
+use pico_binutils::prelude::{
+    BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarIntPrefixedString,
+};
 use uuid::Uuid;
 
-#[derive(Debug, Error)]
-#[error("failed to decode UUID")]
-pub struct DecodeUuidError;
-
-impl DecodePacketField for Uuid {
-    type Error = DecodeUuidError;
-
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let uuid_bytes = bytes.get(*index..*index + 16).ok_or(DecodeUuidError)?;
-        let uuid = Uuid::from_slice(uuid_bytes).map_err(|_| DecodeUuidError)?;
-        *index += 16;
-        Ok(uuid)
+impl DecodePacket for Uuid {
+    fn decode(
+        reader: &mut BinaryReader,
+        protocol_version: ProtocolVersion,
+    ) -> Result<Self, BinaryReaderError> {
+        if protocol_version >= ProtocolVersion::V1_16 {
+            reader.read::<Uuid>()
+        } else {
+            Err(BinaryReaderError::Custom)
+        }
     }
 }
 
-impl EncodePacketField for Uuid {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        if protocol_version >= 735 {
+impl EncodePacket for Uuid {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
             // Since 1.16 (inclusive), UUIDs are sent as bytes
-            bytes.extend_from_slice(self.as_bytes());
-        } else if protocol_version >= 5 {
+            let uuid_bytes = self.as_bytes().as_slice();
+            writer.write_bytes(uuid_bytes)?;
+            Ok(())
+        } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_7_6) {
             // Since 1.7.6 (inclusive), UUIDs are sent as strings separated by dashes
-            let string = self.to_string();
-            string.encode(bytes, protocol_version)?;
+            let string = VarIntPrefixedString::string(self);
+            writer.write(&string)
         } else {
             // Before 1.7.6 (exclusive), UUIDs are sent as strings without the dashes
             let string = self.to_string().replace("-", "");
-            string.encode(bytes, protocol_version)?;
+            let protocol_string = VarIntPrefixedString::string(string);
+            writer.write(&protocol_string)
         }
-        Ok(())
     }
 }
 
@@ -49,22 +54,21 @@ mod tests {
         let bytes = expected_uuid.as_bytes();
 
         // When
-        let mut index = 0;
-        let decoded_uuid = Uuid::decode(bytes, &mut index).unwrap();
+        let mut reader = BinaryReader::new(bytes);
+        let decoded_uuid = Uuid::decode(&mut reader, ProtocolVersion::V1_16).unwrap();
 
         // Then
         assert_eq!(decoded_uuid, expected_uuid);
-        assert_eq!(index, 16);
     }
 
     #[test]
     fn test_decode_uuid_insufficient_bytes() {
         // Given
         let bytes: &[u8] = &[0; 15];
-        let mut index = 0;
+        let mut reader = BinaryReader::new(bytes);
 
         // When
-        let result = Uuid::decode(bytes, &mut index);
+        let result = Uuid::decode(&mut reader, ProtocolVersion::Any);
 
         // Then
         assert!(result.is_err());

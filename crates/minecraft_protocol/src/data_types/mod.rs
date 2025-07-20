@@ -1,12 +1,12 @@
 pub mod bit_set;
 pub mod boolean;
 pub mod identifier;
-pub mod length_padded_vec;
 pub mod nbt;
 pub mod number;
 pub mod optional;
 pub mod position;
-pub mod string;
+pub mod prefixed;
+mod string;
 pub mod uuid;
 pub mod var_int;
 pub mod vec_no_length;

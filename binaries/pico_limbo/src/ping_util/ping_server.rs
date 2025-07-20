@@ -2,7 +2,7 @@ use crate::ping_util::parse_host_port::{parse_host_port, parse_socket_addr};
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
-use minecraft_protocol::prelude::DecodePacket;
+use minecraft_protocol::prelude::{BinaryReader, DecodePacket};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use net::packet_stream::PacketStream;
 use net::raw_packet::RawPacket;
@@ -62,8 +62,8 @@ async fn print_server_status(
 
     let status_response = {
         let raw_packet = packet_reader.read_packet().await?;
-        let status_response_packet =
-            StatusResponsePacket::decode(raw_packet.data(), protocol_version.version_number())?;
+        let mut reader = BinaryReader::new(raw_packet.data());
+        let status_response_packet = StatusResponsePacket::decode(&mut reader, protocol_version)?;
         status_response_packet.status_response()?
     };
 

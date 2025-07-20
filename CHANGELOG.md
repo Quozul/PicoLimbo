@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+# Changed
+
+- Use the same binary reader and writer for NBT and packets, reducing duplicated code
+
 ## Fixed
 
 - Specify the correct `latest` tag for the Docker image in the documentation

@@ -1,44 +1,74 @@
-use crate::prelude::{DecodePacketField, EncodePacketField};
+use crate::prelude::{DecodePacket, EncodePacket};
+use crate::protocol_version::ProtocolVersion;
+use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
 use std::fmt::Debug;
-use thiserror::Error;
 
-#[derive(Error, Debug)]
-#[error("invalid option error")]
-pub enum EncodeOptionError {
-    EncodeError,
+/// A type used only to encode packets and skip a field.
+pub enum Omitted<T> {
+    None,
+    Some(T),
 }
 
-impl<T: EncodePacketField> EncodePacketField for Option<T> {
-    type Error = EncodeOptionError;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        if let Some(value) = self {
-            value
-                .encode(bytes, protocol_version)
-                .map_err(|_| EncodeOptionError::EncodeError)?;
+impl<T: EncodePacket> EncodePacket for Omitted<T> {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        if let Omitted::Some(value) = self {
+            value.encode(writer, protocol_version)?;
         }
         Ok(())
     }
 }
 
-#[derive(Error, Debug)]
-pub enum DecodeOptionError<T: DecodePacketField> {
-    #[error("invalid option error")]
-    Eof,
-    #[error("error while decoding option; error={0}")]
-    Inner(T::Error),
+/// Value prefixed by a boolean indicating if the value is present
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Default)]
+pub enum Optional<T> {
+    #[default]
+    None,
+    Some(T),
 }
 
-impl<T: DecodePacketField + Debug> DecodePacketField for Option<T> {
-    type Error = DecodeOptionError<T>;
+impl<T> Optional<T> {
+    pub fn unwrap_or(self, default: T) -> T {
+        match self {
+            Optional::None => default,
+            Optional::Some(x) => x,
+        }
+    }
+}
 
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let is_present = bool::decode(bytes, index).map_err(|_| DecodeOptionError::Eof)?;
+impl<T: EncodePacket> EncodePacket for Optional<T> {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        match self {
+            Optional::None => {
+                writer.write::<u8>(&0x00_u8)?;
+            }
+            Optional::Some(value) => {
+                writer.write::<u8>(&0x01_u8)?;
+                value.encode(writer, protocol_version)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<T: DecodePacket + Debug> DecodePacket for Optional<T> {
+    fn decode(
+        reader: &mut BinaryReader,
+        protocol_version: ProtocolVersion,
+    ) -> Result<Self, BinaryReaderError> {
+        let is_present = bool::decode(reader, protocol_version)?;
         if is_present {
-            let inner = T::decode(bytes, index).map_err(DecodeOptionError::Inner)?;
-            Ok(Some(inner))
+            let inner = T::decode(reader, protocol_version)?;
+            Ok(Optional::Some(inner))
         } else {
-            Ok(None)
+            Ok(Optional::None)
         }
     }
 }

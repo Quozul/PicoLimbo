@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["binary_reader", "binary_writer", "length_prefixed", "var_int"]
+default = []
 binary_reader = []
 binary_writer = []
 length_prefixed = []
 var_int = []
+uuid = ["dep:uuid"]
+
+[dependencies]
+uuid = { workspace = true, optional = true }
+thiserror = { workspace = true }

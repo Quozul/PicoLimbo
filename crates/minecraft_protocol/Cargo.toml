@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 macros = { path = "../macros" }
 nbt = { path = "../pico_nbt" }
+pico_binutils = { path = "../pico_binutils", features = ["binary_reader", "binary_writer", "length_prefixed", "var_int", "uuid"] }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

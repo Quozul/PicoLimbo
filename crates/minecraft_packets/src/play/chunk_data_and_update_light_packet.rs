@@ -40,10 +40,12 @@ impl ChunkDataAndUpdateLightPacket {
             value: vec![long_array_tag],
         };
         let data = vec![ChunkSection::void(biome_id); 24];
-        let mut encoded_data = Vec::<u8>::new();
-        data.encode(&mut encoded_data, protocol_version.version_number())
-            .unwrap();
+
+        let mut writer = BinaryWriter::new();
+        data.encode(&mut writer, protocol_version).unwrap(); //TODO: Remove unwrap
+        let encoded_data = writer.into_inner();
         let data_size = VarInt::new(encoded_data.len() as i32);
+
         Self {
             chunk_x: 0,
             chunk_z: 0,
@@ -54,65 +56,33 @@ impl ChunkDataAndUpdateLightPacket {
             }]),
             data_size,
             data: encoded_data,
-            block_entities: Vec::new().into(),
+            block_entities: LengthPaddedVec::default(),
             sky_light_mask: BitSet::default(),
             block_light_mask: BitSet::default(),
             empty_sky_light_mask: BitSet::default(),
             empty_block_light_mask: BitSet::default(),
-            sky_light_arrays: Vec::new().into(),
-            block_light_arrays: Vec::new().into(),
+            sky_light_arrays: LengthPaddedVec::default(),
+            block_light_arrays: LengthPaddedVec::default(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PacketOut)]
 pub struct BlockEntity {
     // TODO: Implement BlockEntity
 }
 
-impl EncodePacketField for BlockEntity {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, _bytes: &mut Vec<u8>, _protocol_version: i32) -> Result<(), Self::Error> {
-        // Nothing to encode
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, PacketOut)]
 pub struct Light {
     /// Length of the following array is always 2048
     /// There is 1 array for each bit set to true in the light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2 If there's a remainder, masked 0xF0 else 0x0F.
     block_light_array: LengthPaddedVec<i8>,
 }
 
-impl EncodePacketField for Light {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        let size = VarInt::new(self.block_light_array.len() as i32);
-        size.encode(bytes, protocol_version)?;
-        for &value in &self.block_light_array {
-            bytes.push(value as u8);
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, PacketOut)]
 pub struct HeightMap {
     height_map_type: VarInt,
     data: LengthPaddedVec<i64>,
-}
-
-impl EncodePacketField for HeightMap {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
-        self.height_map_type.encode(bytes, protocol_version)?;
-        self.data.encode(bytes, protocol_version).unwrap(); // TODO: Replace unwrap
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -189,7 +159,11 @@ mod tests {
 
         for (version, expected_bytes) in snapshots {
             let packet = create_packet(ProtocolVersion::from(version));
-            let bytes = packet.encode(version).unwrap();
+            let mut writer = BinaryWriter::new();
+            packet
+                .encode(&mut writer, ProtocolVersion::from(version))
+                .unwrap();
+            let bytes = writer.into_inner();
             assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }
     }

@@ -1,4 +1,4 @@
-use minecraft_protocol::prelude::{DecodePacket, DecodePacketError};
+use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, DecodePacket};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 
 pub struct NamedPacket {
@@ -7,10 +7,11 @@ pub struct NamedPacket {
 }
 
 impl NamedPacket {
-    pub fn decode<T>(&self, protocol_version: ProtocolVersion) -> Result<T, DecodePacketError>
+    pub fn decode<T>(&self, protocol_version: ProtocolVersion) -> Result<T, BinaryReaderError>
     where
         T: DecodePacket,
     {
-        T::decode(&self.data, protocol_version.version_number())
+        let mut reader = BinaryReader::new(&self.data);
+        T::decode(&mut reader, protocol_version)
     }
 }

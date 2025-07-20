@@ -10,7 +10,7 @@ use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
-use minecraft_protocol::prelude::{DecodePacketField, Uuid};
+use minecraft_protocol::prelude::{BinaryReader, Uuid, VarIntPrefixedString};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use rand::Rng;
@@ -59,21 +59,20 @@ pub async fn on_custom_query_answer(
 ) -> Result<(), HandlerError> {
     let client_message_id = client.get_velocity_login_message_id().await;
 
-    if state.is_modern_forwarding() && packet.message_id.value() == client_message_id {
+    if state.is_modern_forwarding() && packet.message_id.inner() == client_message_id {
         let secret_key = state
             .secret_key()
             .map_err(|_| HandlerError::custom("No secret key"))?;
-        let buf = &packet.data;
-        let mut index = 0;
+        let mut reader = BinaryReader::new(&packet.data);
         let is_valid =
-            check_velocity_key_integrity(buf, &secret_key, &mut index).unwrap_or_else(|error| {
+            check_velocity_key_integrity(&mut reader, &secret_key).unwrap_or_else(|error| {
                 error!("Invalid Velocity Key: {}", error);
                 false
             });
         if is_valid {
-            let _address = String::decode(buf, &mut index).unwrap_or_default();
-            let player_uuid = Uuid::decode(buf, &mut index).unwrap_or_default();
-            let player_name = String::decode(buf, &mut index).unwrap_or_default();
+            let _address = reader.read::<VarIntPrefixedString>()?.inner();
+            let player_uuid = reader.read::<Uuid>()?;
+            let player_name = reader.read::<VarIntPrefixedString>()?.into_inner();
 
             let game_profile = GameProfile::new(&player_name, player_uuid);
             fire_login_success(client, game_profile, state).await?;

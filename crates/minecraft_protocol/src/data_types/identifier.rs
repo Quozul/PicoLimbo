@@ -1,6 +1,8 @@
-use crate::data_types::string::DecodeStringError;
-use crate::prelude::EncodePacketField;
-use crate::traits::decode_packet_field::DecodePacketField;
+use crate::prelude::{DecodePacket, EncodePacket};
+use crate::protocol_version::ProtocolVersion;
+use pico_binutils::prelude::{
+    BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarIntPrefixedString,
+};
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -45,14 +47,15 @@ impl Display for Identifier {
     }
 }
 
-impl DecodePacketField for Identifier {
-    type Error = DecodeStringError;
-
+impl DecodePacket for Identifier {
     /// Decodes an identifier.
     /// An identifier is a String with a namespace and a path separated by a colon.
     /// If the namespace is not provided, it defaults to "minecraft".
-    fn decode(bytes: &[u8], index: &mut usize) -> Result<Self, Self::Error> {
-        let decoded_string = String::decode(bytes, index)?;
+    fn decode(
+        reader: &mut BinaryReader,
+        _protocol_version: ProtocolVersion,
+    ) -> Result<Self, BinaryReaderError> {
+        let decoded_string = reader.read::<VarIntPrefixedString>()?.into_inner();
 
         let mut split = decoded_string.split(':');
         let namespace = split.next().unwrap_or("minecraft");
@@ -64,27 +67,38 @@ impl DecodePacketField for Identifier {
     }
 }
 
-impl EncodePacketField for Identifier {
-    type Error = std::convert::Infallible;
-
-    fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
+impl EncodePacket for Identifier {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
         let string = format!("{}:{}", self.namespace, self.thing);
-        string.encode(bytes, protocol_version)
+        string.encode(writer, protocol_version)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::{DecodePacketField, EncodePacketField};
+    use crate::prelude::{DecodePacket, EncodePacket};
 
     #[test]
     fn test_identifier() {
+        // Given
         let identifier = Identifier::minecraft("overworld");
-        let mut bytes = Vec::new();
-        identifier.encode(&mut bytes, 0).unwrap();
-        let mut index = 0;
-        let decoded_identifier = Identifier::decode(&bytes, &mut index).unwrap();
+        let mut writer = BinaryWriter::new();
+        identifier
+            .encode(&mut writer, ProtocolVersion::Any)
+            .unwrap();
+
+        let bytes = writer.into_inner();
+        let mut reader = BinaryReader::new(&bytes);
+
+        // When
+        let decoded_identifier = Identifier::decode(&mut reader, ProtocolVersion::Any).unwrap();
+
+        // Then
         assert_eq!(identifier, decoded_identifier);
     }
 }

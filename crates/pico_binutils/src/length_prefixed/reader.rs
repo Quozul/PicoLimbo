@@ -2,7 +2,7 @@ use crate::binary_reader::ReadBytes;
 use crate::prelude::{BinaryReader, BinaryReaderError, Prefixed};
 
 pub trait ReadLengthPrefix: Sized + ReadBytes {
-    fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError>;
+    fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError>;
 }
 
 impl<L> ReadBytes for Prefixed<L, String>
@@ -11,7 +11,7 @@ where
 {
     #[inline]
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryReaderError> {
-        let length = L::read_usize(reader)?;
+        let length = L::read_to_usize(reader)?;
         let mut string_bytes = Vec::with_capacity(length);
         for _ in 0..length {
             string_bytes.push(reader.read()?);
@@ -27,7 +27,7 @@ where
 {
     #[inline]
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryReaderError> {
-        let length = L::read_usize(reader)?;
+        let length = L::read_to_usize(reader)?;
         let mut vec = Vec::with_capacity(length);
         for _ in 0..length {
             vec.push(reader.read()?);
@@ -46,14 +46,14 @@ pub(crate) fn from_i32(len: i32) -> Result<usize, BinaryReaderError> {
 }
 
 impl ReadLengthPrefix for i32 {
-    fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
+    fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
         let len = reader.read()?;
         from_i32(len)
     }
 }
 
 impl ReadLengthPrefix for i16 {
-    fn read_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
+    fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
         let len: i16 = reader.read()?;
         len.try_into().map_err(|_| {
             BinaryReaderError::Io(std::io::Error::new(
