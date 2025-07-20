@@ -1,4 +1,4 @@
-use crate::forwarding::check_velocity_key_integrity::check_velocity_key_integrity;
+use crate::forwarding::check_velocity_key_integrity::{VelocityKeyIntegrity, read_velocity_key};
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
@@ -10,11 +10,11 @@ use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
-use minecraft_protocol::prelude::{BinaryReader, Uuid, VarIntPrefixedString};
+use minecraft_protocol::prelude::BinaryReader;
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use rand::Rng;
-use tracing::{error, info};
+use tracing::info;
 
 pub async fn on_login_start(
     state: ServerState,
@@ -64,20 +64,19 @@ pub async fn on_custom_query_answer(
             .secret_key()
             .map_err(|_| HandlerError::custom("No secret key"))?;
         let mut reader = BinaryReader::new(&packet.data);
-        let is_valid =
-            check_velocity_key_integrity(&mut reader, &secret_key).unwrap_or_else(|error| {
-                error!("Invalid Velocity Key: {}", error);
-                false
-            });
-        if is_valid {
-            let _address = reader.read::<VarIntPrefixedString>()?.inner();
-            let player_uuid = reader.read::<Uuid>()?;
-            let player_name = reader.read::<VarIntPrefixedString>()?.into_inner();
+        let velocity_key = read_velocity_key(&mut reader, &secret_key);
 
-            let game_profile = GameProfile::new(&player_name, player_uuid);
-            fire_login_success(client, game_profile, state).await?;
-        } else {
-            client.kick("You must connect through a proxy.").await?;
+        match velocity_key {
+            VelocityKeyIntegrity::Invalid => {
+                client.kick("You must connect through a proxy.").await?;
+            }
+            VelocityKeyIntegrity::Valid {
+                player_uuid,
+                player_name,
+            } => {
+                let game_profile = GameProfile::new(&player_name, player_uuid);
+                fire_login_success(client, game_profile, state).await?;
+            }
         }
     }
     Ok(())

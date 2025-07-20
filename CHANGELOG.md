@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # Changed
 
 - Use the same binary reader and writer for NBT and packets, reducing duplicated code
+- Simplified implementation of the Velocity secret key check
 
 ## Fixed
 

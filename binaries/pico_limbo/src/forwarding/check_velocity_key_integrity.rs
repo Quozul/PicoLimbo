@@ -1,6 +1,8 @@
 use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
-use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, VarInt};
+use minecraft_protocol::prelude::{
+    BinaryReader, BinaryReaderError, Uuid, VarInt, VarIntPrefixedString,
+};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
 use thiserror::Error;
@@ -9,15 +11,31 @@ use thiserror::Error;
 type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Debug, Error)]
-pub enum VelocityKeyIntegrityError {
-    #[error("invalid forward version {0}")]
-    InvalidForwardingVersion(i32),
-    #[error(transparent)]
-    InvalidLength(#[from] InvalidLength),
-    #[error("buffer too short to contain signature, received {0} bytes")]
-    BufferTooShort(usize),
-    #[error(transparent)]
-    BinaryReader(#[from] BinaryReaderError),
+#[error("velocity key integrity is invalid")]
+pub struct VelocityKeyIntegrityError;
+
+impl From<BinaryReaderError> for VelocityKeyIntegrityError {
+    fn from(_: BinaryReaderError) -> Self {
+        Self
+    }
+}
+
+impl From<InvalidLength> for VelocityKeyIntegrityError {
+    fn from(_: InvalidLength) -> Self {
+        Self
+    }
+}
+
+pub enum VelocityKeyIntegrity {
+    Invalid,
+    Valid {
+        player_uuid: Uuid,
+        player_name: String,
+    },
+}
+
+pub fn read_velocity_key(reader: &mut BinaryReader, secret_key: &[u8]) -> VelocityKeyIntegrity {
+    check_velocity_key_integrity(reader, secret_key).unwrap_or(VelocityKeyIntegrity::Invalid)
 }
 
 /// Checks the integrity of the forwarded message using an HMAC signature.
@@ -36,14 +54,13 @@ pub enum VelocityKeyIntegrityError {
 /// * `Ok(true)` if the HMAC is valid and the version equals 1.
 /// * `Ok(false)` if the computed signature does not match the provided signature.
 /// * An error if the input buffer is malformed or the version is unsupported.
-pub fn check_velocity_key_integrity(
+fn check_velocity_key_integrity(
     reader: &mut BinaryReader,
     secret_key: &[u8],
-) -> Result<bool, VelocityKeyIntegrityError> {
-    if reader.remaining() < 32 {
-        return Err(VelocityKeyIntegrityError::BufferTooShort(
-            reader.remaining(),
-        ));
+) -> Result<VelocityKeyIntegrity, VelocityKeyIntegrityError> {
+    let remaining = reader.remaining();
+    if remaining < 32 {
+        return Err(VelocityKeyIntegrityError);
     }
 
     // Extract the signature (first 32 bytes) and the payload.
@@ -60,15 +77,25 @@ pub fn check_velocity_key_integrity(
 
     // Use constant-time equality to compare signatures.
     if signature.ct_eq(&computed_signature).unwrap_u8() != 1 {
-        return Ok(false);
+        return Err(VelocityKeyIntegrityError);
     }
 
     // Read the version from the beginning of the payload.
     let mut payload_reader = BinaryReader::new(&payload);
     let version = payload_reader.read::<VarInt>()?.inner();
     if version != 1 {
-        return Err(VelocityKeyIntegrityError::InvalidForwardingVersion(version));
+        return Err(VelocityKeyIntegrityError);
     }
 
-    Ok(true)
+    Ok(read_payload(&mut payload_reader)?)
+}
+
+fn read_payload(reader: &mut BinaryReader) -> Result<VelocityKeyIntegrity, BinaryReaderError> {
+    let _address = reader.read::<VarIntPrefixedString>()?;
+    let player_uuid = reader.read::<Uuid>()?;
+    let player_name = reader.read::<VarIntPrefixedString>()?.into_inner();
+    Ok(VelocityKeyIntegrity::Valid {
+        player_uuid,
+        player_name,
+    })
 }
