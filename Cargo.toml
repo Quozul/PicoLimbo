@@ -12,6 +12,7 @@ members = [
     "crates/net",
     "binaries/pico_limbo",
     "crates/pico_text_component",
+    "crates/pico_binutils",
 ]
 
 [workspace.dependencies]

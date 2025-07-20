@@ -7,8 +7,10 @@ use thiserror::Error;
 pub enum NbtEncodeError {
     #[error("failed to encode pico_nbt; error={0}")]
     Io(std::io::Error),
-    #[error("failed to encode pico_nbt")]
+    #[error("infaillible")]
     Infallible,
+    #[error("failed to encode nbt")]
+    BinaryWriter,
 }
 
 impl From<std::convert::Infallible> for NbtEncodeError {
@@ -28,7 +30,9 @@ impl EncodePacketField for Nbt {
 
     fn encode(&self, bytes: &mut Vec<u8>, protocol_version: i32) -> Result<(), Self::Error> {
         let nbt_features = nbt_features_from_protocol_version(protocol_version);
-        let nbt_bytes = self.to_bytes(nbt_features);
+        let nbt_bytes = self
+            .to_bytes(nbt_features)
+            .map_err(|_| Self::Error::BinaryWriter)?;
         bytes.extend_from_slice(&nbt_bytes);
         Ok(())
     }

@@ -1,6 +1,6 @@
-use crate::binary_writer::BinaryWriter;
 use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
+use pico_binutils::prelude::{BinaryWriter, BinaryWriterError, IntPrefixed, ShortPrefixed};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -92,11 +92,11 @@ impl Nbt {
         }
     }
 
-    pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Vec<u8> {
-        let mut writer = BinaryWriter::new();
+    pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Result<Vec<u8>, BinaryWriterError> {
+        let mut writer = BinaryWriter::default();
         let context = NbtContext::root();
-        self.to_bytes_tag(&mut writer, context, nbt_features);
-        writer.into_inner()
+        self.to_bytes_tag(&mut writer, context, nbt_features)?;
+        Ok(writer.into_inner())
     }
 
     pub fn find_tag(&self, name: impl ToString) -> Option<&Nbt> {
@@ -113,6 +113,20 @@ impl Nbt {
         match self {
             Self::Compound { value, .. } => Some(value.clone()),
             Self::List { value, .. } => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_int(&self) -> Option<i32> {
+        match self {
+            Self::Int { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Self::String { value, .. } => Some(value.clone()),
             _ => None,
         }
     }
@@ -145,7 +159,7 @@ impl Nbt {
         }
     }
 
-    pub(crate) fn get_name(&self) -> Option<String> {
+    pub fn get_name(&self) -> Option<String> {
         match self {
             Nbt::End => None,
             Nbt::Byte { name, .. } => name.clone(),
@@ -172,19 +186,19 @@ impl Nbt {
         writer: &mut BinaryWriter,
         context: NbtContext,
         nbt_features: NbtFeatures,
-    ) {
+    ) -> Result<(), BinaryWriterError> {
         if context.should_include_tag_type() {
-            writer.write(self.get_tag_type());
+            writer.write(&self.get_tag_type())?;
         };
 
         if context.should_include_tag_name(nbt_features) && self.has_name() {
             match self.get_name() {
                 None => {
-                    writer.write(0_u8);
-                    writer.write(0_u8);
+                    writer.write(&0_u8)?;
+                    writer.write(&0_u8)?;
                 }
                 Some(name) => {
-                    writer.write(name);
+                    writer.write(&ShortPrefixed::string(name))?;
                 }
             }
         }
@@ -192,28 +206,28 @@ impl Nbt {
         match self {
             Nbt::End => {}
             Nbt::Byte { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::Short { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::Int { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::Long { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::Float { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::Double { value, .. } => {
-                writer.write(value);
+                writer.write(value)?;
             }
             Nbt::ByteArray { value, .. } => {
-                writer.write(value);
+                writer.write(&IntPrefixed::new(value))?;
             }
             Nbt::String { value, .. } => {
-                writer.write(value);
+                writer.write(&ShortPrefixed::string(value))?;
             }
             Nbt::List {
                 value, tag_type, ..
@@ -224,45 +238,47 @@ impl Nbt {
 
                 // Write the type of the list
                 if is_dynamic_lists_enabled {
-                    writer.write(Self::COMPOUND_TAG_TYPE);
+                    writer.write(&Self::COMPOUND_TAG_TYPE)?;
                 } else {
-                    writer.write(*tag_type);
+                    writer.write(tag_type)?;
                 };
 
                 // Write the length of the list
-                writer.write(value.len() as i32);
+                writer.write(&(value.len() as i32))?;
 
                 // Write each tag in the list
                 for next_tag in value {
                     if is_dynamic_lists_enabled {
                         let is_compound = next_tag.get_tag_type() == Self::COMPOUND_TAG_TYPE;
                         if is_compound {
-                            next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
+                            next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features)?;
                         } else {
                             let compound_tag = Nbt::Compound {
                                 name: None,
                                 value: vec![next_tag.clone()],
                             };
-                            compound_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
+                            compound_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features)?;
                         }
                     } else {
-                        next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features);
+                        next_tag.to_bytes_tag(writer, NbtContext::list(), nbt_features)?;
                     }
                 }
             }
             Nbt::Compound { value, .. } => {
                 for next_tag in value {
-                    next_tag.to_bytes_tag(writer, NbtContext::default(), nbt_features);
+                    next_tag.to_bytes_tag(writer, NbtContext::default(), nbt_features)?;
                 }
-                Nbt::End.to_bytes_tag(writer, NbtContext::default(), nbt_features);
+                Nbt::End.to_bytes_tag(writer, NbtContext::default(), nbt_features)?;
             }
             Nbt::IntArray { value, .. } => {
-                writer.write(value);
+                writer.write(&IntPrefixed::new(value))?;
             }
             Nbt::LongArray { value, .. } => {
-                writer.write(value);
+                writer.write(&IntPrefixed::new(value))?;
             }
         };
+
+        Ok(())
     }
 }
 
@@ -291,7 +307,8 @@ mod test {
             name: None,
         };
         assert_eq!(
-            nbt.to_bytes(NbtFeatures::builder().nameless().build()),
+            nbt.to_bytes(NbtFeatures::builder().nameless().build())
+                .unwrap(),
             vec![
                 0x0a, // Tag type of compound
                 0x00, // End tag
@@ -306,7 +323,7 @@ mod test {
             value: vec![],
         };
         assert_eq!(
-            nbt.to_bytes(NbtFeatures::default()),
+            nbt.to_bytes(NbtFeatures::default()).unwrap(),
             vec![
                 0x0a, // Tag type of compound
                 0x00, 0x00, // Tag name length of 0
@@ -322,7 +339,7 @@ mod test {
             value: vec![],
         };
         assert_eq!(
-            nbt.to_bytes(NbtFeatures::default()),
+            nbt.to_bytes(NbtFeatures::default()).unwrap(),
             vec![
                 0x0a, // Tag type of compound
                 0x00, 0x02, // Tag name length of 2
@@ -359,7 +376,7 @@ mod test {
         ];
 
         // When
-        let serialized = nbt.to_bytes(NbtFeatures::default());
+        let serialized = nbt.to_bytes(NbtFeatures::default()).unwrap();
 
         // Then
         assert_eq!(serialized, expected);
@@ -407,7 +424,7 @@ mod test {
             ];
 
             // When
-            let serialized = nbt.to_bytes(features);
+            let serialized = nbt.to_bytes(features).unwrap();
 
             // Then
             assert_eq!(serialized, expected);
@@ -443,7 +460,7 @@ mod test {
             ];
 
             // When
-            let serialized = nbt.to_bytes(features);
+            let serialized = nbt.to_bytes(features).unwrap();
 
             // Then
             assert_eq!(serialized, expected);
