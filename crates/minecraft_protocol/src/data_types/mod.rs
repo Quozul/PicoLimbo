@@ -2,7 +2,7 @@ pub mod bit_set;
 pub mod boolean;
 pub mod identifier;
 pub mod length_padded_vec;
-mod nbt;
+pub mod nbt;
 pub mod number;
 pub mod optional;
 pub mod position;

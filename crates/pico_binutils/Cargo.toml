@@ -1,0 +1,11 @@
+[package]
+name = "pico_binutils"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["binary_reader", "binary_writer", "length_prefixed", "var_int"]
+binary_reader = []
+binary_writer = []
+length_prefixed = []
+var_int = []
