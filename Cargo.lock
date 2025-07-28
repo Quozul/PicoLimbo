@@ -481,7 +481,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "pico_limbo"
-version = "1.3.1+mc1.21.8"
+version = "1.3.2-beta+mc1.21.8"
 dependencies = [
  "async-trait",
  "clap",

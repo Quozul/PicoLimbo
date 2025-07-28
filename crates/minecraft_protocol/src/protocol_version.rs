@@ -100,6 +100,10 @@ impl ProtocolVersion {
     pub fn between_inclusive(&self, min_version: Self, max_version: Self) -> bool {
         self >= &min_version && self <= &max_version
     }
+
+    pub fn before_inclusive(&self, max_version: Self) -> bool {
+        self <= &max_version
+    }
 }
 
 #[cfg(test)]

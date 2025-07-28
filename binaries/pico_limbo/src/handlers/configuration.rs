@@ -130,10 +130,8 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
         client.send_packet(packet).await?;
     }
 
-    if protocol_version >= ProtocolVersion::V1_8 {
-        client.set_state(State::Play).await;
-        client.send_keep_alive().await?;
-    }
+    client.set_state(State::Play).await;
+    client.enable_keep_alive().await;
 
     // The brand is not visible for clients prior to 1.13, no need to send it
     // The brand is sent during the configuration state after 1.20.2 included

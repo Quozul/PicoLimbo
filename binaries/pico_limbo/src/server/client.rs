@@ -1,4 +1,5 @@
 use crate::server::client_inner::{ClientInner, ClientReadPacketError, ClientSendPacketError};
+use crate::server::controllable_interval::ControllableInterval;
 use crate::server::game_profile::GameProfile;
 use crate::server::named_packet::NamedPacket;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
@@ -8,13 +9,17 @@ use minecraft_protocol::prelude::{EncodePacket, PacketId};
 use minecraft_protocol::protocol_version::ProtocolVersion;
 use minecraft_protocol::state::State;
 use rand::Rng;
+use std::ops::Add;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
+use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct Client {
     inner: Arc<Mutex<ClientInner>>,
+    interval: Arc<Mutex<ControllableInterval>>,
 }
 
 impl Client {
@@ -23,6 +28,7 @@ impl Client {
     pub fn new(socket: TcpStream, packet_map: PacketMap) -> Self {
         Self {
             inner: Arc::new(Mutex::new(ClientInner::new(socket, packet_map))),
+            interval: Arc::new(Mutex::new(ControllableInterval::new())),
         }
     }
 
@@ -66,6 +72,12 @@ impl Client {
             inner.send_encodable_packet_inner(packet).await?;
         }
         inner.shutdown().await?;
+        Ok(())
+    }
+
+    pub async fn shutdown(&self) -> std::io::Result<()> {
+        self.acquire_lock().await.shutdown().await?;
+        self.interval().await.clear_interval().await;
         Ok(())
     }
 
@@ -113,9 +125,33 @@ impl Client {
         self.protocol_version().await == ProtocolVersion::Any
     }
 
+    pub async fn enable_keep_alive(&self) {
+        if self
+            .protocol_version()
+            .await
+            .before_inclusive(ProtocolVersion::V1_7_6)
+        {
+            let start = Instant::now().add(Duration::from_secs(2));
+            let period = Duration::from_secs(2);
+            self.interval().await.set_interval_at(start, period).await;
+        } else {
+            let period = Duration::from_secs(20);
+            self.interval().await.set_interval(period).await;
+        };
+    }
+
+    pub async fn keep_alive_tick(&self) {
+        self.interval().await.tick().await;
+    }
+
     #[inline]
     async fn acquire_lock(&self) -> tokio::sync::MutexGuard<'_, ClientInner> {
         self.inner.lock().await
+    }
+
+    #[inline]
+    async fn interval(&self) -> tokio::sync::MutexGuard<'_, ControllableInterval> {
+        self.interval.lock().await
     }
 }
 

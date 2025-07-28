@@ -1,5 +1,5 @@
 use crate::server::client::Client;
-use crate::server::client_inner::ClientReadPacketError;
+use crate::server::client_inner::{ClientReadPacketError, ClientSendPacketError};
 use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
 use crate::server_state::ServerState;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
@@ -11,7 +11,6 @@ use std::future::Future;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::signal;
-use tokio::time::{Duration, interval};
 use tracing::{debug, error, info};
 
 pub struct Server {
@@ -93,7 +92,6 @@ async fn handle_client(
     server_state: ServerState,
 ) {
     let client = Client::new(socket, packet_map_clone);
-    let mut keep_alive_interval = interval(Duration::from_secs(20));
     let mut was_in_play_state = false;
 
     loop {
@@ -132,7 +130,7 @@ async fn handle_client(
                                 if io_err.kind() == tokio::io::ErrorKind::ConnectionReset ||
                                    io_err.kind() == tokio::io::ErrorKind::BrokenPipe ||
                                    io_err.kind() == tokio::io::ErrorKind::UnexpectedEof => {
-                                debug!("Client disconnected cleanly: {:?}", err);
+                                debug!("Client disconnected cleanly (read packet): {:?}", err);
                                 break;
                             }
                             ClientReadPacketError::PacketStream(PacketStreamError::IoError(io_err)) => {
@@ -148,15 +146,34 @@ async fn handle_client(
                 }
             },
 
-            _ = keep_alive_interval.tick() => {
-                if client.current_state().await == State::Play {
-                    if let Err(err) = client.send_keep_alive().await {
-                        error!("Failed to send keep alive: {:?}", err);
+            _ = client.keep_alive_tick() => {
+                if let Err(err) = client.send_keep_alive().await {
+                    match err {
+                        ClientSendPacketError::UnmappedPacket { packet_name, state, version, .. } => {
+                            debug!("Trying to send unmapped packet {} in state {:?}, protocol {:?}", packet_name, state, version);
+                        }
+                        ClientSendPacketError::PacketStream(PacketStreamError::IoError(ref io_err))
+                            if io_err.kind() == tokio::io::ErrorKind::ConnectionReset ||
+                               io_err.kind() == tokio::io::ErrorKind::BrokenPipe ||
+                               io_err.kind() == tokio::io::ErrorKind::UnexpectedEof => {
+                            debug!("Client disconnected cleanly (keep alive): {:?}", err);
+                            break;
+                        }
+                        ClientSendPacketError::PacketStream(PacketStreamError::IoError(io_err)) => {
+                            error!("Client PacketStream IO error: {:?}", io_err);
+                            break;
+                        }
+                        _ => {
+                            error!("Error reading packet from client: {:?}", err);
+                            break;
+                        }
                     }
                 }
             },
         }
     }
+
+    let _ = client.shutdown().await;
 
     if was_in_play_state {
         server_state.decrement();
