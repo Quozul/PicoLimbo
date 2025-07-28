@@ -1,3 +1,4 @@
+use crate::server::game_mode::GameMode;
 use minecraft_packets::play::Dimension;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,7 +32,7 @@ pub struct ServerState {
     welcome_message: String,
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
-    game_mode: u8,
+    game_mode: GameMode,
 }
 
 impl ServerState {
@@ -99,7 +100,7 @@ impl ServerState {
         &self.data_directory
     }
 
-    pub fn game_mode(&self) -> u8 {
+    pub fn game_mode(&self) -> GameMode {
         self.game_mode
     }
 
@@ -127,7 +128,7 @@ pub struct ServerStateBuilder {
     max_players: u32,
     welcome_message: String,
     show_online_player_count: bool,
-    game_mode: u8,
+    game_mode: GameMode,
 }
 
 impl ServerStateBuilder {
@@ -195,7 +196,7 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn game_mode(&mut self, game_mode: u8) -> &mut Self {
+    pub fn game_mode(&mut self, game_mode: GameMode) -> &mut Self {
         self.game_mode = game_mode;
         self
     }

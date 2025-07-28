@@ -1,5 +1,5 @@
 use crate::configuration::forwarding::ForwardingConfig;
-use crate::configuration::game_mode::GameModeConfig;
+use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
 use crate::configuration::spawn_dimension::SpawnDimensionConfig;
 use serde::{Deserialize, Serialize};

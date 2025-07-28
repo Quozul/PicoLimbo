@@ -1,5 +1,6 @@
 use crate::server::client::Client;
 use crate::server::event_handler::HandlerError;
+use crate::server::game_mode::GameMode;
 use crate::server_state::ServerState;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
@@ -92,15 +93,26 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
                     dimension,
                     dimension_type,
                 )
-                .set_game_mode(state.game_mode()),
+                .set_game_mode(state.game_mode().value()),
                 Err(e) => {
                     client.kick("Disconnected").await?;
                     return Err(HandlerError::custom(e.to_string()));
                 }
             }
         } else {
+            let game_mode = {
+                let expected_game_mode = state.game_mode();
+                let is_spectator = expected_game_mode == GameMode::Spectator;
+
+                if protocol_version.before_inclusive(ProtocolVersion::V1_7_6) && is_spectator {
+                    GameMode::Creative
+                } else {
+                    expected_game_mode
+                }
+            };
+
             LoginPacket::new_with_dimension(state.spawn_dimension(), dimension_type)
-                .set_game_mode(state.game_mode())
+                .set_game_mode(game_mode.value())
         };
     client.send_packet(packet).await?;
 

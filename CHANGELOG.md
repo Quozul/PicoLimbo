@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- If the game mode is set to `spectator` in the configuration file, players in 1.7.x will spawn in creative instead of survival
+
 ### Fixed
 
 - Keep alive packet not properly sending for 1.7.x
