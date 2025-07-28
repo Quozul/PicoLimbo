@@ -51,7 +51,7 @@ layers.
 Uses **0% CPU while idle** and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous
 runtime and efficient design.
 
-![PicoLimbo.png](./docs/assets/PicoLimbo.png)  
+![PicoLimbo.png](docs/public/PicoLimbo.png)  
 *The screenshot shows just a few of the supported Minecraft versions.*
 
 ---

@@ -4,7 +4,7 @@ PicoLimbo is a **high-performance Minecraft limbo server** built entirely in **R
 solution for temporary player holding in Minecraft networks. It's designed to be fast, efficient, and compatible with
 all Minecraft versions from 1.7.2 through the [latest supported version](./supported-versions).
 
-![Multiple versions in one image](../assets/PicoLimbo.png)
+![Multiple versions in one image](/PicoLimbo.png)
 
 ## What is a Limbo Server?
 

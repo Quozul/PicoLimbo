@@ -1,8 +1,9 @@
 # Default Configuration
 
 The default configuration file will be automatically generated the first time you start the server.
+If it is not generated, you can copy the following code block in your configuration file or in `server.toml` next to PicoLimbo's executable.
 
-```toml
+```toml [server.toml]
 # Server bind address and port
 bind = "0.0.0.0:25565"
 
@@ -14,7 +15,7 @@ spawn_dimension = "overworld"
 welcome_message = "Welcome to PicoLimbo!"
 
 # Sets the game mode for new players
-# Allowed values: "survival", "creative", or "adventure"
+# Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
 
 [forwarding.velocity]

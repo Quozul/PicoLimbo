@@ -9,6 +9,7 @@ export default defineConfig({
 	sitemap: {
 		hostname: "https://picolimbo.quozul.dev",
 	},
+    head: [['link', { rel: 'icon', href: '/favicon.png' }]],
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [
