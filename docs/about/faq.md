@@ -27,3 +27,7 @@ However, loading small structures or schematic files is a planned feature.
 ## Does PicoLimbo support transfer packets?
 
 Transfer packet support is not currently implemented in PicoLimbo, but this is a planned feature for a future release.
+
+## Does PicoLimbo support Bedrock players?
+
+While it is not planned in the near future, I understand the need for such a feature. In the meantime, you can probably install Geyser as a plugin on a Velocity proxy.
