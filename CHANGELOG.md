@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## Fixed
+
+- Specify the correct `latest` tag for the Docker image in the documentation
+
 ## [1.3.2+mc1.21.8] - 2025-07-30
 
 ### Changed

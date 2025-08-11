@@ -20,13 +20,13 @@ The egg supports additional installation configuration through the following env
 The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 architectures. You can start the server using the following command:
 
 ```shell
-docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:master
+docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:latest
 ```
 
 You can also mount a custom configuration file:
 
 ```shell
-docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:master
+docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:latest
 ```
 
 > [!NOTE]
@@ -38,8 +38,8 @@ Here's the complete docker-compose.yml file:
 
 ```yaml
 services:
-  picolimbo:
-    image: ghcr.io/quozul/picolimbo:master
+  pico-limbo:
+    image: ghcr.io/quozul/picolimbo:latest
     container_name: picolimbo
     restart: unless-stopped
     ports:

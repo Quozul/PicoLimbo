@@ -61,7 +61,7 @@ runtime and efficient design.
 ### Docker
 
 ```shell
-docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:master
+docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:latest
 ```
 
 ### Binary
