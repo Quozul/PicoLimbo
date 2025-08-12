@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 
 - Specify the correct `latest` tag for the Docker image in the documentation
+- Shutdown signal is now properly handled on Docker
 
 ## [1.3.2+mc1.21.8] - 2025-07-30
 

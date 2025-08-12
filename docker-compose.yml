@@ -6,4 +6,4 @@ services:
         BINARY_NAME: pico_limbo
     image: ghcr.io/quozul/picolimbo:latest
     ports:
-      - "25565:25565"
+      - "30066:25565"

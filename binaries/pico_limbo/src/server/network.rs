@@ -1,6 +1,7 @@
 use crate::server::client::Client;
 use crate::server::client_inner::{ClientReadPacketError, ClientSendPacketError};
 use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
+use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use minecraft_protocol::prelude::{DecodePacket, PacketId};
@@ -10,7 +11,6 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::signal;
 use tracing::{debug, error, info};
 
 pub struct Server {
@@ -76,8 +76,8 @@ impl Server {
                     }
                 },
 
-                _ = signal::ctrl_c() => {
-                    info!("SIGINT received, shutting down gracefully.");
+                _ = shutdown_signal() => {
+                    info!("Shutdown signal received, shutting down gracefully.");
                     break;
                 }
             }
