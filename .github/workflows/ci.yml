@@ -43,7 +43,7 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Run cargo test
-        run: cargo test
+        run: cargo +stable test
 
   # Run cargo clippy -- -D warnings
   clippy_check:
@@ -68,7 +68,7 @@ jobs:
         with:
           components: clippy
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo +stable clippy -- -D warnings
 
   # Run cargo fmt --all -- --check
   format:
@@ -83,4 +83,4 @@ jobs:
         with:
           components: rustfmt
       - name: Run cargo fmt
-        run: cargo fmt --all -- --check
+        run: cargo +stable fmt --all -- --check

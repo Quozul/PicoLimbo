@@ -270,10 +270,10 @@ fn is_vec_of_same_type(value: &Vec<Nbt>) -> bool {
     let mut prev: Option<u8> = None;
     for tag in value {
         let curr = tag.get_tag_type();
-        if let Some(p) = prev {
-            if p != curr {
-                return false;
-            }
+        if let Some(p) = prev
+            && p != curr
+        {
+            return false;
         }
         prev = Some(curr);
     }
