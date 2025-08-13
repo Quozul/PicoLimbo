@@ -1,0 +1,22 @@
+[package]
+name = "pico_limbo"
+version = "1.3.2+mc1.21.8"
+edition = "2024"
+
+[dependencies]
+minecraft_packets = { path = "../crates/minecraft_packets" }
+minecraft_protocol = { path = "../crates/minecraft_protocol" }
+net = { path = "../crates/net" }
+async-trait = { workspace = true }
+clap = { workspace = true }
+hmac = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -6,13 +6,13 @@ lto = true
 resolver = "2"
 members = [
     "crates/macros",
-    "crates/pico_nbt",
-    "crates/minecraft_protocol",
     "crates/minecraft_packets",
+    "crates/minecraft_protocol",
     "crates/net",
-    "binaries/pico_limbo",
-    "crates/pico_text_component",
     "crates/pico_binutils",
+    "crates/pico_nbt",
+    "crates/pico_text_component",
+    "pico_limbo",
 ]
 
 [workspace.dependencies]

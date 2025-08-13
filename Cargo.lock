@@ -494,7 +494,6 @@ dependencies = [
 name = "pico_limbo"
 version = "1.3.2+mc1.21.8"
 dependencies = [
- "anyhow",
  "async-trait",
  "clap",
  "hmac",

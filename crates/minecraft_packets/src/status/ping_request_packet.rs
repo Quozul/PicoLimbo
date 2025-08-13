@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, PacketIn, PacketOut)]
+#[derive(Debug, PacketIn)]
 #[packet_id("status/serverbound/minecraft:ping_request")]
 pub struct PingRequestPacket {
     pub timestamp: i64,

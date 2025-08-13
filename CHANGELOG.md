@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Specify the correct `latest` tag for the Docker image in the documentation
 - Shutdown signal is now properly handled on Docker
 
+### Removed
+
+- Removed `pico_ping` utility crate
+
 ## [1.3.2+mc1.21.8] - 2025-07-30
 
 ### Changed

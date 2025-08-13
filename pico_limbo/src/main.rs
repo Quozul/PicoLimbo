@@ -1,19 +1,12 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 mod cli;
-#[cfg(feature = "server")]
 mod configuration;
-#[cfg(feature = "server")]
 mod forwarding;
-#[cfg(feature = "server")]
 mod handlers;
-#[cfg(feature = "ping_util")]
-mod ping_util;
-#[cfg(feature = "server")]
 mod server;
-#[cfg(feature = "server")]
 mod server_state;
 
-use crate::cli::{Cli, Commands};
+use crate::cli::Cli;
 use clap::Parser;
 use std::process::ExitCode;
 use tracing::Level;
@@ -26,19 +19,7 @@ async fn main() -> ExitCode {
     let cli = Cli::parse();
     enable_logging(cli.verbose);
 
-    match cli.command {
-        #[cfg(feature = "ping_util")]
-        Commands::Ping {
-            address,
-            json,
-            version,
-        } => ping_util::ping_server::parse_cli_for_ping(address, json, version).await,
-        #[cfg(feature = "server")]
-        Commands::Server {
-            data_directory,
-            config_path,
-        } => server::start_server::start_server(data_directory, config_path).await,
-    }
+    server::start_server::start_server(cli.data_directory, cli.config_path).await
 }
 
 fn enable_logging(verbose: u8) {
