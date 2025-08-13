@@ -403,8 +403,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "macros",
- "nbt",
  "pico_binutils",
+ "pico_nbt",
  "serde",
  "serde_json",
  "thiserror",
@@ -430,15 +430,6 @@ dependencies = [
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "nbt"
-version = "0.1.0"
-dependencies = [
- "pico_binutils",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]
@@ -513,10 +504,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico_nbt"
+version = "0.1.0"
+dependencies = [
+ "pico_binutils",
+ "serde_json",
+]
+
+[[package]]
 name = "pico_text_component"
 version = "0.1.0"
 dependencies = [
- "nbt",
+ "pico_nbt",
  "serde",
  "serde_json",
 ]

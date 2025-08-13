@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use nbt::prelude::Nbt;
+    use pico_nbt::prelude::Nbt;
     use serde_json::json;
 
     macro_rules! nbt_test {

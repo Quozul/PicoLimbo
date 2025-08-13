@@ -20,10 +20,10 @@ pub mod prelude {
     pub use macros::PacketOut;
     pub use macros::Pvn;
     pub use macros::packet_id;
-    pub use nbt::prelude::*;
     pub use pico_binutils::prelude::{
         BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
         VarIntPrefixedString,
     };
+    pub use pico_nbt::prelude::*;
     pub use uuid::Uuid;
 }

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use the same binary reader and writer for NBT and packets, reducing duplicated code
 - Simplified implementation of the Velocity secret key check
+- Renamed `nbt` crate to `pico_nbt`
 
 ## Fixed
 

@@ -1,7 +1,7 @@
 use crate::prelude::EncodePacket;
 use crate::protocol_version::ProtocolVersion;
-use nbt::prelude::{Nbt, NbtFeatures};
 use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
+use pico_nbt::prelude::{Nbt, NbtFeatures};
 
 impl EncodePacket for Nbt {
     fn encode(

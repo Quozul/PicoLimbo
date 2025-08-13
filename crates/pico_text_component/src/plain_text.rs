@@ -1,4 +1,4 @@
-use nbt::prelude::Nbt;
+use pico_nbt::prelude::Nbt;
 use serde::Serialize;
 
 #[derive(Serialize)]
