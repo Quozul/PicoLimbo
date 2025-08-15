@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 
 #[derive(Debug, Clone, PacketIn)]
 #[packet_id("handshake/serverbound/minecraft:intention")]

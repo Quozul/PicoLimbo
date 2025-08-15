@@ -1,6 +1,6 @@
 use crate::prelude::{DecodePacket, EncodePacket};
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
+use protocol_version::protocol_version::ProtocolVersion;
 
 impl<T: EncodePacket> EncodePacket for Vec<T> {
     fn encode(
@@ -35,8 +35,8 @@ impl DecodePacket for Vec<u8> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::EncodePacket;
-    use crate::protocol_version::ProtocolVersion;
     use pico_binutils::prelude::{BinaryWriter, VarInt};
+    use protocol_version::protocol_version::ProtocolVersion;
 
     #[test]
     fn test_vec_encode() {

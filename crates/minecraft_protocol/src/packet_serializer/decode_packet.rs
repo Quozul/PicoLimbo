@@ -1,5 +1,5 @@
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
+use protocol_version::protocol_version::ProtocolVersion;
 
 pub trait DecodePacket: Sized {
     fn decode(

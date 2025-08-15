@@ -1,6 +1,6 @@
 use crate::prelude::{EncodePacket, LengthPaddedVec};
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
+use protocol_version::protocol_version::ProtocolVersion;
 
 #[derive(Debug, Default)]
 pub struct BitSet {

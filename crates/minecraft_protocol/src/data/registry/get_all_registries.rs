@@ -1,6 +1,6 @@
 use crate::data::registry::registry_entry::RegistryEntry;
 use crate::prelude::{Identifier, Nbt};
-use crate::protocol_version::ProtocolVersion;
+use protocol_version::protocol_version::ProtocolVersion;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use macros::Pvn;
+    use protocol_version_macro::Pvn;
 
     #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd, Pvn)]
     pub enum ProtocolVersion {

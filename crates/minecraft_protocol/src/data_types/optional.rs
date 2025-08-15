@@ -1,6 +1,6 @@
 use crate::prelude::{DecodePacket, EncodePacket};
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
+use protocol_version::protocol_version::ProtocolVersion;
 use std::fmt::Debug;
 
 /// A type used only to encode packets and skip a field.

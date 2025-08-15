@@ -1,7 +1,6 @@
 use crate::get_packet_length::{MAXIMUM_PACKET_LENGTH, PacketLengthParseError, get_packet_length};
 use crate::raw_packet::RawPacket;
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 

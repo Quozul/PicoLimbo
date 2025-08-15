@@ -12,6 +12,8 @@ members = [
     "crates/pico_binutils",
     "crates/pico_nbt",
     "crates/pico_text_component",
+    "crates/protocol_version",
+    "crates/protocol_version_macro",
     "pico_limbo",
 ]
 

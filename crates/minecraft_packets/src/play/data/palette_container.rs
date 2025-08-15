@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]

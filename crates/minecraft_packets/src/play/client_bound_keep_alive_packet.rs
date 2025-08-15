@@ -25,7 +25,6 @@ impl ClientBoundKeepAlivePacket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use minecraft_protocol::protocol_version::ProtocolVersion;
 
     #[test]
     fn test_keep_alive_packet_v1_12_2() {

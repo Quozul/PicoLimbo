@@ -22,8 +22,7 @@ use minecraft_protocol::data::registry::get_all_registries::{
     get_dimension_type_index, get_the_void_index, get_v1_16_2_registry_codec,
     get_v1_16_registry_codec, get_v1_20_5_registries,
 };
-use minecraft_protocol::prelude::{LengthPaddedVec, Nbt};
-use minecraft_protocol::protocol_version::ProtocolVersion;
+use minecraft_protocol::prelude::{LengthPaddedVec, Nbt, ProtocolVersion};
 use minecraft_protocol::state::State;
 use thiserror::Error;
 

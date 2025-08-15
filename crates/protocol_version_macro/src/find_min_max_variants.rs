@@ -1,4 +1,4 @@
-use crate::protocol_version::parsed_variant::ParsedVariant;
+use crate::parsed_variant::ParsedVariant;
 use syn::{Error, Ident, Result};
 
 /// Finds the oldest and latest "real" (non-negative) variants.

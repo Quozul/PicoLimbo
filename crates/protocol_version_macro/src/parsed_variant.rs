@@ -1,4 +1,4 @@
-use crate::protocol_version::pvn_attribute::PvnAttribute;
+use crate::pvn_attribute::PvnAttribute;
 use syn::{Error, Expr, Ident, Lit, LitStr, Result, UnOp, Variant};
 
 /// A struct to hold all processed information from a single enum variant.

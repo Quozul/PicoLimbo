@@ -1,8 +1,8 @@
 use crate::prelude::{DecodePacket, EncodePacket};
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{
     BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
 };
+use protocol_version::protocol_version::ProtocolVersion;
 
 impl DecodePacket for VarInt {
     fn decode(

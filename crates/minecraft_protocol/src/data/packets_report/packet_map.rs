@@ -1,6 +1,6 @@
 use crate::data::packets_report::raw_packet_data::RawPacketData;
-use crate::protocol_version::ProtocolVersion;
 use crate::state::State;
+use protocol_version::protocol_version::ProtocolVersion;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, PoisonError, RwLock};
@@ -172,8 +172,8 @@ impl PacketMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol_version::ProtocolVersion;
     use crate::state::State;
+    use protocol_version::protocol_version::ProtocolVersion;
     use std::path::PathBuf;
 
     #[test]

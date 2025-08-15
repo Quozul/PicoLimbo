@@ -1,5 +1,4 @@
-use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, DecodePacket};
-use minecraft_protocol::protocol_version::ProtocolVersion;
+use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, DecodePacket, ProtocolVersion};
 
 pub struct NamedPacket {
     pub name: String,

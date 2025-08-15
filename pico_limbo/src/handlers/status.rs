@@ -6,7 +6,7 @@ use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PingResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
-use minecraft_protocol::protocol_version::ProtocolVersion;
+use minecraft_protocol::prelude::ProtocolVersion;
 
 pub async fn on_status_request(
     state: ServerState,

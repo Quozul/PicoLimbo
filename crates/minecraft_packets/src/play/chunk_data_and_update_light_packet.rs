@@ -1,6 +1,5 @@
 use crate::play::data::chunk_section::ChunkSection;
 use minecraft_protocol::prelude::*;
-use minecraft_protocol::protocol_version::ProtocolVersion;
 
 /// This packet is only mandatory for versions above 1.20.3,
 /// thus the packet is only implemented to work on versions after 1.20.3.

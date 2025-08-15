@@ -1,5 +1,5 @@
-use crate::protocol_version::find_min_max_variants::find_min_max_variants;
-use crate::protocol_version::parsed_variant::ParsedVariant;
+use crate::find_min_max_variants::find_min_max_variants;
+use crate::parsed_variant::ParsedVariant;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Error, parse_macro_input};

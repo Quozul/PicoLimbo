@@ -3,7 +3,6 @@ extern crate core;
 pub mod data;
 mod data_types;
 mod packet_serializer;
-pub mod protocol_version;
 pub mod state;
 
 pub mod prelude {
@@ -15,15 +14,14 @@ pub mod prelude {
     pub use crate::packet_serializer::decode_packet::DecodePacket;
     pub use crate::packet_serializer::encode_packet::EncodePacket;
     pub use crate::packet_serializer::packet_id::PacketId;
-    pub use crate::protocol_version::ProtocolVersion;
     pub use macros::PacketIn;
     pub use macros::PacketOut;
-    pub use macros::Pvn;
     pub use macros::packet_id;
     pub use pico_binutils::prelude::{
         BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
         VarIntPrefixedString,
     };
     pub use pico_nbt::prelude::*;
+    pub use protocol_version::protocol_version::ProtocolVersion;
     pub use uuid::Uuid;
 }

@@ -1,8 +1,8 @@
 use crate::prelude::{DecodePacket, EncodePacket};
-use crate::protocol_version::ProtocolVersion;
 use pico_binutils::prelude::{
     BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarIntPrefixedString,
 };
+use protocol_version::protocol_version::ProtocolVersion;
 use uuid::Uuid;
 
 impl DecodePacket for Uuid {

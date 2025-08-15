@@ -3,7 +3,6 @@ use proc_macro::TokenStream;
 mod packet_id;
 mod packet_in;
 mod packet_out;
-mod protocol_version;
 
 #[proc_macro_attribute]
 pub fn packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -18,9 +17,4 @@ pub fn parse_packet_in_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(PacketOut, attributes(pvn))]
 pub fn parse_out_packet_derive(input: TokenStream) -> TokenStream {
     packet_out::expand_parse_out_packet_derive(input)
-}
-
-#[proc_macro_derive(Pvn, attributes(pvn, default))]
-pub fn protocol_version_derive(input: TokenStream) -> TokenStream {
-    protocol_version::expand::expand_protocol_version_derive(input)
 }
