@@ -1,6 +1,7 @@
-use crate::server::client::Client;
-use crate::server::event_handler::HandlerError;
+use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
+use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
+use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
@@ -12,96 +13,104 @@ use minecraft_packets::configuration::registry_data_packet::{
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
-use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessage;
+use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
-use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPosition;
+use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
-use minecraft_packets::play::system_chat_message_packet::SystemChatMessage;
+use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::data::registry::get_all_registries::{
     get_dimension_type_index, get_the_void_index, get_v1_16_2_registry_codec,
     get_v1_16_registry_codec, get_v1_20_5_registries,
 };
 use minecraft_protocol::prelude::{LengthPaddedVec, Nbt, ProtocolVersion};
 use minecraft_protocol::state::State;
+use std::num::TryFromIntError;
 use thiserror::Error;
 
+impl PacketHandler for AcknowledgeConfigurationPacket {
+    fn handle(
+        &self,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
+    ) -> Result<(), PacketHandlerError> {
+        send_play_packets(client_state, server_state)
+    }
+}
+
 /// Only for <= 1.20.2
-pub async fn send_configuration_packets(
-    client: Client,
-    state: ServerState,
-) -> Result<(), HandlerError> {
+pub fn send_configuration_packets(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+) -> Result<(), PacketHandlerError> {
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
-    client.send_packet(packet).await?;
-    let protocol_version = client.protocol_version().await;
+    client_state.queue_packet(PacketRegistry::ConfigurationClientBoundPluginMessage(
+        packet,
+    ))?;
+    let protocol_version = client_state.protocol_version();
 
     if ProtocolVersion::V1_20_5 <= protocol_version {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::ClientBoundKnownPacks(packet))?;
 
         // Send Registry Data
-        let grouped = get_v1_20_5_registries(protocol_version, state.data_directory());
+        let grouped = get_v1_20_5_registries(protocol_version, server_state.data_directory());
         for (registry_id, entries) in grouped {
             let packet = RegistryDataPacket {
                 registry_id,
                 entries: LengthPaddedVec::new(entries),
             };
-            client.send_packet(packet).await?;
+            client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
         }
     } else {
         // Only for 1.20.2 and 1.20.3
-        let registry_codec = get_v1_16_2_registry_codec(protocol_version, state.data_directory());
+        let registry_codec =
+            get_v1_16_2_registry_codec(protocol_version, server_state.data_directory());
         let packet = RegistryDataCodecPacket { registry_codec };
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::RegistryDataCodec(packet))?;
     }
 
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
-    client.send_packet(packet).await?;
+    client_state.queue_packet(PacketRegistry::FinishConfiguration(packet))?;
 
-    Ok(())
-}
-
-pub async fn on_acknowledge_finish_configuration(
-    state: ServerState,
-    client: Client,
-    _packet: AcknowledgeConfigurationPacket,
-) -> Result<(), HandlerError> {
-    send_play_packets(client, state).await?;
     Ok(())
 }
 
 /// Switch to the Play state and send required packets to spawn the player in the world
-pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(), HandlerError> {
-    let protocol_version = client.protocol_version().await;
+pub fn send_play_packets(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+) -> Result<(), PacketHandlerError> {
+    let protocol_version = client_state.protocol_version();
 
     let dimension_type = get_dimension_type_index(
         protocol_version,
-        state.data_directory(),
-        state.spawn_dimension().identifier().thing,
+        server_state.data_directory(),
+        server_state.spawn_dimension().identifier().thing,
     );
     let dimension_type = i32::try_from(dimension_type)?;
 
     let packet =
         if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
-            match construct_registry_data(protocol_version, &state) {
+            match construct_registry_data(protocol_version, server_state) {
                 Ok((registry_codec, dimension)) => LoginPacket::new_with_codecs(
-                    state.spawn_dimension(),
+                    server_state.spawn_dimension(),
                     registry_codec,
                     dimension,
                     dimension_type,
                 )
-                .set_game_mode(state.game_mode().value()),
+                .set_game_mode(server_state.game_mode().value()),
                 Err(e) => {
-                    client.kick("Disconnected").await?;
-                    return Err(HandlerError::custom(e.to_string()));
+                    client_state.kick("Disconnected");
+                    return Err(PacketHandlerError::custom(&e.to_string()));
                 }
             }
         } else {
             let game_mode = {
-                let expected_game_mode = state.game_mode();
+                let expected_game_mode = server_state.game_mode();
                 let is_spectator = expected_game_mode == GameMode::Spectator;
 
                 if protocol_version.before_inclusive(ProtocolVersion::V1_7_6) && is_spectator {
@@ -111,55 +120,55 @@ pub async fn send_play_packets(client: Client, state: ServerState) -> Result<(),
                 }
             };
 
-            LoginPacket::new_with_dimension(state.spawn_dimension(), dimension_type)
+            LoginPacket::new_with_dimension(server_state.spawn_dimension(), dimension_type)
                 .set_game_mode(game_mode.value())
         };
-    client.send_packet(packet).await?;
+    client_state.queue_packet(PacketRegistry::Login(Box::new(packet)))?;
 
     // Send Synchronize Player Position
     let packet = SynchronizePlayerPositionPacket::default();
-    client.send_packet(packet).await?;
+    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet))?;
 
     if protocol_version >= ProtocolVersion::V1_19 {
         // Send Set Default Spawn Position
-        let packet = SetDefaultSpawnPosition::default();
-        client.send_packet(packet).await?;
+        let packet = SetDefaultSpawnPositionPacket::default();
+        client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet))?;
     }
 
     if protocol_version >= ProtocolVersion::V1_13 {
         let packet = CommandsPacket::empty();
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::Commands(packet))?;
     }
 
     if protocol_version >= ProtocolVersion::V1_20_3 {
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::GameEvent(packet))?;
 
         // Send Chunk Data and Update Light
-        let biome_id = get_the_void_index(protocol_version, state.data_directory());
+        let biome_id = get_the_void_index(protocol_version, server_state.data_directory());
         let biome_id = i32::try_from(biome_id)?;
         let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet))?;
     }
 
-    client.set_state(State::Play).await;
-    client.enable_keep_alive().await;
+    client_state.set_state(State::Play);
+    client_state.set_keep_alive_should_enable();
 
     // The brand is not visible for clients prior to 1.13, no need to send it
     // The brand is sent during the configuration state after 1.20.2 included
     if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
         let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
-        client.send_packet(packet).await?;
+        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet))?;
     }
 
-    if let Some(content) = state.welcome_message() {
+    if let Some(content) = server_state.welcome_message() {
         if protocol_version >= ProtocolVersion::V1_19 {
-            let packet = SystemChatMessage::plain_text(content);
-            client.send_packet(packet).await?;
+            let packet = SystemChatMessagePacket::plain_text(content);
+            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet))?;
         } else {
-            let packet = LegacyChatMessage::system(content);
-            client.send_packet(packet).await?;
+            let packet = LegacyChatMessagePacket::system(content);
+            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet))?;
         }
     }
 
@@ -228,4 +237,10 @@ pub enum RegistryError {
     InvalidVecFormat,
     #[error("Missing element tag in dimension")]
     MissingElement,
+}
+
+impl From<TryFromIntError> for PacketHandlerError {
+    fn from(_: TryFromIntError) -> Self {
+        Self::custom("failed to cast int")
+    }
 }

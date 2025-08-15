@@ -1,8 +1,8 @@
 use minecraft_protocol::prelude::*;
+use rand::Rng;
 
 /// This packet exists for all versions of the game from 1.7.2 to the latest at the time (1.21.4).
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:keep_alive")]
 pub struct ClientBoundKeepAlivePacket {
     #[pvn(340..)]
     v1_12_2_id: i64,
@@ -10,6 +10,13 @@ pub struct ClientBoundKeepAlivePacket {
     v1_8_id: VarInt,
     #[pvn(..47)]
     id: i32,
+}
+
+impl Default for ClientBoundKeepAlivePacket {
+    fn default() -> Self {
+        let id = get_random_i64();
+        Self::new(id)
+    }
 }
 
 impl ClientBoundKeepAlivePacket {
@@ -20,6 +27,11 @@ impl ClientBoundKeepAlivePacket {
             id: id as i32,
         }
     }
+}
+
+fn get_random_i64() -> i64 {
+    let mut rng = rand::rng();
+    rng.random()
 }
 
 #[cfg(test)]

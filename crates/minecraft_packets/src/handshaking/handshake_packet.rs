@@ -1,7 +1,6 @@
 use minecraft_protocol::prelude::*;
 
 #[derive(Debug, Clone, PacketIn)]
-#[packet_id("handshake/serverbound/minecraft:intention")]
 pub struct HandshakePacket {
     pub protocol: VarInt,
     pub hostname: String,

@@ -5,7 +5,6 @@ use minecraft_protocol::prelude::*;
 /// thus the packet is only implemented to work on versions after 1.20.3.
 /// The GameEventPacket must be sent before sending this one.
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:level_chunk_with_light")]
 pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,

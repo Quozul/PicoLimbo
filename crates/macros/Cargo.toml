@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+protocol_version = { path = "../protocol_version" }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
-syn = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+syn = { workspace = true }
 
 [lib]
 proc-macro = true

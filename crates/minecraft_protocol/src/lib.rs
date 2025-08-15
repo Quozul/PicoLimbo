@@ -16,7 +16,6 @@ pub mod prelude {
     pub use crate::packet_serializer::packet_id::Identifiable;
     pub use macros::PacketIn;
     pub use macros::PacketOut;
-    pub use macros::packet_id;
     pub use pico_binutils::prelude::{
         BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
         VarIntPrefixedString,

@@ -1,30 +1,32 @@
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
-use crate::server::client::Client;
-use crate::server::event_handler::HandlerError;
+use crate::server::client_state::ClientState;
+use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server_state::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::prelude::ProtocolVersion;
 use minecraft_protocol::state::State;
 use thiserror::Error;
 
-pub async fn on_handshake(
-    state: ServerState,
-    client: Client,
-    packet: HandshakePacket,
-) -> Result<(), HandlerError> {
-    client.set_protocol_version(packet.get_protocol()).await;
+impl PacketHandler for HandshakePacket {
+    fn handle(
+        &self,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
+    ) -> Result<(), PacketHandlerError> {
+        client_state.set_protocol_version(self.get_protocol());
 
-    if let Ok(next_state) = packet.get_next_state() {
-        client.set_state(next_state).await;
+        if let Ok(next_state) = self.get_next_state() {
+            client_state.set_state(next_state);
 
-        if client.current_state().await == State::Login
-            && !check_bungee_cord(&state, &packet.hostname)?
-        {
-            client.kick("You must connect through a proxy.").await?;
+            if client_state.state() == State::Login
+                && !check_bungee_cord(server_state, &self.hostname)?
+            {
+                client_state.kick("You must connect through a proxy.");
+            }
         }
-    }
 
-    Ok(())
+        Ok(())
+    }
 }
 
 #[derive(Error, Debug)]

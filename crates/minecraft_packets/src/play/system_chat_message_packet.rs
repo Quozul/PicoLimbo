@@ -4,8 +4,7 @@ use pico_text_component::prelude::PlainText;
 /// Sends the client a raw system message.
 /// Introduced in 1.19
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:system_chat")]
-pub struct SystemChatMessage {
+pub struct SystemChatMessagePacket {
     #[pvn(..765)]
     content: String, // JSON encoded
     #[pvn(765..)]
@@ -13,7 +12,7 @@ pub struct SystemChatMessage {
     overlay: bool,
 }
 
-impl SystemChatMessage {
+impl SystemChatMessagePacket {
     pub fn plain_text<S>(content: S) -> Self
     where
         S: Into<String>,

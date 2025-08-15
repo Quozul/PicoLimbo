@@ -30,6 +30,14 @@ impl BinaryWriter {
     pub fn into_inner(self) -> Vec<u8> {
         self.0
     }
+
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 }
 
 macro_rules! impl_write_int {

@@ -4,7 +4,6 @@ use minecraft_protocol::prelude::*;
 /// Also, this packet is intended to be used during the play state, putting it in the login state is a hack to make this work.
 /// This is because this server will send the keep alive packet before the client is ready to receive it.
 #[derive(Debug, PacketIn)]
-#[packet_id("login/serverbound/minecraft:player_position")]
 pub struct PlayerPositionPacket {
     pub x: f64,
     pub feet_y: f64,

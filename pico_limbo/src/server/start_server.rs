@@ -1,11 +1,6 @@
 use crate::configuration::config::{Config, ConfigError, load_or_create};
-use crate::handlers::configuration::on_acknowledge_finish_configuration;
-use crate::handlers::handshake::on_handshake;
-use crate::handlers::login::{on_custom_query_answer, on_login_acknowledged, on_login_start};
-use crate::handlers::status::{on_ping_request, on_status_request};
 use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuildError};
-use minecraft_protocol::data::packets_report::packet_map::PacketMap;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use tracing::{debug, error};
@@ -20,18 +15,7 @@ pub async fn start_server(data_directory: PathBuf, config_path: PathBuf) -> Exit
     let server_state =
         build_state(&data_directory, cfg).expect("Failed to initialize server state");
 
-    let packet_map = PacketMap::new(data_directory);
-
-    Server::new(&bind, server_state, packet_map)
-        .on(on_handshake)
-        .on(on_status_request)
-        .on(on_ping_request)
-        .on(on_login_start)
-        .on(on_login_acknowledged)
-        .on(on_custom_query_answer)
-        .on(on_acknowledge_finish_configuration)
-        .run()
-        .await;
+    Server::new(&bind, server_state).run().await;
 
     ExitCode::SUCCESS
 }

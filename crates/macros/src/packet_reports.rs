@@ -1,40 +1,34 @@
 use proc_macro::TokenStream;
+use protocol_version::protocol_version::ProtocolVersion;
 use quote::{format_ident, quote};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::str::FromStr;
 use syn::parse::{Parse, ParseStream};
 use syn::{Data, DeriveInput, Error, Fields, Ident, LitStr, Token, parse_macro_input};
 
+/// Represents the "protocol_id" object within the JSON.
 #[derive(Debug, Deserialize)]
-struct JsonReport {
-    handshake: JsonState,
-    status: JsonState,
-    login: JsonState,
-    play: JsonState,
+struct PacketInfo {
+    protocol_id: u8,
 }
 
-#[derive(Debug, Deserialize, Default)]
-struct JsonState {
-    // Use serde(default) to handle cases where a bound might be missing in the JSON.
-    #[serde(default)]
-    serverbound: HashMap<String, JsonPacket>,
-    #[serde(default)]
-    clientbound: HashMap<String, JsonPacket>,
-}
+/// Represents the mapping from packet_name to PacketInfo.
+type DirectionPackets = HashMap<String, PacketInfo>;
 
+/// Represents the mapping from direction (serverbound/clientbound) to DirectionPackets.
+type StateDirections = HashMap<String, DirectionPackets>;
+
+/// Represents the top-level structure of the JSON: state -> directions -> packets.
 #[derive(Debug, Deserialize)]
-struct JsonPacket {
-    protocol_id: i32,
-}
+struct RawPacketData(HashMap<String, StateDirections>);
 
-// Struct to hold the parsed information from our enum variants
 struct PacketVariantInfo {
     variant_ident: Ident,
     packet_type: syn::Path,
     state: String,
-    // bound is always "serverbound" in this context, but we parse it for completeness
     bound: String,
     name: String,
 }
@@ -46,21 +40,27 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
     let variants = parse_enum_variants(&input.data);
     let protocol_data = load_all_protocol_data();
 
-    // Generate each implementation by filtering the variants based on their bound.
     let decode_impl = generate_decode_impl(&variants, &protocol_data);
     let encode_impl = generate_encode_impl(enum_ident, &variants, &protocol_data);
 
     let expanded = quote! {
-        // ... (Error enum and From impls are the same) ...
-        // For runnable code
-        #[derive(Debug)]
+        #[derive(Debug, thiserror::Error)]
         pub enum PacketRegistryError {
-            UnknownPacket(String),
-            Decode(BinaryReaderError),
-            Encode(BinaryWriterError),
+            #[error("Encode error: This packet is not supported for this version of the game")]
+            UnsupportedPacket,
+            #[error("Encode error: This packet cannot be encoded")]
+            CannotBeEncoded,
+            #[error("Decode error: Packet id is missing from the payload")]
+            MissingPacketId,
+            #[error("Decode error: The version {0} is unknown")]
+            UnknownVersion(i32),
+            #[error("Decode error: The packet is not found version={0} state={1} packet_id={2}")]
+            NoCorrespondingPacket(i32, State, u8),
+            #[error("Failed to read packet")]
+            Decode(#[from] BinaryReaderError),
+            #[error("Failed to write packet")]
+            Encode(#[from] BinaryWriterError),
         }
-        impl From<BinaryReaderError> for PacketRegistryError { fn from(e: BinaryReaderError) -> Self { Self::Decode(e) } }
-        impl From<BinaryWriterError> for PacketRegistryError { fn from(e: BinaryWriterError) -> Self { Self::Encode(e) } }
 
         impl #enum_ident {
             #decode_impl
@@ -70,8 +70,6 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-
-// --- Helper Functions for the Macro ---
 
 fn parse_enum_variants(data: &Data) -> Vec<PacketVariantInfo> {
     let variants = match data {
@@ -100,7 +98,7 @@ fn parse_enum_variants(data: &Data) -> Vec<PacketVariantInfo> {
             let Ok(ProtocolIdAttribute { state, bound, name }) =
                 attr.parse_args::<ProtocolIdAttribute>()
             else {
-                panic!("No #[protocol_id] attribute found")
+                panic!("Failed to parse #[protocol_id] attribute")
             };
 
             PacketVariantInfo {
@@ -114,7 +112,7 @@ fn parse_enum_variants(data: &Data) -> Vec<PacketVariantInfo> {
         .collect()
 }
 
-/// Parses the `#[pvn(reports = "...", data = "...")]` attribute.
+/// Parses the `#[protocol_id(state = "...", bound = "...", name = "...")]` attribute.
 pub struct ProtocolIdAttribute {
     pub state: Option<LitStr>,
     pub bound: Option<LitStr>,
@@ -170,7 +168,7 @@ impl Parse for ProtocolIdAttribute {
     }
 }
 
-fn load_all_protocol_data() -> HashMap<String, JsonReport> {
+fn load_all_protocol_data() -> HashMap<String, RawPacketData> {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let data_dir = manifest_dir
         .parent()
@@ -189,7 +187,7 @@ fn load_all_protocol_data() -> HashMap<String, JsonReport> {
             if report_path.exists() {
                 let content = fs::read_to_string(&report_path)
                     .unwrap_or_else(|_| panic!("Failed to read {:?}", report_path));
-                let report: JsonReport = serde_json::from_str(&content)
+                let report: RawPacketData = serde_json::from_str(&content)
                     .unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", report_path, e));
                 all_data.insert(version_name, report);
             }
@@ -198,47 +196,45 @@ fn load_all_protocol_data() -> HashMap<String, JsonReport> {
     all_data
 }
 
-// --- Code Generation Functions ---
-
 fn generate_decode_impl(
     variants: &[PacketVariantInfo],
-    protocol_data: &HashMap<String, JsonReport>,
+    protocol_data: &HashMap<String, RawPacketData>,
 ) -> proc_macro2::TokenStream {
     let report_arms = protocol_data.iter().map(|(version_name, report)| {
+        let version_number = ProtocolVersion::from_str(version_name).expect("Failed to parse version name").version_number();
         let state_arms = variants
             .iter()
-            // 1. Filter for SERVERBOUND packets only
             .filter(|v| v.bound == "serverbound")
-            .map(|variant_info| {
+            .filter_map(|variant_info| {
                 let state_str = &variant_info.state;
                 let packet_name = &variant_info.name;
 
-                let json_state = get_json_state(report, state_str);
+                let packet_info = report.0.get(state_str)
+                    .and_then(|directions| directions.get("serverbound"))
+                    .and_then(|packets| packets.get(packet_name));
 
-                // 2. Look in the `serverbound` map
-                if let Some(packet_data) = json_state.serverbound.get(packet_name) {
-                    let id = packet_data.protocol_id;
+                if let Some(packet_info) = packet_info {
+                    let id = packet_info.protocol_id;
                     let state_ident = format_ident!("{}", capitalize_first(state_str));
                     let packet_type = &variant_info.packet_type;
                     let variant_ident = &variant_info.variant_ident;
 
-                    quote! {
+                    Some(quote! {
                         (State::#state_ident, #id) => {
-                            let packet = <#packet_type>::decode(payload, protocol_version)?;
+                            let packet = <#packet_type as DecodePacket>::decode(&mut payload, protocol_version)?;
                             return Ok(Self::#variant_ident(packet));
                         }
-                    }
+                    })
                 } else {
-                    quote! {}
+                    None
                 }
             });
 
         quote! {
-            #version_name => {
-                let state_string = state.to_string();
+            #version_number => {
                 match (state, packet_id) {
                     #(#state_arms)*
-                    _ => return Err(PacketRegistryError::UnknownPacket(format!("Unknown serverbound packet id {} in state {} for version {}", packet_id, state_string, #version_name))),
+                    _ => return Err(PacketRegistryError::NoCorrespondingPacket(reports_version, state, packet_id)),
                 }
             }
         }
@@ -248,13 +244,20 @@ fn generate_decode_impl(
         pub fn decode_packet(
             protocol_version: ProtocolVersion,
             state: State,
-            packet_id: i32,
-            payload: &mut BinaryReader,
+            raw_packet: RawPacket,
         ) -> Result<Self, PacketRegistryError> {
-            let report_name = protocol_version.reports();
-            match report_name {
-                #(#report_arms)*
-                _ => return Err(PacketRegistryError::UnknownPacket(format!("Unsupported protocol report: {}", report_name))),
+            match raw_packet.packet_id() {
+                Some(packet_id) => {
+                    let reports_version = protocol_version.reports().version_number();
+                    let mut payload = BinaryReader::new(raw_packet.data());
+                    match reports_version {
+                        #(#report_arms)*
+                        _ => return Err(PacketRegistryError::UnknownVersion(reports_version)),
+                    }
+                }
+                None => {
+                    Err(PacketRegistryError::MissingPacketId)
+                }
             }
         }
     }
@@ -263,57 +266,56 @@ fn generate_decode_impl(
 fn generate_encode_impl(
     enum_ident: &Ident,
     variants: &[PacketVariantInfo],
-    protocol_data: &HashMap<String, JsonReport>,
+    protocol_data: &HashMap<String, RawPacketData>,
 ) -> proc_macro2::TokenStream {
     let variant_arms = variants
         .iter()
-        // 1. Filter for CLIENTBOUND packets only
         .filter(|v| v.bound == "clientbound")
         .map(|variant_info| {
             let variant_ident = &variant_info.variant_ident;
             let packet_name = &variant_info.name;
             let state_str = &variant_info.state;
 
-            let report_arms = protocol_data.iter().map(|(version_name, report)| {
-                let json_state = get_json_state(report, state_str);
+            let report_arms = protocol_data.iter().filter_map(|(version_name, report)| {
+                let version_number = ProtocolVersion::from_str(version_name)
+                    .expect("Failed to parse version name")
+                    .version_number();
+                let packet_info = report
+                    .0
+                    .get(state_str)
+                    .and_then(|directions| directions.get("clientbound"))
+                    .and_then(|packets| packets.get(packet_name));
 
-                // 2. Look in the `clientbound` map
-                if let Some(packet_data) = json_state.clientbound.get(packet_name) {
-                    let id = packet_data.protocol_id as u8;
-                    quote! {
-                        #version_name => #id,
-                    }
+                if let Some(packet_info) = packet_info {
+                    let id = packet_info.protocol_id;
+                    Some(quote! { #version_number => #id, })
                 } else {
-                    quote! {}
+                    None
                 }
             });
 
             quote! {
-                // Notice the variant name is now inside the match self arm
                 #enum_ident::#variant_ident(packet) => {
-                    let packet_id = match report_name {
+                    packet.encode(&mut packet_writer, protocol_version)?;
+                    let packet_bytes = packet_writer.into_inner();
+                    let packet_id: u8 = match reports_version {
                         #(#report_arms)*
-                        _ => return Err(PacketRegistryError::UnknownPacket(format!("Could not find packet id for {} in report {}", #packet_name, report_name))),
+                        _ => return Err(PacketRegistryError::UnsupportedPacket),
                     };
-                    writer.write(&packet_id)?;
-                    packet.encode(&mut writer, protocol_version)?;
+                    RawPacket::from_bytes(packet_id, &packet_bytes)
                 }
             }
         });
 
     quote! {
-        // The `state` parameter is removed as it's implicit from the enum variant being encoded.
-        pub fn encode_packet(&self, protocol_version: ProtocolVersion) -> Result<Vec<u8>, PacketRegistryError> {
-            let mut writer = BinaryWriter::new();
-            let report_name = protocol_version.reports();
-
-            match self {
+        pub fn encode_packet(self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryError> {
+            let reports_version = protocol_version.reports().version_number();
+            let mut packet_writer = BinaryWriter::new();
+            let raw_packet = match self {
                 #(#variant_arms)*
-                // This match is no longer exhaustive for all enum variants, so we add a fallback arm.
-                // This arm will catch any `serverbound` packets passed to `encode_packet`.
-                _ => return Err(PacketRegistryError::UnknownPacket("Attempted to encode a serverbound packet.".to_string())),
-            }
-            Ok(writer.into_inner())
+                _ => return Err(PacketRegistryError::CannotBeEncoded),
+            };
+            Ok(raw_packet)
         }
     }
 }
@@ -323,16 +325,5 @@ fn capitalize_first(s: &str) -> String {
     match c.next() {
         None => String::new(),
         Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-    }
-}
-
-// Helper to reduce repetition
-fn get_json_state<'a>(report: &'a JsonReport, state_str: &str) -> &'a JsonState {
-    match state_str {
-        "handshake" => &report.handshake,
-        "status" => &report.status,
-        "login" => &report.login,
-        "play" => &report.play,
-        _ => panic!("Unknown state in attribute: {}", state_str),
     }
 }

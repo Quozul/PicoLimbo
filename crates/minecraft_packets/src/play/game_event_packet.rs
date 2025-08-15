@@ -3,7 +3,6 @@ use minecraft_protocol::prelude::*;
 /// This packet was introduced in Minecraft version 1.20.3.
 /// Used for a wide variety of game events, from weather to bed use to game mode to demo messages.
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:game_event")]
 pub struct GameEventPacket {
     /// See the GameEvent below.
     event: u8,

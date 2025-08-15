@@ -2,7 +2,6 @@ use minecraft_protocol::prelude::*;
 
 /// This packet is currently only used to communicate with the Velocity proxy.
 #[derive(Debug, PacketOut)]
-#[packet_id("login/clientbound/minecraft:custom_query")]
 pub struct CustomQueryPacket {
     pub message_id: VarInt,
     pub channel: Identifier,

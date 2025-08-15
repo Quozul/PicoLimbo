@@ -8,7 +8,6 @@ minecraft_packets = { path = "../crates/minecraft_packets" }
 minecraft_protocol = { path = "../crates/minecraft_protocol" }
 net = { path = "../crates/net" }
 macros = { path = "../crates/macros" }
-async-trait = { workspace = true }
 clap = { workspace = true }
 hmac = { workspace = true }
 rand = { workspace = true }

@@ -47,7 +47,7 @@ where
 
         if let Some(packet_id) = packet.packet_id() {
             self.stream.write_all(&var_int_bytes).await?;
-            self.stream.write_all(&[packet_id]).await?;
+            self.stream.write_u8(packet_id).await?;
             self.stream.write_all(packet.data()).await?;
             self.stream.flush().await?;
             Ok(())

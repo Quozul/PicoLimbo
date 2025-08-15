@@ -1,7 +1,6 @@
 use minecraft_protocol::prelude::*;
 
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:custom_payload")]
 pub struct PlayClientBoundPluginMessagePacket {
     channel: Identifier,
     data: LengthPaddedVec<i8>,

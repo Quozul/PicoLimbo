@@ -1,14 +1,8 @@
 use proc_macro::TokenStream;
 
-mod packet_id;
 mod packet_in;
 mod packet_out;
 mod packet_reports;
-
-#[proc_macro_attribute]
-pub fn packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
-    packet_id::expand_packet_id(attr, item)
-}
 
 #[proc_macro_derive(PacketIn, attributes(pvn))]
 pub fn parse_packet_in_derive(input: TokenStream) -> TokenStream {

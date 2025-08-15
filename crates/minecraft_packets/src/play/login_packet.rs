@@ -3,7 +3,6 @@ use minecraft_protocol::prelude::*;
 
 /// This is the most important packet, good luck.
 #[derive(PacketOut)]
-#[packet_id("play/clientbound/minecraft:login")]
 pub struct LoginPacket {
     /// The player's Entity ID (EID).
     entity_id: i32,

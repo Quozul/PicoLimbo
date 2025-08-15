@@ -2,7 +2,6 @@ use minecraft_protocol::prelude::*;
 
 /// This packet is sent since 1.13
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:commands")]
 pub struct CommandsPacket {
     /// An array of nodes.
     nodes: LengthPaddedVec<Node>,

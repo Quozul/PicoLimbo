@@ -7,8 +7,7 @@ use pico_text_component::prelude::PlainText;
 /// - Player Chat Message
 /// - System Chat Message
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:legacy_chat_message")]
-pub struct LegacyChatMessage {
+pub struct LegacyChatMessagePacket {
     /// JSON encoded text component
     content: String,
     /// 0: chat (chat box), 1: system message (chat box), 2: game info (above hotbar)
@@ -19,7 +18,7 @@ pub struct LegacyChatMessage {
     sender: Uuid,
 }
 
-impl LegacyChatMessage {
+impl LegacyChatMessagePacket {
     pub fn system<S>(content: S) -> Self
     where
         S: Into<String>,

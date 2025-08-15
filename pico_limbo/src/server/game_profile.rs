@@ -24,8 +24,8 @@ impl GameProfile {
     }
 }
 
-impl From<LoginStartPacket> for GameProfile {
-    fn from(value: LoginStartPacket) -> Self {
+impl From<&LoginStartPacket> for GameProfile {
+    fn from(value: &LoginStartPacket) -> Self {
         Self {
             username: value.name(),
             uuid: value.uuid(),

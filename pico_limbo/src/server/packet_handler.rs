@@ -1,0 +1,23 @@
+use crate::server::client_state::ClientState;
+use crate::server_state::ServerState;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum PacketHandlerError {
+    #[error("An error occurred while handling a packet: {0}")]
+    Custom(String),
+}
+
+impl PacketHandlerError {
+    pub fn custom(message: &str) -> Self {
+        Self::Custom(message.to_string())
+    }
+}
+
+pub trait PacketHandler {
+    fn handle(
+        &self,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
+    ) -> Result<(), PacketHandlerError>;
+}

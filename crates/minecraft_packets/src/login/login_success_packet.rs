@@ -2,7 +2,6 @@ use minecraft_protocol::prelude::*;
 
 /// This packet was introduced in 1.21.2, previous versions uses the GameProfilePacket.
 #[derive(Debug, PacketOut)]
-#[packet_id("login/clientbound/minecraft:login_finished")]
 pub struct LoginSuccessPacket {
     uuid: Uuid,
     username: String,

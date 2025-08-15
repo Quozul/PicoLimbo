@@ -1,11 +1,11 @@
-pub mod client;
-mod client_inner;
+mod client_data;
+pub mod client_state;
 mod controllable_interval;
-pub mod event_handler;
+mod fifo;
 pub mod game_mode;
 pub mod game_profile;
-mod named_packet;
 pub mod network;
-mod packet_registry;
+pub mod packet_handler;
+pub mod packet_registry;
 mod shutdown_signal;
 pub mod start_server;

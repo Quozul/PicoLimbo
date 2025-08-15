@@ -1,7 +1,6 @@
 use minecraft_protocol::prelude::*;
 
 #[derive(Debug, PacketOut)]
-#[packet_id("play/clientbound/minecraft:player_position")]
 pub struct SynchronizePlayerPositionPacket {
     #[pvn(768..)]
     pub v_1_21_2_teleport_id: VarInt,

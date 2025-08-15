@@ -75,14 +75,14 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
 
     let from_str_arms = parsed_variants.iter().map(|v| {
         let variant_ident = v.ident;
-        let humanized_lit = &v.humanized_string;
-        quote! { #humanized_lit => Ok(#enum_ident::#variant_ident) }
+        let variant_string = v.ident.to_string();
+        quote! { #variant_string => Ok(#enum_ident::#variant_ident) }
     });
 
     let reports_arms = parsed_variants.iter().map(|v| {
         let variant_ident = v.ident;
         let value = &v.reports;
-        quote! { #enum_ident::#variant_ident => #value }
+        quote! { #enum_ident::#variant_ident => #enum_ident::#value }
     });
 
     let data_arms = parsed_variants.iter().map(|v| {
@@ -132,7 +132,7 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             }
 
             /// Returns the protocol version this version reports as.
-            pub fn reports(&self) -> &'static str {
+            pub fn reports(&self) -> ProtocolVersion {
                 match self { #(#reports_arms),* }
             }
 

@@ -1,10 +1,10 @@
 use minecraft_protocol::prelude::*;
 
 #[derive(Debug, PacketIn)]
-#[packet_id("login/serverbound/minecraft:hello")]
 pub struct LoginStartPacket {
     pub name: String,
     #[pvn(759..761)]
+    #[allow(dead_code)]
     sig_data: Optional<SigData>,
     #[pvn(761..764)]
     v1_19_3_player_uuid: Optional<Uuid>, // Really??

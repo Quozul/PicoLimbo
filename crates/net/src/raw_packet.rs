@@ -4,7 +4,7 @@ use minecraft_protocol::prelude::{
 use std::fmt::Display;
 use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RawPacket {
     data: Vec<u8>,
 }
@@ -26,6 +26,12 @@ impl RawPacket {
         } else {
             Ok(RawPacket { data })
         }
+    }
+
+    pub fn from_bytes(packet_id: u8, bytes: &[u8]) -> Self {
+        let mut data = vec![packet_id];
+        data.append(&mut bytes.to_vec());
+        Self { data }
     }
 
     /// Creates a new raw packet from a serializable packet struct.

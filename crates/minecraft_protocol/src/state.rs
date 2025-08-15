@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, PartialEq, Clone, Default, Eq, Hash)]
+#[derive(Copy, Debug, PartialEq, Clone, Default, Eq, Hash)]
 pub enum State {
     #[default]
     Handshake,

@@ -3,13 +3,13 @@ use syn::{Error, Ident, LitStr, Result, Token};
 
 /// Parses the `#[pvn(reports = "...", data = "...")]` attribute.
 pub struct PvnAttribute {
-    pub reports: Option<LitStr>,
+    pub reports: Option<Ident>,
     pub data: Option<LitStr>,
 }
 
 impl Parse for PvnAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mut reports: Option<LitStr> = None;
+        let mut reports: Option<Ident> = None;
         let mut data: Option<LitStr> = None;
 
         if input.is_empty() {
@@ -19,17 +19,18 @@ impl Parse for PvnAttribute {
         let mut parse_kv = |input: ParseStream| -> Result<()> {
             let ident: Ident = input.parse()?;
             input.parse::<Token![=]>()?;
-            let value: LitStr = input.parse()?;
 
             if ident == "reports" {
                 if reports.is_some() {
                     return Err(Error::new(ident.span(), "duplicate `reports` field"));
                 }
+                let value: Ident = input.parse()?;
                 reports = Some(value);
             } else if ident == "data" {
                 if data.is_some() {
                     return Err(Error::new(ident.span(), "duplicate `data` field"));
                 }
+                let value: LitStr = input.parse()?;
                 data = Some(value);
             } else {
                 return Err(Error::new(
