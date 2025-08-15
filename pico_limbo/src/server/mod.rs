@@ -6,5 +6,6 @@ pub mod game_mode;
 pub mod game_profile;
 mod named_packet;
 pub mod network;
+mod packet_registry;
 mod shutdown_signal;
 pub mod start_server;
