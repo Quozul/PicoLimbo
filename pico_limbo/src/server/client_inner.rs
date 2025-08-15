@@ -1,7 +1,7 @@
 use crate::server::game_profile::GameProfile;
 use crate::server::named_packet::NamedPacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
-use minecraft_protocol::prelude::{EncodePacket, PacketId, ProtocolVersion};
+use minecraft_protocol::prelude::{EncodePacket, Identifiable, ProtocolVersion};
 use minecraft_protocol::state::State;
 use net::packet_stream::{PacketStream, PacketStreamError};
 use net::raw_packet::RawPacket;
@@ -73,7 +73,7 @@ impl ClientInner {
 
     pub async fn send_encodable_packet_inner(
         &mut self,
-        packet: impl EncodePacket + PacketId + Send,
+        packet: impl EncodePacket + Identifiable + Send,
     ) -> Result<(), ClientSendPacketError> {
         let version = self
             .version

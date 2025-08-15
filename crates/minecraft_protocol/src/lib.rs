@@ -13,7 +13,7 @@ pub mod prelude {
     pub use crate::data_types::prefixed::LengthPaddedVec;
     pub use crate::packet_serializer::decode_packet::DecodePacket;
     pub use crate::packet_serializer::encode_packet::EncodePacket;
-    pub use crate::packet_serializer::packet_id::PacketId;
+    pub use crate::packet_serializer::packet_id::Identifiable;
     pub use macros::PacketIn;
     pub use macros::PacketOut;
     pub use macros::packet_id;

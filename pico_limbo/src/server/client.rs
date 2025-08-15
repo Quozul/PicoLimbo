@@ -5,7 +5,7 @@ use crate::server::named_packet::NamedPacket;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
-use minecraft_protocol::prelude::{EncodePacket, PacketId, ProtocolVersion};
+use minecraft_protocol::prelude::{EncodePacket, Identifiable, ProtocolVersion};
 use minecraft_protocol::state::State;
 use rand::Rng;
 use std::ops::Add;
@@ -38,7 +38,7 @@ impl Client {
 
     pub async fn send_packet(
         &self,
-        packet: impl EncodePacket + PacketId + Send,
+        packet: impl EncodePacket + Identifiable + Send,
     ) -> Result<(), ClientSendPacketError> {
         let mut guard = self.acquire_lock().await;
         guard.send_encodable_packet_inner(packet).await

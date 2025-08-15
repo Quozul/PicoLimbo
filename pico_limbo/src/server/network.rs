@@ -4,7 +4,7 @@ use crate::server::event_handler::{Handler, HandlerError, ListenerHandler};
 use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_protocol::data::packets_report::packet_map::PacketMap;
-use minecraft_protocol::prelude::{DecodePacket, PacketId};
+use minecraft_protocol::prelude::{DecodePacket, Identifiable};
 use minecraft_protocol::state::State;
 use net::packet_stream::PacketStreamError;
 use std::collections::HashMap;
@@ -32,7 +32,7 @@ impl Server {
 
     pub fn on<T, F, Fut>(mut self, listener_fn: F) -> Self
     where
-        T: PacketId + DecodePacket + Send + Sync + 'static,
+        T: Identifiable + DecodePacket + Send + Sync + 'static,
         F: Fn(ServerState, Client, T) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<(), HandlerError>> + Send + 'static,
     {

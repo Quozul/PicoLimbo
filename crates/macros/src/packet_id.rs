@@ -31,7 +31,7 @@ pub fn expand_packet_id(attr: TokenStream, item: TokenStream) -> TokenStream {
         #[allow(dead_code)]
         #input
 
-        impl PacketId for #struct_name {
+        impl Identifiable for #struct_name {
             const PACKET_NAME: &'static str = #packet_name;
 
             fn get_packet_name(&self) -> &'static str {

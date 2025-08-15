@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::{
-    BinaryWriter, BinaryWriterError, EncodePacket, PacketId, ProtocolVersion,
+    BinaryWriter, BinaryWriterError, EncodePacket, Identifiable, ProtocolVersion,
 };
 use std::fmt::Display;
 use thiserror::Error;
@@ -35,7 +35,7 @@ impl RawPacket {
         packet: &T,
     ) -> Result<Self, BinaryWriterError>
     where
-        T: EncodePacket + PacketId,
+        T: EncodePacket + Identifiable,
     {
         let mut writer = BinaryWriter::new();
         writer.write(&packet_id)?;
