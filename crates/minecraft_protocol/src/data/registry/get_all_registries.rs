@@ -1,5 +1,5 @@
 use crate::data::registry::registry_entry::RegistryEntry;
-use crate::prelude::{Identifier, Nbt};
+use crate::prelude::{Identifier, Nbt, Optional};
 use protocol_version::protocol_version::ProtocolVersion;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -154,7 +154,7 @@ pub fn get_v1_20_5_registries(
                 RegistryEntry {
                     entry_id,
                     has_data: true,
-                    nbt: Some(nbt),
+                    nbt: Optional::Some(nbt),
                 }
             };
 

@@ -37,6 +37,15 @@ impl<T> Optional<T> {
             Optional::Some(x) => x,
         }
     }
+
+    pub fn unwrap(self) -> T {
+        match self {
+            Optional::None => {
+                panic!("called `Optional::unwrap()` on a `None` value")
+            }
+            Optional::Some(x) => x,
+        }
+    }
 }
 
 impl<T: EncodePacket> EncodePacket for Optional<T> {

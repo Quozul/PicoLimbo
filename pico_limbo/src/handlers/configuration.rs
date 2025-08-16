@@ -7,9 +7,7 @@ use minecraft_packets::configuration::acknowledge_finish_configuration_packet::A
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
-use minecraft_packets::configuration::registry_data_packet::{
-    RegistryDataCodecPacket, RegistryDataPacket,
-};
+use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
@@ -23,7 +21,7 @@ use minecraft_protocol::data::registry::get_all_registries::{
     get_dimension_type_index, get_the_void_index, get_v1_16_2_registry_codec,
     get_v1_16_registry_codec, get_v1_20_5_registries,
 };
-use minecraft_protocol::prelude::{LengthPaddedVec, Nbt, ProtocolVersion};
+use minecraft_protocol::prelude::{Nbt, ProtocolVersion};
 use minecraft_protocol::state::State;
 use std::num::TryFromIntError;
 use thiserror::Error;
@@ -58,18 +56,15 @@ pub fn send_configuration_packets(
         // Send Registry Data
         let grouped = get_v1_20_5_registries(protocol_version, server_state.data_directory());
         for (registry_id, entries) in grouped {
-            let packet = RegistryDataPacket {
-                registry_id,
-                entries: LengthPaddedVec::new(entries),
-            };
+            let packet = RegistryDataPacket::registry(registry_id, entries);
             client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
         }
     } else {
         // Only for 1.20.2 and 1.20.3
         let registry_codec =
             get_v1_16_2_registry_codec(protocol_version, server_state.data_directory());
-        let packet = RegistryDataCodecPacket { registry_codec };
-        client_state.queue_packet(PacketRegistry::RegistryDataCodec(packet))?;
+        let packet = RegistryDataPacket::codec(registry_codec);
+        client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
     }
 
     // Send Finished Configuration
