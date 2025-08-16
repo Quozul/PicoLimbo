@@ -18,13 +18,12 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::data::registry::get_all_registries::{
-    get_dimension_type_index, get_the_void_index, get_v1_16_2_registry_codec,
-    get_v1_16_registry_codec, get_v1_20_5_registries,
+    Registries, get_dimension_type_index, get_registries, get_the_void_index,
 };
-use minecraft_protocol::prelude::{Nbt, ProtocolVersion};
+use minecraft_protocol::data::registry::registry_entry::RegistryEntry;
+use minecraft_protocol::prelude::{Omitted, ProtocolVersion};
 use minecraft_protocol::state::State;
 use std::num::TryFromIntError;
-use thiserror::Error;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -48,23 +47,38 @@ pub fn send_configuration_packets(
     ))?;
     let protocol_version = client_state.protocol_version();
 
-    if ProtocolVersion::V1_20_5 <= protocol_version {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
         client_state.queue_packet(PacketRegistry::ClientBoundKnownPacks(packet))?;
+    }
 
-        // Send Registry Data
-        let grouped = get_v1_20_5_registries(protocol_version, server_state.data_directory());
-        for (registry_id, entries) in grouped {
-            let packet = RegistryDataPacket::registry(registry_id, entries);
+    // Send Registry Data
+    match get_registries(
+        protocol_version,
+        server_state.data_directory(),
+        server_state.spawn_dimension().identifier().to_string(),
+    ) {
+        Registries::V1_20_5 { registries } => {
+            for (registry_id, entries) in registries {
+                let registry_entries = entries
+                    .iter()
+                    .map(|(entry_id, bytes)| RegistryEntry::new(entry_id.clone(), bytes.clone()))
+                    .collect();
+                let packet = RegistryDataPacket::registry(registry_id, registry_entries);
+                client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
+            }
+        }
+        Registries::V1_20_2 { registry_codec } => {
+            let packet = RegistryDataPacket::codec(registry_codec);
             client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
         }
-    } else {
-        // Only for 1.20.2 and 1.20.3
-        let registry_codec =
-            get_v1_16_2_registry_codec(protocol_version, server_state.data_directory());
-        let packet = RegistryDataPacket::codec(registry_codec);
-        client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
+        _ => {
+            client_state.kick("Disconnected");
+            return Err(PacketHandlerError::custom(
+                "Registry not supported for this version",
+            ));
+        }
     }
 
     // Send Finished Configuration
@@ -88,36 +102,43 @@ pub fn send_play_packets(
     );
     let dimension_type = i32::try_from(dimension_type)?;
 
-    let packet =
-        if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
-            match construct_registry_data(protocol_version, server_state) {
-                Ok((registry_codec, dimension)) => LoginPacket::new_with_codecs(
-                    server_state.spawn_dimension(),
-                    registry_codec,
-                    dimension,
-                    dimension_type,
-                )
-                .set_game_mode(server_state.game_mode().value()),
-                Err(e) => {
-                    client_state.kick("Disconnected");
-                    return Err(PacketHandlerError::custom(&e.to_string()));
-                }
-            }
+    let game_mode = {
+        let expected_game_mode = server_state.game_mode();
+        let is_spectator = expected_game_mode == GameMode::Spectator;
+
+        if protocol_version.before_inclusive(ProtocolVersion::V1_7_6) && is_spectator {
+            GameMode::Creative
         } else {
-            let game_mode = {
-                let expected_game_mode = server_state.game_mode();
-                let is_spectator = expected_game_mode == GameMode::Spectator;
+            expected_game_mode
+        }
+    };
 
-                if protocol_version.before_inclusive(ProtocolVersion::V1_7_6) && is_spectator {
-                    GameMode::Creative
-                } else {
-                    expected_game_mode
-                }
-            };
+    let packet = match get_registries(
+        protocol_version,
+        server_state.data_directory(),
+        server_state.spawn_dimension().identifier().to_string(),
+    ) {
+        Registries::V1_16_2 {
+            registry_codec,
+            dimension,
+        } => LoginPacket::new_with_codecs(
+            server_state.spawn_dimension(),
+            Omitted::Some(registry_codec),
+            Omitted::Some(dimension),
+            dimension_type,
+        ),
+        Registries::V1_19 { registry_codec } | Registries::V1_16 { registry_codec } => {
+            LoginPacket::new_with_codecs(
+                server_state.spawn_dimension(),
+                Omitted::Some(registry_codec),
+                Omitted::None,
+                dimension_type,
+            )
+        }
+        _ => LoginPacket::new_with_dimension(server_state.spawn_dimension(), dimension_type),
+    }
+    .set_game_mode(game_mode.value());
 
-            LoginPacket::new_with_dimension(server_state.spawn_dimension(), dimension_type)
-                .set_game_mode(game_mode.value())
-        };
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)))?;
 
     // Send Synchronize Player Position
@@ -168,70 +189,6 @@ pub fn send_play_packets(
     }
 
     Ok(())
-}
-
-fn construct_registry_data(
-    protocol_version: ProtocolVersion,
-    state: &ServerState,
-) -> Result<(Nbt, Nbt), RegistryError> {
-    let registry_codec = if protocol_version == ProtocolVersion::V1_16
-        || protocol_version == ProtocolVersion::V1_16_1
-    {
-        get_v1_16_registry_codec(state.data_directory())
-            .map_err(|_| RegistryError::CodecConstruction)?
-    } else {
-        get_v1_16_2_registry_codec(protocol_version, state.data_directory())
-    };
-
-    // For versions between 1.16.2 and 1.18.2 (included), we must send the dimension codec separately
-    let dimension =
-        if protocol_version.between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2) {
-            let dimension_types = registry_codec
-                .find_tag("minecraft:dimension_type")
-                .ok_or(RegistryError::MissingDimensionType)?
-                .find_tag("value")
-                .ok_or(RegistryError::MissingValue)?
-                .get_vec()
-                .ok_or(RegistryError::InvalidVecFormat)?;
-
-            let dimension = dimension_types
-                .iter()
-                .find(|element| {
-                    element
-                        .find_tag("name".to_string())
-                        .is_some_and(|name| match name {
-                            Nbt::String { value, .. } => {
-                                value == &state.spawn_dimension().identifier().to_string()
-                            }
-                            _ => false,
-                        })
-                })
-                .cloned()
-                .unwrap_or_else(|| dimension_types.first().cloned().unwrap_or(Nbt::End));
-
-            dimension
-                .find_tag("element")
-                .ok_or(RegistryError::MissingElement)?
-                .clone()
-        } else {
-            Nbt::End
-        };
-
-    Ok((registry_codec, dimension))
-}
-
-#[derive(Debug, Error)]
-pub enum RegistryError {
-    #[error("Failed to construct registry codec")]
-    CodecConstruction,
-    #[error("Missing dimension type in registry")]
-    MissingDimensionType,
-    #[error("Missing value tag in registry")]
-    MissingValue,
-    #[error("Invalid vector format in registry")]
-    InvalidVecFormat,
-    #[error("Missing element tag in dimension")]
-    MissingElement,
 }
 
 impl From<TryFromIntError> for PacketHandlerError {

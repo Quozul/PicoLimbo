@@ -17,10 +17,10 @@ pub struct LoginPacket {
     v1_16_dimension_names: LengthPaddedVec<Identifier>,
     /// Represents certain registries that are sent from the server and are applied on the client.
     #[pvn(735..764)]
-    registry_codec: Nbt,
+    v1_16_registry_codec_bytes: Omitted<Vec<u8>>,
     /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
     #[pvn(751..759)]
-    v1_16_dimension_codec: Nbt,
+    v1_16_2_dimension_codec_bytes: Omitted<Vec<u8>>,
     /// Name of the dimension type being spawned into.
     #[pvn(759..764)]
     v1_19_dimension_type: Identifier,
@@ -115,7 +115,7 @@ impl Default for LoginPacket {
             game_mode: 3,
             previous_game_mode: -1,
             v1_16_dimension_names: LengthPaddedVec::default(),
-            registry_codec: Nbt::End,
+            v1_16_registry_codec_bytes: Omitted::None,
             v1_16_max_players: VarInt::new(1),
             max_players: 1,
             level_type: "default".to_string(),
@@ -127,7 +127,7 @@ impl Default for LoginPacket {
             v_1_20_2_do_limited_crafting: false,
             v_1_20_5_dimension_type: VarInt::new(0),
             v1_19_dimension_type: overworld.clone(),
-            v1_16_dimension_codec: Nbt::End,
+            v1_16_2_dimension_codec_bytes: Omitted::None,
             v1_16_world_name: overworld.clone(),
             v1_9_1_dimension: 0,
             dimension: 0,
@@ -153,8 +153,8 @@ impl Default for LoginPacket {
 impl LoginPacket {
     pub fn new_with_codecs(
         dimension: &Dimension,
-        registry_codec: Nbt,
-        dimension_codec: Nbt,
+        registry_codec_bytes: Omitted<Vec<u8>>,
+        dimension_codec_bytes: Omitted<Vec<u8>>,
         dimension_type: i32,
     ) -> Self {
         let iden = dimension.identifier();
@@ -176,14 +176,14 @@ impl LoginPacket {
             v_1_20_5_dimension_type: dimension_type.into(),
 
             // leave absolutely everything else as the default
-            registry_codec,
-            v1_16_dimension_codec: dimension_codec,
+            v1_16_registry_codec_bytes: registry_codec_bytes,
+            v1_16_2_dimension_codec_bytes: dimension_codec_bytes,
             ..Self::default()
         }
     }
 
     pub fn new_with_dimension(dimension: &Dimension, dimension_type: i32) -> Self {
-        Self::new_with_codecs(dimension, Nbt::End, Nbt::End, dimension_type)
+        Self::new_with_codecs(dimension, Omitted::None, Omitted::None, dimension_type)
     }
 
     pub fn set_game_mode(mut self, game_mode: u8) -> Self {
@@ -529,16 +529,23 @@ mod tests {
         ])
     }
 
-    fn create_packet() -> LoginPacket {
+    fn create_packet(version: i32) -> LoginPacket {
+        let encode = |nbt: &Nbt| -> Vec<u8> {
+            let mut writer = BinaryWriter::new();
+            let protocol_version = ProtocolVersion::from(version);
+            nbt.encode(&mut writer, protocol_version).unwrap();
+            writer.into_inner()
+        };
+
         LoginPacket {
-            registry_codec: Nbt::String {
+            v1_16_registry_codec_bytes: Omitted::Some(encode(&Nbt::String {
                 name: Some("Hello".to_string()),
                 value: "World".to_string(),
-            },
-            v1_16_dimension_codec: Nbt::String {
+            })),
+            v1_16_2_dimension_codec_bytes: Omitted::Some(encode(&Nbt::String {
                 name: Some("Hello".to_string()),
                 value: "World".to_string(),
-            },
+            })),
             ..LoginPacket::default()
         }
     }
@@ -546,9 +553,9 @@ mod tests {
     #[test]
     fn login_packet() {
         let snapshots = expected_snapshots();
-        let packet = create_packet();
 
         for (version, expected_bytes) in snapshots {
+            let packet = create_packet(version);
             let mut writer = BinaryWriter::new();
             packet
                 .encode(&mut writer, ProtocolVersion::from(version))

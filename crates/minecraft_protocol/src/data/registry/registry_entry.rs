@@ -1,14 +1,23 @@
 use crate::prelude::{
-    BinaryWriter, BinaryWriterError, EncodePacket, Identifier, Optional, ProtocolVersion,
+    BinaryWriter, BinaryWriterError, EncodePacket, Identifier, Omitted, ProtocolVersion,
 };
 use macros::PacketOut;
-use pico_nbt::prelude::Nbt;
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct RegistryEntry {
-    pub entry_id: Identifier,
+    entry_id: Identifier,
     /// Whether the entry has any data following.
-    pub has_data: bool,
+    has_data: bool,
     /// Entry data. Only present if Has Data is true.
-    pub nbt: Optional<Nbt>,
+    nbt_bytes: Omitted<Vec<u8>>,
+}
+
+impl RegistryEntry {
+    pub fn new(entry_id: Identifier, nbt_bytes: Vec<u8>) -> Self {
+        Self {
+            entry_id,
+            has_data: true,
+            nbt_bytes: Omitted::Some(nbt_bytes),
+        }
+    }
 }

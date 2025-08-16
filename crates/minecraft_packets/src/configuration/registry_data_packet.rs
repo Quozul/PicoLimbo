@@ -9,15 +9,15 @@ pub struct RegistryDataPacket {
     #[pvn(766..)]
     entries: Omitted<LengthPaddedVec<RegistryEntry>>,
     #[pvn(764..766)]
-    registry_codec: Omitted<Nbt>,
+    registry_codec_bytes: Omitted<Vec<u8>>,
 }
 
 impl RegistryDataPacket {
-    pub fn codec(registry_codec: Nbt) -> Self {
+    pub fn codec(registry_codec_bytes: Vec<u8>) -> Self {
         Self {
             registry_id: Omitted::None,
             entries: Omitted::None,
-            registry_codec: Omitted::Some(registry_codec),
+            registry_codec_bytes: Omitted::Some(registry_codec_bytes),
         }
     }
 
@@ -25,7 +25,7 @@ impl RegistryDataPacket {
         Self {
             registry_id: Omitted::Some(registry_id),
             entries: Omitted::Some(LengthPaddedVec::new(entries)),
-            registry_codec: Omitted::None,
+            registry_codec_bytes: Omitted::None,
         }
     }
 }
