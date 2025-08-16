@@ -1,4 +1,4 @@
-use minecraft_packets::play::Dimension;
+use minecraft_protocol::prelude::Dimension;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Default)]

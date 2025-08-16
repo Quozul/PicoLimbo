@@ -31,9 +31,8 @@ use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
 use minecraft_protocol::prelude::{
     BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, DecodePacket, EncodePacket,
-    ProtocolVersion,
+    ProtocolVersion, State,
 };
-use minecraft_protocol::state::State;
 use net::raw_packet::RawPacket;
 
 #[derive(PacketReport)]

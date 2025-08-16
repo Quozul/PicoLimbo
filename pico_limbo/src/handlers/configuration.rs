@@ -1,3 +1,6 @@
+use crate::registries::get_registries::{
+    Registries, get_dimension_index, get_registries, get_void_biome_index,
+};
 use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -6,6 +9,7 @@ use crate::server_state::ServerState;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBoundKnownPacksPacket;
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
+use minecraft_packets::configuration::data::registry_entry::RegistryEntry;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
@@ -17,12 +21,7 @@ use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClient
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
-use minecraft_protocol::data::registry::get_all_registries::{
-    Registries, get_dimension_type_index, get_registries, get_the_void_index,
-};
-use minecraft_protocol::data::registry::registry_entry::RegistryEntry;
-use minecraft_protocol::prelude::{Omitted, ProtocolVersion};
-use minecraft_protocol::state::State;
+use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -40,6 +39,15 @@ pub fn send_configuration_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
+    if client_state
+        .protocol_version()
+        .before_inclusive(ProtocolVersion::V1_20)
+    {
+        return Err(PacketHandlerError::invalid_state(
+            "Cannot send registries in configuration state for versions before 1.20.2",
+        ));
+    }
+
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     client_state.queue_packet(PacketRegistry::ConfigurationClientBoundPluginMessage(
@@ -54,18 +62,19 @@ pub fn send_configuration_packets(
     }
 
     // Send Registry Data
-    match get_registries(
-        protocol_version,
-        server_state.data_directory(),
-        server_state.spawn_dimension().identifier().to_string(),
-    ) {
+    match get_registries(protocol_version, server_state.spawn_dimension()) {
         Registries::V1_20_5 { registries } => {
-            for (registry_id, entries) in registries {
-                let registry_entries = entries
-                    .iter()
-                    .map(|(entry_id, bytes)| RegistryEntry::new(entry_id.clone(), bytes.clone()))
-                    .collect();
-                let packet = RegistryDataPacket::registry(registry_id, registry_entries);
+            for registries in registries.registries.into_inner() {
+                let entries = registries.entries.into_inner();
+                let mut registry_entries = Vec::with_capacity(entries.len());
+
+                for entry in entries {
+                    let bytes = entry.nbt_bytes.into_inner();
+                    let entry = RegistryEntry::new(entry.entry_id.clone(), bytes);
+                    registry_entries.push(entry);
+                }
+
+                let packet = RegistryDataPacket::registry(registries.registry_id, registry_entries);
                 client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
             }
         }
@@ -74,10 +83,7 @@ pub fn send_configuration_packets(
             client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
         }
         _ => {
-            client_state.kick("Disconnected");
-            return Err(PacketHandlerError::custom(
-                "Registry not supported for this version",
-            ));
+            unreachable!()
         }
     }
 
@@ -88,19 +94,58 @@ pub fn send_configuration_packets(
     Ok(())
 }
 
+fn build_login_packet(
+    protocol_version: ProtocolVersion,
+    spawn_dimension: Dimension,
+) -> Result<LoginPacket, PacketHandlerError> {
+    if protocol_version.between_inclusive(ProtocolVersion::V1_7_2, ProtocolVersion::V1_15_2) {
+        Ok(LoginPacket::with_dimension(spawn_dimension))
+    } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
+        // We only need the registries here from 1.16 up to 1.20 included
+        match get_registries(protocol_version, spawn_dimension) {
+            Registries::V1_19 { registry_codec } | Registries::V1_16 { registry_codec } => Ok(
+                LoginPacket::with_registry_codec(spawn_dimension, registry_codec),
+            ),
+            Registries::V1_16_2 {
+                registry_codec,
+                dimension,
+            } => Ok(LoginPacket::with_dimension_codec(
+                spawn_dimension,
+                registry_codec,
+                dimension,
+            )),
+            _ => unreachable!(),
+        }
+    } else if protocol_version.between_inclusive(ProtocolVersion::V1_20_2, ProtocolVersion::V1_20_3)
+    {
+        Ok(LoginPacket::with_dimension(spawn_dimension))
+    } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+        get_dimension_index(protocol_version, spawn_dimension).map_or_else(
+            || {
+                Err(PacketHandlerError::InvalidState(format!(
+                    "Dimension index was not found for version {protocol_version}",
+                )))
+            },
+            |dimension_index| {
+                Ok(LoginPacket::with_dimension_index(
+                    spawn_dimension,
+                    dimension_index,
+                ))
+            },
+        )
+    } else {
+        Err(PacketHandlerError::InvalidState(format!(
+            "Cannot build login packet for version {protocol_version}",
+        )))
+    }
+}
+
 /// Switch to the Play state and send required packets to spawn the player in the world
 pub fn send_play_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
     let protocol_version = client_state.protocol_version();
-
-    let dimension_type = get_dimension_type_index(
-        protocol_version,
-        server_state.data_directory(),
-        server_state.spawn_dimension().identifier().thing,
-    );
-    let dimension_type = i32::try_from(dimension_type)?;
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -113,31 +158,8 @@ pub fn send_play_packets(
         }
     };
 
-    let packet = match get_registries(
-        protocol_version,
-        server_state.data_directory(),
-        server_state.spawn_dimension().identifier().to_string(),
-    ) {
-        Registries::V1_16_2 {
-            registry_codec,
-            dimension,
-        } => LoginPacket::new_with_codecs(
-            server_state.spawn_dimension(),
-            Omitted::Some(registry_codec),
-            Omitted::Some(dimension),
-            dimension_type,
-        ),
-        Registries::V1_19 { registry_codec } | Registries::V1_16 { registry_codec } => {
-            LoginPacket::new_with_codecs(
-                server_state.spawn_dimension(),
-                Omitted::Some(registry_codec),
-                Omitted::None,
-                dimension_type,
-            )
-        }
-        _ => LoginPacket::new_with_dimension(server_state.spawn_dimension(), dimension_type),
-    }
-    .set_game_mode(game_mode.value());
+    let packet = build_login_packet(protocol_version, server_state.spawn_dimension())?
+        .set_game_mode(game_mode.value());
 
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)))?;
 
@@ -162,10 +184,17 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::GameEvent(packet))?;
 
         // Send Chunk Data and Update Light
-        let biome_id = get_the_void_index(protocol_version, server_state.data_directory());
-        let biome_id = i32::try_from(biome_id)?;
-        let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
-        client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet))?;
+        match get_void_biome_index(protocol_version) {
+            Some(biome_id) => {
+                let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
+                client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet))?;
+            }
+            None => {
+                return Err(PacketHandlerError::InvalidState(format!(
+                    "Cannot find void biome index for version {protocol_version}"
+                )));
+            }
+        }
     }
 
     client_state.set_state(State::Play);

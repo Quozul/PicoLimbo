@@ -6,11 +6,17 @@ use thiserror::Error;
 pub enum PacketHandlerError {
     #[error("An error occurred while handling a packet: {0}")]
     Custom(String),
+    #[error("{0}")]
+    InvalidState(String),
 }
 
 impl PacketHandlerError {
     pub fn custom(message: &str) -> Self {
         Self::Custom(message.to_string())
+    }
+
+    pub fn invalid_state(message: &str) -> Self {
+        Self::InvalidState(message.to_string())
     }
 }
 

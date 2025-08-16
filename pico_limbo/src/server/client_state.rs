@@ -2,8 +2,7 @@ use crate::server::fifo::Fifo;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::PacketHandlerError;
 use crate::server::packet_registry::{PacketRegistry, PacketRegistryError};
-use minecraft_protocol::prelude::ProtocolVersion;
-use minecraft_protocol::state::State;
+use minecraft_protocol::prelude::{ProtocolVersion, State};
 use net::raw_packet::RawPacket;
 use tracing::info;
 

@@ -5,12 +5,12 @@ use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
-use minecraft_protocol::state::State;
+use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
 use thiserror::Error;
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace, warn};
 
 pub struct Server {
     state: ServerState,
@@ -70,19 +70,33 @@ pub enum PacketProcessingError {
     #[error("Client disconnected")]
     Disconnected,
 
+    #[error("Packet not found version={0} state={1} packet_id={2}")]
+    DecodePacketError(i32, State, u8),
+
     #[error("{0}")]
     Custom(String),
 }
 
 impl From<PacketHandlerError> for PacketProcessingError {
     fn from(e: PacketHandlerError) -> Self {
-        Self::Custom(e.to_string())
+        match e {
+            PacketHandlerError::Custom(reason) => Self::Custom(reason),
+            PacketHandlerError::InvalidState(reason) => {
+                warn!("{reason}");
+                Self::Disconnected
+            }
+        }
     }
 }
 
 impl From<PacketRegistryError> for PacketProcessingError {
     fn from(e: PacketRegistryError) -> Self {
-        Self::Custom(e.to_string())
+        match e {
+            PacketRegistryError::NoCorrespondingPacket(version, state, packet_id) => {
+                Self::DecodePacketError(version, state, packet_id)
+            }
+            _ => Self::Custom(e.to_string()),
+        }
     }
 }
 
@@ -119,11 +133,12 @@ async fn process_packet(
         *was_in_play_state = true;
         server_state.increment();
         let username = client_state.get_username();
-        info!(
-            "{} joined the game using version {}",
+        debug!(
+            "{} joined using version {}",
             username,
             protocol_version.humanize()
         );
+        info!("{} joined the game", username,);
     }
 
     if let Some(reason) = client_state.should_kick() {
@@ -172,6 +187,9 @@ async fn handle_client(socket: TcpStream, server_state: ServerState) {
             }
             Err(PacketProcessingError::Custom(e)) => {
                 debug!("Error processing packet: {}", e);
+            }
+            Err(PacketProcessingError::DecodePacketError(version, state, packet_id)) => {
+                trace!("Unmapped packet: version={version} state={state} packet_id={packet_id}");
             }
         }
     }

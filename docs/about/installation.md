@@ -59,14 +59,9 @@ To use this configuration:
 
 ### GitHub Releases
 
-Download pre-compiled binaries for multiple platforms from the GitHub releases page. These releases include the required assets directory in the compressed archive (tar.gz for Unix and zip for Windows).
+Download pre-compiled binaries for multiple platforms from the GitHub releases page.
 
 ### Compiling from Source
-
-> [!IMPORTANT]
-> For manual setups (using Cargo or Git), you must download the "data/generated" directory from the GitHub repository, rename it to "assets", and place it alongside the binary. This directory contains essential files required for server execution.
->
-> The path to the assets directory can be customized using command line arguments. For more details on these arguments, please refer to the [Command Line Interface (CLI) Usage documentation](./cli-usage).
 
 You can compile PicoLimbo from source using either Cargo or Git:
 
@@ -96,5 +91,5 @@ To clone and build PicoLimbo from source:
 
 4. The compiled binary will be in the `target/release` directory. You can run it with:
    ```bash
-   ./target/release/pico_limbo --data-dir data/generated
+   ./target/release/pico_limbo
    ```

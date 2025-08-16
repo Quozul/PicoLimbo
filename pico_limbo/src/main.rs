@@ -3,6 +3,7 @@ mod cli;
 mod configuration;
 mod forwarding;
 mod handlers;
+mod registries;
 mod server;
 mod server_state;
 
@@ -19,7 +20,7 @@ async fn main() -> ExitCode {
     let cli = Cli::parse();
     enable_logging(cli.verbose);
 
-    server::start_server::start_server(cli.data_directory, cli.config_path).await
+    server::start_server::start_server(cli.config_path).await
 }
 
 fn enable_logging(verbose: u8) {

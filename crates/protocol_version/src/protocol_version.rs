@@ -1,13 +1,13 @@
 use protocol_version_macro::Pvn;
 use std::cmp::PartialEq;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd, Pvn)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Pvn)]
 #[repr(i32)]
 pub enum ProtocolVersion {
     #[default]
-    #[pvn(reports = V1_21_5, data = "V1_21_5")]
+    #[pvn(reports = V1_21_5, data = V1_21_5)]
     V1_21_7 = 772,
-    #[pvn(reports = V1_21_5, data = "V1_21_5")]
+    #[pvn(reports = V1_21_5, data = V1_21_5)]
     V1_21_6 = 771,
     V1_21_5 = 770,
     V1_21_4 = 769,
@@ -15,16 +15,15 @@ pub enum ProtocolVersion {
     V1_21 = 767,
 
     V1_20_5 = 766,
-    #[pvn(data = "V1_20")]
+    #[pvn(data = V1_20_2)]
     V1_20_3 = 765,
-    #[pvn(data = "V1_20")]
     V1_20_2 = 764,
     V1_20 = 763,
 
     V1_19_4 = 762,
-    #[pvn(data = "V1_19")]
+    #[pvn(data = V1_19)]
     V1_19_3 = 761,
-    #[pvn(data = "V1_19")]
+    #[pvn(data = V1_19)]
     V1_19_1 = 760,
     V1_19 = 759,
 
@@ -32,16 +31,16 @@ pub enum ProtocolVersion {
     V1_18_2 = 758,
     V1_18 = 757,
 
-    #[pvn(reports = V1_17, data = "V1_17")]
+    #[pvn(reports = V1_17, data = V1_17)]
     V1_17_1 = 756,
     V1_17 = 755,
 
-    #[pvn(reports = V1_16_2, data = "V1_16_2")]
+    #[pvn(reports = V1_16_2, data = V1_16_2)]
     V1_16_4 = 754,
-    #[pvn(reports = V1_16_2, data = "V1_16_2")]
+    #[pvn(reports = V1_16_2, data = V1_16_2)]
     V1_16_3 = 753,
     V1_16_2 = 751,
-    #[pvn(reports = V1_16, data = "V1_16")]
+    #[pvn(reports = V1_16, data = V1_16)]
     V1_16_1 = 736,
     V1_16 = 735,
 

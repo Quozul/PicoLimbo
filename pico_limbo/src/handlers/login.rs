@@ -11,8 +11,7 @@ use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
-use minecraft_protocol::prelude::{BinaryReader, ProtocolVersion};
-use minecraft_protocol::state::State;
+use minecraft_protocol::prelude::{BinaryReader, ProtocolVersion, State};
 use rand::Rng;
 
 impl PacketHandler for LoginStartPacket {

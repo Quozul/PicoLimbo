@@ -1,11 +1,12 @@
 extern crate core;
 
-pub mod data;
+mod data;
 mod data_types;
 mod packet_serializer;
-pub mod state;
+mod state;
 
 pub mod prelude {
+    pub use crate::data::dimension::Dimension;
     pub use crate::data_types::bit_set::BitSet;
     pub use crate::data_types::identifier::Identifier;
     pub use crate::data_types::optional::{Omitted, Optional};
@@ -14,6 +15,7 @@ pub mod prelude {
     pub use crate::packet_serializer::decode_packet::DecodePacket;
     pub use crate::packet_serializer::encode_packet::EncodePacket;
     pub use crate::packet_serializer::packet_id::Identifiable;
+    pub use crate::state::State;
     pub use macros::PacketIn;
     pub use macros::PacketOut;
     pub use pico_binutils::prelude::{

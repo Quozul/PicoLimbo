@@ -39,7 +39,7 @@ impl Default for SynchronizePlayerPositionPacket {
             v_1_21_2_teleport_id: VarInt::default(),
             x: 0.0,
             // For 1.19+ we need to spawn player outside the world to avoid stuck in terrain loading
-            y: 384.0,
+            y: 320.0,
             z: 0.0,
             velocity_x: 0.0,
             velocity_y: 0.0,

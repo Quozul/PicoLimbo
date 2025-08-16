@@ -8,7 +8,7 @@ pub struct ParsedVariant<'a> {
     pub discriminant_value: i32,
     pub humanized_string: LitStr,
     pub reports: Ident,
-    pub data: LitStr,
+    pub data: Ident,
 }
 
 impl<'a> ParsedVariant<'a> {
@@ -24,9 +24,7 @@ impl<'a> ParsedVariant<'a> {
             .reports
             .unwrap_or_else(|| variant.ident.clone());
 
-        let data = pvn_attribute
-            .data
-            .unwrap_or_else(|| LitStr::new(&variant.ident.to_string(), variant.ident.span()));
+        let data = pvn_attribute.data.unwrap_or_else(|| variant.ident.clone());
 
         Ok(Self {
             ident: &variant.ident,

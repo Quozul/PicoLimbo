@@ -1,6 +1,5 @@
 use crate::server::game_mode::GameMode;
-use minecraft_packets::play::Dimension;
-use std::path::PathBuf;
+use minecraft_protocol::prelude::Dimension;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
@@ -22,10 +21,9 @@ pub enum ForwardingMode {
 #[error("secret key not set")]
 pub struct MisconfiguredForwardingError;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
-    data_directory: PathBuf,
     spawn_dimension: Dimension,
     description_text: String,
     max_players: u32,
@@ -92,12 +90,8 @@ impl ServerState {
         }
     }
 
-    pub const fn spawn_dimension(&self) -> &Dimension {
-        &self.spawn_dimension
-    }
-
-    pub const fn data_directory(&self) -> &PathBuf {
-        &self.data_directory
+    pub const fn spawn_dimension(&self) -> Dimension {
+        self.spawn_dimension
     }
 
     pub const fn game_mode(&self) -> GameMode {
@@ -113,16 +107,9 @@ impl ServerState {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ServerStateBuildError {
-    #[error("asset_directory was not set")]
-    MissingAssetDirectory,
-}
-
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct ServerStateBuilder {
     forwarding_mode: ForwardingMode,
-    asset_directory: Option<PathBuf>,
     dimension: Option<Dimension>,
     description_text: String,
     max_players: u32,
@@ -152,15 +139,6 @@ impl ServerStateBuilder {
 
     pub fn disable_forwarding(&mut self) -> &mut Self {
         self.forwarding_mode = ForwardingMode::Disabled;
-        self
-    }
-
-    /// Set the asset directory (required).
-    pub fn data_directory<P>(&mut self, path: P) -> &mut Self
-    where
-        P: Into<PathBuf>,
-    {
-        self.asset_directory = Some(path.into());
         self
     }
 
@@ -202,12 +180,9 @@ impl ServerStateBuilder {
     }
 
     /// Finish building, returning an error if any required fields are missing.
-    pub fn build(self) -> Result<ServerState, ServerStateBuildError> {
-        Ok(ServerState {
+    pub fn build(self) -> ServerState {
+        ServerState {
             forwarding_mode: self.forwarding_mode,
-            data_directory: self
-                .asset_directory
-                .ok_or(ServerStateBuildError::MissingAssetDirectory)?,
             spawn_dimension: self.dimension.unwrap_or_default(),
             description_text: self.description_text,
             max_players: self.max_players,
@@ -215,6 +190,6 @@ impl ServerStateBuilder {
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
-        })
+        }
     }
 }

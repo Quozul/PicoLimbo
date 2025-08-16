@@ -15,19 +15,6 @@ pub struct Cli {
     )]
     pub verbose: u8,
 
-    /// Data directory path
-    ///
-    /// Path to the directory containing packet maps, registries, and other
-    /// game data files required by the server.
-    #[arg(
-        short = 'd',
-        long = "data-dir",
-        value_name = "PATH",
-        default_value = "./assets",
-        help = "Directory containing packet maps and game registries"
-    )]
-    pub data_directory: PathBuf,
-
     /// Path to the TOML configuration file
     #[arg(
         short = 'c',

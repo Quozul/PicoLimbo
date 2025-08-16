@@ -54,7 +54,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
             MissingPacketId,
             #[error("Decode error: The version {0} is unknown")]
             UnknownVersion(i32),
-            #[error("Decode error: The packet is not found version={0} state={1} packet_id={2}")]
+            #[error("Decode error: Packet not found version={0} state={1} packet_id={2}")]
             NoCorrespondingPacket(i32, State, u8),
             #[error("Failed to read packet")]
             Decode(#[from] BinaryReaderError),

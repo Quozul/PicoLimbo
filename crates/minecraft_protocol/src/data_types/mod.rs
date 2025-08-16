@@ -6,6 +6,7 @@ pub mod number;
 pub mod optional;
 pub mod position;
 pub mod prefixed;
+mod slices;
 mod string;
 pub mod uuid;
 pub mod var_int;

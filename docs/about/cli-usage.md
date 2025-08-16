@@ -20,18 +20,6 @@ Specify a custom configuration file path:
 pico_limbo --config /path/to/your/config.toml
 ```
 
-### Data Directory
-
-Set the directory containing packet maps and game registries:
-
-```bash
-pico_limbo --data-dir /path/to/your/assets
-```
-
-By default, PicoLimbo looks for assets in the `./assets` directory relative to where the binary is executed. This option allows you to specify a different location for these essential files.
-
-If you are running PicoLimbo from the Git repository, you have to specify where are the assets located. The assets are located in the `data/generated` directory relative to the repository's root. See [installation with Git](./installation.html#using-git) for more information.
-
 ### Logging Options
 
 Control the verbosity of server logs:

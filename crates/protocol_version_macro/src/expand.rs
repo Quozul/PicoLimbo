@@ -88,7 +88,12 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
     let data_arms = parsed_variants.iter().map(|v| {
         let variant_ident = v.ident;
         let value = &v.data;
-        quote! { #enum_ident::#variant_ident => #value }
+        quote! { #enum_ident::#variant_ident => #enum_ident::#value }
+    });
+
+    let all_versions_arms = parsed_variants.iter().map(|v| {
+        let variant_ident = v.ident;
+        quote! { #enum_ident::#variant_ident }
     });
 
     // Assemble the final TokenStream.
@@ -121,6 +126,8 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
         }
 
         impl #enum_ident {
+            pub const ALL_VERSION: &'static [ProtocolVersion] = &[#(#all_versions_arms),*];
+
             /// Returns the protocol version number by casting the enum to an i32.
             pub fn version_number(&self) -> i32 {
                 *self as i32
@@ -137,7 +144,7 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             }
 
             /// Returns the protocol version this version gets its data from.
-            pub fn data(&self) -> &'static str {
+            pub fn data(&self) -> ProtocolVersion {
                 match self { #(#data_arms),* }
             }
 

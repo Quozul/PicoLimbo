@@ -3,8 +3,7 @@ use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server_state::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
-use minecraft_protocol::prelude::ProtocolVersion;
-use minecraft_protocol::state::State;
+use minecraft_protocol::prelude::{ProtocolVersion, State};
 use thiserror::Error;
 
 impl PacketHandler for HandshakePacket {

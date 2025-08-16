@@ -1,19 +1,18 @@
 use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::server::network::Server;
-use crate::server_state::{ServerState, ServerStateBuildError};
+use crate::server_state::ServerState;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use tracing::{debug, error};
 
-pub async fn start_server(data_directory: PathBuf, config_path: PathBuf) -> ExitCode {
+pub async fn start_server(config_path: PathBuf) -> ExitCode {
     let Some(cfg) = load_configuration(&config_path) else {
         return ExitCode::FAILURE;
     };
 
     let bind = cfg.bind.clone();
 
-    let server_state =
-        build_state(&data_directory, cfg).expect("Failed to initialize server state");
+    let server_state = build_state(cfg);
 
     Server::new(&bind, server_state).run().await;
 
@@ -37,10 +36,7 @@ fn load_configuration(config_path: &PathBuf) -> Option<Config> {
     None
 }
 
-fn build_state(
-    asset_directory: &PathBuf,
-    cfg: Config,
-) -> Result<ServerState, ServerStateBuildError> {
+fn build_state(cfg: Config) -> ServerState {
     let mut server_state_builder = ServerState::builder();
 
     if cfg.forwarding.velocity.enabled {
@@ -59,7 +55,6 @@ fn build_state(
     }
 
     server_state_builder
-        .data_directory(asset_directory)
         .dimension(cfg.spawn_dimension.into())
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)

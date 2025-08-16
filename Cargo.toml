@@ -36,3 +36,4 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 uuid = { version = "1.17.0", features = ["v4"] }
 walkdir = "2.5.0"
+phf_codegen = "0.12.1"

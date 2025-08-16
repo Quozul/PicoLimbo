@@ -1,4 +1,4 @@
-use minecraft_protocol::data::registry::registry_entry::RegistryEntry;
+use crate::configuration::data::registry_entry::RegistryEntry;
 use minecraft_protocol::prelude::*;
 
 /// This packet is to use with >= 1.20.2
@@ -9,11 +9,11 @@ pub struct RegistryDataPacket {
     #[pvn(766..)]
     entries: Omitted<LengthPaddedVec<RegistryEntry>>,
     #[pvn(764..766)]
-    registry_codec_bytes: Omitted<Vec<u8>>,
+    registry_codec_bytes: Omitted<&'static [u8]>,
 }
 
 impl RegistryDataPacket {
-    pub fn codec(registry_codec_bytes: Vec<u8>) -> Self {
+    pub fn codec(registry_codec_bytes: &'static [u8]) -> Self {
         Self {
             registry_id: Omitted::None,
             entries: Omitted::None,

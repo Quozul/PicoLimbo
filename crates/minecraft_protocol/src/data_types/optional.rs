@@ -67,7 +67,7 @@ impl<T: EncodePacket> EncodePacket for Optional<T> {
     }
 }
 
-impl<T: DecodePacket + Debug> DecodePacket for Optional<T> {
+impl<T: DecodePacket> DecodePacket for Optional<T> {
     fn decode(
         reader: &mut BinaryReader,
         protocol_version: ProtocolVersion,

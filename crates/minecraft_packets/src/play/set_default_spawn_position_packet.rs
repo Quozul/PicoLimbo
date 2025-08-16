@@ -11,7 +11,7 @@ pub struct SetDefaultSpawnPositionPacket {
 impl Default for SetDefaultSpawnPositionPacket {
     fn default() -> Self {
         Self {
-            location: Position::new(0.0, 384.0, 0.0),
+            location: Position::new(0.0, 320.0, 0.0),
             angle: 0.0,
         }
     }

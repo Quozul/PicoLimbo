@@ -1,4 +1,3 @@
-use crate::play::data::dimension::Dimension;
 use minecraft_protocol::prelude::*;
 
 /// This is the most important packet, good luck.
@@ -17,10 +16,10 @@ pub struct LoginPacket {
     v1_16_dimension_names: LengthPaddedVec<Identifier>,
     /// Represents certain registries that are sent from the server and are applied on the client.
     #[pvn(735..764)]
-    v1_16_registry_codec_bytes: Omitted<Vec<u8>>,
+    v1_16_registry_codec_bytes: Omitted<&'static [u8]>,
     /// The full extent of these is still unknown, but the tag represents a dimension and biome registry.
     #[pvn(751..759)]
-    v1_16_2_dimension_codec_bytes: Omitted<Vec<u8>>,
+    v1_16_2_dimension_codec_bytes: Omitted<&'static [u8]>,
     /// Name of the dimension type being spawned into.
     #[pvn(759..764)]
     v1_19_dimension_type: Identifier,
@@ -151,39 +150,69 @@ impl Default for LoginPacket {
 }
 
 impl LoginPacket {
-    pub fn new_with_codecs(
-        dimension: &Dimension,
-        registry_codec_bytes: Omitted<Vec<u8>>,
-        dimension_codec_bytes: Omitted<Vec<u8>>,
-        dimension_type: i32,
+    /// This is the constructor for version 1.16.2 up to 1.18.2 included
+    pub fn with_dimension_codec(
+        dimension: Dimension,
+        registry_codec_bytes: &'static [u8],
+        dimension_codec_bytes: &'static [u8],
     ) -> Self {
+        let iden = dimension.identifier();
+        Self {
+            // dimension names (1.16+)
+            v1_16_world_name: iden.clone(),
+
+            // dimension type identifiers (1.19+, 1.20.2)
+            v1_19_dimension_type: iden.clone(),
+
+            // leave absolutely everything else as the default
+            v1_16_registry_codec_bytes: Omitted::Some(registry_codec_bytes),
+            v1_16_2_dimension_codec_bytes: Omitted::Some(dimension_codec_bytes),
+            ..Self::default()
+        }
+    }
+
+    /// This is the constructor for 1.16, 1.16.1 and 1.19 up to 1.20 included
+    pub fn with_registry_codec(dimension: Dimension, registry_codec_bytes: &'static [u8]) -> Self {
+        let iden = dimension.identifier();
+        Self {
+            // dimension names (1.16+)
+            v1_16_world_name: iden.clone(),
+            v1_16_dimension_name: iden.clone(),
+
+            // dimension type identifiers (1.19+)
+            v1_19_dimension_type: iden.clone(),
+
+            // leave absolutely everything else as the default
+            v1_16_registry_codec_bytes: Omitted::Some(registry_codec_bytes),
+            ..Self::default()
+        }
+    }
+
+    /// This is the constructor for all versions from 1.20.2 to 1.20.4 included and versions prior to 1.16 excluded
+    pub fn with_dimension(dimension: Dimension) -> Self {
         let iden = dimension.identifier();
         Self {
             // legacy fields
             dimension: dimension.legacy_i8(),
             v1_9_1_dimension: dimension.legacy_i32(),
 
-            // dimension names (1.16+)
-            v1_16_world_name: iden.clone(),
-            v1_16_dimension_name: iden.clone(),
+            // dimension type and name
             v_1_20_2_dimension_name: iden.clone(),
-
-            // dimension type identifiers (1.19+, 1.20.2)
-            v1_19_dimension_type: iden.clone(),
             v_1_20_2_dimension_type: iden.clone(),
-
-            // dimension type index (1.20.5)
-            v_1_20_5_dimension_type: dimension_type.into(),
-
-            // leave absolutely everything else as the default
-            v1_16_registry_codec_bytes: registry_codec_bytes,
-            v1_16_2_dimension_codec_bytes: dimension_codec_bytes,
             ..Self::default()
         }
     }
 
-    pub fn new_with_dimension(dimension: &Dimension, dimension_type: i32) -> Self {
-        Self::new_with_codecs(dimension, Omitted::None, Omitted::None, dimension_type)
+    /// This is the constructor for all versions starting 1.20.5
+    pub fn with_dimension_index(dimension: Dimension, dimension_index: i32) -> Self {
+        let iden = dimension.identifier();
+        Self {
+            v_1_20_2_dimension_name: iden.clone(),
+
+            // dimension type index (1.20.5)
+            v_1_20_5_dimension_type: dimension_index.into(),
+            ..Self::default()
+        }
     }
 
     pub fn set_game_mode(mut self, game_mode: u8) -> Self {
@@ -529,23 +558,14 @@ mod tests {
         ])
     }
 
-    fn create_packet(version: i32) -> LoginPacket {
-        let encode = |nbt: &Nbt| -> Vec<u8> {
-            let mut writer = BinaryWriter::new();
-            let protocol_version = ProtocolVersion::from(version);
-            nbt.encode(&mut writer, protocol_version).unwrap();
-            writer.into_inner()
-        };
+    static NBT_BYTES: &[u8] = &[
+        8, 0, 5, 72, 101, 108, 108, 111, 0, 5, 87, 111, 114, 108, 100,
+    ];
 
+    fn create_packet() -> LoginPacket {
         LoginPacket {
-            v1_16_registry_codec_bytes: Omitted::Some(encode(&Nbt::String {
-                name: Some("Hello".to_string()),
-                value: "World".to_string(),
-            })),
-            v1_16_2_dimension_codec_bytes: Omitted::Some(encode(&Nbt::String {
-                name: Some("Hello".to_string()),
-                value: "World".to_string(),
-            })),
+            v1_16_registry_codec_bytes: Omitted::Some(NBT_BYTES),
+            v1_16_2_dimension_codec_bytes: Omitted::Some(NBT_BYTES),
             ..LoginPacket::default()
         }
     }
@@ -553,9 +573,9 @@ mod tests {
     #[test]
     fn login_packet() {
         let snapshots = expected_snapshots();
+        let packet = create_packet();
 
         for (version, expected_bytes) in snapshots {
-            let packet = create_packet(version);
             let mut writer = BinaryWriter::new();
             packet
                 .encode(&mut writer, ProtocolVersion::from(version))
