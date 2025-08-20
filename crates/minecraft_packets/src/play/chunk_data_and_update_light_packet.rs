@@ -4,7 +4,7 @@ use minecraft_protocol::prelude::*;
 /// This packet is only mandatory for versions above 1.20.3,
 /// thus the packet is only implemented to work on versions after 1.20.3.
 /// The GameEventPacket must be sent before sending this one.
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,

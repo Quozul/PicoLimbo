@@ -1,6 +1,6 @@
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct PlayClientBoundPluginMessagePacket {
     channel: Identifier,
     data: LengthPaddedVec<i8>,

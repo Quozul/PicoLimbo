@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use the same binary reader and writer for NBT and packets, reducing duplicated code
 - Simplified implementation of the Velocity secret key check
 - Renamed `nbt` crate to `pico_nbt`
+- Bundled packets' protocol IDs into the binary
+- Pre-compiled and bundled registries into the binary
 
 ## Fixed
 
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removed `pico_ping` utility crate
+- Runtime parsing of JSON (registries and packet reports) files
 
 ## [1.3.2+mc1.21.8] - 2025-07-30
 

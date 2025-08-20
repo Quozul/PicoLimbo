@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 use pico_text_component::prelude::PlainText;
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct LoginDisconnectPacket {
     pub reason: String,
 }

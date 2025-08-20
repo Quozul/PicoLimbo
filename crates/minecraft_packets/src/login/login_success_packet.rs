@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 
 /// This packet was introduced in 1.21.2, previous versions uses the GameProfilePacket.
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct LoginSuccessPacket {
     uuid: Uuid,
     username: String,
@@ -19,7 +19,6 @@ impl LoginSuccessPacket {
     }
 }
 
-#[derive(Debug)]
 pub struct Property {
     pub name: String,
     pub value: String,

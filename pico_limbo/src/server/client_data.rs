@@ -77,7 +77,7 @@ impl ClientData {
             if self
                 .protocol_version()
                 .await
-                .before_inclusive(ProtocolVersion::V1_7_6)
+                .is_before_inclusive(ProtocolVersion::V1_7_6)
             {
                 let start = Instant::now().add(Duration::from_secs(2));
                 let period = Duration::from_secs(2);

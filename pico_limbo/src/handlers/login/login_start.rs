@@ -1,0 +1,209 @@
+use crate::forwarding::CLIENT_MODERN_FORWARDING_NOT_SUPPORTED;
+use crate::handlers::configuration::send_play_packets;
+use crate::server::client_state::ClientState;
+use crate::server::game_profile::GameProfile;
+use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
+use crate::server::packet_registry::PacketRegistry;
+use crate::server_state::ServerState;
+use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
+use minecraft_packets::login::game_profile_packet::GameProfilePacket;
+use minecraft_packets::login::login_state_packet::LoginStartPacket;
+use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_protocol::prelude::ProtocolVersion;
+use rand::Rng;
+
+impl PacketHandler for LoginStartPacket {
+    fn handle(
+        &self,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
+    ) -> Result<(), PacketHandlerError> {
+        if server_state.is_modern_forwarding() {
+            if client_state.protocol_version().is_modern() {
+                login_start_velocity(client_state);
+            } else {
+                client_state.kick(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED);
+            }
+        } else {
+            let game_profile: GameProfile = self.into();
+            fire_login_success(client_state, server_state, game_profile)?;
+        }
+
+        Ok(())
+    }
+}
+
+fn login_start_velocity(client_state: &mut ClientState) {
+    let message_id = {
+        let mut rng = rand::rng();
+        rng.random()
+    };
+    client_state.set_velocity_login_message_id(message_id);
+    let packet = CustomQueryPacket::velocity_info_channel(message_id);
+    client_state.queue_packet(PacketRegistry::CustomQuery(packet));
+}
+
+pub fn fire_login_success(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+    game_profile: GameProfile,
+) -> Result<(), PacketHandlerError> {
+    let protocol_version = client_state.protocol_version();
+
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_2) {
+        let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());
+        client_state.queue_packet(PacketRegistry::LoginSuccess(packet));
+    } else {
+        let packet = GameProfilePacket::new(game_profile.uuid(), game_profile.username());
+        client_state.queue_packet(PacketRegistry::GameProfile(packet));
+    }
+
+    client_state.set_game_profile(game_profile);
+
+    if !protocol_version.supports_configuration_state() {
+        send_play_packets(client_state, server_state)?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use minecraft_protocol::prelude::{ProtocolVersion, State};
+
+    fn vanilla() -> ServerState {
+        ServerState::builder().build()
+    }
+
+    fn velocity() -> ServerState {
+        let mut builder = ServerState::builder();
+        let secret = "foo";
+        builder.enable_modern_forwarding(secret);
+        builder.build()
+    }
+
+    pub fn client(protocol: ProtocolVersion) -> ClientState {
+        let mut cs = ClientState::default();
+        cs.set_protocol_version(protocol);
+        cs.set_state(State::Login);
+        cs
+    }
+
+    fn packet() -> LoginStartPacket {
+        LoginStartPacket::default()
+    }
+
+    // modern forwarding
+    #[test]
+    fn test_login_start_velocity_happy_path() {
+        // Given
+        let server_state = velocity();
+        let mut client_state = client(ProtocolVersion::V1_13); // ≥ 1.13
+        let pkt = packet();
+
+        // When
+        pkt.handle(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(
+            matches!(
+                client_state.next_packet().unwrap(),
+                PacketRegistry::CustomQuery(_)
+            ),
+            "first packet should be the velocity CustomQuery"
+        );
+        assert_ne!(client_state.get_velocity_login_message_id(), -1);
+        assert!(client_state.should_kick().is_none());
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_login_start_velocity_kicks_old_client() {
+        // Given
+        let server_state = velocity();
+        let mut client_state = client(ProtocolVersion::V1_12_2); // < 1.13
+        let pkt = packet();
+
+        // When
+        let result = pkt.handle(&mut client_state, &server_state);
+
+        // Then
+        assert!(result.is_ok());
+        assert_eq!(
+            client_state.should_kick(),
+            Some(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED.to_string())
+        );
+        assert!(client_state.has_no_more_packets());
+    }
+
+    // vanilla login
+    #[test]
+    fn test_login_start_vanilla_newer_than_1_21_2() {
+        // Given
+        let server_state = vanilla();
+        let mut client_state = client(ProtocolVersion::V1_21_2);
+        let pkt = packet();
+
+        // When
+        pkt.handle(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(
+            matches!(
+                client_state.next_packet().unwrap(),
+                PacketRegistry::LoginSuccess(_)
+            ),
+            "first packet should be LoginSuccess for ≥ 1.21.2"
+        );
+    }
+
+    #[test]
+    fn test_login_start_vanilla_before_1_21_2() {
+        // Given
+        let server_state = vanilla();
+        let mut client_state = client(ProtocolVersion::V1_20_2);
+        let pkt = packet();
+
+        // When
+        pkt.handle(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(
+            matches!(
+                client_state.next_packet().unwrap(),
+                PacketRegistry::GameProfile(_)
+            ),
+            "first packet should be GameProfile for < 1.21.2"
+        );
+    }
+
+    #[test]
+    fn test_should_not_send_play_packets_when_configuration_state_was_introduced() {
+        // Given
+        let server_state = vanilla();
+        let mut client_state = client(ProtocolVersion::V1_20_2);
+        let pkt = packet();
+
+        // When
+        pkt.handle(&mut client_state, &server_state).unwrap();
+
+        // Then
+        let _ = client_state.next_packet();
+        assert!(client_state.has_no_more_packets(),);
+    }
+
+    #[test]
+    fn test_should_send_play_packets_for_versions_prior_to_configuration_state() {
+        // Given
+        let server_state = vanilla();
+        let mut client_state = client(ProtocolVersion::V1_20);
+        let pkt = packet();
+
+        // When
+        pkt.handle(&mut client_state, &server_state).unwrap();
+
+        // Then
+        let _ = client_state.next_packet();
+        assert!(!client_state.has_no_more_packets());
+    }
+}

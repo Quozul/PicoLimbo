@@ -82,6 +82,7 @@ pub struct V1_20_5Registries {
     pub(crate) registries: LengthPaddedVec<V1_20_5RegistryEntries>,
 }
 
+/// Way to get registries since 1.20.5
 pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,
     data_location: &Path,
@@ -110,7 +111,6 @@ pub fn get_v1_20_5_registries(
     }
 }
 
-/// Way to get registries since 1.20.5
 fn get_grouped_registries(
     protocol_version: ProtocolVersion,
     data_location: &Path,

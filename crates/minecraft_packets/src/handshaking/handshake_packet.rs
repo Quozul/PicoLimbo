@@ -1,6 +1,6 @@
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, Clone, PacketIn)]
+#[derive(Clone, PacketIn)]
 pub struct HandshakePacket {
     pub protocol: VarInt,
     pub hostname: String,

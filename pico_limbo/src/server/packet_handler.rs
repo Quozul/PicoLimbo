@@ -11,10 +11,12 @@ pub enum PacketHandlerError {
 }
 
 impl PacketHandlerError {
+    #[inline]
     pub fn custom(message: &str) -> Self {
         Self::Custom(message.to_string())
     }
 
+    #[inline]
     pub fn invalid_state(message: &str) -> Self {
         Self::InvalidState(message.to_string())
     }

@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 
 /// This packet is only required starting from 1.19.
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct SetDefaultSpawnPositionPacket {
     location: Position,
     #[pvn(755..)]

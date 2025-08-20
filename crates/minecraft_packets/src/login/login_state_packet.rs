@@ -1,6 +1,6 @@
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, PacketIn)]
+#[derive(Default, PacketIn)]
 pub struct LoginStartPacket {
     pub name: String,
     #[pvn(759..761)]
@@ -22,7 +22,7 @@ impl LoginStartPacket {
     }
 }
 
-#[derive(Debug, Default, PacketIn)]
+#[derive(Default, PacketIn)]
 #[allow(dead_code)]
 struct SigData {
     /// When the key data will expire.

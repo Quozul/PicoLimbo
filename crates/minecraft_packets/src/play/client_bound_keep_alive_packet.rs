@@ -2,7 +2,7 @@ use minecraft_protocol::prelude::*;
 use rand::Rng;
 
 /// This packet exists for all versions of the game from 1.7.2 to the latest at the time (1.21.4).
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct ClientBoundKeepAlivePacket {
     #[pvn(340..)]
     v1_12_2_id: i64,

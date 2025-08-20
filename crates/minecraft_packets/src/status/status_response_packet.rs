@@ -1,7 +1,7 @@
 use crate::status::data::status_response::StatusResponse;
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct StatusResponsePacket {
     json_response: String,
 }

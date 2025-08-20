@@ -107,10 +107,22 @@ impl ProtocolVersion {
         self >= &other
     }
 
-    pub fn before_inclusive(&self, max_version: Self) -> bool {
+    #[inline]
+    pub fn is_before_inclusive(&self, max_version: Self) -> bool {
         self <= &max_version
     }
 
+    #[inline]
+    pub fn supports_configuration_state(&self) -> bool {
+        self.is_after_inclusive(ProtocolVersion::V1_20_2)
+    }
+
+    #[inline]
+    pub fn is_modern(&self) -> bool {
+        self.is_after_inclusive(ProtocolVersion::V1_13)
+    }
+
+    #[inline]
     pub fn is_any(&self) -> bool {
         *self == Self::Any
     }

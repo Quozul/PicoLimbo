@@ -1,7 +1,7 @@
 use crate::configuration::data::known_pack::KnownPack;
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct ClientBoundKnownPacksPacket {
     pub known_packs: LengthPaddedVec<KnownPack>,
 }

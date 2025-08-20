@@ -3,7 +3,7 @@ use minecraft_protocol::prelude::*;
 
 /// This is the equivalent of LoginSuccessPacket but for versions before 1.21.2.
 /// For versions prior to 1.20.2, this packet changes the state to Play.
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct GameProfilePacket {
     uuid: Uuid,
     username: String,

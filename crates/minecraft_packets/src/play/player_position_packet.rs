@@ -3,7 +3,7 @@ use minecraft_protocol::prelude::*;
 /// This packet is currently only implemented for 1.7.2 and 1.7.6 as this is a way to ensure the player has spawned into the world.
 /// Also, this packet is intended to be used during the play state, putting it in the login state is a hack to make this work.
 /// This is because this server will send the keep alive packet before the client is ready to receive it.
-#[derive(Debug, PacketIn)]
+#[derive(PacketIn)]
 pub struct PlayerPositionPacket {
     pub x: f64,
     pub feet_y: f64,

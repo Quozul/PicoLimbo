@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 
 /// This packet is sent since 1.13
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct CommandsPacket {
     /// An array of nodes.
     nodes: LengthPaddedVec<Node>,
@@ -21,7 +21,7 @@ impl CommandsPacket {
     }
 }
 
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 struct Node {
     flags: i8,
     /// Array of indices of child nodes.

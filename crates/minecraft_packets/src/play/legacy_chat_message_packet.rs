@@ -6,7 +6,7 @@ use pico_text_component::prelude::PlainText;
 /// - Disguised Chat Message
 /// - Player Chat Message
 /// - System Chat Message
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct LegacyChatMessagePacket {
     /// JSON encoded text component
     content: String,

@@ -3,7 +3,7 @@ use pico_text_component::prelude::PlainText;
 
 /// Sends the client a raw system message.
 /// Introduced in 1.19
-#[derive(Debug, PacketOut)]
+#[derive(PacketOut)]
 pub struct SystemChatMessagePacket {
     #[pvn(..765)]
     content: String, // JSON encoded
