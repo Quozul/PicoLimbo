@@ -6,7 +6,7 @@ use thiserror::Error;
 
 pub fn check_bungee_cord(state: &ServerState, hostname: &str) -> Result<bool, BungeeGuardError> {
     if state.is_legacy_forwarding() {
-        Ok(hostname.contains('\0'))
+        Ok(hostname.split('\0').count() == 4)
     } else if state.is_bungee_guard_forwarding() {
         check_bungee_guard_token(state, hostname)
     } else {
@@ -51,5 +51,59 @@ pub enum BungeeGuardError {
 impl From<BungeeGuardError> for PacketHandlerError {
     fn from(e: BungeeGuardError) -> Self {
         Self::custom(&e.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn none() -> ServerState {
+        ServerState::builder().build()
+    }
+
+    fn bungee_cord() -> ServerState {
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.enable_legacy_forwarding();
+        server_state_builder.build()
+    }
+
+    #[test]
+    fn test_valid_no_forwarding() {
+        // Given
+        let server_state = none();
+        let hostname = "localhost";
+
+        // When
+        let validation = check_bungee_cord(&server_state, hostname);
+
+        // Then
+        assert!(validation.unwrap());
+    }
+
+    #[test]
+    fn test_valid_bungee_cord_hostname() {
+        // Given
+        let server_state = bungee_cord();
+        let hostname = "localhost\0part\0part\0part";
+
+        // When
+        let validation = check_bungee_cord(&server_state, hostname);
+
+        // Then
+        assert!(validation.unwrap());
+    }
+
+    #[test]
+    fn test_invalid_bungee_cord_hostname() {
+        // Given
+        let server_state = bungee_cord();
+        let hostname = "localhost";
+
+        // When
+        let validation = check_bungee_cord(&server_state, hostname);
+
+        // Then
+        assert!(!validation.unwrap());
     }
 }

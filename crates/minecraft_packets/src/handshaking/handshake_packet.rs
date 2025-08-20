@@ -9,17 +9,6 @@ pub struct HandshakePacket {
     pub next_state: VarInt,
 }
 
-impl HandshakePacket {
-    pub fn status(protocol_version: ProtocolVersion, hostname: String, port: u16) -> Self {
-        Self {
-            protocol: protocol_version.version_number().into(),
-            hostname,
-            port,
-            next_state: 1.into(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::handshaking::handshake_packet::HandshakePacket;

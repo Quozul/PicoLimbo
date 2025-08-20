@@ -1,3 +1,4 @@
+use crate::forwarding::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::forwarding::check_velocity_key_integrity::{VelocityKeyIntegrity, read_velocity_key};
 use crate::handlers::configuration::{send_configuration_packets, send_play_packets};
 use crate::server::client_state::ClientState;
@@ -80,7 +81,7 @@ impl PacketHandler for CustomQueryAnswerPacket {
 
             match velocity_key {
                 VelocityKeyIntegrity::Invalid => {
-                    client_state.kick("You must connect through a proxy.");
+                    client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
                 }
                 VelocityKeyIntegrity::Valid {
                     player_uuid,
