@@ -4,7 +4,7 @@ use crate::handlers::configuration::{send_configuration_packets, send_play_packe
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
-use crate::server::packet_registry::{PacketRegistry, PacketRegistryError};
+use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
@@ -25,7 +25,7 @@ impl PacketHandler for LoginStartPacket {
             let is_modern_forwarding_supported =
                 client_state.protocol_version() >= ProtocolVersion::V1_13;
             if is_modern_forwarding_supported {
-                login_start_velocity(client_state)?;
+                login_start_velocity(client_state);
             } else {
                 client_state.kick("Your client does not support modern forwarding.");
             }
@@ -38,15 +38,14 @@ impl PacketHandler for LoginStartPacket {
     }
 }
 
-fn login_start_velocity(client_state: &mut ClientState) -> Result<(), PacketRegistryError> {
+fn login_start_velocity(client_state: &mut ClientState) {
     let message_id = {
         let mut rng = rand::rng();
         rng.random()
     };
     client_state.set_velocity_login_message_id(message_id);
     let packet = CustomQueryPacket::velocity_info_channel(message_id);
-    client_state.queue_packet(PacketRegistry::CustomQuery(packet))?;
-    Ok(())
+    client_state.queue_packet(PacketRegistry::CustomQuery(packet));
 }
 
 impl PacketHandler for LoginAcknowledgedPacket {
@@ -105,10 +104,10 @@ fn fire_login_success(
 
     if ProtocolVersion::V1_21_2 <= protocol_version {
         let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());
-        client_state.queue_packet(PacketRegistry::LoginSuccess(packet))?;
+        client_state.queue_packet(PacketRegistry::LoginSuccess(packet));
     } else {
         let packet = GameProfilePacket::new(game_profile.uuid(), game_profile.username());
-        client_state.queue_packet(PacketRegistry::GameProfile(packet))?;
+        client_state.queue_packet(PacketRegistry::GameProfile(packet));
     }
 
     client_state.set_game_profile(game_profile);

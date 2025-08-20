@@ -21,7 +21,7 @@ pub enum ForwardingMode {
 #[error("secret key not set")]
 pub struct MisconfiguredForwardingError;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,

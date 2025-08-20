@@ -1,9 +1,7 @@
 use crate::server::fifo::Fifo;
 use crate::server::game_profile::GameProfile;
-use crate::server::packet_handler::PacketHandlerError;
-use crate::server::packet_registry::{PacketRegistry, PacketRegistryError};
+use crate::server::packet_registry::PacketRegistry;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
-use net::raw_packet::RawPacket;
 use tracing::info;
 
 #[derive(PartialEq, Eq)]
@@ -19,7 +17,7 @@ impl Default for ClientState {
             state: State::Handshake,
             protocol_version: ProtocolVersion::Any,
             kick_message: None,
-            pending_packets: Fifo::default(),
+            pending_packets: Fifo::new(),
             message_id: -1,
             game_profile: None,
             keep_alive_enabled: KeepAliveStatus::Disabled,
@@ -31,7 +29,7 @@ pub struct ClientState {
     state: State,
     protocol_version: ProtocolVersion,
     kick_message: Option<String>,
-    pending_packets: Fifo<RawPacket>,
+    pending_packets: Fifo<PacketRegistry>,
     message_id: i32,
     game_profile: Option<GameProfile>,
     keep_alive_enabled: KeepAliveStatus,
@@ -72,14 +70,22 @@ impl ClientState {
 
     // Packets
 
-    pub fn queue_packet(&mut self, packet: PacketRegistry) -> Result<(), PacketRegistryError> {
-        let raw_packet = packet.encode_packet(self.protocol_version)?;
-        self.pending_packets.push(raw_packet);
-        Ok(())
+    pub fn queue_packet(&mut self, packet: PacketRegistry) {
+        self.pending_packets.push(packet);
     }
 
-    pub const fn pending_packets(&mut self) -> &mut Fifo<RawPacket> {
+    pub const fn pending_packets(&mut self) -> &mut Fifo<PacketRegistry> {
         &mut self.pending_packets
+    }
+
+    #[cfg(test)]
+    pub fn next_packet(&mut self) -> Option<PacketRegistry> {
+        self.pending_packets.pop()
+    }
+
+    #[cfg(test)]
+    pub fn has_no_more_packets(&self) -> bool {
+        self.pending_packets.is_empty()
     }
 
     // Velocity
@@ -130,11 +136,5 @@ impl ClientState {
         if self.keep_alive_enabled == KeepAliveStatus::ShouldEnable {
             self.keep_alive_enabled = KeepAliveStatus::Enabled;
         }
-    }
-}
-
-impl From<PacketRegistryError> for PacketHandlerError {
-    fn from(_: PacketRegistryError) -> Self {
-        Self::custom("failed to encode packet")
     }
 }

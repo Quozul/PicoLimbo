@@ -1,4 +1,4 @@
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, PacketIn)]
+#[derive(PacketIn, Default)]
 pub struct StatusRequestPacket {}

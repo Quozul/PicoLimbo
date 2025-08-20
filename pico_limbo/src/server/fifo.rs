@@ -35,6 +35,11 @@ impl<T> Fifo<T> {
     pub fn drain(&mut self) -> impl Iterator<Item = T> + '_ {
         std::iter::from_fn(move || self.pop())
     }
+
+    #[cfg(test)]
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
 }
 
 impl<T> IntoIterator for Fifo<T> {

@@ -9,6 +9,17 @@ pub struct HandshakePacket {
     pub next_state: VarInt,
 }
 
+impl HandshakePacket {
+    pub fn localhost(protocol: i32, next_state: i32) -> Self {
+        Self {
+            hostname: String::from("localhost"),
+            port: 25565,
+            protocol: protocol.into(),
+            next_state: next_state.into(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::handshaking::handshake_packet::HandshakePacket;

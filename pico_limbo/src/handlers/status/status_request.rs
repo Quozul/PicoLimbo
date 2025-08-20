@@ -1,0 +1,152 @@
+use crate::server::client_state::ClientState;
+use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
+use crate::server::packet_registry::PacketRegistry;
+use crate::server_state::ServerState;
+use minecraft_packets::status::data::status_response::StatusResponse;
+use minecraft_packets::status::status_request_packet::StatusRequestPacket;
+use minecraft_packets::status::status_response_packet::StatusResponsePacket;
+use minecraft_protocol::prelude::ProtocolVersion;
+
+impl PacketHandler for StatusRequestPacket {
+    fn handle(
+        &self,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
+    ) -> Result<(), PacketHandlerError> {
+        let client_protocol_version = client_state.protocol_version();
+        let (version_string, version_number) = if client_protocol_version.is_any() {
+            let oldest = ProtocolVersion::oldest();
+            let latest = ProtocolVersion::latest();
+            let version_string = format!("{oldest}-{latest}");
+            (version_string, -1)
+        } else {
+            (
+                client_protocol_version.humanize().to_string(),
+                client_protocol_version.version_number(),
+            )
+        };
+
+        let status_response = StatusResponse::new(
+            version_string,
+            version_number,
+            server_state.description_text(),
+            server_state.online_players(),
+            server_state.max_players(),
+            false,
+        );
+        let packet = StatusResponsePacket::from_status_response(&status_response);
+        client_state.queue_packet(PacketRegistry::StatusResponse(packet));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
+
+    fn client(server_state: &ServerState, protocol_version: i32) -> ClientState {
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket::localhost(protocol_version, 1);
+        handshake_packet
+            .handle(&mut client_state, server_state)
+            .unwrap();
+        client_state
+    }
+
+    #[test]
+    fn test_should_respond_with_same_protocol_version_if_valid() {
+        // Given
+        let expected_protocol = 578;
+        let server_state = ServerState::default();
+        let mut client_state = client(&server_state, expected_protocol);
+        let status_request_packet = StatusRequestPacket::default();
+
+        // When
+        status_request_packet
+            .handle(&mut client_state, &server_state)
+            .unwrap();
+
+        // Then
+        let packet = client_state.next_packet().unwrap();
+        assert!(matches!(
+          packet,
+          PacketRegistry::StatusResponse(ref status_packet)
+           if status_packet.status_response().unwrap().version.protocol == expected_protocol
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_should_respond_with_any_version() {
+        // Given
+        let expected_protocol = -1;
+        let server_state = ServerState::default();
+        let mut client_state = client(&server_state, expected_protocol);
+        let status_request_packet = StatusRequestPacket::default();
+
+        // When
+        status_request_packet
+            .handle(&mut client_state, &server_state)
+            .unwrap();
+
+        // Then
+        let packet = client_state.next_packet().unwrap();
+        assert!(matches!(
+          packet,
+          PacketRegistry::StatusResponse(ref status_packet)
+           if status_packet.status_response().unwrap().version.protocol == expected_protocol
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_should_respond_with_latest_known_version_if_larger() {
+        // Given
+        let expected_protocol = i32::MAX;
+        let server_state = ServerState::default();
+        let mut client_state = client(&server_state, expected_protocol);
+        let status_request_packet = StatusRequestPacket::default();
+
+        // When
+        status_request_packet
+            .handle(&mut client_state, &server_state)
+            .unwrap();
+
+        // Then
+        let packet = client_state.next_packet().unwrap();
+        assert!(matches!(
+          packet,
+          PacketRegistry::StatusResponse(ref status_packet)
+           if status_packet.status_response().unwrap().version.protocol == ProtocolVersion::latest().version_number()
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_should_respond_with_oldest_known_version_if_smaller() {
+        let test_values = [0, -2, i32::MIN];
+
+        for &expected_protocol in &test_values {
+            // Given
+            let server_state = ServerState::default();
+            let mut client_state = client(&server_state, expected_protocol);
+            let status_request_packet = StatusRequestPacket::default();
+
+            // When
+            status_request_packet
+                .handle(&mut client_state, &server_state)
+                .unwrap();
+
+            // Then
+            let packet = client_state.next_packet().unwrap();
+            assert!(matches!(
+                packet,
+                PacketRegistry::StatusResponse(ref status_packet)
+                    if status_packet.status_response().unwrap().version.protocol ==
+                        ProtocolVersion::V1_7_2.version_number()
+            ));
+            assert!(client_state.has_no_more_packets());
+        }
+    }
+}

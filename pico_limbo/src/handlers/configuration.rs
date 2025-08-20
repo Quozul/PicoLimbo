@@ -52,13 +52,13 @@ pub fn send_configuration_packets(
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     client_state.queue_packet(PacketRegistry::ConfigurationClientBoundPluginMessage(
         packet,
-    ))?;
+    ));
     let protocol_version = client_state.protocol_version();
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         // Send Known Packs
         let packet = ClientBoundKnownPacksPacket::default();
-        client_state.queue_packet(PacketRegistry::ClientBoundKnownPacks(packet))?;
+        client_state.queue_packet(PacketRegistry::ClientBoundKnownPacks(packet));
     }
 
     // Send Registry Data
@@ -75,12 +75,12 @@ pub fn send_configuration_packets(
                 }
 
                 let packet = RegistryDataPacket::registry(registries.registry_id, registry_entries);
-                client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
+                client_state.queue_packet(PacketRegistry::RegistryData(packet));
             }
         }
         Registries::V1_20_2 { registry_codec } => {
             let packet = RegistryDataPacket::codec(registry_codec);
-            client_state.queue_packet(PacketRegistry::RegistryData(packet))?;
+            client_state.queue_packet(PacketRegistry::RegistryData(packet));
         }
         _ => {
             unreachable!()
@@ -89,7 +89,7 @@ pub fn send_configuration_packets(
 
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
-    client_state.queue_packet(PacketRegistry::FinishConfiguration(packet))?;
+    client_state.queue_packet(PacketRegistry::FinishConfiguration(packet));
 
     Ok(())
 }
@@ -161,33 +161,33 @@ pub fn send_play_packets(
     let packet = build_login_packet(protocol_version, server_state.spawn_dimension())?
         .set_game_mode(game_mode.value());
 
-    client_state.queue_packet(PacketRegistry::Login(Box::new(packet)))?;
+    client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
 
     // Send Synchronize Player Position
     let packet = SynchronizePlayerPositionPacket::default();
-    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet))?;
+    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
 
     if protocol_version >= ProtocolVersion::V1_19 {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPositionPacket::default();
-        client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet))?;
+        client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
     if protocol_version >= ProtocolVersion::V1_13 {
         let packet = CommandsPacket::empty();
-        client_state.queue_packet(PacketRegistry::Commands(packet))?;
+        client_state.queue_packet(PacketRegistry::Commands(packet));
     }
 
     if protocol_version >= ProtocolVersion::V1_20_3 {
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
-        client_state.queue_packet(PacketRegistry::GameEvent(packet))?;
+        client_state.queue_packet(PacketRegistry::GameEvent(packet));
 
         // Send Chunk Data and Update Light
         match get_void_biome_index(protocol_version) {
             Some(biome_id) => {
                 let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
-                client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet))?;
+                client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
             }
             None => {
                 return Err(PacketHandlerError::InvalidState(format!(
@@ -204,16 +204,16 @@ pub fn send_play_packets(
     // The brand is sent during the configuration state after 1.20.2 included
     if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
         let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
-        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet))?;
+        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet));
     }
 
     if let Some(content) = server_state.welcome_message() {
         if protocol_version >= ProtocolVersion::V1_19 {
             let packet = SystemChatMessagePacket::plain_text(content);
-            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet))?;
+            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
         } else {
             let packet = LegacyChatMessagePacket::system(content);
-            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet))?;
+            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
         }
     }
 

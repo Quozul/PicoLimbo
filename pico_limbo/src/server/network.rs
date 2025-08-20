@@ -120,16 +120,17 @@ async fn process_packet(
     raw_packet: RawPacket,
     was_in_play_state: &mut bool,
 ) -> Result<(), PacketProcessingError> {
-    let (protocol_version, state) = {
-        let client = client_data.client().await;
-        (client.protocol_version(), client.state())
-    };
+    let mut client_state = client_data.client().await;
+    let protocol_version = client_state.protocol_version();
+    let state = client_state.state();
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
 
-    let mut client_state = client_data.client().await;
     decoded_packet.handle(&mut client_state, &client_data.server().clone())?;
 
-    if !*was_in_play_state && client_state.state() == State::Play {
+    let protocol_version = client_state.protocol_version();
+    let state = client_state.state();
+
+    if !*was_in_play_state && state == State::Play {
         *was_in_play_state = true;
         server_state.increment();
         let username = client_state.get_username();
@@ -149,7 +150,8 @@ async fn process_packet(
 
     let pending_packets = client_state.pending_packets();
     for pending_packet in pending_packets.drain() {
-        client_data.write_packet(pending_packet).await?;
+        let raw_packet = pending_packet.encode_packet(protocol_version)?;
+        client_data.write_packet(raw_packet).await?;
     }
 
     drop(client_state);
