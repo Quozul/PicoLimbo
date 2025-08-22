@@ -79,8 +79,8 @@ impl ClientState {
     }
 
     #[cfg(test)]
-    pub fn next_packet(&mut self) -> Option<PacketRegistry> {
-        self.pending_packets.pop()
+    pub fn next_packet(&mut self) -> PacketRegistry {
+        self.pending_packets.pop().unwrap()
     }
 
     #[cfg(test)]

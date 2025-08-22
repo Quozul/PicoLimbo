@@ -95,25 +95,24 @@ pub fn send_play_packets(
 
     let packet = build_login_packet(protocol_version, server_state.spawn_dimension())?
         .set_game_mode(game_mode.value());
-
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
 
     // Send Synchronize Player Position
     let packet = SynchronizePlayerPositionPacket::default();
     client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
 
-    if protocol_version >= ProtocolVersion::V1_19 {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPositionPacket::default();
         client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
-    if protocol_version >= ProtocolVersion::V1_13 {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
         let packet = CommandsPacket::empty();
         client_state.queue_packet(PacketRegistry::Commands(packet));
     }
 
-    if protocol_version >= ProtocolVersion::V1_20_3 {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
         // Send Game Event
         let packet = GameEventPacket::start_waiting_for_chunks(0.0);
         client_state.queue_packet(PacketRegistry::GameEvent(packet));
@@ -143,7 +142,7 @@ pub fn send_play_packets(
     }
 
     if let Some(content) = server_state.welcome_message() {
-        if protocol_version >= ProtocolVersion::V1_19 {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
             let packet = SystemChatMessagePacket::plain_text(content);
             client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
         } else {
@@ -158,5 +157,164 @@ pub fn send_play_packets(
 impl From<TryFromIntError> for PacketHandlerError {
     fn from(_: TryFromIntError) -> Self {
         Self::custom("failed to cast int")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn server_state() -> ServerState {
+        let mut builder = ServerState::builder();
+        builder.welcome_message("Hello, World!");
+        builder.build()
+    }
+
+    fn client(protocol: ProtocolVersion) -> ClientState {
+        let mut cs = ClientState::default();
+        cs.set_protocol_version(protocol);
+        let previous_state = if protocol.supports_configuration_state() {
+            State::Configuration
+        } else {
+            State::Login
+        };
+        cs.set_state(previous_state);
+        cs
+    }
+
+    #[test]
+    fn test_v1_20_3_play_packets() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_20_3);
+        let server_state = server_state();
+
+        // When
+        send_play_packets(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SetDefaultSpawnPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::GameEvent(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SystemChatMessage(_)
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_v1_19_play_packets() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_19);
+        let server_state = server_state();
+
+        // When
+        send_play_packets(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SetDefaultSpawnPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::PlayClientBoundPluginMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SystemChatMessage(_)
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_v1_13_play_packets() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_13);
+        let server_state = server_state();
+
+        // When
+        send_play_packets(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::PlayClientBoundPluginMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::LegacyChatMessage(_)
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_pre_modern_play_packets() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_12_2);
+        let server_state = server_state();
+
+        // When
+        send_play_packets(&mut client_state, &server_state).unwrap();
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::LegacyChatMessage(_)
+        ));
+        assert!(client_state.has_no_more_packets());
     }
 }

@@ -37,7 +37,7 @@ mod tests {
 
         // Then
         assert!(matches!(
-            client_state.next_packet().unwrap(),
+            client_state.next_packet(),
             PacketRegistry::PongResponse(_)
         ));
         assert!(client_state.has_no_more_packets());

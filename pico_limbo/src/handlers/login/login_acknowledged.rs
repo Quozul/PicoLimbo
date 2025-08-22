@@ -20,30 +20,18 @@ impl PacketHandler for LoginAcknowledgedPacket {
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
             client_state.set_state(State::Configuration);
-            send_configuration_packets(client_state, server_state)?;
+            send_configuration_packets(client_state, server_state);
             Ok(())
         } else {
             Err(PacketHandlerError::invalid_state(
-                "A client using a version prior to 1.20.2 tried to send a login acknowledge packet",
+                "Configuration state not supported for this version",
             ))
         }
     }
 }
 
 /// Only for <= 1.20.2
-fn send_configuration_packets(
-    client_state: &mut ClientState,
-    server_state: &ServerState,
-) -> Result<(), PacketHandlerError> {
-    if client_state
-        .protocol_version()
-        .is_before_inclusive(ProtocolVersion::V1_20)
-    {
-        return Err(PacketHandlerError::invalid_state(
-            "Cannot send registries in configuration state for versions before 1.20.2",
-        ));
-    }
-
+fn send_configuration_packets(client_state: &mut ClientState, server_state: &ServerState) {
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     client_state.queue_packet(PacketRegistry::ConfigurationClientBoundPluginMessage(
@@ -86,8 +74,6 @@ fn send_configuration_packets(
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
     client_state.queue_packet(PacketRegistry::FinishConfiguration(packet));
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -137,6 +123,63 @@ mod tests {
 
         // Then
         assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_configuration_packets_v1_20_2() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_20_2);
+        let server_state = server_state();
+        let pkt = packet();
+
+        // When
+        send_configuration_packets(&mut client_state, &server_state);
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ConfigurationClientBoundPluginMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::RegistryData(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::FinishConfiguration(_)
+        ));
+        assert!(client_state.has_no_more_packets());
+    }
+
+    #[test]
+    fn test_configuration_packets_v1_20_5() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_20_5);
+        let server_state = server_state();
+
+        // When
+        send_configuration_packets(&mut client_state, &server_state);
+
+        // Then
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ConfigurationClientBoundPluginMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ClientBoundKnownPacks(_)
+        ));
+        for _ in 0..8 {
+            assert!(matches!(
+                client_state.next_packet(),
+                PacketRegistry::RegistryData(_)
+            ));
+        }
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::FinishConfiguration(_)
+        ));
         assert!(client_state.has_no_more_packets());
     }
 }

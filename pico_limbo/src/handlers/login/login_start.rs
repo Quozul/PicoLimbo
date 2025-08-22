@@ -106,10 +106,7 @@ mod tests {
 
         // Then
         assert!(
-            matches!(
-                client_state.next_packet().unwrap(),
-                PacketRegistry::CustomQuery(_)
-            ),
+            matches!(client_state.next_packet(), PacketRegistry::CustomQuery(_)),
             "first packet should be the velocity CustomQuery"
         );
         assert_ne!(client_state.get_velocity_login_message_id(), -1);
@@ -149,10 +146,7 @@ mod tests {
 
         // Then
         assert!(
-            matches!(
-                client_state.next_packet().unwrap(),
-                PacketRegistry::LoginSuccess(_)
-            ),
+            matches!(client_state.next_packet(), PacketRegistry::LoginSuccess(_)),
             "first packet should be LoginSuccess for ≥ 1.21.2"
         );
     }
@@ -169,10 +163,7 @@ mod tests {
 
         // Then
         assert!(
-            matches!(
-                client_state.next_packet().unwrap(),
-                PacketRegistry::GameProfile(_)
-            ),
+            matches!(client_state.next_packet(), PacketRegistry::GameProfile(_)),
             "first packet should be GameProfile for < 1.21.2"
         );
     }

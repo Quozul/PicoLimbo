@@ -68,7 +68,7 @@ mod tests {
             .unwrap();
 
         // Then
-        let packet = client_state.next_packet().unwrap();
+        let packet = client_state.next_packet();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
@@ -91,7 +91,7 @@ mod tests {
             .unwrap();
 
         // Then
-        let packet = client_state.next_packet().unwrap();
+        let packet = client_state.next_packet();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
@@ -114,7 +114,7 @@ mod tests {
             .unwrap();
 
         // Then
-        let packet = client_state.next_packet().unwrap();
+        let packet = client_state.next_packet();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
@@ -139,7 +139,7 @@ mod tests {
                 .unwrap();
 
             // Then
-            let packet = client_state.next_packet().unwrap();
+            let packet = client_state.next_packet();
             assert!(matches!(
                 packet,
                 PacketRegistry::StatusResponse(ref status_packet)
