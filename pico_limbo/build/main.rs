@@ -66,6 +66,8 @@ fn main() -> anyhow::Result<()> {
 
                 let file_path_str = out_dir.join(file_name).to_str().unwrap().to_string();
 
+                // TODO: Generate the code to instantiate V1_20_5Registries directly instead of decoding a binary
+                // TODO: Share code between runtime and compiletime
                 quote! {
                     ProtocolVersion::#version_ident => {
                         let bytes = include_bytes!(#file_path_str);

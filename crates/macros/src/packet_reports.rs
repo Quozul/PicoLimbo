@@ -45,11 +45,17 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         #[derive(Debug, thiserror::Error)]
-        pub enum PacketRegistryError {
-            #[error("Encode error: This packet is not supported for this version of the game")]
-            UnsupportedPacket,
+        pub enum PacketRegistryEncodeError {
+            #[error("Encode error: Version {0} does not support packet {0}")]
+            UnsupportedPacket(ProtocolVersion, String),
             #[error("Encode error: This packet cannot be encoded")]
             CannotBeEncoded,
+            #[error("Failed to write packet")]
+            Encode(#[from] BinaryWriterError),
+        }
+
+        #[derive(Debug, thiserror::Error)]
+        pub enum PacketRegistryDecodeError {
             #[error("Decode error: Packet id is missing from the payload")]
             MissingPacketId,
             #[error("Decode error: The version {0} is unknown")]
@@ -58,8 +64,6 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
             NoCorrespondingPacket(i32, State, u8),
             #[error("Failed to read packet")]
             Decode(#[from] BinaryReaderError),
-            #[error("Failed to write packet")]
-            Encode(#[from] BinaryWriterError),
         }
 
         impl #enum_ident {
@@ -234,7 +238,7 @@ fn generate_decode_impl(
             #version_number => {
                 match (state, packet_id) {
                     #(#state_arms)*
-                    _ => return Err(PacketRegistryError::NoCorrespondingPacket(reports_version, state, packet_id)),
+                    _ => return Err(PacketRegistryDecodeError::NoCorrespondingPacket(reports_version, state, packet_id)),
                 }
             }
         }
@@ -245,18 +249,18 @@ fn generate_decode_impl(
             protocol_version: ProtocolVersion,
             state: State,
             raw_packet: RawPacket,
-        ) -> Result<Self, PacketRegistryError> {
+        ) -> Result<Self, PacketRegistryDecodeError> {
             match raw_packet.packet_id() {
                 Some(packet_id) => {
                     let reports_version = protocol_version.reports().version_number();
                     let mut payload = BinaryReader::new(raw_packet.data());
                     match reports_version {
                         #(#report_arms)*
-                        _ => return Err(PacketRegistryError::UnknownVersion(reports_version)),
+                        _ => return Err(PacketRegistryDecodeError::UnknownVersion(reports_version)),
                     }
                 }
                 None => {
-                    Err(PacketRegistryError::MissingPacketId)
+                    Err(PacketRegistryDecodeError::MissingPacketId)
                 }
             }
         }
@@ -300,7 +304,7 @@ fn generate_encode_impl(
                     let packet_bytes = packet_writer.into_inner();
                     let packet_id: u8 = match reports_version {
                         #(#report_arms)*
-                        _ => return Err(PacketRegistryError::UnsupportedPacket),
+                        _ => return Err(PacketRegistryEncodeError::UnsupportedPacket(protocol_version, String::from(#packet_name))),
                     };
                     RawPacket::from_bytes(packet_id, &packet_bytes)
                 }
@@ -308,12 +312,12 @@ fn generate_encode_impl(
         });
 
     quote! {
-        pub fn encode_packet(self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryError> {
+        pub fn encode_packet(self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryEncodeError> {
             let reports_version = protocol_version.reports().version_number();
             let mut packet_writer = BinaryWriter::new();
             let raw_packet = match self {
                 #(#variant_arms)*
-                _ => return Err(PacketRegistryError::CannotBeEncoded),
+                _ => return Err(PacketRegistryEncodeError::CannotBeEncoded),
             };
             Ok(raw_packet)
         }

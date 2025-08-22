@@ -1,6 +1,8 @@
 use crate::server::client_data::ClientData;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
-use crate::server::packet_registry::{PacketRegistry, PacketRegistryError};
+use crate::server::packet_registry::{
+    PacketRegistry, PacketRegistryDecodeError, PacketRegistryEncodeError,
+};
 use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
@@ -89,14 +91,20 @@ impl From<PacketHandlerError> for PacketProcessingError {
     }
 }
 
-impl From<PacketRegistryError> for PacketProcessingError {
-    fn from(e: PacketRegistryError) -> Self {
+impl From<PacketRegistryDecodeError> for PacketProcessingError {
+    fn from(e: PacketRegistryDecodeError) -> Self {
         match e {
-            PacketRegistryError::NoCorrespondingPacket(version, state, packet_id) => {
+            PacketRegistryDecodeError::NoCorrespondingPacket(version, state, packet_id) => {
                 Self::DecodePacketError(version, state, packet_id)
             }
             _ => Self::Custom(e.to_string()),
         }
+    }
+}
+
+impl From<PacketRegistryEncodeError> for PacketProcessingError {
+    fn from(e: PacketRegistryEncodeError) -> Self {
+        Self::Custom(e.to_string())
     }
 }
 
