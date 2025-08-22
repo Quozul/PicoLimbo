@@ -92,7 +92,6 @@ pub enum ProtocolVersion {
     V1_7_2 = 4,
 
     /// A special value to represent any protocol version.
-    #[pvn(reports = V1_7_2)]
     Any = -1,
 }
 
