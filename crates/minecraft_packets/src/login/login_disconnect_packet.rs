@@ -3,6 +3,7 @@ use pico_text_component::prelude::PlainText;
 
 #[derive(PacketOut)]
 pub struct LoginDisconnectPacket {
+    /// Reason as a JSON Text Component
     pub reason: String,
 }
 

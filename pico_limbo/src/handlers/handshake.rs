@@ -1,5 +1,5 @@
-use crate::forwarding::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
+use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server_state::ServerState;

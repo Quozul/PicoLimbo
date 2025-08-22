@@ -1,5 +1,7 @@
-use crate::forwarding::CLIENT_MODERN_FORWARDING_NOT_SUPPORTED;
 use crate::handlers::configuration::send_play_packets;
+use crate::kick_messages::{
+    CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE, OPERATOR_KICK_MESSAGE,
+};
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -22,7 +24,7 @@ impl PacketHandler for LoginStartPacket {
             if client_state.protocol_version().is_modern() {
                 login_start_velocity(client_state);
             } else {
-                client_state.kick(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED);
+                client_state.kick(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE);
             }
         } else {
             let game_profile: GameProfile = self.into();
@@ -128,7 +130,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             client_state.should_kick(),
-            Some(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED.to_string())
+            Some(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE.to_string())
         );
         assert!(client_state.has_no_more_packets());
     }

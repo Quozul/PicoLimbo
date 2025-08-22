@@ -1,6 +1,6 @@
-use crate::forwarding::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::forwarding::check_velocity_key_integrity::{VelocityKeyIntegrity, read_velocity_key};
 use crate::handlers::login::login_start::fire_login_success;
+use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};

@@ -12,6 +12,9 @@
       },
       "minecraft:registry_data": {
         "protocol_id": 5
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 1
       }
     },
     "serverbound": {
@@ -82,6 +85,9 @@
       },
       "minecraft:commands": {
         "protocol_id": 17
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 27
       }
     },
     "serverbound": {}

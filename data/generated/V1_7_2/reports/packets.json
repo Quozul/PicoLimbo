@@ -46,6 +46,9 @@
       },
       "minecraft:legacy_chat_message": {
         "protocol_id": 2
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 64
       }
     },
     "serverbound": {}

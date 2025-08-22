@@ -46,7 +46,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[derive(Debug, thiserror::Error)]
         pub enum PacketRegistryEncodeError {
-            #[error("Encode error: Version {0} does not support packet {0}")]
+            #[error("Encode error: Version {0} does not support packet {1}")]
             UnsupportedPacket(ProtocolVersion, String),
             #[error("Encode error: This packet cannot be encoded")]
             CannotBeEncoded,

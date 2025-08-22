@@ -55,6 +55,9 @@
       },
       "minecraft:commands": {
         "protocol_id": 18
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 26
       }
     },
     "serverbound": {}

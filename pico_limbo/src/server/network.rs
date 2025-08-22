@@ -7,6 +7,7 @@ use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
+use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
@@ -150,16 +151,18 @@ async fn process_packet(
         info!("{} joined the game", username,);
     }
 
-    if let Some(reason) = client_state.should_kick() {
-        drop(client_state);
-        kick_client(client_data, reason.clone()).await;
-        return Err(PacketProcessingError::Disconnected);
-    }
-
     let pending_packets = client_state.pending_packets();
     for pending_packet in pending_packets.drain() {
         let raw_packet = pending_packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
+    }
+
+    if let Some(reason) = client_state.should_kick() {
+        drop(client_state);
+        kick_client(client_data, reason.clone())
+            .await
+            .map_err(|_| PacketProcessingError::Disconnected)?;
+        return Err(PacketProcessingError::Disconnected);
     }
 
     drop(client_state);
@@ -193,13 +196,16 @@ async fn handle_client(socket: TcpStream, server_state: ServerState) {
         match read(&client_data, &server_state, &mut was_in_play_state).await {
             Ok(()) => {}
             Err(PacketProcessingError::Disconnected) => {
+                debug!("Client disconnected");
                 break;
             }
             Err(PacketProcessingError::Custom(e)) => {
                 debug!("Error processing packet: {}", e);
             }
             Err(PacketProcessingError::DecodePacketError(version, state, packet_id)) => {
-                trace!("Unmapped packet: version={version} state={state} packet_id={packet_id}");
+                trace!(
+                    "Unknown packet received: version={version} state={state} packet_id={packet_id}"
+                );
             }
         }
     }
@@ -213,13 +219,38 @@ async fn handle_client(socket: TcpStream, server_state: ServerState) {
     }
 }
 
-async fn kick_client(client_data: &ClientData, reason: String) {
-    let packet = PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason));
-    let protocol_version = client_data.client().await.protocol_version();
+async fn kick_client(
+    client_data: &ClientData,
+    reason: String,
+) -> Result<(), PacketProcessingError> {
+    let (protocol_version, state) = {
+        let state = client_data.client().await;
+        (state.protocol_version(), state.state())
+    };
+    let packet = match state {
+        State::Login => {
+            debug!("Login disconnect");
+            PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason))
+        }
+        State::Configuration => {
+            debug!("Configuration disconnect");
+            PacketRegistry::ConfigurationDisconnect(DisconnectPacket::text(reason))
+        }
+        State::Play => {
+            debug!("Play disconnect");
+            PacketRegistry::PlayDisconnect(DisconnectPacket::text(reason))
+        }
+        _ => {
+            debug!("A user was disconnected from a state where no packet can be sent");
+            return Err(PacketProcessingError::Disconnected);
+        }
+    };
     if let Ok(raw_packet) = packet.encode_packet(protocol_version) {
-        let _ = client_data.write_packet(raw_packet).await;
-        let _ = client_data.shutdown().await;
+        client_data.write_packet(raw_packet).await?;
+        client_data.shutdown().await?;
     }
+
+    Ok(())
 }
 
 async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessingError> {

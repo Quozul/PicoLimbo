@@ -2,6 +2,7 @@ pub mod chunk_data_and_update_light_packet;
 pub mod client_bound_keep_alive_packet;
 pub mod commands_packet;
 mod data;
+pub mod disconnect_packet;
 pub mod game_event_packet;
 pub mod legacy_chat_message_packet;
 pub mod login_packet;

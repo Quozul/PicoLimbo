@@ -18,6 +18,7 @@ use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
+use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
@@ -156,6 +157,13 @@ pub enum PacketRegistry {
     )]
     FinishConfiguration(FinishConfigurationPacket),
 
+    #[protocol_id(
+        state = "configuration",
+        bound = "clientbound",
+        name = "minecraft:disconnect"
+    )]
+    ConfigurationDisconnect(DisconnectPacket),
+
     // Play packets
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:login")]
     Login(Box<LoginPacket>),
@@ -206,6 +214,9 @@ pub enum PacketRegistry {
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:keep_alive")]
     ClientBoundKeepAlive(ClientBoundKeepAlivePacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:disconnect")]
+    PlayDisconnect(DisconnectPacket),
 }
 
 impl PacketHandler for PacketRegistry {

@@ -15,6 +15,9 @@
       },
       "minecraft:select_known_packs": {
         "protocol_id": 14
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 2
       }
     },
     "serverbound": {
@@ -85,6 +88,9 @@
       },
       "minecraft:commands": {
         "protocol_id": 17
+      },
+      "minecraft:disconnect": {
+        "protocol_id": 29
       }
     },
     "serverbound": {}
