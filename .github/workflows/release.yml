@@ -43,8 +43,10 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y musl-tools
 
-      - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
@@ -80,8 +82,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Add Rust target
-        run: rustup target add aarch64-apple-darwin
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: aarch64-apple-darwin
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v4
@@ -116,6 +120,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Cargo dependencies
         uses: actions/cache@v4

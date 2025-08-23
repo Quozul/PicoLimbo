@@ -1,7 +1,5 @@
 use crate::handlers::configuration::send_play_packets;
-use crate::kick_messages::{
-    CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE, OPERATOR_KICK_MESSAGE,
-};
+use crate::kick_messages::CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE;
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};

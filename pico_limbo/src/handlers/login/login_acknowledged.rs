@@ -131,7 +131,6 @@ mod tests {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20_2);
         let server_state = server_state();
-        let pkt = packet();
 
         // When
         send_configuration_packets(&mut client_state, &server_state);
