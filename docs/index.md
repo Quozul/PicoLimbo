@@ -36,4 +36,6 @@ features:
   - icon: ⚡
     title: Ultra-Lightweight & Highly Scalable
     details: Uses 0% CPU while idle and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous runtime and efficient design
+    link: /about/benchmarks.html
+    linkText: See benchmarks
 ---

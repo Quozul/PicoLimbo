@@ -28,6 +28,7 @@ export default defineConfig({
 					{ text: "Installation", link: "/about/installation.html" },
 					{ text: "CLI Usage", link: "/about/cli-usage.html" },
 					{ text: "FAQ", link: "/about/faq.html" },
+					{ text: "Benchmarks", link: "/about/benchmarks.html" },
 				],
 			},
 			{
