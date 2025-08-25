@@ -52,14 +52,8 @@ impl ReadLengthPrefix for i32 {
     }
 }
 
-impl ReadLengthPrefix for i16 {
+impl ReadLengthPrefix for u16 {
     fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError> {
-        let len: i16 = reader.read()?;
-        len.try_into().map_err(|_| {
-            BinaryReaderError::Io(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Invalid length: negative or too large for usize",
-            ))
-        })
+        Ok(reader.read::<u16>()?.into())
     }
 }

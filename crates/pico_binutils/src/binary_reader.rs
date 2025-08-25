@@ -76,7 +76,7 @@ impl_read_int!(u8, i8, u16, i16, u32, i32, i64, usize, f32, f64);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::ShortPrefixed;
+    use crate::prelude::UShortPrefixed;
 
     #[test]
     fn test_read_i8() {
@@ -125,7 +125,7 @@ mod tests {
     fn test_read_string() {
         let data = [0, 5, 72, 69, 76, 76, 79];
         let mut reader = BinaryReader::new(&data);
-        let parsed = reader.read::<ShortPrefixed<String>>().unwrap();
+        let parsed = reader.read::<UShortPrefixed<String>>().unwrap();
 
         assert_eq!(parsed.into_inner(), "HELLO");
     }
