@@ -117,11 +117,7 @@ pub fn send_play_packets(
         .set_game_mode(game_mode.value());
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
 
-    // Send Synchronize Player Position
     let (x, y, z) = server_state.spawn_position();
-    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
-    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
-
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPositionPacket::new(x, y, z);
@@ -150,6 +146,10 @@ pub fn send_play_packets(
             ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
         client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
     }
+
+    // Send Synchronize Player Position
+    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
+    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
 
     client_state.set_state(State::Play);
     client_state.set_keep_alive_should_enable();
@@ -218,10 +218,6 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
@@ -235,6 +231,10 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
@@ -259,15 +259,15 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
@@ -296,11 +296,11 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
+            PacketRegistry::Commands(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::Commands(_)
+            PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
