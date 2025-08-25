@@ -41,7 +41,7 @@ fn send_configuration_packets(client_state: &mut ClientState, server_state: &Ser
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         // Send Known Packs
-        let packet = ClientBoundKnownPacksPacket::default();
+        let packet = ClientBoundKnownPacksPacket::new(protocol_version.humanize());
         client_state.queue_packet(PacketRegistry::ClientBoundKnownPacks(packet));
     }
 
