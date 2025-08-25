@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use tracing::debug;
 
 include!(concat!(env!("OUT_DIR"), "/generated_registries.rs"));
 
@@ -43,13 +42,11 @@ pub struct V1_20_5Registries {
 
 pub fn get_registries(protocol_version: ProtocolVersion, dimension: Dimension) -> Registries {
     let data_version = protocol_version.data();
-    debug!("Getting registries for version {}", data_version);
     get_pregenerated_registries(data_version, dimension)
 }
 
 pub fn get_dimension_index(protocol_version: ProtocolVersion, dimension: Dimension) -> Option<i32> {
     let data_version = protocol_version.data();
-    debug!("Getting {} index for version {}", dimension, data_version);
     if let Some(value) = get_pregenerated_dimension_index(data_version, dimension)
         && let Ok(value) = i32::try_from(value)
     {
@@ -60,7 +57,6 @@ pub fn get_dimension_index(protocol_version: ProtocolVersion, dimension: Dimensi
 
 pub fn get_void_biome_index(protocol_version: ProtocolVersion) -> Option<i32> {
     let data_version = protocol_version.data();
-    debug!("Getting void biome index for version {}", data_version);
     if let Some(value) = get_pregenerated_void_biome_index(data_version)
         && let Ok(value) = i32::try_from(value)
     {

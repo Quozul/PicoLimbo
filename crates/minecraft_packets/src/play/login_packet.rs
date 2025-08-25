@@ -220,6 +220,11 @@ impl LoginPacket {
         self.v_1_20_2_game_mode = game_mode;
         self
     }
+
+    pub fn set_view_distance(mut self, view_distance: i32) -> Self {
+        self.view_distance = VarInt::new(view_distance);
+        self
+    }
 }
 
 #[cfg(test)]

@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Allow customization of the spawn position in the configuration
+- View distance can now be customized
 
 ### Fixed
 
 - NBT strings and arrays should be prefixed with a UShort
 - Send correct version of the game in KnownPacks
+- Player not spawning due to view distance being too small in certain versions
 
 ## [1.4.0+mc1.21.8] - 2025-08-23
 

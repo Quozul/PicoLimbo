@@ -61,7 +61,8 @@ fn build_state(cfg: Config) -> ServerState {
         .max_players(cfg.server_list.max_players)
         .show_online_player_count(cfg.server_list.show_online_player_count)
         .game_mode(cfg.default_game_mode.into())
-        .spawn_position(cfg.experimental.world.spawn_position);
+        .spawn_position(cfg.experimental.world.spawn_position)
+        .view_distance(cfg.experimental.world.view_distance);
 
     server_state_builder.build()
 }

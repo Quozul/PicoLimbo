@@ -44,5 +44,7 @@ show_online_player_count = true
 [experimental.world]
 # Custom spawn position as [x, y, z] coordinates
 spawn_position = [0.0, 320.0, 0.0]
+# Configure how many chunks are sent to clients
+view_distance = 2
 ```
 :::
