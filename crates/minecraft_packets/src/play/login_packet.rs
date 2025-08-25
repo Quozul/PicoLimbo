@@ -6,7 +6,7 @@ pub struct LoginPacket {
     /// The player's Entity ID (EID).
     entity_id: i32,
     #[pvn(751..)]
-    is_hardcore: bool,
+    v1_16_2_is_hardcore: bool,
     #[pvn(..764)]
     game_mode: u8,
     #[pvn(735..764)]
@@ -110,7 +110,7 @@ impl Default for LoginPacket {
         let overworld = Identifier::minecraft("overworld");
         Self {
             entity_id: 0,
-            is_hardcore: false,
+            v1_16_2_is_hardcore: false,
             game_mode: 3,
             previous_game_mode: -1,
             v1_16_dimension_names: LengthPaddedVec::default(),
@@ -223,6 +223,14 @@ impl LoginPacket {
 
     pub fn set_view_distance(mut self, view_distance: i32) -> Self {
         self.view_distance = VarInt::new(view_distance);
+        self
+    }
+
+    pub fn set_hardcore(mut self, protocol_version: ProtocolVersion, hardcore: bool) -> Self {
+        self.v1_16_2_is_hardcore = hardcore;
+        if hardcore && protocol_version.is_before_inclusive(ProtocolVersion::V1_16_1) {
+            self.game_mode |= 0x8;
+        }
         self
     }
 }

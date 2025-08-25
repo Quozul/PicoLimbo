@@ -19,6 +19,9 @@ welcome_message = "Welcome to PicoLimbo!"
 # Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
 
+# If set to true, will spawn the player in hardcode mode
+hardcore = false
+
 [forwarding.velocity]
 # Enable Velocity Modern Forwarding
 enabled = false

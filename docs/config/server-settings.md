@@ -68,3 +68,13 @@ spectator
 
 > [!NOTE]
 > For Minecraft versions 1.7.x, the spectator game mode does not exist. If you set `default_game_mode = "spectator"`, it will spawn players in "creative" mode instead.
+
+## Hardcore
+
+Spawns the player in hardcore mode.
+
+:::code-group
+```toml [server.toml]
+hardcore = true
+```
+:::

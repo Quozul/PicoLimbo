@@ -137,7 +137,8 @@ pub fn send_play_packets(
     let view_distance = server_state.view_distance();
     let packet = build_login_packet(protocol_version, server_state.spawn_dimension())?
         .set_game_mode(game_mode.value())
-        .set_view_distance(view_distance);
+        .set_view_distance(view_distance)
+        .set_hardcore(server_state.is_hardcore());
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
 
     let (x, y, z) = server_state.spawn_position();
