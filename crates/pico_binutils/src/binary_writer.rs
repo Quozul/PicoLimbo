@@ -35,6 +35,14 @@ impl BinaryWriter {
         &self.0
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn clear(&mut self) {
         self.0.clear();
     }

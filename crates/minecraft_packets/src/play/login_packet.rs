@@ -216,7 +216,11 @@ impl LoginPacket {
     }
 
     pub fn set_game_mode(mut self, game_mode: u8) -> Self {
-        self.game_mode = game_mode;
+        if self.v1_16_2_is_hardcore {
+            self.game_mode = game_mode | 0x8;
+        } else {
+            self.game_mode = game_mode;
+        }
         self.v_1_20_2_game_mode = game_mode;
         self
     }

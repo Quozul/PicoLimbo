@@ -58,6 +58,9 @@
       },
       "minecraft:disconnect": {
         "protocol_id": 23
+      },
+      "minecraft:set_chunk_cache_center": {
+        "protocol_id": 72
       }
     },
     "serverbound": {}

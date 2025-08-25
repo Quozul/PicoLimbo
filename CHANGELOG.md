@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send correct version of the game in KnownPacks
 - Player not spawning due to view distance being too small in certain versions
 - Set center chunk to prevent player getting stuck in loading world screen
+- Void chunk is always send for all versions after 1.19
+- Empty configuration file never gets filled
 
 ## [1.4.0+mc1.21.8] - 2025-08-23
 
