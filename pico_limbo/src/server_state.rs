@@ -32,6 +32,7 @@ pub struct ServerState {
     show_online_player_count: bool,
     game_mode: GameMode,
     spawn_position: (f64, f64, f64),
+    view_distance: i32,
 }
 
 impl ServerState {
@@ -103,6 +104,10 @@ impl ServerState {
         self.spawn_position
     }
 
+    pub const fn view_distance(&self) -> i32 {
+        self.view_distance
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -122,6 +127,7 @@ pub struct ServerStateBuilder {
     show_online_player_count: bool,
     game_mode: GameMode,
     spawn_position: (f64, f64, f64),
+    view_distance: i32,
 }
 
 impl ServerStateBuilder {
@@ -190,6 +196,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn view_distance(&mut self, view_distance: i32) -> &mut Self {
+        self.view_distance = view_distance.clamp(0, 32);
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> ServerState {
         ServerState {
@@ -202,6 +213,7 @@ impl ServerStateBuilder {
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
             spawn_position: self.spawn_position,
+            view_distance: self.view_distance,
         }
     }
 }

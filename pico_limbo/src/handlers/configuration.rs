@@ -96,6 +96,26 @@ fn world_position_to_chunk_position(
     Ok((chunk_x, chunk_z))
 }
 
+fn create_circular_chunk_iterator(
+    center_chunk: (i32, i32),
+    view_distance: i32,
+) -> impl Iterator<Item = (i32, i32)> {
+    let (center_x, center_z) = center_chunk;
+    let mut offsets = Vec::new();
+    for dx in -view_distance..=view_distance {
+        for dz in -view_distance..=view_distance {
+            offsets.push((dx, dz));
+        }
+    }
+
+    // Sort by squared distance for efficiency (avoids sqrt)
+    offsets.sort_unstable_by_key(|(dx, dz)| dx.pow(2) + dz.pow(2));
+
+    offsets
+        .into_iter()
+        .map(move |(dx, dz)| (center_x + dx, center_z + dz))
+}
+
 /// Switch to the Play state and send required packets to spawn the player in the world
 pub fn send_play_packets(
     client_state: &mut ClientState,
@@ -142,10 +162,14 @@ pub fn send_play_packets(
             ))
         })?;
 
-        let (chunk_x, chunk_z) = world_position_to_chunk_position((x, z))?;
-        let packet =
-            ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
-        client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
+        let center_chunk = world_position_to_chunk_position((x, z))?;
+        let chunk_positions =
+            create_circular_chunk_iterator(center_chunk, server_state.view_distance());
+        for (chunk_x, chunk_z) in chunk_positions {
+            let packet =
+                ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
+            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
+        }
     }
 
     // Send Synchronize Player Position
@@ -187,6 +211,7 @@ mod tests {
 
     fn server_state() -> ServerState {
         let mut builder = ServerState::builder();
+        builder.view_distance(0);
         builder.welcome_message("Hello, World!");
         builder.build()
     }
