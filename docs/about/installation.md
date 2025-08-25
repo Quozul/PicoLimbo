@@ -7,7 +7,7 @@ For users running the Pterodactyl panel, deployment is simplified with the provi
 The egg supports additional installation configuration through the following environment variables:
 
 - **VERSION**
-  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.21.8`).
+  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.4.0+mc1.21.8`).
     - Default: `latest`
     - When set to `latest` (or left unset without enabling prerelease), the installer selects the newest stable release.
 
@@ -28,9 +28,6 @@ You can also mount a custom configuration file:
 ```shell
 docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:latest
 ```
-
-> [!NOTE]
-> The `master` tag image is updated on every push to the repository. For production or stable setups, consider using a fixed version tag instead.
 
 ### Using Docker Compose
 
@@ -54,12 +51,11 @@ To use this configuration:
 3. Create a `server.toml` file with your configuration
 4. Run `docker compose up -d` to start the server
 
-
 ## Binary / Standalone
 
 ### GitHub Releases
 
-Download pre-compiled binaries for multiple platforms from the GitHub releases page.
+Download pre-compiled binaries for multiple platforms from the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases).
 
 ### Compiling from Source
 
@@ -67,11 +63,25 @@ You can compile PicoLimbo from source using either Cargo or Git:
 
 #### Using Cargo
 
-To build PicoLimbo from source using Cargo:
+To install PicoLimbo directly from the repository using Cargo:
 
 ```bash
 cargo install --git https://github.com/Quozul/PicoLimbo.git pico_limbo
 ```
+
+The binary will be installed to your Cargo bin directory (typically `~/.cargo/bin/pico_limbo`). Make sure this directory is in your PATH to run the command from anywhere:
+
+```bash
+# Run PicoLimbo
+pico_limbo
+
+# Or with full path if not in PATH
+~/.cargo/bin/pico_limbo
+```
+
+> [!NOTE]
+> This method requires Rust and Cargo to be installed on your system. If you don't have them installed,
+> visit [rustup.rs](https://rustup.rs/) for installation instructions.
 
 #### Using Git
 
