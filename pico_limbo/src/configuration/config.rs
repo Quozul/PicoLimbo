@@ -45,6 +45,9 @@ pub struct Config {
     /// Valid values are: "survival", "creative", "adventure" or "spectator"
     pub default_game_mode: GameModeConfig,
 
+    /// If set to true, will spawn the player in hardcode mode
+    pub hardcore: bool,
+
     /// Experimental settings
     pub experimental: ExperimentalConfig,
 }
@@ -58,6 +61,7 @@ impl Default for Config {
             welcome_message: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
             default_game_mode: GameModeConfig::default(),
+            hardcore: false,
             experimental: ExperimentalConfig::default(),
         }
     }

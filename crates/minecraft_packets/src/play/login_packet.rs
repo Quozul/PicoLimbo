@@ -220,6 +220,14 @@ impl LoginPacket {
         self.v_1_20_2_game_mode = game_mode;
         self
     }
+
+    pub fn set_hardcore(mut self, hardcore: bool) -> Self {
+        self.is_hardcore = hardcore;
+        if hardcore {
+            self.game_mode |= 0x8;
+        }
+        self
+    }
 }
 
 #[cfg(test)]

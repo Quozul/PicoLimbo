@@ -31,6 +31,7 @@ pub struct ServerState {
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
     game_mode: GameMode,
+    hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
 }
@@ -100,6 +101,10 @@ impl ServerState {
         self.game_mode
     }
 
+    pub const fn is_hardcore(&self) -> bool {
+        self.hardcore
+    }
+
     pub const fn spawn_position(&self) -> (f64, f64, f64) {
         self.spawn_position
     }
@@ -126,6 +131,7 @@ pub struct ServerStateBuilder {
     welcome_message: String,
     show_online_player_count: bool,
     game_mode: GameMode,
+    hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
 }
@@ -191,6 +197,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub const fn hardcore(&mut self, hardcore: bool) -> &mut Self {
+        self.hardcore = hardcore;
+        self
+    }
+
     pub const fn spawn_position(&mut self, position: (f64, f64, f64)) -> &mut Self {
         self.spawn_position = position;
         self
@@ -212,6 +223,7 @@ impl ServerStateBuilder {
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
+            hardcore: self.hardcore,
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
         }
