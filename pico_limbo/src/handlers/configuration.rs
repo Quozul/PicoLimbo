@@ -18,6 +18,7 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
+use pico_structures::prelude::{Schematic, SchematicError};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -117,7 +118,41 @@ fn create_circular_chunk_iterator(
         .map(move |(dx, dz)| (center_x + dx, center_z + dz))
 }
 
-/// Switch to the Play state and send required packets to spawn the player in the world
+fn send_chunks_circularly(
+    client_state: &mut ClientState,
+    center_chunk: (i32, i32),
+    view_distance: i32,
+    structure: Option<&Schematic>,
+    biome_id: i32,
+) {
+    let chunk_positions = create_circular_chunk_iterator(center_chunk, view_distance);
+
+    if let Some(structure) = structure {
+        let paste_origin = (-731, 115, -811);
+        for (chunk_x, chunk_z) in chunk_positions {
+            let packet = ChunkDataAndUpdateLightPacket::from_structure(
+                structure,
+                paste_origin,
+                chunk_x,
+                chunk_z,
+                biome_id,
+            );
+            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
+        }
+    } else {
+        for (chunk_x, chunk_z) in chunk_positions {
+            let packet = ChunkDataAndUpdateLightPacket::void(chunk_x, chunk_z, biome_id);
+            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
+        }
+    }
+}
+
+impl From<SchematicError> for PacketHandlerError {
+    fn from(value: SchematicError) -> Self {
+        Self::Custom(value.to_string())
+    }
+}
+
 pub fn send_play_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
@@ -167,15 +202,27 @@ pub fn send_play_packets(
         })?;
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
-        let chunk_positions =
-            create_circular_chunk_iterator(center_chunk, server_state.view_distance());
-
         let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
         client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
 
-        for (chunk_x, chunk_z) in chunk_positions {
-            let packet = ChunkDataAndUpdateLightPacket::void(chunk_x, chunk_z, biome_id);
-            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
+        if let Some(schematic_file_path) = server_state.schematic_file_path() {
+            let structure = Schematic::load_schematic_file(&schematic_file_path, protocol_version)?;
+            send_chunks_circularly(
+                client_state,
+                center_chunk,
+                server_state.view_distance(),
+                Some(&structure),
+                biome_id,
+            );
+        } else {
+            const VOID_CHUNK_VIEW_DISTANCE: i32 = 0;
+            send_chunks_circularly(
+                client_state,
+                center_chunk,
+                VOID_CHUNK_VIEW_DISTANCE,
+                None,
+                biome_id,
+            );
         }
     }
 

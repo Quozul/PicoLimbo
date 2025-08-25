@@ -46,6 +46,10 @@ Seamlessly integrates with major Minecraft proxies:
 Supports all Minecraft versions from **1.7.2 to 1.21.8** natively, no need for ViaVersion or additional compatibility
 layers.
 
+### 🌍 Experimental Schematic Support
+
+Load custom structures using schematic files and customize spawn positions.
+
 ### ⚡ Ultra-Lightweight & Highly Scalable
 
 Uses **0% CPU while idle** and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous

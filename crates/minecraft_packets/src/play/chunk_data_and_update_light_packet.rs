@@ -1,6 +1,7 @@
 use crate::play::data::chunk_data::ChunkData;
 use crate::play::data::light_data::LightData;
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::Schematic;
 
 /// This packet is only mandatory for versions above 1.20.3,
 /// thus the packet is only implemented to work on versions after 1.20.3.
@@ -36,6 +37,29 @@ impl ChunkDataAndUpdateLightPacket {
             chunk_data: ChunkData::void(biome_index),
             trust_edges: true,
             v1_18_light_data: LightData::default(),
+        }
+    }
+
+    pub fn from_structure(
+        structure: &Schematic,
+        paste_origin: (i32, i32, i32),
+        chunk_x: i32,
+        chunk_z: i32,
+        biome_index: i32,
+    ) -> Self {
+        Self {
+            chunk_x,
+            chunk_z,
+            primary_bit_mask: LengthPaddedVec::default(),
+            chunk_data: ChunkData::from_structure(
+                structure,
+                paste_origin,
+                chunk_x,
+                chunk_z,
+                biome_index,
+            ),
+            trust_edges: true,
+            v1_18_light_data: LightData::new_with_level(15),
         }
     }
 }

@@ -1,6 +1,7 @@
 use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::Schematic;
 
 #[derive(PacketOut)]
 pub struct ChunkData {
@@ -39,6 +40,48 @@ impl ChunkData {
             }]),
             biomes: LengthPaddedVec::new(vec![VarInt::new(127); 1024]),
             data: EncodeAsBytes::new(vec![ChunkSection::void(biome_index); 24]),
+            block_entities: LengthPaddedVec::default(),
+        }
+    }
+
+    pub fn from_structure(
+        structure: &Schematic,
+        paste_origin: (i32, i32, i32),
+        chunk_x: i32,
+        chunk_z: i32,
+        void_biome_index: i32,
+    ) -> Self {
+        let long_array_tag = Nbt::LongArray {
+            name: Some("MOTION_BLOCKING".to_string()),
+            value: vec![0; 37],
+        };
+        let root_tag = Nbt::Compound {
+            name: None,
+            value: vec![long_array_tag],
+        };
+
+        let mut data = Vec::new();
+
+        for section_y in 0..24 {
+            let section = ChunkSection::from_structure(
+                structure,
+                paste_origin,
+                chunk_x,
+                section_y,
+                chunk_z,
+                void_biome_index,
+            );
+            data.push(section);
+        }
+
+        Self {
+            height_maps: root_tag,
+            v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
+                height_map_type: VarInt::new(4), // Motionblock type
+                data: LengthPaddedVec::new(vec![0; 37]),
+            }]),
+            data: EncodeAsBytes::new(data),
+            biomes: LengthPaddedVec::default(),
             block_entities: LengthPaddedVec::default(),
         }
     }

@@ -1,5 +1,6 @@
 use crate::server::game_mode::GameMode;
 use minecraft_protocol::prelude::Dimension;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
@@ -34,6 +35,7 @@ pub struct ServerState {
     hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
+    schematic_file_path: String,
 }
 
 impl ServerState {
@@ -113,6 +115,14 @@ impl ServerState {
         self.view_distance
     }
 
+    pub fn schematic_file_path(&self) -> Option<PathBuf> {
+        if self.schematic_file_path.is_empty() {
+            None
+        } else {
+            Some(PathBuf::from(&self.schematic_file_path))
+        }
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -134,6 +144,7 @@ pub struct ServerStateBuilder {
     hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
+    schematic_file_path: String,
 }
 
 impl ServerStateBuilder {
@@ -208,7 +219,12 @@ impl ServerStateBuilder {
     }
 
     pub fn view_distance(&mut self, view_distance: i32) -> &mut Self {
-        self.view_distance = view_distance.clamp(0, 32);
+        self.view_distance = view_distance.clamp(2, 32);
+        self
+    }
+
+    pub fn schematic(&mut self, schematic_file_path: String) -> &mut Self {
+        self.schematic_file_path = schematic_file_path;
         self
     }
 
@@ -226,6 +242,7 @@ impl ServerStateBuilder {
             hardcore: self.hardcore,
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
+            schematic_file_path: self.schematic_file_path,
         }
     }
 }

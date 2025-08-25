@@ -1,5 +1,6 @@
 use crate::play::data::palette_container::PaletteContainer;
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::Schematic;
 
 #[derive(Clone, PacketOut)]
 pub struct ChunkSection {
@@ -12,12 +13,78 @@ pub struct ChunkSection {
     pub biomes: PaletteContainer,
 }
 
+const SECTION_HEIGHT: i64 = 16;
+const SECTION_WIDTH: i64 = 16;
+
 impl ChunkSection {
     pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,
             block_states: PaletteContainer::blocks_void(),
             biomes: PaletteContainer::single_valued(biome_id),
+        }
+    }
+
+    pub fn from_structure(
+        structure: &Schematic,
+        paste_origin: (i32, i32, i32),
+        chunk_x: i32,
+        section_y: i32,
+        chunk_z: i32,
+        biome_id: i32,
+    ) -> ChunkSection {
+        let block_count: i16 = structure.get_solid_block_count() as i16;
+        let structure_palette = structure.get_palette();
+        // FIXME: Figure out why this works for 4 and 8 only
+        let bits_per_block: i64 = 8; //(structure_palette.len() as f32).log2().ceil() as i64;
+
+        let total_bits = (16 * 16 * 16) * bits_per_block as usize;
+        let data_length = total_bits.div_ceil(64);
+        let mut data = vec![0i64; data_length];
+        let individual_value_mask = (1 << bits_per_block) - 1;
+
+        let (paste_x, paste_y, paste_z) = paste_origin;
+
+        for y in 0..SECTION_HEIGHT {
+            for z in 0..SECTION_WIDTH {
+                for x in 0..SECTION_WIDTH {
+                    let world_x = (chunk_x as i64 * SECTION_WIDTH + x) as i32;
+                    let world_y = (section_y as i64 * SECTION_HEIGHT + y) as i32;
+                    let world_z = (chunk_z as i64 * SECTION_WIDTH + z) as i32;
+
+                    let schematic_x = world_x - paste_x;
+                    let schematic_y = world_y - paste_y;
+                    let schematic_z = world_z - paste_z;
+
+                    let mut value: i64 =
+                        structure.get_block_at(schematic_x, schematic_y, schematic_z) as i64;
+                    value &= individual_value_mask;
+
+                    let block_number: i64 = (((y * SECTION_HEIGHT) + z) * SECTION_WIDTH) + x;
+                    let start_long: i64 = (block_number * bits_per_block) / 64;
+                    let start_offset: i64 = (block_number * bits_per_block) % 64;
+                    let end_long: i64 = ((block_number + 1) * bits_per_block - 1) / 64;
+
+                    data[start_long as usize] |= value << start_offset;
+                    if start_long != end_long {
+                        data[end_long as usize] |= value >> (64 - start_offset);
+                    }
+                }
+            }
+        }
+
+        let block_states = PaletteContainer::Indirect {
+            bits_per_entry: bits_per_block as u8,
+            palette: LengthPaddedVec::new(structure_palette.clone()),
+            data,
+        };
+
+        let biomes = PaletteContainer::single_valued(biome_id);
+
+        ChunkSection {
+            block_count,
+            block_states,
+            biomes,
         }
     }
 }
