@@ -6,10 +6,10 @@ pub struct ClientBoundKnownPacksPacket {
     pub known_packs: LengthPaddedVec<KnownPack>,
 }
 
-impl Default for ClientBoundKnownPacksPacket {
-    fn default() -> Self {
+impl ClientBoundKnownPacksPacket {
+    pub fn new(version: &str) -> Self {
         Self {
-            known_packs: LengthPaddedVec::new(vec![KnownPack::default()]),
+            known_packs: LengthPaddedVec::new(vec![KnownPack::new(version)]),
         }
     }
 }

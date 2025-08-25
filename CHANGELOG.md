@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - NBT strings and arrays should be prefixed with a UShort
+- Send correct version of the game in KnownPacks
 
 ## [1.4.0+mc1.21.8] - 2025-08-23
 
