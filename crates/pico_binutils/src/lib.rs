@@ -17,7 +17,7 @@ pub mod prelude {
     #[cfg(feature = "binary_writer")]
     pub use crate::binary_writer::{BinaryWriter, BinaryWriterError, WriteBytes};
     #[cfg(feature = "length_prefixed")]
-    pub use crate::length_prefixed::prefixed::{IntPrefixed, Prefixed, ShortPrefixed};
+    pub use crate::length_prefixed::prefixed::{IntPrefixed, Prefixed, UShortPrefixed};
     #[cfg(feature = "length_prefixed")]
     pub use crate::length_prefixed::reader::ReadLengthPrefix;
     #[cfg(all(feature = "length_prefixed", feature = "var_int"))]

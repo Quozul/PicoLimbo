@@ -121,7 +121,7 @@ fn main() -> anyhow::Result<()> {
                     .unwrap()
                     .find_tag("value")
                     .unwrap()
-                    .get_vec()
+                    .get_nbt_vec()
                     .unwrap();
 
                 let mut dimension_match_arms = Vec::<TokenStream>::new();

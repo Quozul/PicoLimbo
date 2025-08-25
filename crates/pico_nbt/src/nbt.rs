@@ -1,6 +1,6 @@
 use crate::nbt_context::NbtContext;
 use crate::nbt_version::NbtFeatures;
-use pico_binutils::prelude::{BinaryWriter, BinaryWriterError, IntPrefixed, ShortPrefixed};
+use pico_binutils::prelude::{BinaryWriter, BinaryWriterError, IntPrefixed, UShortPrefixed};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Nbt {
@@ -109,7 +109,7 @@ impl Nbt {
         }
     }
 
-    pub fn get_vec(&self) -> Option<Vec<Nbt>> {
+    pub fn get_nbt_vec(&self) -> Option<Vec<Nbt>> {
         match self {
             Self::Compound { value, .. } => Some(value.clone()),
             Self::List { value, .. } => Some(value.clone()),
@@ -184,7 +184,7 @@ impl Nbt {
                     writer.write(&0_u8)?;
                 }
                 Some(name) => {
-                    writer.write(&ShortPrefixed::string(name))?;
+                    writer.write(&UShortPrefixed::string(name))?;
                 }
             }
         }
@@ -213,7 +213,7 @@ impl Nbt {
                 writer.write(&IntPrefixed::new(value))?;
             }
             Nbt::String { value, .. } => {
-                writer.write(&ShortPrefixed::string(value))?;
+                writer.write(&UShortPrefixed::string(value))?;
             }
             Nbt::List {
                 value, tag_type, ..

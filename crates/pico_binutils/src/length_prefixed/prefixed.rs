@@ -33,5 +33,5 @@ impl<L, T> Prefixed<L, T> {
 /// Arrays in NBT format are prefixed with their length as an Integer
 pub type IntPrefixed<T> = Prefixed<i32, T>;
 
-/// Strings in NBT format are prefixed with their length as a Short
-pub type ShortPrefixed<T> = Prefixed<i16, T>;
+/// Strings in NBT format are prefixed with their length as a UShort
+pub type UShortPrefixed<T> = Prefixed<u16, T>;

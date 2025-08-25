@@ -76,14 +76,14 @@ impl WriteLengthPrefix for i32 {
     }
 }
 
-impl WriteLengthPrefix for i16 {
+impl WriteLengthPrefix for u16 {
     fn write_from_usize(writer: &mut BinaryWriter, len: usize) -> Result<(), BinaryWriterError> {
-        let len_i16: i16 = len.try_into().map_err(|_| {
+        let len_u16: u16 = len.try_into().map_err(|_| {
             BinaryWriterError::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                "Length exceeds i16::MAX",
+                "Length exceeds u16::MAX",
             ))
         })?;
-        writer.write(&len_i16)
+        writer.write(&len_u16)
     }
 }

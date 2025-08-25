@@ -61,7 +61,7 @@ impl_write_int!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::{IntPrefixed, ShortPrefixed};
+    use crate::prelude::{IntPrefixed, UShortPrefixed};
 
     #[test]
     fn test_unsigned_byte() {
@@ -79,7 +79,7 @@ mod tests {
     fn test_string() {
         // Given
         let mut writer = BinaryWriter::default();
-        let input = ShortPrefixed::string("hello world");
+        let input = UShortPrefixed::string("hello world");
 
         // When
         writer.write(&input).unwrap();
