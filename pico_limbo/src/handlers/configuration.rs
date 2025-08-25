@@ -13,6 +13,7 @@ use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
+use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
@@ -165,6 +166,9 @@ pub fn send_play_packets(
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
         let chunk_positions = create_circular_chunk_iterator(center_chunk, view_distance);
+
+        let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
+        client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
         for (chunk_x, chunk_z) in chunk_positions {
             let packet =
                 ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
@@ -253,6 +257,10 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::GameEvent(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
