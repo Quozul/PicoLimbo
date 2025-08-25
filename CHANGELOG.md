@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Allow customization of the spawn position in the configuration
+
 ### Fixed
 
 - NBT strings and arrays should be prefixed with a UShort

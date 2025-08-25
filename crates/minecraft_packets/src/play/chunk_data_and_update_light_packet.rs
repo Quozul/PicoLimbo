@@ -28,7 +28,12 @@ pub struct ChunkDataAndUpdateLightPacket {
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn new(protocol_version: ProtocolVersion, biome_id: i32) -> Self {
+    pub fn new(
+        protocol_version: ProtocolVersion,
+        chunk_x: i32,
+        chunk_z: i32,
+        biome_id: i32,
+    ) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
             value: vec![0; 37],
@@ -45,8 +50,8 @@ impl ChunkDataAndUpdateLightPacket {
         let data_size = VarInt::new(encoded_data.len() as i32);
 
         Self {
-            chunk_x: 0,
-            chunk_z: 0,
+            chunk_x,
+            chunk_z,
             height_maps: root_tag,
             v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
                 height_map_type: VarInt::new(4), // Motionblock type
@@ -148,7 +153,7 @@ mod tests {
         } else {
             1
         };
-        ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id)
+        ChunkDataAndUpdateLightPacket::new(protocol_version, 0, 0, biome_id)
     }
 
     #[test]

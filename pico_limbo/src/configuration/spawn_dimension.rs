@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::Dimension;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SpawnDimensionConfig {
     Overworld,

@@ -38,6 +38,7 @@ export default defineConfig({
 					{ text: "Server Settings", link: "/config/server-settings.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
+					{ text: "Experimental World Features", link: "/config/world.html" },
 					{
 						text: "Default Configuration",
 						link: "/config/default-configuration.html",

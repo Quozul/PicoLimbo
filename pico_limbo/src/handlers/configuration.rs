@@ -75,7 +75,27 @@ fn build_login_packet(
     }
 }
 
-/// Switch to the Play state and send required packets to spawn the player in the world
+const F64_CONVERSION_FAILED: &str = "Conversion failed: Invalid or out-of-range float";
+
+fn safe_f64_to_i32(f: f64) -> Option<i32> {
+    if f.is_finite() && f >= f64::from(i32::MIN) && f <= f64::from(i32::MAX) {
+        #[allow(clippy::cast_possible_truncation)]
+        Some(f as i32)
+    } else {
+        None
+    }
+}
+
+fn world_position_to_chunk_position(
+    position: (f64, f64),
+) -> Result<(i32, i32), PacketHandlerError> {
+    let chunk_x = safe_f64_to_i32((position.0 / 16.0).floor())
+        .ok_or_else(|| PacketHandlerError::invalid_state(F64_CONVERSION_FAILED))?;
+    let chunk_z = safe_f64_to_i32((position.1 / 16.0).floor())
+        .ok_or_else(|| PacketHandlerError::invalid_state(F64_CONVERSION_FAILED))?;
+    Ok((chunk_x, chunk_z))
+}
+
 pub fn send_play_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
@@ -98,12 +118,13 @@ pub fn send_play_packets(
     client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
 
     // Send Synchronize Player Position
-    let packet = SynchronizePlayerPositionPacket::default();
+    let (x, y, z) = server_state.spawn_position();
+    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
     client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         // Send Set Default Spawn Position
-        let packet = SetDefaultSpawnPositionPacket::default();
+        let packet = SetDefaultSpawnPositionPacket::new(x, y, z);
         client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
@@ -118,17 +139,16 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::GameEvent(packet));
 
         // Send Chunk Data and Update Light
-        match get_void_biome_index(protocol_version) {
-            Some(biome_id) => {
-                let packet = ChunkDataAndUpdateLightPacket::new(protocol_version, biome_id);
-                client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
-            }
-            None => {
-                return Err(PacketHandlerError::InvalidState(format!(
-                    "Cannot find void biome index for version {protocol_version}"
-                )));
-            }
-        }
+        let biome_id = get_void_biome_index(protocol_version).ok_or_else(|| {
+            PacketHandlerError::InvalidState(format!(
+                "Cannot find void biome index for version {protocol_version}"
+            ))
+        })?;
+
+        let (chunk_x, chunk_z) = world_position_to_chunk_position((x, z))?;
+        let packet =
+            ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
+        client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
     }
 
     client_state.set_state(State::Play);
