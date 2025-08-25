@@ -31,6 +31,7 @@ pub struct ServerState {
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
     game_mode: GameMode,
+    spawn_position: (f64, f64, f64),
 }
 
 impl ServerState {
@@ -98,6 +99,10 @@ impl ServerState {
         self.game_mode
     }
 
+    pub const fn spawn_position(&self) -> (f64, f64, f64) {
+        self.spawn_position
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -116,6 +121,7 @@ pub struct ServerStateBuilder {
     welcome_message: String,
     show_online_player_count: bool,
     game_mode: GameMode,
+    spawn_position: (f64, f64, f64),
 }
 
 impl ServerStateBuilder {
@@ -179,6 +185,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub const fn spawn_position(&mut self, position: (f64, f64, f64)) -> &mut Self {
+        self.spawn_position = position;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> ServerState {
         ServerState {
@@ -190,6 +201,7 @@ impl ServerStateBuilder {
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
+            spawn_position: self.spawn_position,
         }
     }
 }

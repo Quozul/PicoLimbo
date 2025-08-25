@@ -8,10 +8,10 @@ pub struct SetDefaultSpawnPositionPacket {
     angle: f32,
 }
 
-impl Default for SetDefaultSpawnPositionPacket {
-    fn default() -> Self {
+impl SetDefaultSpawnPositionPacket {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self {
-            location: Position::new(0.0, 320.0, 0.0),
+            location: Position::new(x, y, z),
             angle: 0.0,
         }
     }

@@ -33,14 +33,14 @@ pub struct SynchronizePlayerPositionPacket {
     pub dismount_vehicle: bool,
 }
 
-impl Default for SynchronizePlayerPositionPacket {
-    fn default() -> Self {
+impl SynchronizePlayerPositionPacket {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self {
             v_1_21_2_teleport_id: VarInt::default(),
-            x: 0.0,
+            x,
             // For 1.19+ we need to spawn player outside the world to avoid stuck in terrain loading
-            y: 320.0,
-            z: 0.0,
+            y,
+            z,
             velocity_x: 0.0,
             velocity_y: 0.0,
             velocity_z: 0.0,

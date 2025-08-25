@@ -1,3 +1,4 @@
+use crate::configuration::experimental::ExperimentalConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -20,7 +21,7 @@ pub enum ConfigError {
 }
 
 /// Application configuration, serializable to/from TOML.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
     /// Server listening address and port.
@@ -43,6 +44,9 @@ pub struct Config {
     /// Sets the default game mode for players
     /// Valid values are: "survival", "creative", "adventure" or "spectator"
     pub default_game_mode: GameModeConfig,
+
+    /// Experimental settings
+    pub experimental: ExperimentalConfig,
 }
 
 impl Default for Config {
@@ -54,6 +58,7 @@ impl Default for Config {
             welcome_message: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
             default_game_mode: GameModeConfig::default(),
+            experimental: ExperimentalConfig::default(),
         }
     }
 }

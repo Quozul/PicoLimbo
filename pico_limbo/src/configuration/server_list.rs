@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct ServerListConfig {
     /// Maximum amount of player displayed in the server list.
