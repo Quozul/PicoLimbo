@@ -1,4 +1,5 @@
-use crate::play::data::chunk_section::ChunkSection;
+use crate::play::data::chunk_data::ChunkData;
+use crate::play::data::light_data::LightData;
 use minecraft_protocol::prelude::*;
 
 /// This packet is only mandatory for versions above 1.20.3,
@@ -8,84 +9,35 @@ use minecraft_protocol::prelude::*;
 pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,
-    // Chunk Data
-    #[pvn(..770)]
-    height_maps: Nbt,
-    #[pvn(770..)]
-    v1_21_5_height_maps: LengthPaddedVec<HeightMap>,
-    /// Size of Data in bytes!²
-    /// LengthPaddedVec prefixes with the number of elements!
-    data_size: VarInt,
-    data: Vec<u8>,
-    block_entities: LengthPaddedVec<BlockEntity>,
-    // Light Data
-    sky_light_mask: BitSet,
-    block_light_mask: BitSet,
-    empty_sky_light_mask: BitSet,
-    empty_block_light_mask: BitSet,
-    sky_light_arrays: LengthPaddedVec<Light>,
-    block_light_arrays: LengthPaddedVec<Light>,
+
+    /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
+    /// Up until 1.17.1 included
+    #[pvn(..757)]
+    primary_bit_mask: LengthPaddedVec<i64>,
+
+    chunk_data: ChunkData,
+
+    /// If edges should be trusted for light updates.
+    /// Up until 1.19.4 included
+    #[pvn(757..763)]
+    trust_edges: bool,
+
+    // TODO: Implement Update Light packet for versions prior to 1.18
+    #[pvn(757..)]
+    v1_18_light_data: LightData,
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn new(
-        protocol_version: ProtocolVersion,
-        chunk_x: i32,
-        chunk_z: i32,
-        biome_id: i32,
-    ) -> Self {
-        let long_array_tag = Nbt::LongArray {
-            name: Some("MOTION_BLOCKING".to_string()),
-            value: vec![0; 37],
-        };
-        let root_tag = Nbt::Compound {
-            name: None,
-            value: vec![long_array_tag],
-        };
-        let data = vec![ChunkSection::void(biome_id); 24];
-
-        let mut writer = BinaryWriter::new();
-        data.encode(&mut writer, protocol_version).unwrap(); //TODO: Remove unwrap
-        let encoded_data = writer.into_inner();
-        let data_size = VarInt::new(encoded_data.len() as i32);
-
+    pub fn void(chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
         Self {
             chunk_x,
             chunk_z,
-            height_maps: root_tag,
-            v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
-                height_map_type: VarInt::new(4), // Motionblock type
-                data: LengthPaddedVec::new(vec![0; 37]),
-            }]),
-            data_size,
-            data: encoded_data,
-            block_entities: LengthPaddedVec::default(),
-            sky_light_mask: BitSet::default(),
-            block_light_mask: BitSet::default(),
-            empty_sky_light_mask: BitSet::default(),
-            empty_block_light_mask: BitSet::default(),
-            sky_light_arrays: LengthPaddedVec::default(),
-            block_light_arrays: LengthPaddedVec::default(),
+            primary_bit_mask: LengthPaddedVec::default(),
+            chunk_data: ChunkData::void(biome_index),
+            trust_edges: true,
+            v1_18_light_data: LightData::default(),
         }
     }
-}
-
-#[derive(Debug, PacketOut)]
-pub struct BlockEntity {
-    // TODO: Implement BlockEntity
-}
-
-#[derive(Debug, PacketOut)]
-pub struct Light {
-    /// Length of the following array is always 2048
-    /// There is 1 array for each bit set to true in the light mask, starting with the lowest value. Half a byte per light value. Indexed ((y<<8) | (z<<4) | x) / 2 If there's a remainder, masked 0xF0 else 0x0F.
-    block_light_array: LengthPaddedVec<i8>,
-}
-
-#[derive(Debug, PacketOut)]
-pub struct HeightMap {
-    height_map_type: VarInt,
-    data: LengthPaddedVec<i64>,
 }
 
 #[cfg(test)]
@@ -119,7 +71,7 @@ mod tests {
                 ],
             ),
             (
-                769,
+                769, // 1.21.4
                 vec![
                     0, 0, 0, 0, 0, 0, 0, 0, 10, 12, 0, 15, 77, 79, 84, 73, 79, 78, 95, 66, 76, 79,
                     67, 75, 73, 78, 71, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -144,6 +96,58 @@ mod tests {
                     0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
             ),
+            (
+                763, // 1.20
+                vec![
+                    0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 12, 0, 15, 77, 79, 84, 73, 79, 78, 95, 66,
+                    76, 79, 67, 75, 73, 78, 71, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1,
+                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                ],
+            ),
+            (
+                759, // 1.19
+                vec![
+                    0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 12, 0, 15, 77, 79, 84, 73, 79, 78, 95, 66,
+                    76, 79, 67, 75, 73, 78, 71, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1,
+                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                    0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                ],
+            ),
         ])
     }
 
@@ -153,7 +157,7 @@ mod tests {
         } else {
             1
         };
-        ChunkDataAndUpdateLightPacket::new(protocol_version, 0, 0, biome_id)
+        ChunkDataAndUpdateLightPacket::void(0, 0, biome_id)
     }
 
     #[test]
@@ -162,7 +166,7 @@ mod tests {
 
         for (version, expected_bytes) in snapshots {
             let packet = create_packet(ProtocolVersion::from(version));
-            let mut writer = BinaryWriter::new();
+            let mut writer = BinaryWriter::default();
             packet
                 .encode(&mut writer, ProtocolVersion::from(version))
                 .unwrap();

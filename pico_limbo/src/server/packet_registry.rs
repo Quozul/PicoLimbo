@@ -201,7 +201,7 @@ pub enum PacketRegistry {
         bound = "clientbound",
         name = "minecraft:level_chunk_with_light"
     )]
-    ChunkDataAndUpdateLight(ChunkDataAndUpdateLightPacket),
+    ChunkDataAndUpdateLight(Box<ChunkDataAndUpdateLightPacket>),
 
     #[protocol_id(
         state = "play",

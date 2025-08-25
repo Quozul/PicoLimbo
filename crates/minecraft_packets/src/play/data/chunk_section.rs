@@ -1,13 +1,14 @@
 use crate::play::data::palette_container::PaletteContainer;
 use minecraft_protocol::prelude::*;
 
-#[derive(Debug, Clone, PacketOut)]
+#[derive(Clone, PacketOut)]
 pub struct ChunkSection {
     /// Number of non-air blocks present in the chunk section.
     pub block_count: i16,
     /// Consists of 4096 entries, representing all the blocks in the chunk section.
     pub block_states: PaletteContainer,
     /// Consists of 64 entries, representing 4×4×4 biome regions in the chunk section.
+    #[pvn(757..)]
     pub biomes: PaletteContainer,
 }
 
@@ -16,7 +17,7 @@ impl ChunkSection {
         Self {
             block_count: 0,
             block_states: PaletteContainer::blocks_void(),
-            biomes: PaletteContainer::single_valued(biome_id.into()),
+            biomes: PaletteContainer::single_valued(biome_id),
         }
     }
 }
@@ -74,11 +75,11 @@ mod tests {
 
         for (version, expected_bytes) in snapshots {
             let packet = create_packet();
-            let mut writer = BinaryWriter::new();
+            let mut bytes = BinaryWriter::default();
             packet
-                .encode(&mut writer, ProtocolVersion::from(version))
+                .encode(&mut bytes, ProtocolVersion::from(version))
                 .unwrap();
-            let bytes = writer.into_inner();
+            let bytes = bytes.into_inner();
             assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }
     }

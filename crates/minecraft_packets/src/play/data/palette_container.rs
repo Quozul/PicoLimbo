@@ -7,8 +7,6 @@ pub enum PaletteContainer {
         /// Should always be 0 for Single valued palette
         bits_per_entry: u8,
         value: VarInt,
-        /// Present but of length 0 when Bits Per Entry is 0.
-        data: Vec<i64>,
     },
     Indirect {
         /// Should be 4-8 for blocks or 1-3 for biomes
@@ -27,18 +25,13 @@ pub enum PaletteContainer {
 
 impl PaletteContainer {
     pub fn blocks_void() -> Self {
-        Self::SingleValued {
-            bits_per_entry: 0,
-            value: VarInt::default(),
-            data: Vec::new(),
-        }
+        Self::single_valued(0)
     }
 
-    pub fn single_valued(value: VarInt) -> Self {
+    pub fn single_valued(value: impl Into<VarInt>) -> Self {
         Self::SingleValued {
             bits_per_entry: 0,
-            value,
-            data: Vec::new(),
+            value: value.into(),
         }
     }
 }
@@ -53,14 +46,12 @@ impl EncodePacket for PaletteContainer {
             PaletteContainer::SingleValued {
                 bits_per_entry,
                 value,
-                data,
             } => {
                 bits_per_entry.encode(writer, protocol_version)?;
                 value.encode(writer, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5 {
-                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
+                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
+                    VarInt::new(0).encode(writer, protocol_version)?;
                 }
-                data.encode(writer, protocol_version)?;
             }
             PaletteContainer::Indirect {
                 bits_per_entry,
@@ -69,7 +60,7 @@ impl EncodePacket for PaletteContainer {
             } => {
                 bits_per_entry.encode(writer, protocol_version)?;
                 palette.encode(writer, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5 {
+                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
                     VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
                 data.encode(writer, protocol_version)?;
@@ -79,7 +70,7 @@ impl EncodePacket for PaletteContainer {
                 data,
             } => {
                 bits_per_entry.encode(writer, protocol_version)?;
-                if protocol_version < ProtocolVersion::V1_21_5 {
+                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
                     VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
                 data.encode(writer, protocol_version)?;

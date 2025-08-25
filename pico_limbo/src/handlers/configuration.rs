@@ -152,10 +152,12 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::Commands(packet));
     }
 
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
-        // Send Game Event
-        let packet = GameEventPacket::start_waiting_for_chunks(0.0);
-        client_state.queue_packet(PacketRegistry::GameEvent(packet));
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
+            // Send Game Event
+            let packet = GameEventPacket::start_waiting_for_chunks(0.0);
+            client_state.queue_packet(PacketRegistry::GameEvent(packet));
+        }
 
         // Send Chunk Data and Update Light
         let biome_id = get_void_biome_index(protocol_version).ok_or_else(|| {
@@ -172,9 +174,8 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
 
         for (chunk_x, chunk_z) in chunk_positions {
-            let packet =
-                ChunkDataAndUpdateLightPacket::new(protocol_version, chunk_x, chunk_z, biome_id);
-            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(packet));
+            let packet = ChunkDataAndUpdateLightPacket::void(chunk_x, chunk_z, biome_id);
+            client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
         }
     }
 
@@ -300,6 +301,14 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SetCenterChunk(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
         assert!(matches!(
             client_state.next_packet(),

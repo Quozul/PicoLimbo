@@ -36,7 +36,7 @@
         "protocol_id": 35
       },
       "minecraft:level_chunk_with_light": {
-        "protocol_id": 37
+        "protocol_id": 36
       },
       "minecraft:login": {
         "protocol_id": 40
@@ -58,6 +58,9 @@
       },
       "minecraft:disconnect": {
         "protocol_id": 26
+      },
+      "minecraft:set_chunk_cache_center": {
+        "protocol_id": 78
       }
     },
     "serverbound": {}
