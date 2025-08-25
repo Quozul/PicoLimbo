@@ -3,8 +3,6 @@ use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
 use crate::configuration::spawn_dimension::SpawnDimensionConfig;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 use std::{fs, io};
 use thiserror::Error;
@@ -68,20 +66,24 @@ pub fn load_or_create<P: AsRef<Path>>(path: P) -> Result<Config, ConfigError> {
 
     if path.exists() {
         let toml_str = fs::read_to_string(path)?;
-        let cfg = toml::from_str(&toml_str)?;
-        Ok(cfg)
+
+        if toml_str.trim().is_empty() {
+            create_default_config(path)
+        } else {
+            let cfg: Config = toml::from_str(&toml_str)?;
+            Ok(cfg)
+        }
     } else {
         if let Some(dir) = path.parent() {
             fs::create_dir_all(dir)?;
         }
-
-        let cfg = Config::default();
-        let toml_str = toml::to_string_pretty(&cfg)?;
-
-        let mut file = File::create(path)?;
-        file.write_all(toml_str.as_bytes())?;
-        file.flush()?;
-
-        Ok(cfg)
+        create_default_config(path)
     }
+}
+
+fn create_default_config<P: AsRef<Path>>(path: P) -> Result<Config, ConfigError> {
+    let cfg = Config::default();
+    let toml_str = toml::to_string_pretty(&cfg)?;
+    fs::write(path, toml_str)?;
+    Ok(cfg)
 }
