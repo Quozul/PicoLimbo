@@ -17,12 +17,12 @@ impl Dimension {
         &[Dimension::Overworld, Dimension::Nether, Dimension::End];
 
     /// Old i8 dimension ID (pre-1.9 client)
-    pub fn legacy_i8(self) -> i8 {
+    pub const fn legacy_i8(self) -> i8 {
         self as i8
     }
 
     /// Old i32 dimension ID (1.9+ but not VarInt)
-    pub fn legacy_i32(self) -> i32 {
+    pub const fn legacy_i32(self) -> i32 {
         self.legacy_i8() as i32
     }
 
@@ -43,6 +43,24 @@ impl Dimension {
             Dimension::Overworld => Identifier::minecraft("overworld"),
             Dimension::Nether => Identifier::minecraft("the_nether"),
             Dimension::End => Identifier::minecraft("the_end"),
+        }
+    }
+
+    pub fn height(self, protocol_version: ProtocolVersion) -> i32 {
+        match self {
+            Dimension::Overworld if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) => {
+                384
+            }
+            _ => 256,
+        }
+    }
+
+    pub fn min_y(self, protocol_version: ProtocolVersion) -> i32 {
+        match self {
+            Dimension::Overworld if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) => {
+                -64
+            }
+            _ => 0,
         }
     }
 }

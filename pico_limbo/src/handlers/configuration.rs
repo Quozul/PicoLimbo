@@ -122,6 +122,8 @@ pub fn send_play_packets(
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
     let protocol_version = client_state.protocol_version();
+    let view_distance = server_state.view_distance();
+    let dimension = server_state.spawn_dimension();
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -134,8 +136,7 @@ pub fn send_play_packets(
         }
     };
 
-    let view_distance = server_state.view_distance();
-    let packet = build_login_packet(protocol_version, server_state.spawn_dimension())?
+    let packet = build_login_packet(protocol_version, dimension)?
         .set_game_mode(game_mode.value())
         .set_view_distance(view_distance)
         .set_hardcore(protocol_version, server_state.is_hardcore());
@@ -173,7 +174,13 @@ pub fn send_play_packets(
         let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
         client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
         for (chunk_x, chunk_z) in chunk_positions {
-            let packet = ChunkDataAndUpdateLightPacket::void(chunk_x, chunk_z, biome_id);
+            let packet = ChunkDataAndUpdateLightPacket::void(
+                chunk_x,
+                chunk_z,
+                biome_id,
+                dimension,
+                protocol_version,
+            );
             client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
         }
     }

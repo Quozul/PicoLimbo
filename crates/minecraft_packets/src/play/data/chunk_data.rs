@@ -21,7 +21,7 @@ pub struct ChunkData {
 }
 
 impl ChunkData {
-    pub fn void(biome_index: i32) -> Self {
+    pub fn void(biome_index: i32, dimension: Dimension, protocol_version: ProtocolVersion) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
             value: vec![0; 37],
@@ -31,6 +31,9 @@ impl ChunkData {
             value: vec![long_array_tag],
         };
 
+        let section_count =
+            dimension.height(protocol_version) as usize / ChunkSection::SECTION_SIZE;
+
         Self {
             height_maps: root_tag,
             v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
@@ -38,7 +41,7 @@ impl ChunkData {
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
             biomes: LengthPaddedVec::new(vec![VarInt::new(127); 1024]),
-            data: EncodeAsBytes::new(vec![ChunkSection::void(biome_index); 24]),
+            data: EncodeAsBytes::new(vec![ChunkSection::void(biome_index); section_count]),
             block_entities: LengthPaddedVec::default(),
         }
     }

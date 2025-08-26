@@ -13,6 +13,8 @@ pub struct ChunkSection {
 }
 
 impl ChunkSection {
+    pub const SECTION_SIZE: usize = 16;
+
     pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,

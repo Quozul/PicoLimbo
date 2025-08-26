@@ -28,12 +28,18 @@ pub struct ChunkDataAndUpdateLightPacket {
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn void(chunk_x: i32, chunk_z: i32, biome_index: i32) -> Self {
+    pub fn void(
+        chunk_x: i32,
+        chunk_z: i32,
+        biome_index: i32,
+        dimension: Dimension,
+        protocol_version: ProtocolVersion,
+    ) -> Self {
         Self {
             chunk_x,
             chunk_z,
             primary_bit_mask: LengthPaddedVec::default(),
-            chunk_data: ChunkData::void(biome_index),
+            chunk_data: ChunkData::void(biome_index, dimension, protocol_version),
             trust_edges: true,
             v1_18_light_data: LightData::default(),
         }
@@ -157,7 +163,7 @@ mod tests {
         } else {
             1
         };
-        ChunkDataAndUpdateLightPacket::void(0, 0, biome_id)
+        ChunkDataAndUpdateLightPacket::void(0, 0, biome_id, Dimension::Overworld, protocol_version)
     }
 
     #[test]

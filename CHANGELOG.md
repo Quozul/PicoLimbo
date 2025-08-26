@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set center chunk to prevent player getting stuck in loading world screen
 - Void chunk is always send for all versions after 1.19
 - Empty configuration file never gets filled
+- Send correct amount of chunk section given a dimension
 
 ## [1.4.0+mc1.21.8] - 2025-08-23
 
