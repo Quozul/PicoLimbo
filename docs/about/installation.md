@@ -4,16 +4,14 @@
 
 For users running the Pterodactyl panel, deployment is simplified with the provided egg file. This egg is built on the lightweight Alpine base image.
 
-The egg supports additional installation configuration through the following environment variables:
+You can find the egg file in the GitHub repository: [egg-pico-limbo.json](https://github.com/Quozul/PicoLimbo/blob/master/pterodactyl/eggs/egg-pico-limbo.json)
+
+The egg supports additional installation configuration through the following environment variable:
 
 - **VERSION**
-  Specifies the Git tag of the release to install. This can be a stable or prerelease tag (e.g., `v1.4.0+mc1.21.8`).
+  Specifies the Git tag of the release to install (e.g., `v1.4.0+mc1.21.8`).
     - Default: `latest`
-    - When set to `latest` (or left unset without enabling prerelease), the installer selects the newest stable release.
-
-- **USE_PRERELEASE**
-  When set to `true`, the installer ignores stable releases and installs the newest prerelease based on publication date.
-    - Default: *(empty)*
+    - When set to `latest` (or left unset), the installer selects the newest stable release.
 
 ## Using Docker
 
