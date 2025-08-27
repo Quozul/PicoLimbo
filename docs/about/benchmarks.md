@@ -4,25 +4,23 @@
 
 ## Summary
 
-PicoLimbo demonstrates exceptional performance efficiency in handling large numbers of concurrent Minecraft connections. In the benchmark test, **1,000 idle players** were successfully handled using **less than 1% CPU usage** and **less than 11 MB of RAM**. CPU usage peaked at 10% during the initial connection phase before stabilizing at minimal levels, showcasing PicoLimbo's ability to efficiently manage connection loads even on resource-constrained hardware.
+PicoLimbo demonstrates exceptional performance efficiency across different architectures, handling large numbers of
+concurrent Minecraft connections with minimal resource consumption. The benchmarks show that PicoLimbo can efficiently
+manage **1,000 concurrent idle players** on both x86 and ARM platforms, using **less than 11 MB of RAM** and maintaining
+low CPU usage once connections stabilize.
 
 ## Testing Methodology
 
-### Test Environment
+### Load Testing Client
 
-**Server Hardware:**
-- **CPU**: AMD Ryzen 9 7945HX (1 core allocated)
-- **RAM**: 1 GB DDR5 (allocated limit)
-- **Network**: 500 Mb/s
-- **Platform**: Pterodactyl Panel (Docker containerized)
+**Hardware:**
 
-**Load Testing Client:**
 - **CPU**: AMD Ryzen 9 5950X
 - **RAM**: 32 GB DDR4
 - **Tool**: [SoulFire MC](https://soulfiremc.com/) v2.0.1
 - **Java Runtime**: OpenJDK 24.0.2
 
-### Load Testing Configuration
+**Configuration:**
 
 ```bash
 java -Xmx4G -XX:+EnableDynamicAgentLoading \
@@ -40,29 +38,38 @@ java -Xmx4G -XX:+EnableDynamicAgentLoading \
 ```
 
 ### Test Parameters
+
 - **Protocol Version**: Minecraft 1.21
 - **Join Delay**: 10-30ms randomized intervals
 - **Test Scenario**: Idle Connections (players connected but inactive)
 - **Target Concurrent Users**: 1,000 players
+- **Platform**: Pterodactyl Panel (Docker containerized)
+- **Resource Limits**: 1 CPU core, 1GB RAM allocated
 
 ## Results
 
-### 1,000 Concurrent Idle Players
+### x86 Performance (AMD Ryzen 9 7945HX)
 
-| Metric                      | Result  |
-|-----------------------------|---------|
-| **CPU Usage**               | < 1%    |
-| **Memory Usage**            | < 11 MB |
-| **Connection Success Rate** | 100%    |
+**Server Environment:**
 
-### Key Findings
+- **CPU**: AMD Ryzen 9 7945HX (1 core allocated)
+- **RAM**: 1 GB DDR5 (allocated limit)
+- **Network**: 500 Mb/s
 
-✅ **Exceptional Efficiency**: PicoLimbo can handle 1,000 concurrent connections using less than 1% CPU usage and less than 11 MB RAM once all players were connected
+| Metric           | Idle (0 Players) | Connection Phase   | Steady State     |
+|------------------|------------------|--------------------|------------------|
+| **CPU Usage**    | Flat 0.0%        | **Up to 10% peak** | **Less than 1%** |
+| **Memory Usage** | More than 1 MB   | Less than 11 MB    | Less than 11 MB  |
 
-✅ **Connection Handling**: CPU usage peaked at ~10% during the connection phase, then dropped to minimal levels
+### ARM Performance (Rockchip RK3588)
 
-✅ **Resource Constrained Performance**: Even with severe hardware limitations (1 CPU core, 1GB RAM), the server remained highly responsive
+**Server Environment:**
 
-✅ **Containerized Deployment**: Excellent performance in Docker/Pterodactyl environment
+- **CPU**: Rockchip RK3588 (1 core allocated)
+- **RAM**: 1 GB LPDDR4 (allocated limit)
+- **Network**: 500 Mb/s
 
-✅ **Memory Stability**: Consistent memory usage with minimal fluctuation between connection and steady state phases
+| Metric           | Idle (0 Players)   | Connection Phase | Steady State    |
+|------------------|--------------------|------------------|-----------------|
+| **CPU Usage**    | Flat 0.0%          | Up to 48% peak   | Less than 8%    |
+| **Memory Usage** | **Less than 1 MB** | Up to 11 MB      | Less than 11 MB |
