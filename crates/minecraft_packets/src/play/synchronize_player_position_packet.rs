@@ -46,7 +46,7 @@ impl SynchronizePlayerPositionPacket {
             velocity_z: 0.0,
             yaw: 0.0,
             pitch: 0.0,
-            v_1_21_2_flags: 0x08,
+            v_1_21_2_flags: 0x00,
             flags: 0,
             teleport_id: VarInt::default(),
             dismount_vehicle: false,

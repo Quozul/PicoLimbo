@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send correct amount of chunk section given a dimension
 - Clouds not rendering for versions after 1.21.6
 - Connection from BungeeCord were rejected when BungeeCord is running in offline mode
+- Wrong yaw being sent for versions after 1.21.2
 
 ## [1.4.0+mc1.21.8] - 2025-08-23
 
