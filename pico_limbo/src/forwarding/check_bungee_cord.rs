@@ -6,7 +6,10 @@ use thiserror::Error;
 
 pub fn check_bungee_cord(state: &ServerState, hostname: &str) -> Result<bool, BungeeGuardError> {
     if state.is_legacy_forwarding() {
-        Ok(hostname.split('\0').count() == 4)
+        let part_count = hostname.split('\0').count();
+        // BungeeCord sends 3 or 4 parts in online mode where Velocity always sends 4
+        // Parts are the following: hostname, client IP, player unique ID, properties
+        Ok(part_count == 3 || part_count == 4)
     } else if state.is_bungee_guard_forwarding() {
         check_bungee_guard_token(state, hostname)
     } else {
@@ -18,6 +21,7 @@ fn check_bungee_guard_token(state: &ServerState, hostname: &str) -> Result<bool,
     const BUNGEE_GUARD_TOKEN_PROPERTY_NAME: &str = "bungeeguard-token";
     let parts: Vec<&str> = hostname.split('\0').collect();
 
+    // When using BungeeGuard, we must have 4 parts as we need the last one
     if parts.len() != 4 {
         return Ok(false);
     }
@@ -82,10 +86,23 @@ mod tests {
     }
 
     #[test]
-    fn test_valid_bungee_cord_hostname() {
+    fn test_valid_bungee_cord_ip_forwarding_hostname() {
         // Given
         let server_state = bungee_cord();
-        let hostname = "localhost\0part\0part\0part";
+        let hostname = "localhost\0client_ip\0player_uuid";
+
+        // When
+        let validation = check_bungee_cord(&server_state, hostname);
+
+        // Then
+        assert!(validation.unwrap());
+    }
+
+    #[test]
+    fn test_valid_velocity_legacy_hostname() {
+        // Given
+        let server_state = bungee_cord();
+        let hostname = "localhost\0client_ip\0player_uuid\0properties";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
