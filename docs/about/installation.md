@@ -13,6 +13,10 @@ The egg supports additional installation configuration through the following env
     - Default: `latest`
     - When set to `latest` (or left unset), the installer selects the newest stable release.
 
+> [!WARNING]
+> Do not manually upload binary files to your Pterodactyl server. This will not work properly. To update PicoLimbo, you
+> must re-install the server through Pterodactyl's installation process.
+
 ## Using Docker
 
 The Docker image is multi-platform, supporting both Linux/amd64 and Linux/arm64 architectures. You can start the server using the following command:
