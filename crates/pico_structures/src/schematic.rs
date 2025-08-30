@@ -6,7 +6,7 @@ use pico_nbt::prelude::{Nbt, NbtDecodeError};
 use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
-use tracing::{debug, warn};
+use tracing::warn;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -77,10 +77,6 @@ impl Schematic {
         if version != 2 {
             return Err(SchematicError::UnsupportedVersion(version));
         }
-
-        let data_version = Self::get_tag_as(nbt, "DataVersion", |t| t.get_int())?;
-        debug!("Schematic DataVersion: {}", data_version);
-
         Ok(())
     }
 

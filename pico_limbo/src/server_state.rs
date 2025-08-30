@@ -1,10 +1,12 @@
 use crate::server::game_mode::GameMode;
-use minecraft_protocol::prelude::Dimension;
+use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Duration;
 use thiserror::Error;
+use tracing::debug;
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum ForwardingMode {
@@ -148,6 +150,8 @@ pub struct ServerStateBuilder {
 pub enum ServerStateBuilderError {
     #[error(transparent)]
     SchematicLoadingFailed(#[from] SchematicError),
+    #[error(transparent)]
+    BinaryReader(#[from] BinaryReaderError),
 }
 
 impl ServerStateBuilder {
@@ -236,12 +240,15 @@ impl ServerStateBuilder {
         let schematic = if self.schematic_file_path.is_empty() {
             None
         } else {
-            let internal_mapping = blocks_report::load_internal_mapping().unwrap();
+            debug!("Loading schematic...");
+            let start = std::time::Instant::now();
+            let internal_mapping = blocks_report::load_internal_mapping()?;
             let schematic_file_path = PathBuf::from(self.schematic_file_path);
-            Some(Schematic::load_schematic_file(
-                &schematic_file_path,
-                &internal_mapping,
-            )?)
+            let schematic =
+                Schematic::load_schematic_file(&schematic_file_path, &internal_mapping)?;
+            let elapsed = start.elapsed();
+            debug!("Time elapsed: {}", format_duration(elapsed));
+            Some(schematic)
         };
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
@@ -257,5 +264,15 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             schematic,
         })
+    }
+}
+
+fn format_duration(duration: Duration) -> String {
+    let total_secs = duration.as_secs_f64();
+
+    if total_secs >= 1.0 {
+        format!("{total_secs:.1}s")
+    } else {
+        format!("{}ms", duration.as_millis())
     }
 }

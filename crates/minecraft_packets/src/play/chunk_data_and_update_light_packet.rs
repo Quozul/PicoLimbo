@@ -48,7 +48,7 @@ impl ChunkDataAndUpdateLightPacket {
             chunk_x: chunk_context.chunk_x,
             chunk_z: chunk_context.chunk_z,
             primary_bit_mask: LengthPaddedVec::default(),
-            chunk_data: ChunkData::from_schematic(chunk_context, &schematic_context),
+            chunk_data: ChunkData::from_schematic(chunk_context, schematic_context),
             trust_edges: true,
             v1_18_light_data: LightData::new_with_level(15),
         }
