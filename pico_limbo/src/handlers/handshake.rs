@@ -67,13 +67,13 @@ mod tests {
     use minecraft_protocol::prelude::VarInt;
 
     fn server_state() -> ServerState {
-        ServerState::builder().build()
+        ServerState::builder().build().unwrap()
     }
 
     fn bungee_cord() -> ServerState {
         let mut server_state_builder = ServerState::builder();
         server_state_builder.enable_legacy_forwarding();
-        server_state_builder.build()
+        server_state_builder.build().unwrap()
     }
 
     #[test]

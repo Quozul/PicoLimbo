@@ -1,0 +1,20 @@
+[package]
+name = "blocks_report"
+version = "0.1.0"
+edition = "2024"
+build = "build/main.rs"
+
+[build-dependencies]
+blocks_report_data = { path = "../blocks_report_data" }
+minecraft_protocol = { path = "../minecraft_protocol" }
+protocol_version = { path = "../protocol_version" }
+anyhow = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dependencies]
+blocks_report_data = { path = "../blocks_report_data" }
+minecraft_protocol = { path = "../minecraft_protocol" }
+thiserror = { workspace = true }

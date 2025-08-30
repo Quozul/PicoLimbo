@@ -1,6 +1,5 @@
-use crate::play::data::chunk_context::{SchematicChunkContext, VoidChunkContext};
+use crate::play::data::chunk_context::{VoidChunkContext, WorldContext};
 use crate::play::data::chunk_section::ChunkSection;
-use crate::play::data::coordinates::Coordinates;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use minecraft_protocol::prelude::*;
 
@@ -33,8 +32,7 @@ impl ChunkData {
             value: vec![long_array_tag],
         };
 
-        let section_count =
-            context.dimension.height(context.protocol_version) / ChunkSection::SECTION_SIZE;
+        let section_count = context.dimension.height() / ChunkSection::SECTION_SIZE;
 
         Self {
             height_maps: root_tag,
@@ -53,7 +51,7 @@ impl ChunkData {
 
     pub fn from_schematic(
         chunk_context: VoidChunkContext,
-        schematic_context: &SchematicChunkContext,
+        schematic_context: &WorldContext,
     ) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
@@ -65,16 +63,10 @@ impl ChunkData {
         };
 
         let mut data = Vec::new();
-        let negative_section_count = chunk_context
-            .dimension
-            .min_y(chunk_context.protocol_version)
-            .abs()
-            / ChunkSection::SECTION_SIZE;
-        let positive_section_count = chunk_context
-            .dimension
-            .height(chunk_context.protocol_version)
-            / ChunkSection::SECTION_SIZE
-            - negative_section_count;
+        let negative_section_count =
+            chunk_context.dimension.min_y().abs() / ChunkSection::SECTION_SIZE;
+        let positive_section_count =
+            chunk_context.dimension.height() / ChunkSection::SECTION_SIZE - negative_section_count;
 
         for section_y in -negative_section_count..positive_section_count {
             let coordinates =

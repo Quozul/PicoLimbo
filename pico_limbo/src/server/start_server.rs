@@ -1,6 +1,6 @@
 use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::server::network::Server;
-use crate::server_state::ServerState;
+use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use tracing::{debug, error};
@@ -12,11 +12,16 @@ pub async fn start_server(config_path: PathBuf) -> ExitCode {
 
     let bind = cfg.bind.clone();
 
-    let server_state = build_state(cfg);
-
-    Server::new(&bind, server_state).run().await;
-
-    ExitCode::SUCCESS
+    match build_state(cfg) {
+        Ok(server_state) => {
+            Server::new(&bind, server_state).run().await;
+            ExitCode::SUCCESS
+        }
+        Err(err) => {
+            error!("Failed to start PicoLimbo: {err}");
+            ExitCode::SUCCESS
+        }
+    }
 }
 
 fn load_configuration(config_path: &PathBuf) -> Option<Config> {
@@ -36,7 +41,7 @@ fn load_configuration(config_path: &PathBuf) -> Option<Config> {
     None
 }
 
-fn build_state(cfg: Config) -> ServerState {
+fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     let mut server_state_builder = ServerState::builder();
 
     if cfg.forwarding.velocity.enabled {

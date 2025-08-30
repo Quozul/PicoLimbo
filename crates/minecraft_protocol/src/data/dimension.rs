@@ -46,22 +46,14 @@ impl Dimension {
         }
     }
 
-    pub fn height(self, protocol_version: ProtocolVersion) -> i32 {
-        match self {
-            Dimension::Overworld if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) => {
-                384
-            }
-            _ => 256,
-        }
+    #[inline]
+    pub const fn height(self) -> i32 {
+        256
     }
 
-    pub fn min_y(self, protocol_version: ProtocolVersion) -> i32 {
-        match self {
-            Dimension::Overworld if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) => {
-                -64
-            }
-            _ => 0,
-        }
+    #[inline]
+    pub const fn min_y(self) -> i32 {
+        0
     }
 }
 

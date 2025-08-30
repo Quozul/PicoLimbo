@@ -72,14 +72,14 @@ mod tests {
     use minecraft_protocol::prelude::{ProtocolVersion, State};
 
     fn vanilla() -> ServerState {
-        ServerState::builder().build()
+        ServerState::builder().build().unwrap()
     }
 
     fn velocity() -> ServerState {
         let mut builder = ServerState::builder();
         let secret = "foo";
         builder.enable_modern_forwarding(secret);
-        builder.build()
+        builder.build().unwrap()
     }
 
     pub fn client(protocol: ProtocolVersion) -> ClientState {

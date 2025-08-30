@@ -39,7 +39,7 @@ pub fn get_the_void_index(protocol_version: ProtocolVersion, data_location: &Pat
         protocol_version,
         data_location,
         "worldgen/biome",
-        "the_void",
+        "plains",
         1,
     )
 }

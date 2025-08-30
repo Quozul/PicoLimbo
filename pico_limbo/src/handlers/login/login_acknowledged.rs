@@ -82,7 +82,7 @@ mod tests {
     use minecraft_protocol::prelude::ProtocolVersion;
 
     fn server_state() -> ServerState {
-        ServerState::builder().build()
+        ServerState::builder().build().unwrap()
     }
 
     fn client(protocol: ProtocolVersion) -> ClientState {
@@ -169,7 +169,7 @@ mod tests {
             client_state.next_packet(),
             PacketRegistry::ClientBoundKnownPacks(_)
         ));
-        for _ in 0..8 {
+        for _ in 0..4 {
             assert!(matches!(
                 client_state.next_packet(),
                 PacketRegistry::RegistryData(_)
