@@ -1,16 +1,17 @@
 use crate::binary_reader::{BinaryReader, BinaryReaderError, ReadBytes};
 use crate::binary_writer::WriteBytes;
 use crate::prelude::{BinaryWriter, BinaryWriterError};
+use std::num::TryFromIntError;
 
 pub const SEGMENT_BITS: u8 = 0x7F;
 pub const CONTINUE_BIT: u8 = 0x80;
 
-#[derive(Debug, Default, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Clone, PartialEq, PartialOrd, Eq, Hash, Ord)]
 pub struct VarInt(i32);
 
 impl VarInt {
     pub fn new(value: i32) -> Self {
-        VarInt(value)
+        Self(value)
     }
 
     pub fn inner(&self) -> i32 {
@@ -20,19 +21,41 @@ impl VarInt {
 
 impl From<i32> for VarInt {
     fn from(value: i32) -> Self {
-        VarInt(value)
+        Self(value)
     }
 }
 
 impl From<&i32> for VarInt {
     fn from(value: &i32) -> Self {
-        VarInt::from(*value)
+        Self::from(*value)
     }
 }
 
-impl From<i64> for VarInt {
-    fn from(value: i64) -> Self {
-        Self::new(value as i32)
+impl From<u32> for VarInt {
+    fn from(value: u32) -> Self {
+        Self(value as i32)
+    }
+}
+
+impl From<&u32> for VarInt {
+    fn from(value: &u32) -> Self {
+        Self::from(*value)
+    }
+}
+
+impl TryFrom<i64> for VarInt {
+    type Error = TryFromIntError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        Ok(Self::from(i32::try_from(value)?))
+    }
+}
+
+impl TryFrom<usize> for VarInt {
+    type Error = TryFromIntError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self::from(i32::try_from(value)?))
     }
 }
 

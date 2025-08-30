@@ -1,6 +1,5 @@
 use crate::server::client_state::ClientState;
 use crate::server::controllable_interval::ControllableInterval;
-use crate::server_state::ServerState;
 use minecraft_protocol::prelude::ProtocolVersion;
 use net::packet_stream::{PacketStream, PacketStreamError};
 use net::raw_packet::RawPacket;
@@ -14,13 +13,12 @@ use tokio::time::Instant;
 
 pub struct ClientData {
     client_state: Arc<Mutex<ClientState>>,
-    server_state: ServerState,
     packet_stream: Arc<Mutex<PacketStream<TcpStream>>>,
     interval: Arc<Mutex<ControllableInterval>>,
 }
 
 impl ClientData {
-    pub fn new(socket: TcpStream, server_state: ServerState) -> Self {
+    pub fn new(socket: TcpStream) -> Self {
         let client_state = ClientState::default();
         let packet_stream = PacketStream::new(socket);
         let interval = ControllableInterval::new();
@@ -28,14 +26,8 @@ impl ClientData {
         Self {
             client_state: Arc::new(Mutex::new(client_state)),
             packet_stream: Arc::new(Mutex::new(packet_stream)),
-            server_state,
             interval: Arc::new(Mutex::new(interval)),
         }
-    }
-
-    #[inline]
-    pub const fn server(&self) -> &ServerState {
-        &self.server_state
     }
 
     // Client state

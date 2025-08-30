@@ -6,6 +6,8 @@ strip = "symbols"
 [workspace]
 resolver = "2"
 members = [
+    "crates/blocks_report",
+    "crates/blocks_report_data",
     "crates/macros",
     "crates/minecraft_packets",
     "crates/minecraft_protocol",

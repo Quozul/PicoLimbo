@@ -6,6 +6,7 @@ use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
+use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
@@ -17,9 +18,9 @@ use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
-use minecraft_packets::play::{Coordinates, SchematicChunkContext, VoidChunkContext};
-use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
-use pico_structures::prelude::{Schematic, SchematicError};
+use minecraft_packets::play::{VoidChunkContext, WorldContext};
+use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
+use pico_structures::prelude::{SchematicError, World};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -123,13 +124,25 @@ fn send_chunks_circularly(
     client_state: &mut ClientState,
     center_chunk: (i32, i32),
     view_distance: i32,
-    structure: Option<&Schematic>,
+    world: Option<&World>,
     biome_index: i32,
     dimension: Dimension,
     protocol_version: ProtocolVersion,
 ) {
     let chunk_positions = create_circular_chunk_iterator(center_chunk, view_distance);
-    let paste_origin = Coordinates::new(0, 0, 0);
+
+    let paste_origin = Coordinates::new_uniform(0);
+    let report_id_mapping = get_block_report_id_mapping(protocol_version);
+    let schematic_context = world.and_then(|world| {
+        report_id_mapping
+            .as_ref()
+            .map(|report_id_mapping| WorldContext {
+                paste_origin,
+                world,
+                report_id_mapping,
+            })
+            .ok()
+    });
 
     for (chunk_x, chunk_z) in chunk_positions {
         let chunk_context = VoidChunkContext {
@@ -137,16 +150,10 @@ fn send_chunks_circularly(
             chunk_z,
             biome_index,
             dimension,
-            protocol_version,
         };
 
-        let packet = if let Some(schematic) = structure {
-            let schematic_context = SchematicChunkContext {
-                paste_origin,
-                schematic,
-            };
-
-            ChunkDataAndUpdateLightPacket::from_structure(chunk_context, schematic_context)
+        let packet = if let Some(ref context) = schematic_context {
+            ChunkDataAndUpdateLightPacket::from_structure(chunk_context, context)
         } else {
             ChunkDataAndUpdateLightPacket::void(chunk_context)
         };
@@ -193,9 +200,30 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
+    // Send Synchronize Player Position
+    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
+    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
+
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
         let packet = CommandsPacket::empty();
         client_state.queue_packet(PacketRegistry::Commands(packet));
+    }
+
+    // The brand is not visible for clients prior to 1.13, no need to send it
+    // The brand is sent during the configuration state after 1.20.2 included
+    if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
+        let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
+        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet));
+    }
+
+    if let Some(content) = server_state.welcome_message() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+            let packet = SystemChatMessagePacket::plain_text(content);
+            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
+        } else {
+            let packet = LegacyChatMessagePacket::system(content);
+            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
+        }
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
@@ -216,49 +244,19 @@ pub fn send_play_packets(
         let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
         client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
 
-        let structure_opt = if let Some(schematic_file_path) = server_state.schematic_file_path() {
-            Some(Schematic::load_schematic_file(
-                &schematic_file_path,
-                protocol_version,
-            )?)
-        } else {
-            None
-        };
-
         send_chunks_circularly(
             client_state,
             center_chunk,
             view_distance,
-            structure_opt.as_ref(),
+            server_state.world(),
             biome_id,
             dimension,
             protocol_version,
         );
     }
 
-    // Send Synchronize Player Position
-    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
-    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
-
     client_state.set_state(State::Play);
     client_state.set_keep_alive_should_enable();
-
-    // The brand is not visible for clients prior to 1.13, no need to send it
-    // The brand is sent during the configuration state after 1.20.2 included
-    if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
-        let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
-        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet));
-    }
-
-    if let Some(content) = server_state.welcome_message() {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SystemChatMessagePacket::plain_text(content);
-            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
-        } else {
-            let packet = LegacyChatMessagePacket::system(content);
-            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
-        }
-    }
 
     Ok(())
 }
@@ -277,7 +275,7 @@ mod tests {
         let mut builder = ServerState::builder();
         builder.view_distance(0);
         builder.welcome_message("Hello, World!");
-        builder.build()
+        builder.build().unwrap()
     }
 
     fn client(protocol: ProtocolVersion) -> ClientState {
@@ -312,7 +310,15 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
             PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SystemChatMessage(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
@@ -325,14 +331,6 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SystemChatMessage(_)
         ));
         assert!(client_state.has_no_more_packets());
     }
@@ -357,19 +355,11 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::Commands(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SetCenterChunk(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::ChunkDataAndUpdateLight(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::Commands(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
@@ -378,6 +368,14 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::SystemChatMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::SetCenterChunk(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
         assert!(client_state.has_no_more_packets());
     }
@@ -398,11 +396,11 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::Commands(_)
+            PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
             client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
+            PacketRegistry::Commands(_)
         ));
         assert!(matches!(
             client_state.next_packet(),

@@ -1,13 +1,11 @@
-use crate::blocks_report::BlocksReports;
 use crate::decompress::decompress_gz_file;
-use crate::search_block_state::SearchState;
-use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
+use blocks_report::{BlockStateLookup, InternalId, InternalMapping};
+use minecraft_protocol::prelude::{Coordinates, VarInt};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
 use pico_nbt::prelude::{Nbt, NbtDecodeError};
-use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
-use tracing::{debug, warn};
+use tracing::warn;
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -23,47 +21,41 @@ pub enum SchematicError {
     IncorrectTagType(String),
     #[error("Unsupported schematic version: {0}. Only version 2 is supported.")]
     UnsupportedVersion(i32),
-    #[error("Failed to initialize block reports")]
-    BlocksReportsInit,
+    #[error("Air internal ID not found")]
+    AirNotFound,
 }
 
-/// A parsed representation of the schematic's block data and count.
-struct ParsedBlockData {
-    /// A map from (x, y, z) coordinates to the global block state ID.
-    lookup: HashMap<(i32, i32, i32), i32>,
-    solid_blocks_count: usize,
-}
-
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct Schematic {
-    block_lookup: HashMap<(i32, i32, i32), i32>,
-    dimensions: (i32, i32, i32),
-    offset: (i32, i32, i32),
-    solid_blocks_count: usize,
+    /// A flat vector storing all block state IDs, indexed by `y * length * width + z * width + x`.
+    block_data: Vec<InternalId>,
+    dimensions: Coordinates,
+    internal_air_id: InternalId,
 }
 
 impl Schematic {
-    pub const AIR_BLOCK_STATE_ID: i32 = 0;
-    pub const UNKNOWN_BLOCK_STATE_ID: i32 = 1;
-
     /// Loads a `.schem` file from the given path for a specific Minecraft protocol version.
     pub fn load_schematic_file(
         path: &Path,
-        version: ProtocolVersion,
+        internal_mapping: &InternalMapping,
     ) -> Result<Self, SchematicError> {
         let nbt = Self::load_nbt_from_file(path)?;
 
         Self::validate_version(&nbt)?;
         let dimensions = Self::extract_dimensions(&nbt)?;
-        let offset = Self::extract_offset(&nbt)?;
-
-        let block_data = Self::parse_block_data(&nbt, version, dimensions)?;
+        let (schematic_id_to_internal_id, internal_air_id) =
+            Self::get_schematic_id_to_internal_id(&nbt, internal_mapping)?;
+        let block_data = Self::parse_block_data(
+            &nbt,
+            schematic_id_to_internal_id,
+            dimensions,
+            internal_air_id,
+        )?;
 
         Ok(Self {
-            block_lookup: block_data.lookup,
+            block_data,
             dimensions,
-            offset,
-            solid_blocks_count: block_data.solid_blocks_count,
+            internal_air_id,
         })
     }
 
@@ -77,93 +69,89 @@ impl Schematic {
         if version != 2 {
             return Err(SchematicError::UnsupportedVersion(version));
         }
-
-        let data_version = Self::get_tag_as(nbt, "DataVersion", |t| t.get_int())?;
-        debug!("Schematic DataVersion: {}", data_version);
-
         Ok(())
     }
 
-    fn extract_dimensions(nbt: &Nbt) -> Result<(i32, i32, i32), SchematicError> {
+    fn extract_dimensions(nbt: &Nbt) -> Result<Coordinates, SchematicError> {
         let width = Self::get_tag_as::<i16>(nbt, "Width", |t| t.get_short())? as i32;
         let height = Self::get_tag_as::<i16>(nbt, "Height", |t| t.get_short())? as i32;
         let length = Self::get_tag_as::<i16>(nbt, "Length", |t| t.get_short())? as i32;
-        Ok((width, height, length))
+        Ok(Coordinates::new(width, height, length))
     }
 
-    fn extract_offset(nbt: &Nbt) -> Result<(i32, i32, i32), SchematicError> {
-        if let Some(offset_tag) = nbt.find_tag("Offset") {
-            let offset_array = offset_tag
-                .get_int_array()
-                .ok_or_else(|| SchematicError::IncorrectTagType("Offset".to_string()))?;
-            if offset_array.len() == 3 {
-                Ok((offset_array[0], offset_array[1], offset_array[2]))
-            } else {
-                warn!("'Offset' tag found but has incorrect length, defaulting to (0,0,0).");
-                Ok((0, 0, 0))
-            }
-        } else {
-            Ok((0, 0, 0))
-        }
-    }
-
-    fn parse_block_data(
+    fn get_schematic_id_to_internal_id(
         nbt: &Nbt,
-        mc_version: ProtocolVersion,
-        dimensions: (i32, i32, i32),
-    ) -> Result<ParsedBlockData, SchematicError> {
-        let (width, _, length) = dimensions;
-        let blocks_reports = BlocksReports::new().map_err(|_| SchematicError::BlocksReportsInit)?;
+        internal_mapping: &InternalMapping,
+    ) -> Result<(Vec<InternalId>, InternalId), SchematicError> {
+        let max_schematic_id = Self::get_tag_as(nbt, "PaletteMax", |t| t.get_int())?;
+        let block_state_lookup = BlockStateLookup::new(internal_mapping);
 
-        let mut schematic_id_to_global_id = HashMap::new();
+        const AIR_IDENTIFIER: &str = "minecraft:air";
+        let internal_air_id = block_state_lookup
+            .parse_state_string(AIR_IDENTIFIER)
+            .map_err(|_| SchematicError::AirNotFound)?;
+
+        let mut schematic_id_to_internal_id: Vec<InternalId> =
+            vec![internal_air_id; (max_schematic_id + 1) as usize];
+
         let palette_nbt = Self::get_tag_as(nbt, "Palette", |t| t.get_nbt_vec())?;
 
         for block_tag in palette_nbt {
             if let Some(schematic_palette_id) = block_tag.get_int() {
-                let global_id = block_tag
+                let internal_id = block_tag
                     .get_name()
-                    .and_then(|name| SearchState::from_string(&blocks_reports, &name))
-                    .and_then(|mut search| search.version(mc_version).find(&blocks_reports))
-                    .map(|id| id as i32)
-                    .unwrap_or(Self::UNKNOWN_BLOCK_STATE_ID);
+                    .and_then(|name| block_state_lookup.parse_state_string(&name).ok())
+                    .unwrap_or(internal_air_id);
 
-                schematic_id_to_global_id.insert(schematic_palette_id, global_id);
+                if let Some(entry) =
+                    schematic_id_to_internal_id.get_mut(schematic_palette_id as usize)
+                {
+                    *entry = internal_id;
+                } else {
+                    warn!(
+                        "Schematic palette contains ID {} which is greater than PaletteMax of {}. Skipping.",
+                        schematic_palette_id, max_schematic_id
+                    );
+                }
             }
         }
 
+        Ok((schematic_id_to_internal_id, internal_air_id))
+    }
+
+    fn parse_block_data(
+        nbt: &Nbt,
+        schematic_id_to_internal_id: Vec<InternalId>,
+        dimensions: Coordinates,
+        fallback_id: InternalId,
+    ) -> Result<Vec<InternalId>, SchematicError> {
+        let total_blocks = (dimensions.x() * dimensions.y() * dimensions.z()) as usize;
         let block_data_i8 = Self::get_tag_as::<Vec<i8>>(nbt, "BlockData", |t| t.get_byte_array())?;
         let block_data_u8: Vec<u8> = block_data_i8.iter().map(|&b| b as u8).collect();
         let mut reader = BinaryReader::new(&block_data_u8);
 
-        let mut lookup = HashMap::new();
-        let mut solid_blocks_count = 0;
-        let total_blocks = dimensions.0 * dimensions.1 * dimensions.2;
+        let mut block_data = Vec::with_capacity(total_blocks);
 
-        for index in 0..total_blocks {
+        for _ in 0..total_blocks {
             if reader.remaining() == 0 {
                 warn!("Schematic BlockData is smaller than expected dimensions. Truncating.");
                 break;
             }
 
             let schematic_block_id = reader.read::<VarInt>()?.inner();
-            let global_id = schematic_id_to_global_id
-                .get(&schematic_block_id)
-                .copied()
-                .unwrap_or(Self::AIR_BLOCK_STATE_ID);
 
-            if global_id != Self::AIR_BLOCK_STATE_ID {
-                let y = index / (width * length);
-                let z = (index % (width * length)) / width;
-                let x = index % width;
-                lookup.insert((x, y, z), global_id);
-                solid_blocks_count += 1;
-            }
+            let internal_id = schematic_id_to_internal_id
+                .get(schematic_block_id as usize)
+                .copied()
+                .unwrap_or(fallback_id);
+
+            block_data.push(internal_id);
         }
 
-        Ok(ParsedBlockData {
-            lookup,
-            solid_blocks_count,
-        })
+        // Ensure the vec is the correct size if the data was truncated
+        block_data.resize(total_blocks, fallback_id);
+
+        Ok(block_data)
     }
 
     /// Helper function to safely get a required NBT tag and extract its value.
@@ -179,34 +167,43 @@ impl Schematic {
             })
     }
 
-    fn is_out_of_bounds(&self, x: i32, y: i32, z: i32) -> bool {
-        let (max_x, max_y, max_z) = self.dimensions;
-        x < 0 || y < 0 || z < 0 || x >= max_x || y >= max_y || z >= max_z
+    /// Converts a 3D coordinate within the schematic to a 1D index for the `block_data` vector.
+    /// The schematic format iterates Y, then Z, then X.
+    #[inline]
+    fn position_to_index(&self, position: Coordinates) -> usize {
+        let width = self.dimensions.x() as usize;
+        let length = self.dimensions.z() as usize;
+        let x = position.x() as usize;
+        let y = position.y() as usize;
+        let z = position.z() as usize;
+
+        (y * length * width) + (z * width) + x
     }
 
-    /// Gets the global block state ID at the given relative coordinates within the schematic.
-    /// Returns the ID for air (0) if the coordinates are out of bounds or if the block is air.
-    pub fn get_block_state_id(&self, x: i32, y: i32, z: i32) -> i32 {
-        if self.is_out_of_bounds(x, y, z) {
-            return Self::AIR_BLOCK_STATE_ID;
+    fn is_out_of_bounds(&self, position: &Coordinates) -> bool {
+        position.x() < 0
+            || position.y() < 0
+            || position.z() < 0
+            || position.x() >= self.dimensions.x()
+            || position.y() >= self.dimensions.y()
+            || position.z() >= self.dimensions.z()
+    }
+
+    /// Gets the internal block state ID at the given relative coordinates within the schematic.
+    pub fn get_block_state_id(&self, schematic_position: Coordinates) -> InternalId {
+        if self.is_out_of_bounds(&schematic_position) {
+            return self.internal_air_id;
         }
 
-        self.block_lookup
-            .get(&(x, y, z))
+        let index = self.position_to_index(schematic_position);
+
+        self.block_data
+            .get(index)
             .copied()
-            .unwrap_or(Self::AIR_BLOCK_STATE_ID)
+            .unwrap_or(self.internal_air_id)
     }
 
-    pub fn get_solid_block_count(&self) -> usize {
-        self.solid_blocks_count
-    }
-
-    pub fn get_dimensions(&self) -> (i32, i32, i32) {
+    pub fn get_dimensions(&self) -> Coordinates {
         self.dimensions
-    }
-
-    /// Returns the offset of the schematic.
-    pub fn get_offset(&self) -> (i32, i32, i32) {
-        self.offset
     }
 }

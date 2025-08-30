@@ -135,6 +135,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "blocks_report"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "blocks_report_data",
+ "minecraft_protocol",
+ "proc-macro2",
+ "protocol_version",
+ "quote",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "blocks_report_data"
+version = "0.1.0"
+dependencies = [
+ "minecraft_protocol",
+ "protocol_version",
+ "thiserror",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -431,13 +455,13 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 name = "minecraft_packets"
 version = "0.1.0"
 dependencies = [
+ "blocks_report",
  "minecraft_protocol",
  "pico_structures",
  "pico_text_component",
  "rand",
  "serde",
  "serde_json",
- "tracing",
 ]
 
 [[package]]
@@ -532,6 +556,7 @@ name = "pico_limbo"
 version = "1.5.0+mc1.21.8"
 dependencies = [
  "anyhow",
+ "blocks_report",
  "clap",
  "hmac",
  "macros",
@@ -567,13 +592,12 @@ dependencies = [
 name = "pico_structures"
 version = "0.1.0"
 dependencies = [
+ "blocks_report",
  "flate2",
  "minecraft_protocol",
  "pico_binutils",
  "pico_nbt",
  "rayon",
- "serde",
- "serde_json",
  "thiserror",
  "tracing",
 ]

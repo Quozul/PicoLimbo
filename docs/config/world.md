@@ -44,7 +44,7 @@ Here's a list of what does not work when loading a schematic:
 - **Block entities**: Chests, signs, banners, player heads, and other tile entities
 - **Entities**: Armor stands, item frames, mobs, and other entities
 - **Light engine**: The world will always be fully lit
-- **Movement mechanics**: Ladder climbing seems to work only in 1.21.8
+- **Movement mechanics**: Ladder climbing or elytra does not work
 - **Block interactions**: Opening a door only half-opens it, buttons and pressure plates does not reset
 
 ## Spawn Position

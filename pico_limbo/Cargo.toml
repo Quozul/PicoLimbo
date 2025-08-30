@@ -8,6 +8,7 @@ build = "build/main.rs"
 minecraft_packets = { path = "../crates/minecraft_packets" }
 minecraft_protocol = { path = "../crates/minecraft_protocol" }
 pico_structures = { path = "../crates/pico_structures" }
+blocks_report = { path = "../crates/blocks_report" }
 net = { path = "../crates/net" }
 macros = { path = "../crates/macros" }
 clap = { workspace = true }

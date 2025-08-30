@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Default, Hash)]
 pub struct Prefixed<L, T>(pub(crate) T, pub(crate) PhantomData<L>);
 
 impl<L> Prefixed<L, String> {

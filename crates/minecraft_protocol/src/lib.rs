@@ -6,6 +6,7 @@ mod packet_serializer;
 mod state;
 
 pub mod prelude {
+    pub use crate::data::coordinates::Coordinates;
     pub use crate::data::dimension::Dimension;
     pub use crate::data_types::bit_set::BitSet;
     pub use crate::data_types::identifier::Identifier;

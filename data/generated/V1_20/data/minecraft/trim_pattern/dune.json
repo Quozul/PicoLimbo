@@ -1,7 +1,0 @@
-{
-  "asset_id": "minecraft:dune",
-  "description": {
-    "translate": "trim_pattern.minecraft.dune"
-  },
-  "template_item": "minecraft:dune_armor_trim_smithing_template"
-}

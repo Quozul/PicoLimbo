@@ -1,0 +1,9 @@
+[package]
+name = "blocks_report_data"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../protocol_version" }
+minecraft_protocol = { path = "../minecraft_protocol" }
+thiserror = { workspace = true }

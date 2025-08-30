@@ -1,11 +1,14 @@
 use crate::server::game_mode::GameMode;
-use minecraft_protocol::prelude::Dimension;
+use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
+use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Duration;
 use thiserror::Error;
+use tracing::debug;
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[derive(PartialEq, Eq, Default)]
 pub enum ForwardingMode {
     #[default]
     Disabled,
@@ -22,7 +25,7 @@ pub enum ForwardingMode {
 #[error("secret key not set")]
 pub struct MisconfiguredForwardingError;
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
@@ -35,7 +38,7 @@ pub struct ServerState {
     hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
-    schematic_file_path: String,
+    world: Option<World>,
 }
 
 impl ServerState {
@@ -53,8 +56,8 @@ impl ServerState {
     }
 
     pub fn secret_key(&self) -> Result<Vec<u8>, MisconfiguredForwardingError> {
-        match self.forwarding_mode.clone() {
-            ForwardingMode::Modern { secret } => Ok(secret),
+        match &self.forwarding_mode {
+            ForwardingMode::Modern { secret } => Ok(secret.clone()),
             _ => Err(MisconfiguredForwardingError),
         }
     }
@@ -64,8 +67,8 @@ impl ServerState {
     }
 
     pub fn tokens(&self) -> Result<Vec<String>, MisconfiguredForwardingError> {
-        match self.forwarding_mode.clone() {
-            ForwardingMode::BungeeGuard { tokens } => Ok(tokens),
+        match &self.forwarding_mode {
+            ForwardingMode::BungeeGuard { tokens } => Ok(tokens.clone()),
             _ => Err(MisconfiguredForwardingError),
         }
     }
@@ -115,12 +118,8 @@ impl ServerState {
         self.view_distance
     }
 
-    pub fn schematic_file_path(&self) -> Option<PathBuf> {
-        if self.schematic_file_path.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(&self.schematic_file_path))
-        }
+    pub const fn world(&self) -> Option<&World> {
+        self.world.as_ref()
     }
 
     pub fn increment(&self) {
@@ -145,6 +144,16 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
+}
+
+#[derive(Debug, Error)]
+pub enum ServerStateBuilderError {
+    #[error(transparent)]
+    SchematicLoadingFailed(#[from] SchematicError),
+    #[error(transparent)]
+    BinaryReader(#[from] BinaryReaderError),
+    #[error(transparent)]
+    WorldLoading(#[from] WorldLoadingError),
 }
 
 impl ServerStateBuilder {
@@ -229,8 +238,19 @@ impl ServerStateBuilder {
     }
 
     /// Finish building, returning an error if any required fields are missing.
-    pub fn build(self) -> ServerState {
-        ServerState {
+    pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
+        let world = if self.schematic_file_path.is_empty() {
+            None
+        } else {
+            let schematic = time_operation("Loading schematic", || {
+                let internal_mapping = blocks_report::load_internal_mapping()?;
+                let schematic_file_path = PathBuf::from(self.schematic_file_path);
+                Schematic::load_schematic_file(&schematic_file_path, &internal_mapping)
+            })?;
+            let world = time_operation("Loading world", || World::from_schematic(&schematic))?;
+            Some(world)
+        };
+        Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),
             description_text: self.description_text,
@@ -242,7 +262,29 @@ impl ServerStateBuilder {
             hardcore: self.hardcore,
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
-            schematic_file_path: self.schematic_file_path,
-        }
+            world,
+        })
     }
+}
+
+fn format_duration(duration: Duration) -> String {
+    let total_secs = duration.as_secs_f64();
+
+    if total_secs >= 1.0 {
+        format!("{total_secs:.1}s")
+    } else {
+        format!("{}ms", duration.as_millis())
+    }
+}
+
+fn time_operation<T, F>(operation_name: &str, operation: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    debug!("{operation_name}...");
+    let start = std::time::Instant::now();
+    let result = operation();
+    let elapsed = start.elapsed();
+    debug!("Time elapsed: {}", format_duration(elapsed));
+    result
 }

@@ -1,5 +1,6 @@
 use minecraft_protocol::prelude::*;
 use rand::Rng;
+use std::num::TryFromIntError;
 
 /// This packet exists for all versions of the game from 1.7.2 to the latest at the time (1.21.4).
 #[derive(PacketOut)]
@@ -12,24 +13,21 @@ pub struct ClientBoundKeepAlivePacket {
     id: i32,
 }
 
-impl Default for ClientBoundKeepAlivePacket {
-    fn default() -> Self {
-        let id = get_random_i64();
-        Self::new(id)
-    }
-}
-
 impl ClientBoundKeepAlivePacket {
-    pub fn new(id: i64) -> Self {
-        Self {
-            v1_12_2_id: id,
+    pub fn new(id: i32) -> Result<Self, TryFromIntError> {
+        Ok(Self {
+            v1_12_2_id: id.into(),
             v1_8_id: id.into(),
-            id: id as i32,
-        }
+            id,
+        })
+    }
+
+    pub fn random() -> Result<Self, TryFromIntError> {
+        Self::new(get_random_i32())
     }
 }
 
-fn get_random_i64() -> i64 {
+fn get_random_i32() -> i32 {
     let mut rng = rand::rng();
     rng.random()
 }
@@ -40,7 +38,7 @@ mod tests {
 
     #[test]
     fn test_keep_alive_packet_v1_12_2() {
-        let packet = ClientBoundKeepAlivePacket::new(0);
+        let packet = ClientBoundKeepAlivePacket::new(0).unwrap();
         let mut writer = BinaryWriter::new();
         packet
             .encode(&mut writer, ProtocolVersion::V1_12_2)
@@ -54,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_keep_alive_packet_v1_8() {
-        let packet = ClientBoundKeepAlivePacket::new(0);
+        let packet = ClientBoundKeepAlivePacket::new(0).unwrap();
         let mut writer = BinaryWriter::new();
         packet.encode(&mut writer, ProtocolVersion::V1_8).unwrap();
         let encoded_packet = writer.into_inner();
@@ -63,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_keep_alive_packet_v1_7_2() {
-        let packet = ClientBoundKeepAlivePacket::new(0);
+        let packet = ClientBoundKeepAlivePacket::new(0).unwrap();
         let mut writer = BinaryWriter::new();
         packet.encode(&mut writer, ProtocolVersion::V1_7_2).unwrap();
         let encoded_packet = writer.into_inner();
