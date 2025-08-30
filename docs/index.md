@@ -18,24 +18,29 @@ hero:
       link: https://discord.gg/M2a9dxJPRy
 
 features:
-  - icon: ⚙️
-    title: Highly Configurable
-    details: Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list MOTD, and more.
-    link: /config/introduction/
-    linkText: Read the documentation
-  - icon: 🔀
-    title: Built-in Proxy Support
-    details: "Seamlessly integrates with major Minecraft proxies: Velocity, BungeeCord and BungeeGuard authentication"
-    link: /config/proxy-integration
-    linkText: Read the documentation
   - icon: 🎮
     title: Wide Version Compatibility
-    details: Supports all Minecraft versions starting from 1.7.2 natively, no need for ViaVersion or additional compatibility layers
+    details: "Supports all Minecraft versions since 1.7.2 natively, no need for ViaVersion or additional compatibility layers."
     link: /about/supported-versions.html
     linkText: See all supported versions
   - icon: ⚡
     title: Ultra-Lightweight & Highly Scalable
-    details: Uses 0% CPU while idle and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous runtime and efficient design
+    details: "Uses 0% CPU while idle and handles hundreds of players under 10 MB RAM."
     link: /about/benchmarks.html
     linkText: See benchmarks
+  - icon: 🔀
+    title: Built-in Proxy Support
+    details: "Integrates with all major Minecraft proxies: Velocity, BungeeCord and BungeeGuard authentication."
+    link: /config/proxy-integration
+    linkText: Read the documentation
+  - icon: ⚙️
+    title: Highly Configurable
+    details: "Customize your server using a simple TOML configuration file."
+    link: /config/introduction/
+    linkText: Read the documentation
+  - icon: 🌍
+    title: Schematic World (Experimental)
+    details: "Load a custom world from a schematic file and customize spawn location (1.19+ only)."
+    link: /config/world.html
+    linkText: Read the documentation
 ---

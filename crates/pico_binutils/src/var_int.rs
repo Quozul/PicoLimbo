@@ -24,6 +24,12 @@ impl From<i32> for VarInt {
     }
 }
 
+impl From<&i32> for VarInt {
+    fn from(value: &i32) -> Self {
+        VarInt::from(*value)
+    }
+}
+
 impl From<i64> for VarInt {
     fn from(value: i64) -> Self {
         Self::new(value as i32)

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow customization of the spawn position in the configuration
 - View distance can now be customized
 - Hardcore mode can be defined in configuration
+- Support for loading schematics
 
 ### Fixed
 

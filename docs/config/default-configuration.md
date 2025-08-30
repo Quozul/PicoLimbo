@@ -49,5 +49,8 @@ show_online_player_count = true
 spawn_position = [0.0, 320.0, 0.0]
 # Configure how many chunks are sent to clients
 view_distance = 2
+# Path to schematic file for custom world structures
+# Leave empty to disable schematic loading
+schematic_file = ""
 ```
 :::

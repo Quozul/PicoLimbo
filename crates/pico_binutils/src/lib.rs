@@ -6,6 +6,8 @@ mod binary_reader;
 mod binary_writer;
 #[cfg(feature = "length_prefixed")]
 mod length_prefixed;
+#[cfg(feature = "string_indexer")]
+mod string_indexer;
 #[cfg(feature = "uuid")]
 mod uuid;
 #[cfg(feature = "var_int")]
@@ -24,6 +26,8 @@ pub mod prelude {
     pub use crate::length_prefixed::var_int::{VarIntPrefixed, VarIntPrefixedString};
     #[cfg(feature = "length_prefixed")]
     pub use crate::length_prefixed::writer::WriteLengthPrefix;
+    #[cfg(feature = "string_indexer")]
+    pub use crate::string_indexer::indexer::StringIndexer;
     #[cfg(feature = "var_int")]
     pub use crate::var_int::VarInt;
 }

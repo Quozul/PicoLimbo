@@ -117,6 +117,41 @@ impl Nbt {
         }
     }
 
+    pub fn get_byte_array(&self) -> Option<Vec<i8>> {
+        match self {
+            Self::ByteArray { value, .. } => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_short(&self) -> Option<i16> {
+        match self {
+            Self::Short { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn get_int_array(&self) -> Option<Vec<i32>> {
+        match self {
+            Self::IntArray { value, .. } => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_int(&self) -> Option<i32> {
+        match self {
+            Nbt::Int { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Nbt::String { value, .. } => Some(value.clone()),
+            _ => None,
+        }
+    }
+
     pub fn set_name(&self, name: String) -> Nbt {
         match self {
             Nbt::Compound { value, .. } => Nbt::Compound {
@@ -265,6 +300,24 @@ impl Nbt {
         };
 
         Ok(())
+    }
+
+    pub fn type_string(&self) -> &'static str {
+        match self {
+            Nbt::End => "End",
+            Nbt::Byte { .. } => "Byte",
+            Nbt::Short { .. } => "Short",
+            Nbt::Int { .. } => "Int",
+            Nbt::Long { .. } => "Long",
+            Nbt::Float { .. } => "Float",
+            Nbt::Double { .. } => "Double",
+            Nbt::ByteArray { .. } => "ByteArray",
+            Nbt::String { .. } => "String",
+            Nbt::List { .. } => "List",
+            Nbt::Compound { .. } => "Compound",
+            Nbt::IntArray { .. } => "IntArray",
+            Nbt::LongArray { .. } => "LongArray",
+        }
     }
 }
 

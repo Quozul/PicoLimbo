@@ -20,9 +20,9 @@ If you need authenticated players, you should handle authentication at the proxy
 
 ## Can PicoLimbo load worlds or generate terrain?
 
-Currently, PicoLimbo cannot load existing worlds or generate new terrain. Players connect to a simple void environment.
+PicoLimbo cannot load existing worlds or generate terrain. Players connect to a void environment by default.
 
-However, loading small structures or schematic files is a planned feature.
+However, PicoLimbo includes experimental support for loading small structures using `.schem` files. See the [Experimental World Loading](/config/world.html) section for configuration details.
 
 ## Does PicoLimbo support transfer packets?
 
