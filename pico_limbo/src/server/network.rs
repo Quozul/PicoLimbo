@@ -12,19 +12,21 @@ use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
 use std::num::TryFromIntError;
+use std::sync::Arc;
 use thiserror::Error;
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::RwLock;
 use tracing::{debug, error, info, trace, warn};
 
 pub struct Server {
-    state: ServerState,
+    state: Arc<RwLock<ServerState>>,
     listen_address: String,
 }
 
 impl Server {
     pub fn new(listen_address: &impl ToString, state: ServerState) -> Self {
         Self {
-            state,
+            state: Arc::new(RwLock::new(state)),
             listen_address: listen_address.to_string(),
         }
     }
@@ -49,9 +51,9 @@ impl Server {
                     match accept_result {
                         Ok((socket, addr)) => {
                             debug!("Accepted connection from {}", addr);
-                            let state = self.state.clone();
+                        let state_clone = Arc::clone(&self.state);
                             tokio::spawn(async move {
-                                handle_client(socket, state.clone()).await;
+                                handle_client(socket, state_clone).await;
                             });
                         }
                         Err(e) => {
@@ -132,7 +134,7 @@ impl From<PacketStreamError> for PacketProcessingError {
 
 async fn process_packet(
     client_data: &ClientData,
-    server_state: &ServerState,
+    server_state: &Arc<RwLock<ServerState>>,
     raw_packet: RawPacket,
     was_in_play_state: &mut bool,
 ) -> Result<(), PacketProcessingError> {
@@ -141,14 +143,17 @@ async fn process_packet(
     let state = client_state.state();
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
 
-    decoded_packet.handle(&mut client_state, &client_data.server().clone())?;
+    {
+        let server_state_guard = server_state.read().await;
+        decoded_packet.handle(&mut client_state, &server_state_guard)?;
+    }
 
     let protocol_version = client_state.protocol_version();
     let state = client_state.state();
 
     if !*was_in_play_state && state == State::Play {
         *was_in_play_state = true;
-        server_state.increment();
+        server_state.write().await.increment();
         let username = client_state.get_username();
         debug!(
             "{} joined using version {}",
@@ -180,7 +185,7 @@ async fn process_packet(
 
 async fn read(
     client_data: &ClientData,
-    server_state: &ServerState,
+    server_state: &Arc<RwLock<ServerState>>,
     was_in_play_state: &mut bool,
 ) -> Result<(), PacketProcessingError> {
     tokio::select! {
@@ -195,8 +200,8 @@ async fn read(
     Ok(())
 }
 
-async fn handle_client(socket: TcpStream, server_state: ServerState) {
-    let client_data = ClientData::new(socket, server_state.clone());
+async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>) {
+    let client_data = ClientData::new(socket);
     let mut was_in_play_state = false;
 
     loop {
@@ -220,7 +225,7 @@ async fn handle_client(socket: TcpStream, server_state: ServerState) {
     let _ = client_data.shutdown().await;
 
     if was_in_play_state {
-        server_state.decrement();
+        server_state.write().await.decrement();
         let username = client_data.client().await.get_username();
         info!("{} left the game", username);
     }

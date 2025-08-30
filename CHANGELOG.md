@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Reduced memory usage and CPU usage when loading a schematic
+- Reduced memory usage by improving how players are handled
 
 ## [1.5.0+mc1.21.8] - 2025-08-30
 
