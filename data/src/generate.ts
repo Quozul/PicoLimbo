@@ -28,6 +28,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
+    "1.21.7",
     "1.21.6",
     "1.21.5",
     "1.21.4",
@@ -145,7 +146,7 @@ async function cleanReportsDirectory(path: string): Promise<void> {
     // Only keep the packets.json file
     const dir = await opendir(path);
     for await (const dirent of dir) {
-        if (dirent.name !== "packets.json") {
+        if (dirent.name !== "packets.json" && dirent.name !== "blocks.json") {
             const direntPath = join(path, dirent.name);
             await rm(direntPath, { recursive: true, force: true });
         }
