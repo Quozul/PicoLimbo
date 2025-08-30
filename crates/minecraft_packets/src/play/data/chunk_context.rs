@@ -1,4 +1,5 @@
 use crate::play::Coordinates;
+use blocks_report::ReportIdMapping;
 use minecraft_protocol::prelude::{Dimension, ProtocolVersion};
 use pico_structures::prelude::Schematic;
 
@@ -13,4 +14,5 @@ pub struct VoidChunkContext {
 pub struct SchematicChunkContext<'a> {
     pub schematic: &'a Schematic,
     pub paste_origin: Coordinates,
+    pub report_id_mapping: &'a ReportIdMapping,
 }

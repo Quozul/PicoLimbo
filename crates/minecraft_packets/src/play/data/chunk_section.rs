@@ -1,5 +1,6 @@
 use crate::play::data::palette_container::PaletteContainer;
 use crate::play::{Coordinates, SchematicChunkContext};
+use blocks_report::get_block_id;
 use minecraft_protocol::prelude::*;
 
 #[derive(Clone, PacketOut)]
@@ -62,13 +63,19 @@ impl ChunkSection {
                     let world_pos = section_origin + Coordinates::new(x, y, z);
                     let schematic_position = world_pos - schematic_min;
 
-                    let value = context.schematic.get_block_state_id(
-                        schematic_position.x(),
-                        schematic_position.y(),
-                        schematic_position.z(),
-                    ) as u32;
+                    let global_id = context
+                        .schematic
+                        .get_block_state_id(
+                            schematic_position.x(),
+                            schematic_position.y(),
+                            schematic_position.z(),
+                        )
+                        .and_then(|internal_id| {
+                            get_block_id(context.report_id_mapping, internal_id)
+                        })
+                        .unwrap_or(0);
 
-                    ids.push(value);
+                    ids.push(global_id.into());
                 }
             }
         }

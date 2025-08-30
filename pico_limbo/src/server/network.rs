@@ -11,6 +11,7 @@ use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
+use std::num::TryFromIntError;
 use thiserror::Error;
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{debug, error, info, trace, warn};
@@ -105,6 +106,12 @@ impl From<PacketRegistryDecodeError> for PacketProcessingError {
 
 impl From<PacketRegistryEncodeError> for PacketProcessingError {
     fn from(e: PacketRegistryEncodeError) -> Self {
+        Self::Custom(e.to_string())
+    }
+}
+
+impl From<TryFromIntError> for PacketProcessingError {
+    fn from(e: TryFromIntError) -> Self {
         Self::Custom(e.to_string())
     }
 }
@@ -260,7 +267,7 @@ async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessin
     };
 
     if state == State::Play {
-        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::default());
+        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
         let raw_packet = packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
     }

@@ -1,5 +1,6 @@
 use crate::server::game_mode::GameMode;
 use minecraft_protocol::prelude::Dimension;
+use pico_structures::prelude::{Schematic, SchematicError};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -35,7 +36,7 @@ pub struct ServerState {
     hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
-    schematic_file_path: String,
+    schematic: Option<Schematic>,
 }
 
 impl ServerState {
@@ -115,12 +116,8 @@ impl ServerState {
         self.view_distance
     }
 
-    pub fn schematic_file_path(&self) -> Option<PathBuf> {
-        if self.schematic_file_path.is_empty() {
-            None
-        } else {
-            Some(PathBuf::from(&self.schematic_file_path))
-        }
+    pub const fn schematic(&self) -> Option<&Schematic> {
+        self.schematic.as_ref()
     }
 
     pub fn increment(&self) {
@@ -145,6 +142,12 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
+}
+
+#[derive(Debug, Error)]
+pub enum ServerStateBuilderError {
+    #[error(transparent)]
+    SchematicLoadingFailed(#[from] SchematicError),
 }
 
 impl ServerStateBuilder {
@@ -229,8 +232,18 @@ impl ServerStateBuilder {
     }
 
     /// Finish building, returning an error if any required fields are missing.
-    pub fn build(self) -> ServerState {
-        ServerState {
+    pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
+        let schematic = if self.schematic_file_path.is_empty() {
+            None
+        } else {
+            let internal_mapping = blocks_report::load_internal_mapping().unwrap();
+            let schematic_file_path = PathBuf::from(self.schematic_file_path);
+            Some(Schematic::load_schematic_file(
+                &schematic_file_path,
+                &internal_mapping,
+            )?)
+        };
+        Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),
             description_text: self.description_text,
@@ -242,7 +255,7 @@ impl ServerStateBuilder {
             hardcore: self.hardcore,
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
-            schematic_file_path: self.schematic_file_path,
-        }
+            schematic,
+        })
     }
 }

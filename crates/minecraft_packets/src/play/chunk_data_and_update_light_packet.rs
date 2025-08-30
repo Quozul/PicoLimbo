@@ -42,7 +42,7 @@ impl ChunkDataAndUpdateLightPacket {
 
     pub fn from_structure(
         chunk_context: VoidChunkContext,
-        schematic_context: SchematicChunkContext,
+        schematic_context: &SchematicChunkContext,
     ) -> Self {
         Self {
             chunk_x: chunk_context.chunk_x,

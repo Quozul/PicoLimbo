@@ -82,7 +82,7 @@ mod tests {
     use minecraft_protocol::prelude::ProtocolVersion;
 
     fn server_state() -> ServerState {
-        ServerState::builder().build()
+        ServerState::builder().build().unwrap()
     }
 
     fn client(protocol: ProtocolVersion) -> ClientState {

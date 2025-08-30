@@ -6,6 +6,7 @@ use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
+use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
@@ -123,13 +124,24 @@ fn send_chunks_circularly(
     client_state: &mut ClientState,
     center_chunk: (i32, i32),
     view_distance: i32,
-    structure: Option<&Schematic>,
+    schematic: Option<&Schematic>,
     biome_index: i32,
     dimension: Dimension,
     protocol_version: ProtocolVersion,
 ) {
     let chunk_positions = create_circular_chunk_iterator(center_chunk, view_distance);
+
     let paste_origin = Coordinates::new(0, 0, 0);
+    let report_id_mapping = get_block_report_id_mapping(protocol_version);
+    let schematic_context = schematic.and_then(|schematic| {
+        report_id_mapping
+            .as_ref()
+            .map(|report_id_mapping| SchematicChunkContext {
+                paste_origin,
+                schematic,
+                report_id_mapping,
+            })
+    });
 
     for (chunk_x, chunk_z) in chunk_positions {
         let chunk_context = VoidChunkContext {
@@ -140,13 +152,8 @@ fn send_chunks_circularly(
             protocol_version,
         };
 
-        let packet = if let Some(schematic) = structure {
-            let schematic_context = SchematicChunkContext {
-                paste_origin,
-                schematic,
-            };
-
-            ChunkDataAndUpdateLightPacket::from_structure(chunk_context, schematic_context)
+        let packet = if let Some(ref context) = schematic_context {
+            ChunkDataAndUpdateLightPacket::from_structure(chunk_context, context)
         } else {
             ChunkDataAndUpdateLightPacket::void(chunk_context)
         };
@@ -216,20 +223,11 @@ pub fn send_play_packets(
         let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
         client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
 
-        let structure_opt = if let Some(schematic_file_path) = server_state.schematic_file_path() {
-            Some(Schematic::load_schematic_file(
-                &schematic_file_path,
-                protocol_version,
-            )?)
-        } else {
-            None
-        };
-
         send_chunks_circularly(
             client_state,
             center_chunk,
             view_distance,
-            structure_opt.as_ref(),
+            server_state.schematic(),
             biome_id,
             dimension,
             protocol_version,
@@ -277,7 +275,7 @@ mod tests {
         let mut builder = ServerState::builder();
         builder.view_distance(0);
         builder.welcome_message("Hello, World!");
-        builder.build()
+        builder.build().unwrap()
     }
 
     fn client(protocol: ProtocolVersion) -> ClientState {

@@ -48,7 +48,7 @@ mod tests {
     fn velocity() -> ServerState {
         let mut builder = ServerState::builder();
         builder.enable_modern_forwarding("foo");
-        builder.build()
+        builder.build().unwrap()
     }
 
     fn client() -> ClientState {

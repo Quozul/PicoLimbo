@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::num::TryFromIntError;
 use thiserror::Error;
 
 pub trait WriteBytes {
@@ -12,6 +13,8 @@ pub struct BinaryWriter(pub(crate) Vec<u8>);
 pub enum BinaryWriterError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    TryFromInt(#[from] TryFromIntError),
 }
 
 impl BinaryWriter {

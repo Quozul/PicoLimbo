@@ -1,7 +1,6 @@
-use crate::blocks_report::BlocksReports;
 use crate::decompress::decompress_gz_file;
-use crate::search_block_state::SearchState;
-use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
+use blocks_report::{BlockStateBuilder, InternalId, InternalMapping};
+use minecraft_protocol::prelude::VarInt;
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
 use pico_nbt::prelude::{Nbt, NbtDecodeError};
 use std::collections::HashMap;
@@ -28,28 +27,29 @@ pub enum SchematicError {
 }
 
 /// A parsed representation of the schematic's block data and count.
+#[derive(Debug)]
 struct ParsedBlockData {
-    /// A map from (x, y, z) coordinates to the global block state ID.
-    lookup: HashMap<(i32, i32, i32), i32>,
+    /// A map from (x, y, z) coordinates to the internal block state ID.
+    lookup: HashMap<(i32, i32, i32), InternalId>,
     solid_blocks_count: usize,
 }
 
 #[derive(Clone, Default)]
 pub struct Schematic {
-    block_lookup: HashMap<(i32, i32, i32), i32>,
+    block_lookup: HashMap<(i32, i32, i32), InternalId>,
     dimensions: (i32, i32, i32),
     offset: (i32, i32, i32),
     solid_blocks_count: usize,
 }
 
 impl Schematic {
-    pub const AIR_BLOCK_STATE_ID: i32 = 0;
-    pub const UNKNOWN_BLOCK_STATE_ID: i32 = 1;
+    pub const AIR_BLOCK_STATE_ID: InternalId = 0;
+    pub const UNKNOWN_BLOCK_STATE_ID: InternalId = 1;
 
     /// Loads a `.schem` file from the given path for a specific Minecraft protocol version.
     pub fn load_schematic_file(
         path: &Path,
-        version: ProtocolVersion,
+        internal_mapping: &InternalMapping,
     ) -> Result<Self, SchematicError> {
         let nbt = Self::load_nbt_from_file(path)?;
 
@@ -57,7 +57,7 @@ impl Schematic {
         let dimensions = Self::extract_dimensions(&nbt)?;
         let offset = Self::extract_offset(&nbt)?;
 
-        let block_data = Self::parse_block_data(&nbt, version, dimensions)?;
+        let block_data = Self::parse_block_data(&nbt, dimensions, internal_mapping)?;
 
         Ok(Self {
             block_lookup: block_data.lookup,
@@ -109,25 +109,27 @@ impl Schematic {
 
     fn parse_block_data(
         nbt: &Nbt,
-        mc_version: ProtocolVersion,
         dimensions: (i32, i32, i32),
+        internal_mapping: &InternalMapping,
     ) -> Result<ParsedBlockData, SchematicError> {
         let (width, _, length) = dimensions;
-        let blocks_reports = BlocksReports::new().map_err(|_| SchematicError::BlocksReportsInit)?;
 
-        let mut schematic_id_to_global_id = HashMap::new();
+        let mut schematic_id_to_internal_id = HashMap::new();
         let palette_nbt = Self::get_tag_as(nbt, "Palette", |t| t.get_nbt_vec())?;
 
         for block_tag in palette_nbt {
             if let Some(schematic_palette_id) = block_tag.get_int() {
-                let global_id = block_tag
+                let internal_id = block_tag
                     .get_name()
-                    .and_then(|name| SearchState::from_string(&blocks_reports, &name))
-                    .and_then(|mut search| search.version(mc_version).find(&blocks_reports))
-                    .map(|id| id as i32)
+                    .and_then(|name| {
+                        BlockStateBuilder::new(internal_mapping)
+                            .with_state_string(&name)
+                            .ok()
+                            .and_then(|builder| builder.build())
+                    })
                     .unwrap_or(Self::UNKNOWN_BLOCK_STATE_ID);
 
-                schematic_id_to_global_id.insert(schematic_palette_id, global_id);
+                schematic_id_to_internal_id.insert(schematic_palette_id, internal_id);
             }
         }
 
@@ -146,16 +148,16 @@ impl Schematic {
             }
 
             let schematic_block_id = reader.read::<VarInt>()?.inner();
-            let global_id = schematic_id_to_global_id
+            let internal_id = schematic_id_to_internal_id
                 .get(&schematic_block_id)
                 .copied()
                 .unwrap_or(Self::AIR_BLOCK_STATE_ID);
 
-            if global_id != Self::AIR_BLOCK_STATE_ID {
+            if internal_id != Self::AIR_BLOCK_STATE_ID {
                 let y = index / (width * length);
                 let z = (index % (width * length)) / width;
                 let x = index % width;
-                lookup.insert((x, y, z), global_id);
+                lookup.insert((x, y, z), internal_id);
                 solid_blocks_count += 1;
             }
         }
@@ -184,17 +186,14 @@ impl Schematic {
         x < 0 || y < 0 || z < 0 || x >= max_x || y >= max_y || z >= max_z
     }
 
-    /// Gets the global block state ID at the given relative coordinates within the schematic.
+    /// Gets the internal block state ID at the given relative coordinates within the schematic.
     /// Returns the ID for air (0) if the coordinates are out of bounds or if the block is air.
-    pub fn get_block_state_id(&self, x: i32, y: i32, z: i32) -> i32 {
+    pub fn get_block_state_id(&self, x: i32, y: i32, z: i32) -> Option<InternalId> {
         if self.is_out_of_bounds(x, y, z) {
-            return Self::AIR_BLOCK_STATE_ID;
+            return None;
         }
 
-        self.block_lookup
-            .get(&(x, y, z))
-            .copied()
-            .unwrap_or(Self::AIR_BLOCK_STATE_ID)
+        self.block_lookup.get(&(x, y, z)).copied()
     }
 
     pub fn get_solid_block_count(&self) -> usize {

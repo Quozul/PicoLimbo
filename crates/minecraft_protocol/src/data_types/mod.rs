@@ -1,5 +1,6 @@
 pub mod bit_set;
 pub mod boolean;
+mod hash_map;
 pub mod identifier;
 pub mod nbt;
 pub mod number;
