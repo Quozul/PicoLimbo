@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     extern crate test;
-    use nbt::prelude::{Nbt, NbtFeatures};
+    use pico_nbt::prelude::{Nbt, NbtFeatures};
     use test::Bencher;
 
     #[bench]
@@ -35,7 +35,7 @@ mod tests {
         };
 
         b.iter(|| {
-            nbt.to_bytes(features);
+            nbt.to_bytes(features).unwrap();
         });
     }
 }

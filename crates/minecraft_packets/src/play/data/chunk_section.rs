@@ -29,10 +29,30 @@ impl ChunkSection {
         section_position: Coordinates,
         biome_id: i32,
     ) -> ChunkSection {
-        let section_size = Coordinates::new_uniform(Self::SECTION_SIZE);
+        let ids = Self::get_section_entries(context, section_position);
 
+        let bpe: u8 = 15;
+        let data = pack_direct(&ids, bpe);
+
+        let block_states = PaletteContainer::Direct {
+            bits_per_entry: bpe,
+            data,
+        };
+        let biomes = PaletteContainer::single_valued(biome_id);
+
+        ChunkSection {
+            block_count: 4096,
+            block_states,
+            biomes,
+        }
+    }
+
+    fn get_section_entries(
+        context: &SchematicChunkContext,
+        section_position: Coordinates,
+    ) -> Vec<u32> {
         let schematic_min = context.paste_origin;
-        let section_origin = section_position * section_size;
+        let section_origin = section_position * Self::SECTION_SIZE;
         let mut ids = Vec::with_capacity(4096);
 
         for y in 0..Self::SECTION_SIZE {
@@ -53,20 +73,7 @@ impl ChunkSection {
             }
         }
 
-        let bpe: u8 = 15;
-        let data = pack_direct(&ids, bpe);
-
-        let block_states = PaletteContainer::Direct {
-            bits_per_entry: bpe,
-            data,
-        };
-        let biomes = PaletteContainer::single_valued(biome_id);
-
-        ChunkSection {
-            block_count: 4096,
-            block_states,
-            biomes,
-        }
+        ids
     }
 }
 

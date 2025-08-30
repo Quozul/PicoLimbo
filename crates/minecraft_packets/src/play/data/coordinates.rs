@@ -68,3 +68,15 @@ impl Mul for Coordinates {
         }
     }
 }
+
+impl Mul<i32> for Coordinates {
+    type Output = Self;
+
+    fn mul(self, value: i32) -> Self {
+        Self {
+            x: self.x * value,
+            y: self.y * value,
+            z: self.z * value,
+        }
+    }
+}
