@@ -1,12 +1,22 @@
+<div align="center">
+
 # PicoLimbo
+
+**An ultra-lightweight, multi-version Minecraft limbo server written in Rust**
+
+*Supporting all Minecraft versions from 1.7.2 through 1.21.8*
 
 [![GitHub CI](https://img.shields.io/github/actions/workflow/status/Quozul/PicoLimbo/.github%2Fworkflows%2Fci.yml?branch=master)](https://github.com/Quozul/PicoLimbo/actions)
 [![Latest Release](https://img.shields.io/github/v/release/Quozul/PicoLimbo)](https://github.com/Quozul/PicoLimbo/releases)
 [![License](https://img.shields.io/github/license/Quozul/PicoLimbo)](LICENSE)
 [![Discord](https://img.shields.io/discord/1373364651118694585)](https://discord.gg/M2a9dxJPRy)
 
-An ultra-lightweight, multi-version Minecraft limbo server written in Rust.
-It currently supports all Minecraft versions from 1.7.2 through 1.21.8.
+[⭐ Star this repo](https://github.com/Quozul/PicoLimbo) • [💬 Join Discord](https://discord.gg/M2a9dxJPRy) • [📖 Read Docs](https://picolimbo.quozul.dev/)
+
+![PicoLimbo.png](docs/public/world.png)  
+*Schematic from [LOOHP/Limbo](https://github.com/LOOHP/Limbo)*
+
+</div>
 
 ---
 
@@ -20,26 +30,11 @@ PicoLimbo is a lightweight [limbo server](https://quozul.dev/posts/2025-05-14-wh
 in Rust, designed primarily as an AFK or waiting server. Its core focus is on efficiency by implementing only essential
 packets required for client login and maintaining connection (keep-alive) without unnecessary overhead.
 
-When idle, PicoLimbo uses almost no resources: 0% CPU and less than 10 MB of memory, making it extremely lightweight.
-
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
 through 1.21.8**, excluding snapshots, with only 27 implemented packets covering over 47 different protocol versions or
 75 Minecraft versions.
 
 ## Features
-
-### ⚙️ Highly Configurable
-
-Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
-MOTD, and more.
-
-### 🔀 Built-in Proxy Support
-
-Seamlessly integrates with major Minecraft proxies:
-
-- Velocity (Modern Forwarding)
-- BungeeCord (Legacy Forwarding)
-- BungeeGuard & BungeeGuardPlus authentication
 
 ### 🎮 Wide Version Compatibility
 
@@ -48,8 +43,25 @@ layers.
 
 ### ⚡ Ultra-Lightweight & Highly Scalable
 
-Uses **0% CPU while idle** and under 10 MB RAM, enabling thousands of concurrent players thanks to Rust’s asynchronous
-runtime and efficient design.
+Uses **0% CPU while idle** and handles **hundreds of players** under 10 MB RAM.
+[View benchmarks](https://picolimbo.quozul.dev/about/benchmarks.html).
+
+### 🔀 Built-in Proxy Support
+
+Integrates with all major Minecraft proxies:
+
+- Velocity (Modern Forwarding)
+- BungeeCord (Legacy Forwarding)
+- BungeeGuard & BungeeGuardPlus authentication
+
+### ⚙️ Highly Configurable
+
+Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
+MOTD, and more. [View configuration docs](https://picolimbo.quozul.dev/config/introduction.html).
+
+### 🌍 Schematic World (Experimental)
+
+Load a custom world from a schematic file and customize spawn location (1.19+ only).
 
 ![PicoLimbo.png](docs/public/PicoLimbo.png)  
 *The screenshot shows just a few of the supported Minecraft versions.*
@@ -84,11 +96,15 @@ website.
 
 - [Limbo](https://github.com/LOOHP/Limbo): Supports only one Minecraft version at a time
 - [NanoLimbo](https://github.com/Nan1t/NanoLimbo): Actively maintained
-  (see [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo/tree/feature/1.21.2))
+  (see [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo))
 - [TyphoonLimbo](https://github.com/TyphoonMC/TyphoonLimbo): No longer actively maintained
 - [LiteLimbo](https://github.com/ThomasOM/LiteLimbo): No longer actively maintained
 
 ---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Quozul/PicoLimbo&type=Date)](https://star-history.com/#Quozul/PicoLimbo&Date)
 
 ## Contributing
 

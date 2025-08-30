@@ -1,0 +1,21 @@
+[package]
+name = "pico_structures"
+version = "0.1.0"
+edition = "2024"
+build = "build/main.rs"
+
+[build-dependencies]
+minecraft_protocol = { path = "../minecraft_protocol" }
+pico_binutils = { path = "../pico_binutils", features = ["string_indexer", "binary_writer"] }
+rayon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dependencies]
+minecraft_protocol = { path = "../minecraft_protocol" }
+pico_binutils = { path = "../pico_binutils", features = ["string_indexer", "binary_reader"] }
+pico_nbt = { path = "../pico_nbt" }
+flate2 = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

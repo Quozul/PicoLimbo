@@ -1,3 +1,4 @@
+use crate::play::data::chunk_context::{SchematicChunkContext, VoidChunkContext};
 use crate::play::data::chunk_data::ChunkData;
 use crate::play::data::light_data::LightData;
 use minecraft_protocol::prelude::*;
@@ -28,20 +29,28 @@ pub struct ChunkDataAndUpdateLightPacket {
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn void(
-        chunk_x: i32,
-        chunk_z: i32,
-        biome_index: i32,
-        dimension: Dimension,
-        protocol_version: ProtocolVersion,
-    ) -> Self {
+    pub fn void(context: VoidChunkContext) -> Self {
         Self {
-            chunk_x,
-            chunk_z,
+            chunk_x: context.chunk_x,
+            chunk_z: context.chunk_z,
             primary_bit_mask: LengthPaddedVec::default(),
-            chunk_data: ChunkData::void(biome_index, dimension, protocol_version),
+            chunk_data: ChunkData::void(context),
             trust_edges: true,
             v1_18_light_data: LightData::default(),
+        }
+    }
+
+    pub fn from_structure(
+        chunk_context: VoidChunkContext,
+        schematic_context: SchematicChunkContext,
+    ) -> Self {
+        Self {
+            chunk_x: chunk_context.chunk_x,
+            chunk_z: chunk_context.chunk_z,
+            primary_bit_mask: LengthPaddedVec::default(),
+            chunk_data: ChunkData::from_schematic(chunk_context, &schematic_context),
+            trust_edges: true,
+            v1_18_light_data: LightData::new_with_level(15),
         }
     }
 }
@@ -158,12 +167,19 @@ mod tests {
     }
 
     fn create_packet(protocol_version: ProtocolVersion) -> ChunkDataAndUpdateLightPacket {
-        let biome_id = if protocol_version >= ProtocolVersion::V1_21_5 {
+        let biome_index = if protocol_version >= ProtocolVersion::V1_21_5 {
             0
         } else {
             1
         };
-        ChunkDataAndUpdateLightPacket::void(0, 0, biome_id, Dimension::Overworld, protocol_version)
+        let chunk_context = VoidChunkContext {
+            chunk_x: 0,
+            chunk_z: 0,
+            biome_index,
+            dimension: Dimension::Overworld,
+            protocol_version,
+        };
+        ChunkDataAndUpdateLightPacket::void(chunk_context)
     }
 
     #[test]

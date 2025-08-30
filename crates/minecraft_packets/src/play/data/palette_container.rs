@@ -13,13 +13,13 @@ pub enum PaletteContainer {
         bits_per_entry: u8,
         /// Mapping of IDs in the registry to indices of this array.
         palette: LengthPaddedVec<VarInt>,
-        data: Vec<i64>,
+        data: Vec<u64>,
     },
     /// Registry IDs are stored directly as entries in the Data Array.
     Direct {
         /// Should be 15 for blocks or 6 for biomes
         bits_per_entry: u8,
-        data: Vec<i64>,
+        data: Vec<u64>,
     },
 }
 
@@ -73,7 +73,9 @@ impl EncodePacket for PaletteContainer {
                 if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
                     VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
                 }
-                data.encode(writer, protocol_version)?;
+                for &long_value in data {
+                    long_value.encode(writer, protocol_version)?;
+                }
             }
         }
         Ok(())
