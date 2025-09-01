@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "pico_limbo"
-version = "1.5.0+mc1.21.8"
+version = "1.5.1+mc1.21.8"
 dependencies = [
  "anyhow",
  "blocks_report",
