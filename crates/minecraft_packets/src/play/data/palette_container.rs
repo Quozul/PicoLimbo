@@ -66,7 +66,7 @@ impl PaletteContainer {
                 }
             }
             Palette::Direct { internal_data } => {
-                const BITS_PER_ENTRY: u8 = 15;
+                const BITS_PER_ENTRY: u8 = 16;
 
                 let global_data_iter = internal_data.iter().map(|id| map_id(id) as u32);
 
