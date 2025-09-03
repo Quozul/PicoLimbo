@@ -4,6 +4,10 @@ version = "1.5.1+mc1.21.8"
 edition = "2024"
 build = "build/main.rs"
 
+[features]
+default = []
+monitoring = ["axum", "prometheus-client"]
+
 [dependencies]
 minecraft_packets = { path = "../crates/minecraft_packets" }
 minecraft_protocol = { path = "../crates/minecraft_protocol" }
@@ -11,8 +15,10 @@ pico_structures = { path = "../crates/pico_structures" }
 blocks_report = { path = "../crates/blocks_report" }
 net = { path = "../crates/net" }
 macros = { path = "../crates/macros" }
+axum = { workspace = true, optional = true }
 clap = { workspace = true }
 hmac = { workspace = true }
+prometheus-client = { workspace = true, optional = true }
 rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -1,9 +1,9 @@
+use crate::monitoring::metrics_provider::MetricsProvider;
 use crate::server::client_data::ClientData;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::{
     PacketRegistry, PacketRegistryDecodeError, PacketRegistryEncodeError,
 };
-use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
@@ -21,13 +21,19 @@ use tracing::{debug, error, info, trace, warn};
 pub struct Server {
     state: Arc<RwLock<ServerState>>,
     listen_address: String,
+    metrics: Arc<dyn MetricsProvider>,
 }
 
 impl Server {
-    pub fn new(listen_address: &impl ToString, state: ServerState) -> Self {
+    pub fn new(
+        listen_address: &impl ToString,
+        state: ServerState,
+        metrics: Arc<dyn MetricsProvider>,
+    ) -> Self {
         Self {
             state: Arc::new(RwLock::new(state)),
             listen_address: listen_address.to_string(),
+            metrics,
         }
     }
 
@@ -46,29 +52,199 @@ impl Server {
 
     pub async fn accept(self, listener: &TcpListener) {
         loop {
-            tokio::select! {
-                 accept_result = listener.accept() => {
-                    match accept_result {
-                        Ok((socket, addr)) => {
-                            debug!("Accepted connection from {}", addr);
-                        let state_clone = Arc::clone(&self.state);
-                            tokio::spawn(async move {
-                                handle_client(socket, state_clone).await;
-                            });
-                        }
-                        Err(e) => {
-                            error!("Failed to accept a connection: {:?}", e);
-                        }
-                    }
-                },
-
-                 () = shutdown_signal() => {
-                    info!("Shutdown signal received, shutting down gracefully.");
-                    break;
+            let accept_result = listener.accept().await;
+            match accept_result {
+                Ok((socket, addr)) => {
+                    debug!("Accepted connection from {}", addr);
+                    let state_clone = Arc::clone(&self.state);
+                    let metrics_clone = Arc::clone(&self.metrics);
+                    tokio::spawn(async move {
+                        handle_client(socket, state_clone, metrics_clone).await;
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to accept a connection: {:?}", e);
                 }
             }
         }
     }
+}
+
+async fn handle_client(
+    socket: TcpStream,
+    server_state: Arc<RwLock<ServerState>>,
+    metrics: Arc<dyn MetricsProvider>,
+) {
+    metrics.inc_total_connections();
+    let client_data = ClientData::new(socket);
+    let mut was_in_play_state = false;
+
+    loop {
+        match read(
+            &client_data,
+            &server_state,
+            &mut was_in_play_state,
+            &metrics,
+        )
+        .await
+        {
+            Ok(()) => {}
+            Err(PacketProcessingError::Disconnected) => {
+                debug!("Client disconnected");
+                break;
+            }
+            Err(PacketProcessingError::Custom(e)) => {
+                debug!("Error processing packet: {}", e);
+                metrics.inc_packet_processing_error(&e);
+                break;
+            }
+            Err(PacketProcessingError::DecodePacketError(version, state, packet_id)) => {
+                trace!(
+                    "Unknown packet received: version={version} state={state} packet_id={packet_id}"
+                );
+                metrics.inc_packet_processing_error("decode");
+            }
+        }
+    }
+
+    let _ = client_data.shutdown().await;
+
+    if was_in_play_state {
+        metrics.dec_connected_clients();
+        server_state.write().await.decrement();
+        let username = client_data.client().await.get_username();
+        info!("{} left the game", username);
+    }
+}
+
+async fn read(
+    client_data: &ClientData,
+    server_state: &Arc<RwLock<ServerState>>,
+    was_in_play_state: &mut bool,
+    metrics: &Arc<dyn MetricsProvider>,
+) -> Result<(), PacketProcessingError> {
+    tokio::select! {
+        result = client_data.read_packet() => {
+            let raw_packet = result?;
+            process_packet(client_data, server_state, raw_packet, was_in_play_state, metrics).await?;
+        }
+        () = client_data.keep_alive_tick() => {
+            send_keep_alive(client_data, metrics).await?;
+        }
+    }
+    Ok(())
+}
+
+async fn process_packet(
+    client_data: &ClientData,
+    server_state: &Arc<RwLock<ServerState>>,
+    raw_packet: RawPacket,
+    was_in_play_state: &mut bool,
+    metrics: &Arc<dyn MetricsProvider>,
+) -> Result<(), PacketProcessingError> {
+    metrics.inc_packets_received();
+    let mut client_state = client_data.client().await;
+    let protocol_version = client_state.protocol_version();
+    let state = client_state.state();
+    let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
+
+    {
+        let server_state_guard = server_state.read().await;
+        decoded_packet.handle(&mut client_state, &server_state_guard)?;
+    }
+
+    let protocol_version = client_state.protocol_version();
+    let state = client_state.state();
+
+    if !*was_in_play_state && state == State::Play {
+        *was_in_play_state = true;
+        server_state.write().await.increment();
+        let username = client_state.get_username();
+        debug!(
+            "{} joined using version {}",
+            username,
+            protocol_version.humanize()
+        );
+        info!("{} joined the game", username);
+
+        metrics.inc_connected_clients();
+        metrics.inc_client_version(protocol_version.humanize());
+    }
+
+    let pending_packets = client_state.pending_packets();
+    for pending_packet in pending_packets.drain() {
+        let raw_packet = pending_packet.encode_packet(protocol_version)?;
+        client_data.write_packet(raw_packet).await?;
+        metrics.inc_packets_sent();
+    }
+
+    if let Some(reason) = client_state.should_kick() {
+        drop(client_state);
+        kick_client(client_data, reason, metrics)
+            .await
+            .map_err(|_| PacketProcessingError::Disconnected)?;
+        return Err(PacketProcessingError::Disconnected);
+    }
+
+    drop(client_state);
+    client_data.enable_keep_alive_if_needed().await;
+
+    Ok(())
+}
+
+async fn kick_client(
+    client_data: &ClientData,
+    reason: String,
+    metrics: &Arc<dyn MetricsProvider>,
+) -> Result<(), PacketProcessingError> {
+    let (protocol_version, state) = {
+        let state = client_data.client().await;
+        (state.protocol_version(), state.state())
+    };
+    let packet = match state {
+        State::Login => {
+            debug!("Login disconnect");
+            PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason))
+        }
+        State::Configuration => {
+            debug!("Configuration disconnect");
+            PacketRegistry::ConfigurationDisconnect(DisconnectPacket::text(reason))
+        }
+        State::Play => {
+            debug!("Play disconnect");
+            PacketRegistry::PlayDisconnect(DisconnectPacket::text(reason))
+        }
+        _ => {
+            debug!("A user was disconnected from a state where no packet can be sent");
+            return Err(PacketProcessingError::Disconnected);
+        }
+    };
+    if let Ok(raw_packet) = packet.encode_packet(protocol_version) {
+        client_data.write_packet(raw_packet).await?;
+        client_data.shutdown().await?;
+        metrics.inc_packets_sent();
+    }
+
+    Ok(())
+}
+
+async fn send_keep_alive(
+    client_data: &ClientData,
+    metrics: &Arc<dyn MetricsProvider>,
+) -> Result<(), PacketProcessingError> {
+    let (protocol_version, state) = {
+        let client = client_data.client().await;
+        (client.protocol_version(), client.state())
+    };
+
+    if state == State::Play {
+        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
+        let raw_packet = packet.encode_packet(protocol_version)?;
+        client_data.write_packet(raw_packet).await?;
+        metrics.inc_packets_sent();
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Error)]
@@ -130,152 +306,4 @@ impl From<PacketStreamError> for PacketProcessingError {
             _ => Self::Custom(value.to_string()),
         }
     }
-}
-
-async fn process_packet(
-    client_data: &ClientData,
-    server_state: &Arc<RwLock<ServerState>>,
-    raw_packet: RawPacket,
-    was_in_play_state: &mut bool,
-) -> Result<(), PacketProcessingError> {
-    let mut client_state = client_data.client().await;
-    let protocol_version = client_state.protocol_version();
-    let state = client_state.state();
-    let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
-
-    {
-        let server_state_guard = server_state.read().await;
-        decoded_packet.handle(&mut client_state, &server_state_guard)?;
-    }
-
-    let protocol_version = client_state.protocol_version();
-    let state = client_state.state();
-
-    if !*was_in_play_state && state == State::Play {
-        *was_in_play_state = true;
-        server_state.write().await.increment();
-        let username = client_state.get_username();
-        debug!(
-            "{} joined using version {}",
-            username,
-            protocol_version.humanize()
-        );
-        info!("{} joined the game", username,);
-    }
-
-    let pending_packets = client_state.pending_packets();
-    for pending_packet in pending_packets.drain() {
-        let raw_packet = pending_packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-    }
-
-    if let Some(reason) = client_state.should_kick() {
-        drop(client_state);
-        kick_client(client_data, reason.clone())
-            .await
-            .map_err(|_| PacketProcessingError::Disconnected)?;
-        return Err(PacketProcessingError::Disconnected);
-    }
-
-    drop(client_state);
-    client_data.enable_keep_alive_if_needed().await;
-
-    Ok(())
-}
-
-async fn read(
-    client_data: &ClientData,
-    server_state: &Arc<RwLock<ServerState>>,
-    was_in_play_state: &mut bool,
-) -> Result<(), PacketProcessingError> {
-    tokio::select! {
-        result = client_data.read_packet() => {
-            let raw_packet = result?;
-            process_packet(client_data, server_state, raw_packet, was_in_play_state).await?;
-        }
-        () = client_data.keep_alive_tick() => {
-            send_keep_alive(client_data).await?;
-        }
-    }
-    Ok(())
-}
-
-async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>) {
-    let client_data = ClientData::new(socket);
-    let mut was_in_play_state = false;
-
-    loop {
-        match read(&client_data, &server_state, &mut was_in_play_state).await {
-            Ok(()) => {}
-            Err(PacketProcessingError::Disconnected) => {
-                debug!("Client disconnected");
-                break;
-            }
-            Err(PacketProcessingError::Custom(e)) => {
-                debug!("Error processing packet: {}", e);
-            }
-            Err(PacketProcessingError::DecodePacketError(version, state, packet_id)) => {
-                trace!(
-                    "Unknown packet received: version={version} state={state} packet_id={packet_id}"
-                );
-            }
-        }
-    }
-
-    let _ = client_data.shutdown().await;
-
-    if was_in_play_state {
-        server_state.write().await.decrement();
-        let username = client_data.client().await.get_username();
-        info!("{} left the game", username);
-    }
-}
-
-async fn kick_client(
-    client_data: &ClientData,
-    reason: String,
-) -> Result<(), PacketProcessingError> {
-    let (protocol_version, state) = {
-        let state = client_data.client().await;
-        (state.protocol_version(), state.state())
-    };
-    let packet = match state {
-        State::Login => {
-            debug!("Login disconnect");
-            PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason))
-        }
-        State::Configuration => {
-            debug!("Configuration disconnect");
-            PacketRegistry::ConfigurationDisconnect(DisconnectPacket::text(reason))
-        }
-        State::Play => {
-            debug!("Play disconnect");
-            PacketRegistry::PlayDisconnect(DisconnectPacket::text(reason))
-        }
-        _ => {
-            debug!("A user was disconnected from a state where no packet can be sent");
-            return Err(PacketProcessingError::Disconnected);
-        }
-    };
-    if let Ok(raw_packet) = packet.encode_packet(protocol_version) {
-        client_data.write_packet(raw_packet).await?;
-        client_data.shutdown().await?;
-    }
-
-    Ok(())
-}
-
-async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessingError> {
-    let (protocol_version, state) = {
-        let client = client_data.client().await;
-        (client.protocol_version(), client.state())
-    };
-
-    if state == State::Play {
-        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
-        let raw_packet = packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-    }
-
-    Ok(())
 }
