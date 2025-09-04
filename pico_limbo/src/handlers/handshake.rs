@@ -15,26 +15,21 @@ impl PacketHandler for HandshakePacket {
     ) -> Result<(), PacketHandlerError> {
         client_state.set_protocol_version(self.get_protocol());
 
-        if let Ok(next_state) = self.get_next_state() {
-            client_state.set_state(next_state);
+        let next_state = self.get_next_state()?;
+        client_state.set_state(next_state);
 
-            if next_state == State::Login && !check_bungee_cord(server_state, &self.hostname)? {
-                client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
-                Err(PacketHandlerError::invalid_state(
-                    PROXY_REQUIRED_KICK_MESSAGE,
-                ))
-            } else {
-                Ok(())
-            }
+        if next_state == State::Login && !check_bungee_cord(server_state, &self.hostname)? {
+            client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
+            Err(PacketHandlerError::ProxyRequired)
         } else {
-            Err(PacketHandlerError::invalid_state("Unsupported next state."))
+            Ok(())
         }
     }
 }
 
 #[derive(Error, Debug)]
 #[error("unknown state {0}")]
-struct UnknownStateError(i32);
+pub struct UnknownStateError(i32);
 
 trait GetStateProtocol {
     fn get_next_state(&self) -> Result<State, UnknownStateError>;
@@ -131,7 +126,10 @@ mod tests {
         let result = handshake_packet.handle(&mut client_state, &server_state());
 
         // Then
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::UnknownState(UnknownStateError(42)))
+        ));
     }
 
     #[test]
@@ -193,6 +191,6 @@ mod tests {
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(result, Err(PacketHandlerError::ProxyRequired)));
     }
 }

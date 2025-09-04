@@ -11,6 +11,7 @@ use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
+use std::io::ErrorKind;
 use std::num::TryFromIntError;
 use std::sync::Arc;
 use thiserror::Error;
@@ -56,6 +57,7 @@ impl Server {
             match accept_result {
                 Ok((socket, addr)) => {
                     debug!("Accepted connection from {}", addr);
+                    self.metrics.inc_total_connections();
                     let state_clone = Arc::clone(&self.state);
                     let metrics_clone = Arc::clone(&self.metrics);
                     tokio::spawn(async move {
@@ -70,12 +72,19 @@ impl Server {
     }
 }
 
+macro_rules! send_and_monitor_packet {
+    ($client_data: expr, $metrics:expr, $protocol_version:expr, $packet:expr) => {{
+        let raw_packet = $packet.encode_packet($protocol_version)?;
+        $client_data.write_packet(raw_packet).await?;
+        $metrics.inc_packets_sent($packet.packet_name(), $packet.state());
+    }};
+}
+
 async fn handle_client(
     socket: TcpStream,
     server_state: Arc<RwLock<ServerState>>,
     metrics: Arc<dyn MetricsProvider>,
 ) {
-    metrics.inc_total_connections();
     let client_data = ClientData::new(socket);
     let mut was_in_play_state = false;
 
@@ -89,20 +98,19 @@ async fn handle_client(
         .await
         {
             Ok(()) => {}
-            Err(PacketProcessingError::Disconnected) => {
-                debug!("Client disconnected");
-                break;
-            }
-            Err(PacketProcessingError::Custom(e)) => {
-                debug!("Error processing packet: {}", e);
-                metrics.inc_packet_processing_error(&e);
-                break;
-            }
-            Err(PacketProcessingError::DecodePacketError(version, state, packet_id)) => {
+            Err(PacketProcessingError::PacketNotFound {
+                version,
+                state,
+                packet_id,
+            }) => {
                 trace!(
                     "Unknown packet received: version={version} state={state} packet_id={packet_id}"
                 );
-                metrics.inc_packet_processing_error("decode");
+                metrics.inc_packet_processing_error("PKT_NOT_FOUND");
+            }
+            Err(e) => {
+                metrics.inc_packet_processing_error(e.error_code());
+                break;
             }
         }
     }
@@ -142,11 +150,11 @@ async fn process_packet(
     was_in_play_state: &mut bool,
     metrics: &Arc<dyn MetricsProvider>,
 ) -> Result<(), PacketProcessingError> {
-    metrics.inc_packets_received();
     let mut client_state = client_data.client().await;
     let protocol_version = client_state.protocol_version();
     let state = client_state.state();
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
+    metrics.inc_packets_received(decoded_packet.packet_name(), decoded_packet.state());
 
     {
         let server_state_guard = server_state.read().await;
@@ -173,9 +181,7 @@ async fn process_packet(
 
     let pending_packets = client_state.pending_packets();
     for pending_packet in pending_packets.drain() {
-        let raw_packet = pending_packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-        metrics.inc_packets_sent();
+        send_and_monitor_packet!(client_data, metrics, protocol_version, pending_packet);
     }
 
     if let Some(reason) = client_state.should_kick() {
@@ -202,28 +208,18 @@ async fn kick_client(
         (state.protocol_version(), state.state())
     };
     let packet = match state {
-        State::Login => {
-            debug!("Login disconnect");
-            PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason))
-        }
+        State::Login => PacketRegistry::LoginDisconnect(LoginDisconnectPacket::text(reason)),
         State::Configuration => {
-            debug!("Configuration disconnect");
             PacketRegistry::ConfigurationDisconnect(DisconnectPacket::text(reason))
         }
-        State::Play => {
-            debug!("Play disconnect");
-            PacketRegistry::PlayDisconnect(DisconnectPacket::text(reason))
-        }
+        State::Play => PacketRegistry::PlayDisconnect(DisconnectPacket::text(reason)),
         _ => {
-            debug!("A user was disconnected from a state where no packet can be sent");
+            warn!("A user was disconnected from a state where no packet can be sent");
             return Err(PacketProcessingError::Disconnected);
         }
     };
-    if let Ok(raw_packet) = packet.encode_packet(protocol_version) {
-        client_data.write_packet(raw_packet).await?;
-        client_data.shutdown().await?;
-        metrics.inc_packets_sent();
-    }
+
+    send_and_monitor_packet!(client_data, metrics, protocol_version, packet);
 
     Ok(())
 }
@@ -239,9 +235,7 @@ async fn send_keep_alive(
 
     if state == State::Play {
         let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
-        let raw_packet = packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-        metrics.inc_packets_sent();
+        send_and_monitor_packet!(client_data, metrics, protocol_version, packet);
     }
 
     Ok(())
@@ -252,22 +246,38 @@ pub enum PacketProcessingError {
     #[error("Client disconnected")]
     Disconnected,
 
-    #[error("Packet not found version={0} state={1} packet_id={2}")]
-    DecodePacketError(i32, State, u8),
+    #[error("Packet not found for version={version} state={state:?} packet_id=0x{packet_id:X}")]
+    PacketNotFound {
+        version: i32,
+        state: State,
+        packet_id: u8,
+    },
 
-    #[error("{0}")]
-    Custom(String),
+    #[error("Packet handling failed")]
+    Handler(#[from] PacketHandlerError),
+
+    #[error("Packet encoding failed")]
+    Encode(#[from] PacketRegistryEncodeError),
+
+    #[error("Integer conversion failed")]
+    IntConversion(#[from] TryFromIntError),
+
+    #[error("Packet decoding failed")]
+    Decode(#[source] PacketRegistryDecodeError),
+
+    #[error("Packet stream I/O error")]
+    Stream(#[source] PacketStreamError),
 }
 
-impl From<PacketHandlerError> for PacketProcessingError {
-    fn from(e: PacketHandlerError) -> Self {
-        match e {
-            PacketHandlerError::Custom(reason) => Self::Custom(reason),
-            PacketHandlerError::InvalidState(reason) => {
-                warn!("{reason}");
-                Self::Disconnected
-            }
+impl From<PacketStreamError> for PacketProcessingError {
+    fn from(e: PacketStreamError) -> Self {
+        if let PacketStreamError::IoError(ref io_err) = e
+            && (io_err.kind() == ErrorKind::UnexpectedEof
+                || io_err.kind() == ErrorKind::ConnectionReset)
+        {
+            return Self::Disconnected;
         }
+        Self::Stream(e)
     }
 }
 
@@ -275,35 +285,27 @@ impl From<PacketRegistryDecodeError> for PacketProcessingError {
     fn from(e: PacketRegistryDecodeError) -> Self {
         match e {
             PacketRegistryDecodeError::NoCorrespondingPacket(version, state, packet_id) => {
-                Self::DecodePacketError(version, state, packet_id)
+                Self::PacketNotFound {
+                    version,
+                    state,
+                    packet_id,
+                }
             }
-            _ => Self::Custom(e.to_string()),
+            _ => Self::Decode(e),
         }
     }
 }
 
-impl From<PacketRegistryEncodeError> for PacketProcessingError {
-    fn from(e: PacketRegistryEncodeError) -> Self {
-        Self::Custom(e.to_string())
-    }
-}
-
-impl From<TryFromIntError> for PacketProcessingError {
-    fn from(e: TryFromIntError) -> Self {
-        Self::Custom(e.to_string())
-    }
-}
-
-impl From<PacketStreamError> for PacketProcessingError {
-    fn from(value: PacketStreamError) -> Self {
-        match value {
-            PacketStreamError::IoError(ref e)
-                if e.kind() == std::io::ErrorKind::UnexpectedEof
-                    || e.kind() == std::io::ErrorKind::ConnectionReset =>
-            {
-                Self::Disconnected
-            }
-            _ => Self::Custom(value.to_string()),
+impl PacketProcessingError {
+    pub const fn error_code(&self) -> &'static str {
+        match self {
+            Self::Disconnected => "NET_DISCONNECTED",
+            Self::PacketNotFound { .. } => "PKT_NOT_FOUND",
+            Self::Handler(_) => "PKT_HANDLER_ERR",
+            Self::Encode(_) => "PKT_ENCODE_ERR",
+            Self::IntConversion(_) => "ERR_INT_CONV",
+            Self::Decode(_) => "PKT_DECODE_ERR",
+            Self::Stream(_) => "NET_STREAM_ERR",
         }
     }
 }

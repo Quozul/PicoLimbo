@@ -241,7 +241,9 @@ impl PacketHandler for PacketRegistry {
             Self::CustomQueryAnswer(packet) => packet.handle(client_state, server_state),
             Self::LoginAcknowledged(packet) => packet.handle(client_state, server_state),
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
-            _ => Err(PacketHandlerError::custom("Unhandled packet")),
+            packet => Err(PacketHandlerError::UnhandledPacket(
+                packet.packet_name().to_string(),
+            )),
         }
     }
 }

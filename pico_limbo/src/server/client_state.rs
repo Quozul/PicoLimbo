@@ -2,7 +2,7 @@ use crate::server::fifo::Fifo;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_registry::PacketRegistry;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
-use tracing::info;
+use tracing::{info, trace};
 
 #[derive(PartialEq, Eq)]
 pub enum KeepAliveStatus {
@@ -54,7 +54,8 @@ impl ClientState {
         self.state
     }
 
-    pub const fn set_state(&mut self, new_state: State) {
+    pub fn set_state(&mut self, new_state: State) {
+        trace!("Client changed to state: {new_state:?}");
         self.state = new_state;
     }
 

@@ -23,8 +23,8 @@ impl PacketHandler for LoginAcknowledgedPacket {
             send_configuration_packets(client_state, server_state);
             Ok(())
         } else {
-            Err(PacketHandlerError::invalid_state(
-                "Configuration state not supported for this version",
+            Err(PacketHandlerError::ConfigurationStateNotHandled(
+                protocol_version,
             ))
         }
     }
@@ -122,7 +122,10 @@ mod tests {
         let result = pkt.handle(&mut client_state, &server_state);
 
         // Then
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::ConfigurationStateNotHandled(_))
+        ));
         assert!(client_state.has_no_more_packets());
     }
 

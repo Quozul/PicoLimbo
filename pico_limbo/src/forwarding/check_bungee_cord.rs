@@ -1,4 +1,3 @@
-use crate::server::packet_handler::PacketHandlerError;
 use crate::server_state::{MisconfiguredForwardingError, ServerState};
 use serde::Deserialize;
 use serde_json::Error as JsonError;
@@ -50,12 +49,6 @@ pub enum BungeeGuardError {
     InvalidJson(#[from] JsonError),
     #[error("misconfigured forwarding")]
     MissingTokens(#[from] MisconfiguredForwardingError),
-}
-
-impl From<BungeeGuardError> for PacketHandlerError {
-    fn from(e: BungeeGuardError) -> Self {
-        Self::custom(&e.to_string())
-    }
 }
 
 #[cfg(test)]
