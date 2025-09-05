@@ -25,6 +25,7 @@ use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
+use minecraft_packets::play::set_player_position_and_rotation::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
@@ -176,6 +177,14 @@ pub enum PacketRegistry {
     )]
     SynchronizePlayerPosition(SynchronizePlayerPositionPacket),
 
+    // Support by 1.21.5 max
+    #[protocol_id(
+        state = "play",
+        bound = "serverbound",
+        name = "minecraft:move_player_pos_rot"
+    )]
+    SetPlayerPositionAndRotation(SetPlayerPositionAndRotationPacket),
+
     #[protocol_id(
         state = "play",
         bound = "clientbound",
@@ -241,6 +250,7 @@ impl PacketHandler for PacketRegistry {
             Self::CustomQueryAnswer(packet) => packet.handle(client_state, server_state),
             Self::LoginAcknowledged(packet) => packet.handle(client_state, server_state),
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
+            Self::SetPlayerPositionAndRotation(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }
