@@ -1,6 +1,8 @@
 use crate::server::fifo::Fifo;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_registry::PacketRegistry;
+use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
+use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
 use tracing::info;
 
@@ -135,6 +137,19 @@ impl ClientState {
     pub fn set_keep_alive_enabled(&mut self) {
         if self.keep_alive_enabled == KeepAliveStatus::ShouldEnable {
             self.keep_alive_enabled = KeepAliveStatus::Enabled;
+        }
+    }
+
+    pub fn send_message(&mut self, message: String) {
+        if self
+            .protocol_version
+            .is_after_inclusive(ProtocolVersion::V1_19)
+        {
+            let packet = SystemChatMessagePacket::plain_text(message);
+            self.queue_packet(PacketRegistry::SystemChatMessage(packet));
+        } else {
+            let packet = LegacyChatMessagePacket::system(message);
+            self.queue_packet(PacketRegistry::LegacyChatMessage(packet));
         }
     }
 }
