@@ -141,7 +141,10 @@ impl ClientState {
     }
 
     pub fn send_message(&mut self, message: String) {
-        if self.protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+        if self
+            .protocol_version
+            .is_after_inclusive(ProtocolVersion::V1_19)
+        {
             let packet = SystemChatMessagePacket::plain_text(message);
             self.queue_packet(PacketRegistry::SystemChatMessage(packet));
         } else {
