@@ -48,7 +48,14 @@
         "protocol_id": 26
       }
     },
-    "serverbound": {}
+    "serverbound": {
+      "minecraft:move_player_pos_rot": {
+        "protocol_id": 15
+      },
+      "minecraft:move_player_pos": {
+        "protocol_id": 14
+      }
+    }
   },
   "status": {
     "clientbound": {
