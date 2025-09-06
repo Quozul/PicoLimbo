@@ -10,6 +10,7 @@ pub struct ExperimentalWorldConfig {
     pub spawn_position: (f64, f64, f64),
     pub view_distance: i32,
     pub schematic_file: String,
+    pub min_y_pos: i32,
 }
 
 impl Default for ExperimentalWorldConfig {
@@ -18,6 +19,7 @@ impl Default for ExperimentalWorldConfig {
             spawn_position: (0.0, 320.0, 0.0),
             view_distance: 2,
             schematic_file: String::new(),
+            min_y_pos: -64,
         }
     }
 }

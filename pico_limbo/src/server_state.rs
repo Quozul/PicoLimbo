@@ -39,6 +39,7 @@ pub struct ServerState {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     world: Option<World>,
+    min_y_pos: i32,
 }
 
 impl ServerState {
@@ -121,6 +122,9 @@ impl ServerState {
     pub const fn world(&self) -> Option<&World> {
         self.world.as_ref()
     }
+    pub const fn min_y_pos(&self) -> i32 {
+        self.min_y_pos
+    }
 
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
@@ -144,6 +148,7 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
+    min_y_pos: i32,
 }
 
 #[derive(Debug, Error)]
@@ -236,6 +241,11 @@ impl ServerStateBuilder {
         self.schematic_file_path = schematic_file_path;
         self
     }
+    
+    pub const fn min_y_pos(&mut self, min_y_pos: i32) -> &mut Self {
+        self.min_y_pos = min_y_pos;
+        self
+    }
 
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
@@ -263,6 +273,7 @@ impl ServerStateBuilder {
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
             world,
+            min_y_pos: self.min_y_pos,
         })
     }
 }
