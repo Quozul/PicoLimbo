@@ -11,7 +11,7 @@ impl PacketHandler for SetPlayerPositionPacket {
         server_state: &ServerState
     ) -> Result<(), PacketHandlerError> {
         let min_y_pos_config = server_state.min_y_pos();
-        if self.feet_y < min_y_pos_config as f64 {
+        if self.feet_y < f64::from(min_y_pos_config) {
             teleport_player_to_spawn(client_state, server_state);
         }
 
