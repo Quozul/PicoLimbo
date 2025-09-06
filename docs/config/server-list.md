@@ -17,12 +17,21 @@ max_players = 20
 ## Message of the Day
 
 Message of the Day displayed in server lists.
-The `message_of_the_day` appears in the server list. You can use color codes (like `§6` for gold).
+The `message_of_the_day` appears in the server list and supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
 
 :::code-group
 ```toml [server.toml] {2}
 [server_list]
-message_of_the_day = "A Minecraft Server"
+message_of_the_day = "<gold>A <bold>PicoLimbo</bold> Server</gold>"
+```
+:::
+
+You can also use legacy color codes for backward compatibility:
+
+:::code-group
+```toml [server.toml] {2}
+[server_list]
+message_of_the_day = "§6A Minecraft Server"
 ```
 :::
 

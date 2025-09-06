@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::*;
-use pico_text_component::prelude::PlainText;
+use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct LoginDisconnectPacket {
@@ -17,7 +17,7 @@ impl Default for LoginDisconnectPacket {
 
 impl LoginDisconnectPacket {
     pub fn text(text: impl Into<String>) -> LoginDisconnectPacket {
-        let component = PlainText::new(text);
+        let component = Component::new(text);
         Self {
             reason: component.to_json(),
         }

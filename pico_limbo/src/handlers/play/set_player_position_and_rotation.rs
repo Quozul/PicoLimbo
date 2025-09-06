@@ -177,7 +177,7 @@ mod tests {
         let server_state = server_state_with_min_y(0, Some("Direct teleport test".to_string()));
 
         // When
-        teleport_player_to_spawn(&mut client_state, &server_state);
+        teleport_player_to_spawn(&mut client_state, &server_state).unwrap();
 
         // Then
         assert!(matches!(

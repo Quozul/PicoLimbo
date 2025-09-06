@@ -46,6 +46,12 @@ export default defineConfig({
 					},
 				],
 			},
+			{
+				text: "Customization",
+				items: [
+					{ text: "Message Formatting", link: "/customization/message-formatting.html" },
+				],
+			},
 		],
 		socialLinks: [
 			{ icon: "github", link: "https://github.com/Quozul/PicoLimbo" },

@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::*;
-use pico_text_component::prelude::PlainText;
+use pico_text_component::prelude::Component;
 
 /// Sends the client a raw system message.
 /// Introduced in 1.19
@@ -13,11 +13,7 @@ pub struct SystemChatMessagePacket {
 }
 
 impl SystemChatMessagePacket {
-    pub fn plain_text<S>(content: S) -> Self
-    where
-        S: Into<String>,
-    {
-        let component = PlainText::new(content);
+    pub fn component(component: &Component) -> Self {
         Self {
             content: component.to_json(),
             v1_20_3_content: component.to_nbt(),

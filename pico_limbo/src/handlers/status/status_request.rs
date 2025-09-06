@@ -29,7 +29,7 @@ impl PacketHandler for StatusRequestPacket {
         let status_response = StatusResponse::new(
             version_string,
             version_number,
-            server_state.description_text(),
+            server_state.motd(),
             server_state.online_players(),
             server_state.max_players(),
             false,

@@ -215,8 +215,8 @@ pub fn send_play_packets(
         client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet));
     }
 
-    if let Some(content) = server_state.welcome_message() {
-        client_state.send_message(content);
+    if let Some(component) = server_state.welcome_message() {
+        client_state.send_message(component);
     }
 
     let ticks = server_state.time_world_ticks();

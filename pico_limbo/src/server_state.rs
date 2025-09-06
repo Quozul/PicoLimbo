@@ -1,6 +1,7 @@
 use crate::server::game_mode::GameMode;
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
+use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -29,11 +30,11 @@ pub struct MisconfiguredForwardingError;
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
+    motd: Component,
     time_world: i64,
     lock_time: bool,
-    description_text: String,
     max_players: u32,
-    welcome_message: String,
+    welcome_message: Option<Component>,
     connected_clients: Arc<AtomicU32>,
     show_online_player_count: bool,
     game_mode: GameMode,
@@ -42,7 +43,7 @@ pub struct ServerState {
     view_distance: i32,
     world: Option<World>,
     min_y_pos: i32,
-    min_y_message: String,
+    min_y_message: Option<Component>,
 }
 
 impl ServerState {
@@ -77,20 +78,16 @@ impl ServerState {
         }
     }
 
-    pub fn description_text(&self) -> &str {
-        &self.description_text
+    pub const fn motd(&self) -> &Component {
+        &self.motd
     }
 
     pub const fn max_players(&self) -> u32 {
         self.max_players
     }
 
-    pub fn welcome_message(&self) -> Option<String> {
-        if self.welcome_message.is_empty() {
-            None
-        } else {
-            Some(self.welcome_message.clone())
-        }
+    pub const fn welcome_message(&self) -> Option<&Component> {
+        self.welcome_message.as_ref()
     }
 
     /// Returns the current number of connected clients.
@@ -137,13 +134,11 @@ impl ServerState {
     pub const fn min_y_pos(&self) -> i32 {
         self.min_y_pos
     }
-    pub fn min_y_message(&self) -> Option<String> {
-        if self.min_y_message.is_empty() {
-            None
-        } else {
-            Some(self.min_y_message.clone())
-        }
+
+    pub const fn min_y_message(&self) -> Option<&Component> {
+        self.min_y_message.as_ref()
     }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -180,6 +175,8 @@ pub enum ServerStateBuilderError {
     BinaryReader(#[from] BinaryReaderError),
     #[error(transparent)]
     WorldLoading(#[from] WorldLoadingError),
+    #[error(transparent)]
+    MiniMessage(#[from] MiniMessageError),
     #[error("the configured spawn position Y is below the configured minimum Y position")]
     InvalidSpawnPosition(),
 }
@@ -305,11 +302,11 @@ impl ServerStateBuilder {
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),
+            motd: parse_mini_message(&self.description_text)?,
             time_world: self.time_world,
             lock_time: self.lock_time,
-            description_text: self.description_text,
             max_players: self.max_players,
-            welcome_message: self.welcome_message,
+            welcome_message: optional_mini_message(&self.welcome_message)?,
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
@@ -318,9 +315,18 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             world,
             min_y_pos: self.min_y_pos,
-            min_y_message: self.min_y_message,
+            min_y_message: optional_mini_message(&self.min_y_message)?,
         })
     }
+}
+
+fn optional_mini_message(content: &str) -> Result<Option<Component>, MiniMessageError> {
+    let component = if content.is_empty() {
+        None
+    } else {
+        Some(parse_mini_message(content)?)
+    };
+    Ok(component)
 }
 
 fn format_duration(duration: Duration) -> String {

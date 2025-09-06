@@ -1,3 +1,4 @@
+use pico_text_component::prelude::Component;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -43,17 +44,12 @@ impl StatusResponse {
     pub fn new(
         version_name: String,
         version_protocol: i32,
-        description_text: &str,
+        description: &Component,
         online_players: u32,
         max_players: u32,
         enforces_secure_chat: bool,
     ) -> Self {
-        let mut description_map = serde_json::Map::new();
-        description_map.insert(
-            "text".to_string(),
-            Value::String(description_text.to_string()),
-        );
-        let description = Value::Object(description_map);
+        let description = serde_json::to_value(description).unwrap();
         StatusResponse {
             version: Version {
                 name: version_name,

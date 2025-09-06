@@ -92,6 +92,13 @@ impl Nbt {
         }
     }
 
+    pub fn byte(name: impl ToString, value: i8) -> Nbt {
+        Self::Byte {
+            name: Some(name.to_string()),
+            value,
+        }
+    }
+
     pub fn to_bytes(&self, nbt_features: NbtFeatures) -> Result<Vec<u8>, BinaryWriterError> {
         let mut writer = BinaryWriter::default();
         let context = NbtContext::root();

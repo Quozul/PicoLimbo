@@ -4,6 +4,7 @@ use crate::server::packet_registry::PacketRegistry;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
+use pico_text_component::prelude::Component;
 use tracing::info;
 
 #[derive(PartialEq, Eq)]
@@ -140,15 +141,15 @@ impl ClientState {
         }
     }
 
-    pub fn send_message(&mut self, message: String) {
+    pub fn send_message(&mut self, component: &Component) {
         if self
             .protocol_version
             .is_after_inclusive(ProtocolVersion::V1_19)
         {
-            let packet = SystemChatMessagePacket::plain_text(message);
+            let packet = SystemChatMessagePacket::component(component);
             self.queue_packet(PacketRegistry::SystemChatMessage(packet));
         } else {
-            let packet = LegacyChatMessagePacket::system(message);
+            let packet = LegacyChatMessagePacket::component(component);
             self.queue_packet(PacketRegistry::LegacyChatMessage(packet));
         }
     }
