@@ -264,7 +264,7 @@ impl ServerStateBuilder {
     }
 
     pub fn view_distance(&mut self, view_distance: i32) -> &mut Self {
-        self.view_distance = view_distance.clamp(0, 32);
+        self.view_distance = view_distance.max(0);
         self
     }
 

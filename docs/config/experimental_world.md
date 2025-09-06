@@ -49,7 +49,7 @@ Here's a list of what does not work when loading a schematic:
 
 ## View Distance
 
-Configure how many chunks are sent to clients. Defaults to 2, with a range of 0-32. Values outside this range are clamped. The view distance should match or exceed your schematic's size in chunks.
+Configure how many chunks are sent to clients. Defaults to 2. The view distance should match or exceed your schematic's size in chunks.
 
 :::code-group
 ```toml [server.toml] {2}
