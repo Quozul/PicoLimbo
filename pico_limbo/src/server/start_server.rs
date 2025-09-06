@@ -70,7 +70,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.experimental.world.spawn_position)
         .view_distance(cfg.experimental.world.view_distance)
         .schematic(cfg.experimental.world.schematic_file)
-        .min_y_pos(cfg.experimental.world.min_y_pos);
+        .min_y_pos(cfg.experimental.world.min_y_pos)
+        .min_y_message(&cfg.experimental.world.min_y_message);
 
     server_state_builder.build()
 }

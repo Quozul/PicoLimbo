@@ -11,6 +11,7 @@ pub struct ExperimentalWorldConfig {
     pub view_distance: i32,
     pub schematic_file: String,
     pub min_y_pos: i32,
+    pub min_y_message: String,
 }
 
 impl Default for ExperimentalWorldConfig {
@@ -20,6 +21,7 @@ impl Default for ExperimentalWorldConfig {
             view_distance: 2,
             schematic_file: String::new(),
             min_y_pos: -64,
+            min_y_message: "You have reached the bottom of the world.".into(),
         }
     }
 }

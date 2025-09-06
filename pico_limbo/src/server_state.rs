@@ -40,6 +40,7 @@ pub struct ServerState {
     view_distance: i32,
     world: Option<World>,
     min_y_pos: i32,
+    min_y_message: String,
 }
 
 impl ServerState {
@@ -125,7 +126,13 @@ impl ServerState {
     pub const fn min_y_pos(&self) -> i32 {
         self.min_y_pos
     }
-
+    pub fn min_y_message(&self) -> Option<String> {
+        if self.min_y_message.is_empty() {
+            None
+        } else {
+            Some(self.min_y_message.clone())
+        }
+    }
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -149,6 +156,7 @@ pub struct ServerStateBuilder {
     view_distance: i32,
     schematic_file_path: String,
     min_y_pos: i32,
+    min_y_message: String,
 }
 
 #[derive(Debug, Error)]
@@ -241,9 +249,17 @@ impl ServerStateBuilder {
         self.schematic_file_path = schematic_file_path;
         self
     }
-    
+
     pub const fn min_y_pos(&mut self, min_y_pos: i32) -> &mut Self {
         self.min_y_pos = min_y_pos;
+        self
+    }
+
+    pub fn min_y_message<S>(&mut self, message: S) -> &mut Self
+    where
+        S: Into<String>,
+    {
+        self.min_y_message = message.into();
         self
     }
 
@@ -274,6 +290,7 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             world,
             min_y_pos: self.min_y_pos,
+            min_y_message: self.min_y_message,
         })
     }
 }
