@@ -1,4 +1,4 @@
-use minecraft_packets::play::set_player_position::SetPlayerPositionPacket;
+use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
 use crate::handlers::play::set_player_position_and_rotation::teleport_player_to_spawn;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};

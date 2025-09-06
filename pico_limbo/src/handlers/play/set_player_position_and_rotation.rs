@@ -1,4 +1,4 @@
-use minecraft_packets::play::set_player_position_and_rotation::SetPlayerPositionAndRotationPacket;
+use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
