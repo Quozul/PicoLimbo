@@ -11,13 +11,11 @@ use minecraft_packets::configuration::acknowledge_finish_configuration_packet::A
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
-use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
-use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
@@ -217,13 +215,7 @@ pub fn send_play_packets(
     }
 
     if let Some(content) = server_state.welcome_message() {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SystemChatMessagePacket::plain_text(content);
-            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
-        } else {
-            let packet = LegacyChatMessagePacket::system(content);
-            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
-        }
+        client_state.send_message(content);
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
