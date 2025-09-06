@@ -548,12 +548,13 @@ name = "pico_binutils"
 version = "0.1.0"
 dependencies = [
  "thiserror",
+ "tracing",
  "uuid",
 ]
 
 [[package]]
 name = "pico_limbo"
-version = "1.5.1+mc1.21.8"
+version = "1.5.2+mc1.21.8"
 dependencies = [
  "anyhow",
  "blocks_report",
