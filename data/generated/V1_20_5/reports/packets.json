@@ -94,6 +94,9 @@
       },
       "minecraft:set_chunk_cache_center": {
         "protocol_id": 84
+      },
+      "minecraft:set_time": {
+        "protocol_id": 100
       }
     },
     "serverbound": {

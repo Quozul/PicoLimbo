@@ -4,6 +4,7 @@ use minecraft_protocol::prelude::*;
 pub struct UpdateTimePacket {
     pub world_age: i64,
     pub time_of_day: i64,
+    #[pvn(768..)]
     pub time_of_day_increasing: bool,
 }
 
