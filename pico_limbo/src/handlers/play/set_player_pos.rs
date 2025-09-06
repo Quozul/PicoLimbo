@@ -21,9 +21,9 @@ impl PacketHandler for SetPlayerPositionPacket {
 
 #[cfg(test)]
 mod tests {
-    use minecraft_protocol::prelude::{ProtocolVersion, State};
-    use crate::server::packet_registry::PacketRegistry;
     use super::*;
+    use crate::server::packet_registry::PacketRegistry;
+    use minecraft_protocol::prelude::{ProtocolVersion, State};
 
     fn server_state_with_min_y(min_y: i32, message: Option<String>) -> ServerState {
         let mut server_state = ServerState::builder();
