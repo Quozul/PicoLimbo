@@ -29,6 +29,7 @@ use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerP
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
+use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PongResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;
@@ -241,6 +242,9 @@ pub enum PacketRegistry {
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:disconnect")]
     PlayDisconnect(DisconnectPacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:set_time")]
+    UpdateTime(UpdateTimePacket),
 }
 
 impl PacketHandler for PacketRegistry {
