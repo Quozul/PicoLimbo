@@ -167,6 +167,8 @@ pub enum ServerStateBuilderError {
     BinaryReader(#[from] BinaryReaderError),
     #[error(transparent)]
     WorldLoading(#[from] WorldLoadingError),
+    #[error("the configured spawn position Y is below the configured minimum Y position")]
+    InvalidSpawnPosition(),
 }
 
 impl ServerStateBuilder {

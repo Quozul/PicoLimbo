@@ -59,6 +59,10 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.disable_forwarding();
     }
 
+    if cfg.experimental.world.spawn_position.1 < f64::from(cfg.experimental.world.min_y_pos) {
+        return Err(ServerStateBuilderError::InvalidSpawnPosition());
+    }
+
     server_state_builder
         .dimension(cfg.spawn_dimension.into())
         .description_text(&cfg.server_list.message_of_the_day)
