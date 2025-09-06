@@ -1,5 +1,6 @@
 use crate::binary_reader::ReadBytes;
 use crate::prelude::{BinaryReader, BinaryReaderError, Prefixed};
+use tracing::warn;
 
 pub trait ReadLengthPrefix: Sized + ReadBytes {
     fn read_to_usize(reader: &mut BinaryReader) -> Result<usize, BinaryReaderError>;
@@ -16,8 +17,21 @@ where
         for _ in 0..length {
             string_bytes.push(reader.read()?);
         }
-        Ok(Prefixed::new(String::from_utf8(string_bytes)?))
+        Ok(Prefixed::new(
+            String::from_utf8(string_bytes).unwrap_or_else(|_| {
+                warn!(
+                    "Invalid string of length {} ended at index {}",
+                    length,
+                    reader.position()
+                );
+                create_repeated_string(length, '�')
+            }),
+        ))
     }
+}
+
+fn create_repeated_string(length: usize, ch: char) -> String {
+    std::iter::repeat_n(ch, length).collect()
 }
 
 impl<L, T> ReadBytes for Prefixed<L, Vec<T>>

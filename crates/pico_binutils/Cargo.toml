@@ -13,5 +13,6 @@ uuid = ["dep:uuid"]
 string_indexer = []
 
 [dependencies]
-uuid = { workspace = true, optional = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true, optional = true }

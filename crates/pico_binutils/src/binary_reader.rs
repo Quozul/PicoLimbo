@@ -26,6 +26,10 @@ impl<'a> BinaryReader<'a> {
         let current_pos = self.0.position() as usize;
         total_len.saturating_sub(current_pos)
     }
+
+    pub fn position(&self) -> u64 {
+        self.0.position()
+    }
 }
 
 #[derive(Debug, Error)]
