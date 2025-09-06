@@ -5,8 +5,6 @@ use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
 use tracing::info;
-use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
-use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 
 #[derive(PartialEq, Eq)]
 pub enum KeepAliveStatus {
