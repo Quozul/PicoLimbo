@@ -57,7 +57,37 @@ To use this configuration:
 
 ### GitHub Releases
 
-Download pre-compiled binaries for multiple platforms from the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases).
+For the easiest installation, use the one-line install script:
+
+```bash
+curl -fsSL https://picolimbo.quozul.dev/pico_limbo_installation.sh | bash
+```
+
+**Requirements:** Linux, curl, and bash
+
+If you cannot use the installation script due to missing dependencies or unsupported platform, you can manually download the appropriate binary from the [GitHub releases page](https://github.com/Quozul/PicoLimbo/releases).
+
+#### Choosing the Right Binary
+
+Select the binary that matches your system:
+
+- **`pico_limbo_linux-x86_64-musl.tar.gz`** - Linux systems with Intel/AMD 64-bit processors (most common)
+- **`pico_limbo_linux-aarch64-musl.tar.gz`** - Linux systems with ARM 64-bit processors (e.g., Raspberry Pi 4+, Apple Silicon under emulation)
+- **`pico_limbo_macos-aarch64.tar.gz`** - macOS with Apple Silicon (M1/M2/M3 chips)
+- **`pico_limbo_windows-x86_64.zip`** - Windows with Intel/AMD 64-bit processors
+
+#### Manual Installation
+
+1. **Download** the appropriate binary for your system from the releases page
+2. **Extract** the archive:
+    - **Linux/macOS**: `tar -xzf pico_limbo_*.tar.gz`
+    - **Windows**: Use your preferred archive tool or built-in extraction
+3. **Run** the binary:
+    - **Linux/macOS**: `./pico_limbo`
+    - **Windows**: Double-click `pico_limbo.exe` or run it from Command Prompt
+
+> [!TIP]
+> On Linux systems, you may want to move the binary to a directory in your PATH (like `/usr/local/bin/`) to run it from anywhere, or make it executable with `chmod +x pico_limbo` if needed.
 
 ### Compiling from Source
 
