@@ -217,13 +217,7 @@ pub fn send_play_packets(
     }
 
     if let Some(content) = server_state.welcome_message() {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SystemChatMessagePacket::plain_text(content);
-            client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
-        } else {
-            let packet = LegacyChatMessagePacket::system(content);
-            client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
-        }
+        client_state.send_message(content);
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
