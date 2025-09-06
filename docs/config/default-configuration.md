@@ -46,8 +46,6 @@ dimension = "end"
 # Sets the time in the world
 # Allowed values: "day", "noon", "night", "midnight", or a specific time in ticks (0-24000)
 time = "day"
-# Lock the time in the world to `world.time` value
-lock_time = false
 
 [world.experimental]
 # Configure how many chunks are sent to clients
@@ -59,5 +57,7 @@ schematic_file = ""
 min_y_pos = -64
 # Message displayed when a player reaches the minimum Y position
 min_y_message = "You have reached the bottom of the world."
+# Lock the time in the world to `world.time` value
+lock_time = false
 ```
 :::

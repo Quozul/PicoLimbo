@@ -11,21 +11,25 @@ impl PacketHandler for SetPlayerPositionAndRotationPacket {
         client_state: &mut ClientState,
         server_state: &ServerState,
     ) -> Result<(), PacketHandlerError> {
-        let min_y_pos_config = server_state.min_y_pos();
-        if self.feet_y < f64::from(min_y_pos_config) {
-            teleport_player_to_spawn(client_state, server_state);
-        }
-
+        teleport_player_to_spawn(client_state, server_state, self.feet_y);
         Ok(())
     }
 }
 
-pub fn teleport_player_to_spawn(client_state: &mut ClientState, server_state: &ServerState) {
-    let (x, y, z) = server_state.spawn_position();
-    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
-    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
-    if let Some(content) = server_state.min_y_message() {
-        client_state.send_message(content);
+pub fn teleport_player_to_spawn(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+    feet_y: f64,
+) {
+    let min_y_pos_config = server_state.min_y_pos();
+    if feet_y < f64::from(min_y_pos_config) {
+        let (x, y, z) = server_state.spawn_position();
+        let packet = SynchronizePlayerPositionPacket::new(x, y, z);
+        client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
+
+        if let Some(content) = server_state.min_y_message() {
+            client_state.send_message(content);
+        }
     }
 }
 
@@ -156,7 +160,7 @@ mod tests {
     fn test_with_empty_message_only_teleport_sent() {
         // Given
         let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, Some("".to_string())); // Empty message
+        let server_state = server_state_with_min_y(30, Some(String::new())); // Empty message
         let packet = create_packet(20.0); // Below min_y_pos
 
         // When
@@ -177,7 +181,7 @@ mod tests {
         let server_state = server_state_with_min_y(0, Some("Direct teleport test".to_string()));
 
         // When
-        teleport_player_to_spawn(&mut client_state, &server_state).unwrap();
+        teleport_player_to_spawn(&mut client_state, &server_state, -1.0);
 
         // Then
         assert!(matches!(

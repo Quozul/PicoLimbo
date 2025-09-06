@@ -68,3 +68,39 @@ Set to `false` to prevent the client from ticking the time. This only works with
 lock_time = false
 ```
 :::
+
+## World Boundaries
+
+Control player movement by setting a minimum Y coordinate. When players fall below this level, they'll be teleported back to spawn and receive a configurable message.
+
+### Minimum Y Position
+
+Set the lowest Y coordinate players can reach before being teleported back to spawn. Defaults to -64 (Minecraft's default world bottom).
+
+:::code-group
+```toml [server.toml] {2}
+[world.experimental]
+min_y_pos = -64
+```
+:::
+
+### Minimum Y Message
+
+Customize the message players receive when they fall below the minimum Y position and are teleported back to spawn. Supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
+
+:::code-group
+```toml [server.toml] {2}
+[world.experimental]
+min_y_message = "<red>You have reached the bottom of the world.</red>"
+```
+:::
+
+The message can be disabled by setting an empty string:
+
+:::code-group
+```toml [server.toml] {2}
+[world.experimental]
+min_y_message = ""
+```
+:::
+

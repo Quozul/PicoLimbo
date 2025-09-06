@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Teleport player back to the spawn when they go bellow a certain y level
+
 ### Changed
 
 - Message of the day and welcome message now accept MiniMessage formatting
