@@ -21,6 +21,7 @@ use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
+use pico_text_component::prelude::MiniMessageError;
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -168,6 +169,12 @@ impl From<SchematicError> for PacketHandlerError {
     }
 }
 
+impl From<MiniMessageError> for PacketHandlerError {
+    fn from(value: MiniMessageError) -> Self {
+        Self::Custom(value.to_string())
+    }
+}
+
 pub fn send_play_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
@@ -218,10 +225,10 @@ pub fn send_play_packets(
 
     if let Some(content) = server_state.welcome_message() {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SystemChatMessagePacket::plain_text(content);
+            let packet = SystemChatMessagePacket::mini_message(&content)?;
             client_state.queue_packet(PacketRegistry::SystemChatMessage(packet));
         } else {
-            let packet = LegacyChatMessagePacket::system(content);
+            let packet = LegacyChatMessagePacket::mini_message(&content)?;
             client_state.queue_packet(PacketRegistry::LegacyChatMessage(packet));
         }
     }

@@ -1,6 +1,7 @@
 use crate::server::game_mode::GameMode;
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
+use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -29,7 +30,7 @@ pub struct MisconfiguredForwardingError;
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
-    description_text: String,
+    motd: Component,
     max_players: u32,
     welcome_message: String,
     connected_clients: Arc<AtomicU32>,
@@ -73,8 +74,8 @@ impl ServerState {
         }
     }
 
-    pub fn description_text(&self) -> &str {
-        &self.description_text
+    pub const fn motd(&self) -> &Component {
+        &self.motd
     }
 
     pub const fn max_players(&self) -> u32 {
@@ -154,6 +155,8 @@ pub enum ServerStateBuilderError {
     BinaryReader(#[from] BinaryReaderError),
     #[error(transparent)]
     WorldLoading(#[from] WorldLoadingError),
+    #[error(transparent)]
+    MiniMessage(#[from] MiniMessageError),
 }
 
 impl ServerStateBuilder {
@@ -253,7 +256,7 @@ impl ServerStateBuilder {
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),
-            description_text: self.description_text,
+            motd: parse_mini_message(&self.description_text)?,
             max_players: self.max_players,
             welcome_message: self.welcome_message,
             connected_clients: Arc::new(AtomicU32::new(0)),

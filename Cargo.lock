@@ -565,6 +565,7 @@ dependencies = [
  "minecraft_protocol",
  "net",
  "pico_structures",
+ "pico_text_component",
  "proc-macro2",
  "quote",
  "rand",
@@ -608,8 +609,10 @@ name = "pico_text_component"
 version = "0.1.0"
 dependencies = [
  "pico_nbt",
+ "quick-xml",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -650,6 +653,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.38.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

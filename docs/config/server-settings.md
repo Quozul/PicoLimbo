@@ -32,21 +32,30 @@ end
 ## Welcome Message
 
 Welcome message displayed to players after joining.
-You can use color codes (like `§a` for green).
+Supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
 
 :::code-group
 ```toml [server.toml]
-welcome_message = "Welcome to PicoLimbo!"
+welcome_message = "<green>Welcome to <bold>PicoLimbo</bold>!</green>"
 ```
 :::
 
-Welcome message can be disabled by setting an empty string.
+You can also use legacy color codes for backward compatibility:
+
+:::code-group
+```toml [server.toml]
+welcome_message = "§aWelcome to PicoLimbo!"
+```
+:::
+
+Welcome message can be disabled by setting an empty string:
 
 :::code-group
 ```toml [server.toml]
 welcome_message = ""
 ```
 :::
+
 
 ## Default Gamemode
 

@@ -5,5 +5,7 @@ edition = "2024"
 
 [dependencies]
 pico_nbt = { path = "../pico_nbt" }
+quick-xml = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
