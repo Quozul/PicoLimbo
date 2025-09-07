@@ -5,6 +5,7 @@ use pico_binutils::prelude::{
 use protocol_version::protocol_version::ProtocolVersion;
 use std::fmt::Display;
 use std::str::FromStr;
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct Identifier {
@@ -25,15 +26,19 @@ impl Identifier {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("Invalid identifier string: {0}")]
+pub struct InvalidIdentifierError(String);
+
 impl FromStr for Identifier {
-    type Err = std::convert::Infallible;
+    type Err = InvalidIdentifierError;
 
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let mut split = string.split(':');
         let namespace = split.next().unwrap_or("minecraft");
         let thing = split
             .next()
-            .unwrap_or_else(|| panic!("Invalid identifier string: {string}"));
+            .ok_or_else(|| InvalidIdentifierError(string.to_string()))?;
         Ok(Self {
             namespace: namespace.to_string(),
             thing: thing.to_string(),
@@ -60,7 +65,7 @@ impl DecodePacket for Identifier {
         let mut split = decoded_string.split(':');
         let namespace = split.next().unwrap_or("minecraft");
         let thing = split.next().unwrap_or("");
-        Ok(Identifier {
+        Ok(Self {
             namespace: namespace.to_string(),
             thing: thing.to_string(),
         })
