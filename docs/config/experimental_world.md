@@ -16,7 +16,7 @@ Load `.schem` files to customize the spawn location. PicoLimbo implements versio
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
+[world.experimental]
 schematic_file = "spawn.schem"
 ```
 :::
@@ -33,7 +33,7 @@ To disable schematic loading:
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
+[world.experimental]
 schematic_file = ""
 ```
 :::
@@ -47,24 +47,24 @@ Here's a list of what does not work when loading a schematic:
 - **Movement mechanics**: Ladder climbing or elytra does not work
 - **Block interactions**: Opening a door only half-opens it, buttons and pressure plates does not reset
 
-## Spawn Position
-
-Customize where players spawn using `[x, y, z]` coordinates. Supports floating point numbers.
-
-:::code-group
-```toml [server.toml] {2}
-[experimental.world]
-spawn_position = [0.5, 320.0, 0.5]
-```
-:::
-
 ## View Distance
 
 Configure how many chunks are sent to clients. Defaults to 2, with a range of 0-32. Values outside this range are clamped. The view distance should match or exceed your schematic's size in chunks.
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
+[world.experimental]
 view_distance = 2
+```
+:::
+
+## Lock Time
+
+Set to `false` to prevent the client from ticking the time. This only works with Minecraft client version 1.21.5 and above.
+
+:::code-group
+```toml [server.toml] {2}
+[world.experimental]
+lock_time = false
 ```
 :::

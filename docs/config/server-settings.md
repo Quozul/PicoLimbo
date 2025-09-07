@@ -12,23 +12,6 @@ bind = "0.0.0.0:25565"
 ```
 :::
 
-## Spawn Dimension
-
-Default spawn dimension for new players.
-
-:::code-group
-```toml [server.toml]
-spawn_dimension = "overworld"
-```
-:::
-
-Possible values:
-```
-overworld
-nether
-end
-```
-
 ## Welcome Message
 
 Welcome message displayed to players after joining.

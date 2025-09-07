@@ -1,13 +1,13 @@
 # World Configuration
 
-## Spawn Dimension
+## Dimension
 
 Default spawn dimension for new players.
 
 :::code-group
 ```toml [server.toml] {2}
 [world]
-spawn_dimension = "overworld"
+dimension = "overworld"
 ```
 :::
 
@@ -18,7 +18,18 @@ nether
 end
 ```
 
-## Time in the world
+## Spawn Position
+
+Customize where players spawn using `[x, y, z]` coordinates. Supports floating point numbers.
+
+:::code-group
+```toml [server.toml] {2}
+[world]
+spawn_position = [0.5, 320.0, 0.5]
+```
+:::
+
+## Time
 
 Sets the time in the world.
 
@@ -37,17 +48,3 @@ night
 midnight
 a specific time in ticks (0-24000)
 ```
-
-## Lock Time
-
-Lock the time in the world to the `time` value.
-
-> [!WARNING]
-> This feature **only works with Minecraft client version 1.21.5 and above**.
-
-:::code-group
-```toml [server.toml] {2}
-[world]
-lock_time = true
-```
-:::

@@ -29,16 +29,6 @@ bungee_guard = false
 # List of valid BungeeGuard tokens for authenticating incoming players
 tokens = []
 
-[world]
-# Default spawn dimension
-# Allowed values: "overworld", "nether", or "end"
-spawn_dimension = "end"
-# Sets the time in the world
-# Allowed values: "day", "noon", "night", "midnight", or a specific time in ticks (0-24000)
-time = "day"
-# Lock the time in the world to `time_world` value
-lock_time = true
-
 [server_list]
 # Maximum count shown in your server list, does not affect the player limit
 max_players = 20
@@ -47,9 +37,19 @@ message_of_the_day = "A Minecraft Server"
 # Show actual online player count in your server list?
 show_online_player_count = true
 
-[experimental.world]
+[world]
 # Custom spawn position as [x, y, z] coordinates
 spawn_position = [0.0, 320.0, 0.0]
+# Default spawn dimension
+# Allowed values: "overworld", "nether", or "end"
+dimension = "end"
+# Sets the time in the world
+# Allowed values: "day", "noon", "night", "midnight", or a specific time in ticks (0-24000)
+time = "day"
+# Lock the time in the world to `world.time` value
+lock_time = false
+
+[world.experimental]
 # Configure how many chunks are sent to clients
 view_distance = 2
 # Path to schematic file for custom world structures

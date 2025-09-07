@@ -1,4 +1,3 @@
-use crate::configuration::experimental::ExperimentalConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -23,6 +22,7 @@ pub enum ConfigError {
 /// Application configuration, serializable to/from TOML.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     /// Server listening address and port.
     ///
@@ -45,9 +45,6 @@ pub struct Config {
 
     /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
-
-    /// Experimental settings
-    pub experimental: ExperimentalConfig,
 }
 
 impl Default for Config {
@@ -60,7 +57,6 @@ impl Default for Config {
             default_game_mode: GameModeConfig::default(),
             world: WorldConfig::default(),
             hardcore: false,
-            experimental: ExperimentalConfig::default(),
         }
     }
 }

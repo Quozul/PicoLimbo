@@ -59,25 +59,25 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.disable_forwarding();
     }
 
-    if cfg.experimental.world.spawn_position.1 < f64::from(cfg.experimental.world.min_y_pos) {
+    if cfg.world.spawn_position.1 < f64::from(cfg.world.experimental.min_y_pos) {
         return Err(ServerStateBuilderError::InvalidSpawnPosition());
     }
 
     server_state_builder
-        .dimension(cfg.world.spawn_dimension.into())
+        .dimension(cfg.world.dimension.into())
         .time_world(cfg.world.time.into())
-        .lock_time(cfg.world.lock_time)
+        .lock_time(cfg.world.experimental.lock_time)
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
         .max_players(cfg.server_list.max_players)
         .show_online_player_count(cfg.server_list.show_online_player_count)
         .game_mode(cfg.default_game_mode.into())
         .hardcore(cfg.hardcore)
-        .spawn_position(cfg.experimental.world.spawn_position)
-        .view_distance(cfg.experimental.world.view_distance)
-        .schematic(cfg.experimental.world.schematic_file)
-        .min_y_pos(cfg.experimental.world.min_y_pos)
-        .min_y_message(&cfg.experimental.world.min_y_message);
+        .spawn_position(cfg.world.spawn_position)
+        .view_distance(cfg.world.experimental.view_distance)
+        .schematic(cfg.world.experimental.schematic_file)
+        .min_y_pos(cfg.world.experimental.min_y_pos)
+        .min_y_message(&cfg.world.experimental.min_y_message);
 
     server_state_builder.build()
 }

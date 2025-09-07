@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct ServerListConfig {
     /// Maximum amount of player displayed in the server list.
     pub max_players: u32,
