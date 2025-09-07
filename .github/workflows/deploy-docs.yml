@@ -2,7 +2,8 @@ name: Deploy docs site to Pages
 
 on:
   push:
-    branches: [ master ]
+    tags:
+      - 'v*'
     paths:
       - 'docs/**'
       - 'package-lock.json'
