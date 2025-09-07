@@ -1,4 +1,3 @@
-use crate::configuration::world::ParseTime;
 use crate::server::game_mode::GameMode;
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
@@ -30,7 +29,7 @@ pub struct MisconfiguredForwardingError;
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
-    time_world: String,
+    time_world: i64,
     lock_time: bool,
     description_text: String,
     max_players: u32,
@@ -127,18 +126,8 @@ impl ServerState {
         self.world.as_ref()
     }
 
-    pub fn time_world_ticks(&self) -> Option<i64> {
-        if self.time_world.is_empty() {
-            None
-        } else {
-            match self.time_world.parse_time() {
-                Ok(ticks) => Some(ticks),
-                Err(err) => {
-                    tracing::warn!("Invalid time_world '{}': {}", self.time_world, err);
-                    None
-                }
-            }
-        }
+    pub const fn time_world_ticks(&self) -> i64 {
+        self.time_world
     }
 
     pub const fn is_time_locked(&self) -> bool {
@@ -168,7 +157,7 @@ impl ServerState {
 pub struct ServerStateBuilder {
     forwarding_mode: ForwardingMode,
     dimension: Option<Dimension>,
-    time_world: String,
+    time_world: i64,
     lock_time: bool,
     description_text: String,
     max_players: u32,
@@ -226,11 +215,8 @@ impl ServerStateBuilder {
     }
 
     /// Set the time of the world
-    pub fn time_world<S>(&mut self, time_world: S) -> &mut Self
-    where
-        S: Into<String>,
-    {
-        self.time_world = time_world.into();
+    pub const fn time_world(&mut self, time_world: i64) -> &mut Self {
+        self.time_world = time_world;
         self
     }
 

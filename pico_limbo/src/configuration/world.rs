@@ -1,7 +1,62 @@
 use crate::configuration::spawn_dimension::SpawnDimensionConfig;
-use crate::server::packet_handler::PacketHandlerError;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
+
+#[derive(Serialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TimeConfig {
+    #[default]
+    Day,
+    Noon,
+    Night,
+    Midnight,
+    Ticks(i64),
+}
+
+impl FromStr for TimeConfig {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "day" => Ok(Self::Day),
+            "noon" => Ok(Self::Noon),
+            "night" => Ok(Self::Night),
+            "midnight" => Ok(Self::Midnight),
+            _ => Err(format!("Invalid time config: {s}")),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TimeConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum TimeConfigHelper {
+            String(String),
+            Number(i64),
+        }
+
+        match TimeConfigHelper::deserialize(deserializer)? {
+            TimeConfigHelper::String(s) => Self::from_str(&s).map_err(serde::de::Error::custom),
+            TimeConfigHelper::Number(n) => Ok(Self::Ticks(n)),
+        }
+    }
+}
+
+impl From<TimeConfig> for i64 {
+    fn from(t: TimeConfig) -> Self {
+        match t {
+            TimeConfig::Day => 1_000,
+            TimeConfig::Noon => 6_000,
+            TimeConfig::Night => 13_000,
+            TimeConfig::Midnight => 18_000,
+            TimeConfig::Ticks(ticks) => ticks,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
@@ -12,7 +67,7 @@ pub struct WorldConfig {
 
     /// Time of the world
     /// Supported: "sunrise", "noon", "sunset", "midnight" or ticks (0 - 24000)
-    pub time_world: String,
+    pub time: TimeConfig,
 
     /// Lock the world time to the value of `time_world`
     pub lock_time: bool,
@@ -22,41 +77,8 @@ impl Default for WorldConfig {
     fn default() -> Self {
         Self {
             spawn_dimension: SpawnDimensionConfig::default(),
-            time_world: "day".into(),
+            time: TimeConfig::default(),
             lock_time: true,
         }
-    }
-}
-
-pub trait ParseTime {
-    fn parse_time(&self) -> Result<i64, PacketHandlerError>;
-}
-
-impl ParseTime for str {
-    fn parse_time(&self) -> Result<i64, PacketHandlerError> {
-        match self.to_lowercase().as_str() {
-            "sunrise" | "day" => Ok(1000),
-            "noon" => Ok(6000),
-            "sunset" | "night" => Ok(13000),
-            "midnight" => Ok(18000),
-            other => {
-                let ticks = i64::from_str(other).map_err(|_| {
-                    PacketHandlerError::InvalidState(format!("Invalid time_world value: {other}"))
-                })?;
-                if (0..24000).contains(&ticks) {
-                    Ok(ticks)
-                } else {
-                    Err(PacketHandlerError::InvalidState(format!(
-                        "time_world ticks out of range (0–23999): {ticks}"
-                    )))
-                }
-            }
-        }
-    }
-}
-
-impl ParseTime for String {
-    fn parse_time(&self) -> Result<i64, PacketHandlerError> {
-        self.as_str().parse_time()
     }
 }

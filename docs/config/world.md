@@ -5,7 +5,8 @@
 Default spawn dimension for new players.
 
 :::code-group
-```toml [server.toml]
+```toml [server.toml] {2}
+[world]
 spawn_dimension = "overworld"
 ```
 :::
@@ -22,29 +23,31 @@ end
 Sets the time in the world.
 
 :::code-group
-```toml [server.toml]
-time_world = "midnight"
+```toml [server.toml] {2}
+[world]
+time = "midnight"
 ```
 :::
 
 Possible values:
 ```
-sunrise
+day
 noon
-sunset
+night
 midnight
 a specific time in ticks (0-24000)
 ```
 
 ## Lock Time
 
-Lock the time in the world to `time_world` value.
+Lock the time in the world to the `time` value.
 
 > [!WARNING]
-> This feature **only works with Minecraft client version 1.21.5 and above**
+> This feature **only works with Minecraft client version 1.21.5 and above**.
 
 :::code-group
-```toml [server.toml]
+```toml [server.toml] {2}
+[world]
 lock_time = true
 ```
 :::

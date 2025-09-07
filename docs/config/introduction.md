@@ -11,4 +11,3 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Forwarding Proxy Settings](./proxy-integration) - Configure proxy integration
 - [World Settings](./world) - Configure the world
 - [Experimental World Settings](./experimental_world) - Experimental features for world customization
-- 

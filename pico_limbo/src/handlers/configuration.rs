@@ -16,6 +16,7 @@ use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClient
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
@@ -218,6 +219,11 @@ pub fn send_play_packets(
         client_state.send_message(content);
     }
 
+    let ticks = server_state.time_world_ticks();
+    let lock_time = server_state.is_time_locked();
+    let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
+    client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
             // Send Game Event
@@ -245,15 +251,6 @@ pub fn send_play_packets(
             dimension,
             protocol_version,
         );
-    }
-
-    let config_time_world = server_state.time_world_ticks();
-    let lock_time = server_state.is_time_locked();
-    if let Some(ticks) = config_time_world {
-        let packet = minecraft_packets::play::update_time_packet::UpdateTimePacket::new(
-            ticks, ticks, !lock_time,
-        );
-        client_state.queue_packet(PacketRegistry::UpdateTime(packet));
     }
 
     client_state.set_state(State::Play);
@@ -323,6 +320,10 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
+            PacketRegistry::UpdateTime(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
             PacketRegistry::GameEvent(_)
         ));
         assert!(matches!(
@@ -372,6 +373,10 @@ mod tests {
         ));
         assert!(matches!(
             client_state.next_packet(),
+            PacketRegistry::UpdateTime(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
             PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
@@ -411,6 +416,10 @@ mod tests {
             client_state.next_packet(),
             PacketRegistry::LegacyChatMessage(_)
         ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::UpdateTime(_)
+        ));
         assert!(client_state.has_no_more_packets());
     }
 
@@ -435,6 +444,10 @@ mod tests {
         assert!(matches!(
             client_state.next_packet(),
             PacketRegistry::LegacyChatMessage(_)
+        ));
+        assert!(matches!(
+            client_state.next_packet(),
+            PacketRegistry::UpdateTime(_)
         ));
         assert!(client_state.has_no_more_packets());
     }

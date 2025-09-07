@@ -65,7 +65,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
 
     server_state_builder
         .dimension(cfg.world.spawn_dimension.into())
-        .time_world(cfg.world.time_world)
+        .time_world(cfg.world.time.into())
         .lock_time(cfg.world.lock_time)
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
