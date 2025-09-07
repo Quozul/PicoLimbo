@@ -1,7 +1,7 @@
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::ServerState;
+use crate::server_state::{Boundaries, ServerState};
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 
@@ -21,16 +21,17 @@ pub fn teleport_player_to_spawn(
     server_state: &ServerState,
     feet_y: f64,
 ) {
-    if !server_state.is_min_y_enabled() {
-        return;
-    }
-    let min_y_pos_config = server_state.min_y_pos();
-    if feet_y < f64::from(min_y_pos_config) {
+    if let Boundaries::Enabled {
+        teleport_message,
+        min_y,
+    } = server_state.boundaries()
+        && feet_y < f64::from(*min_y)
+    {
         let (x, y, z) = server_state.spawn_position();
         let packet = SynchronizePlayerPositionPacket::new(x, y, z);
         client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
 
-        if let Some(content) = server_state.min_y_message() {
+        if let Some(content) = teleport_message {
             client_state.send_message(content);
         }
     }
@@ -42,15 +43,15 @@ mod tests {
     use minecraft_protocol::prelude::{ProtocolVersion, State};
 
     fn server_state_with_min_y(min_y: i32, message: Option<String>) -> ServerState {
-        let mut server_state = ServerState::builder();
-        server_state
-            .min_y_pos(min_y)
-            .spawn_position((0.0, 100.0, 0.0));
+        let mut builder = ServerState::builder();
+        builder.spawn_position((0.0, 100.0, 0.0));
         if let Some(content) = message {
-            server_state.min_y_message(content);
+            builder.boundaries(min_y, content).unwrap();
+        } else {
+            builder.boundaries(min_y, "").unwrap();
         }
 
-        server_state.build().unwrap()
+        builder.build().unwrap()
     }
 
     fn client_state() -> ClientState {

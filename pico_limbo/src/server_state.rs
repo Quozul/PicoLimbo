@@ -27,6 +27,16 @@ pub enum ForwardingMode {
 pub struct MisconfiguredForwardingError;
 
 #[derive(Default)]
+pub enum Boundaries {
+    #[default]
+    Disabled,
+    Enabled {
+        min_y: i32,
+        teleport_message: Option<Component>,
+    },
+}
+
+#[derive(Default)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
@@ -42,9 +52,7 @@ pub struct ServerState {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     world: Option<World>,
-    min_y_enabled: bool,
-    min_y_pos: i32,
-    min_y_message: Option<Component>,
+    boundaries: Boundaries,
 }
 
 impl ServerState {
@@ -131,16 +139,9 @@ impl ServerState {
     pub const fn is_time_locked(&self) -> bool {
         self.lock_time
     }
-    pub const fn is_min_y_enabled(&self) -> bool {
-        self.min_y_enabled
-    }
 
-    pub const fn min_y_pos(&self) -> i32 {
-        self.min_y_pos
-    }
-
-    pub const fn min_y_message(&self) -> Option<&Component> {
-        self.min_y_message.as_ref()
+    pub const fn boundaries(&self) -> &Boundaries {
+        &self.boundaries
     }
 
     pub fn increment(&self) {
@@ -167,9 +168,7 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
-    min_y_enabled: bool,
-    min_y_pos: i32,
-    min_y_message: String,
+    boundaries: Boundaries,
 }
 
 #[derive(Debug, Error)]
@@ -278,22 +277,20 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn min_y_enabled(&mut self, enabled: bool) -> &mut Self {
-        self.min_y_enabled = enabled;
-        self
-    }
-
-    pub const fn min_y_pos(&mut self, min_y_pos: i32) -> &mut Self {
-        self.min_y_pos = min_y_pos;
-        self
-    }
-
-    pub fn min_y_message<S>(&mut self, message: S) -> &mut Self
+    pub fn boundaries<S>(
+        &mut self,
+        min_y: i32,
+        teleport_message: S,
+    ) -> Result<&mut Self, ServerStateBuilderError>
     where
-        S: Into<String>,
+        S: AsRef<str>,
     {
-        self.min_y_message = message.into();
-        self
+        let teleport_message = optional_mini_message(teleport_message.as_ref())?;
+        self.boundaries = Boundaries::Enabled {
+            min_y,
+            teleport_message,
+        };
+        Ok(self)
     }
 
     /// Finish building, returning an error if any required fields are missing.
@@ -324,9 +321,7 @@ impl ServerStateBuilder {
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
             world,
-            min_y_enabled: self.min_y_enabled,
-            min_y_pos: self.min_y_pos,
-            min_y_message: optional_mini_message(&self.min_y_message)?,
+            boundaries: self.boundaries,
         })
     }
 }

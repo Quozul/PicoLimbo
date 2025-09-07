@@ -22,15 +22,15 @@ mod tests {
     use minecraft_protocol::prelude::{ProtocolVersion, State};
 
     fn server_state_with_min_y(min_y: i32, message: Option<String>) -> ServerState {
-        let mut server_state = ServerState::builder();
-        server_state
-            .min_y_pos(min_y)
-            .spawn_position((0.0, 100.0, 0.0));
+        let mut builder = ServerState::builder();
+        builder.spawn_position((0.0, 100.0, 0.0));
         if let Some(content) = message {
-            server_state.min_y_message(content);
+            builder.boundaries(min_y, content).unwrap();
+        } else {
+            builder.boundaries(min_y, "").unwrap();
         }
 
-        server_state.build().unwrap()
+        builder.build().unwrap()
     }
 
     fn client_state() -> ClientState {
