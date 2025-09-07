@@ -1,5 +1,6 @@
-use crate::configuration::experimental::ExperimentalWorldConfig;
-use crate::configuration::spawn_dimension::SpawnDimensionConfig;
+use crate::configuration::worldconfig::boundaries::BoundariesConfig;
+use crate::configuration::worldconfig::experimental::ExperimentalWorldConfig;
+use crate::configuration::worldconfig::spawn_dimension::SpawnDimensionConfig;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
@@ -76,6 +77,9 @@ pub struct WorldConfig {
 
     /// Experimental settings
     pub experimental: ExperimentalWorldConfig,
+
+    /// World Boundaries settings
+    pub boundaries: BoundariesConfig,
 }
 
 impl Default for WorldConfig {
@@ -85,6 +89,7 @@ impl Default for WorldConfig {
             dimension: SpawnDimensionConfig::default(),
             time: TimeConfig::default(),
             experimental: ExperimentalWorldConfig::default(),
+            boundaries: BoundariesConfig::default(),
         }
     }
 }

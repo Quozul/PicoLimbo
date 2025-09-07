@@ -21,6 +21,9 @@ pub fn teleport_player_to_spawn(
     server_state: &ServerState,
     feet_y: f64,
 ) {
+    if !server_state.is_min_y_enabled() {
+        return;
+    }
     let min_y_pos_config = server_state.min_y_pos();
     if feet_y < f64::from(min_y_pos_config) {
         let (x, y, z) = server_state.spawn_position();

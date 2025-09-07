@@ -42,6 +42,7 @@ pub struct ServerState {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     world: Option<World>,
+    min_y_enabled: bool,
     min_y_pos: i32,
     min_y_message: Option<Component>,
 }
@@ -130,6 +131,9 @@ impl ServerState {
     pub const fn is_time_locked(&self) -> bool {
         self.lock_time
     }
+    pub const fn is_min_y_enabled(&self) -> bool {
+        self.min_y_enabled
+    }
 
     pub const fn min_y_pos(&self) -> i32 {
         self.min_y_pos
@@ -163,6 +167,7 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
+    min_y_enabled: bool,
     min_y_pos: i32,
     min_y_message: String,
 }
@@ -273,6 +278,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn min_y_enabled(&mut self, enabled: bool) -> &mut Self {
+        self.min_y_enabled = enabled;
+        self
+    }
+
     pub const fn min_y_pos(&mut self, min_y_pos: i32) -> &mut Self {
         self.min_y_pos = min_y_pos;
         self
@@ -314,6 +324,7 @@ impl ServerStateBuilder {
             spawn_position: self.spawn_position,
             view_distance: self.view_distance,
             world,
+            min_y_enabled: self.min_y_enabled,
             min_y_pos: self.min_y_pos,
             min_y_message: optional_mini_message(&self.min_y_message)?,
         })

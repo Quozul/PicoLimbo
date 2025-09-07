@@ -59,7 +59,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.disable_forwarding();
     }
 
-    if cfg.world.spawn_position.1 < f64::from(cfg.world.experimental.min_y_pos) {
+    if cfg.world.spawn_position.1 < f64::from(cfg.world.boundaries.min_y) {
         return Err(ServerStateBuilderError::InvalidSpawnPosition());
     }
 
@@ -76,8 +76,9 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.world.spawn_position)
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
-        .min_y_pos(cfg.world.experimental.min_y_pos)
-        .min_y_message(&cfg.world.experimental.min_y_message);
+        .min_y_enabled(cfg.world.boundaries.enabled)
+        .min_y_pos(cfg.world.boundaries.min_y)
+        .min_y_message(&cfg.world.boundaries.teleport_message);
 
     server_state_builder.build()
 }
