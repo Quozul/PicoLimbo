@@ -1,4 +1,4 @@
-use crate::login::login_success_packet::Property;
+use crate::login::Property;
 use minecraft_protocol::prelude::*;
 
 /// This is the equivalent of LoginSuccessPacket but for versions before 1.21.2.

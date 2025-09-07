@@ -1,7 +1,10 @@
+use crate::forwarding::forwarding_result::ModernForwardingResult;
 use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
+use minecraft_packets::login::Property;
 use minecraft_protocol::prelude::{
-    BinaryReader, BinaryReaderError, Uuid, VarInt, VarIntPrefixedString,
+    BinaryReader, BinaryReaderError, DecodePacket, Optional, ProtocolVersion, Uuid, VarInt,
+    VarIntPrefixedString,
 };
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
@@ -26,16 +29,8 @@ impl From<InvalidLength> for VelocityKeyIntegrityError {
     }
 }
 
-pub enum VelocityKeyIntegrity {
-    Invalid,
-    Valid {
-        player_uuid: Uuid,
-        player_name: String,
-    },
-}
-
-pub fn read_velocity_key(reader: &mut BinaryReader, secret_key: &[u8]) -> VelocityKeyIntegrity {
-    check_velocity_key_integrity(reader, secret_key).unwrap_or(VelocityKeyIntegrity::Invalid)
+pub fn read_velocity_key(reader: &mut BinaryReader, secret_key: &[u8]) -> ModernForwardingResult {
+    check_velocity_key_integrity(reader, secret_key).unwrap_or(ModernForwardingResult::Invalid)
 }
 
 /// Checks the integrity of the forwarded message using an HMAC signature.
@@ -57,7 +52,7 @@ pub fn read_velocity_key(reader: &mut BinaryReader, secret_key: &[u8]) -> Veloci
 fn check_velocity_key_integrity(
     reader: &mut BinaryReader,
     secret_key: &[u8],
-) -> Result<VelocityKeyIntegrity, VelocityKeyIntegrityError> {
+) -> Result<ModernForwardingResult, VelocityKeyIntegrityError> {
     let remaining = reader.remaining();
     if remaining < 32 {
         return Err(VelocityKeyIntegrityError);
@@ -90,12 +85,22 @@ fn check_velocity_key_integrity(
     Ok(read_payload(&mut payload_reader)?)
 }
 
-fn read_payload(reader: &mut BinaryReader) -> Result<VelocityKeyIntegrity, BinaryReaderError> {
+fn read_payload(reader: &mut BinaryReader) -> Result<ModernForwardingResult, BinaryReaderError> {
     let _address = reader.read::<VarIntPrefixedString>()?;
     let player_uuid = reader.read::<Uuid>()?;
     let player_name = reader.read::<VarIntPrefixedString>()?.into_inner();
-    Ok(VelocityKeyIntegrity::Valid {
+    let property: Option<Property> =
+        Optional::<Property>::decode(reader, ProtocolVersion::Any)?.into();
+
+    let property = if let Some(ref prop) = property {
+        if prop.is_textures() { property } else { None }
+    } else {
+        None
+    };
+
+    Ok(ModernForwardingResult::Valid {
         player_uuid,
         player_name,
+        textures: property,
     })
 }

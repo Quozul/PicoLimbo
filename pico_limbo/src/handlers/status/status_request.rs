@@ -45,6 +45,7 @@ impl PacketHandler for StatusRequestPacket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
     use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 
     fn client(server_state: &ServerState, protocol_version: i32) -> ClientState {
@@ -56,8 +57,8 @@ mod tests {
         client_state
     }
 
-    #[test]
-    fn test_should_respond_with_same_protocol_version_if_valid() {
+    #[tokio::test]
+    async fn test_should_respond_with_same_protocol_version_if_valid() {
         // Given
         let expected_protocol = 578;
         let server_state = ServerState::default();
@@ -68,20 +69,20 @@ mod tests {
         let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
-        let packet = batch.next().unwrap();
+        let packet = batch.next().await.unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_should_respond_with_any_version() {
+    #[tokio::test]
+    async fn test_should_respond_with_any_version() {
         // Given
         let expected_protocol = -1;
         let server_state = ServerState::default();
@@ -92,20 +93,20 @@ mod tests {
         let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
-        let packet = batch.next().unwrap();
+        let packet = batch.next().await.unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_should_respond_with_latest_known_version_if_larger() {
+    #[tokio::test]
+    async fn test_should_respond_with_latest_known_version_if_larger() {
         // Given
         let expected_protocol = i32::MAX;
         let server_state = ServerState::default();
@@ -116,20 +117,20 @@ mod tests {
         let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
-        let packet = batch.next().unwrap();
+        let packet = batch.next().await.unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == ProtocolVersion::latest().version_number()
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_should_respond_with_oldest_known_version_if_smaller() {
+    #[tokio::test]
+    async fn test_should_respond_with_oldest_known_version_if_smaller() {
         let test_values = [0, -2, i32::MIN];
 
         for &expected_protocol in &test_values {
@@ -142,17 +143,17 @@ mod tests {
             let batch = status_request_packet
                 .handle(&mut client_state, &server_state)
                 .unwrap();
-            let mut batch = batch.into_iter();
+            let mut batch = batch.into_stream();
 
             // Then
-            let packet = batch.next().unwrap();
+            let packet = batch.next().await.unwrap();
             assert!(matches!(
                 packet,
                 PacketRegistry::StatusResponse(ref status_packet)
                     if status_packet.status_response().unwrap().version.protocol ==
                         ProtocolVersion::V1_7_2.version_number()
             ));
-            assert!(batch.next().is_none());
+            assert!(batch.next().await.is_none());
         }
     }
 }

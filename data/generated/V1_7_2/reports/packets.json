@@ -52,6 +52,12 @@
       },
       "minecraft:set_time": {
         "protocol_id": 3
+      },
+      "minecraft:set_entity_data": {
+        "protocol_id": 28
+      },
+      "minecraft:player_info_update": {
+        "protocol_id": 56
       }
     },
     "serverbound": {

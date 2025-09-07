@@ -2,7 +2,7 @@ use crate::prelude::{DecodePacket, EncodePacket};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
 use protocol_version::protocol_version::ProtocolVersion;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Position {
     x: f64,
     y: f64,

@@ -1,5 +1,6 @@
 use crate::server::game_profile::GameProfile;
-use minecraft_protocol::prelude::{ProtocolVersion, State};
+use minecraft_packets::login::Property;
+use minecraft_protocol::prelude::{ProtocolVersion, State, Uuid};
 use tracing::info;
 
 #[derive(PartialEq, Eq)]
@@ -77,12 +78,21 @@ impl ClientState {
     // Game profile
 
     pub fn set_game_profile(&mut self, game_profile: GameProfile) {
-        info!(
-            "UUID of player {} is {}",
-            game_profile.username(),
-            game_profile.uuid()
-        );
-        self.game_profile = Some(game_profile);
+        if let Some(ref mut existing_game_profile) = self.game_profile {
+            existing_game_profile.set_name(&game_profile.username());
+        } else {
+            self.game_profile = Some(game_profile);
+        }
+
+        if let Some(ref existing_game_profile) = self.game_profile
+            && !existing_game_profile.is_anonymous()
+        {
+            info!(
+                "UUID of player {} is {}",
+                existing_game_profile.username(),
+                existing_game_profile.uuid()
+            );
+        }
     }
 
     pub fn game_profile(&self) -> Option<GameProfile> {
@@ -94,6 +104,16 @@ impl ClientState {
             .map_or(Self::ANONYMOUS.to_owned(), |profile| {
                 profile.username().to_owned()
             })
+    }
+
+    pub fn get_unique_id(&self) -> Uuid {
+        self.game_profile()
+            .map_or_else(Uuid::default, |profile| profile.uuid())
+    }
+
+    pub fn get_textures(&self) -> Option<Property> {
+        self.game_profile()
+            .and_then(|profile| profile.textures().cloned())
     }
 
     // Keep alive

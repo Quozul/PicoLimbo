@@ -31,7 +31,7 @@ in Rust, designed primarily as an AFK or waiting server. Its core focus is on ef
 packets required for client login and maintaining connection (keep-alive) without unnecessary overhead.
 
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
-through 1.21.8**, excluding snapshots, with only 27 implemented packets covering over 47 different protocol versions or
+through 1.21.8**, excluding snapshots, with only 36 implemented packets covering over 47 different protocol versions or
 75 Minecraft versions.
 
 ## Features
@@ -45,6 +45,10 @@ layers.
 
 Uses **0% CPU while idle** and handles **hundreds of players** under 10 MB RAM.
 [View benchmarks](https://picolimbo.quozul.dev/about/benchmarks.html).
+
+### 👤 Skin Support
+
+Player skins are supported. What else to say about that?
 
 ### 🔀 Built-in Proxy Support
 

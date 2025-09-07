@@ -90,7 +90,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.world.spawn_position)
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
-        .tab_list(cfg.tab_list.header, cfg.tab_list.footer)?;
+        .tab_list(cfg.tab_list.header, cfg.tab_list.footer)?
+        .fetch_player_skins(cfg.fetch_player_skins);
 
     server_state_builder.build()
 }

@@ -24,8 +24,10 @@ use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
+use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
+use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -250,6 +252,20 @@ pub enum PacketRegistry {
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:tab_list")]
     TabList(TabListPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:player_info_update"
+    )]
+    PlayerInfoUpdate(PlayerInfoUpdatePacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:set_entity_data"
+    )]
+    SetEntityMetadata(SetEntityMetadataPacket),
 }
 
 impl PacketHandler for PacketRegistry {

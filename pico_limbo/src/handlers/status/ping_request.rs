@@ -24,9 +24,10 @@ impl PacketHandler for PingRequestPacket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
 
-    #[test]
-    fn test_ping_request_packet() {
+    #[tokio::test]
+    async fn test_ping_request_packet() {
         // Given
         let mut client_state = ClientState::default();
         let server_state = ServerState::default();
@@ -36,13 +37,13 @@ mod tests {
         let batch = ping_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::PongResponse(_)
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 }

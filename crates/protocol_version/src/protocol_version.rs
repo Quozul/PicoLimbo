@@ -10,6 +10,7 @@ pub enum ProtocolVersion {
     V1_21_6 = 771,
     V1_21_5 = 770,
     V1_21_4 = 769,
+    /// Docs: https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2780220
     V1_21_2 = 768,
     V1_21 = 767,
 

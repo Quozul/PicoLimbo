@@ -47,6 +47,7 @@ pub fn teleport_player_to_spawn(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
     use minecraft_protocol::prelude::{ProtocolVersion, State};
 
     fn server_state_with_min_y(min_y: i32, message: Option<String>) -> ServerState {
@@ -68,57 +69,57 @@ mod tests {
         cs
     }
 
-    #[test]
-    fn test_should_teleport_and_message_player() {
+    #[tokio::test]
+    async fn test_should_teleport_and_message_player() {
         // Given
         let client_state = client_state();
         let server_state = server_state_with_min_y(0, Some("Direct teleport test".to_string()));
 
         // When
         let batch = teleport_player_to_spawn(&client_state, &server_state, -1.0);
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::SystemChatMessage(_) | PacketRegistry::LegacyChatMessage(_)
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_should_teleport_player() {
+    #[tokio::test]
+    async fn test_should_teleport_player() {
         // Given
         let client_state = client_state();
         let server_state = server_state_with_min_y(0, None);
 
         // When
         let batch = teleport_player_to_spawn(&client_state, &server_state, -1.0);
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_should_do_nothing() {
+    #[tokio::test]
+    async fn test_should_do_nothing() {
         // Given
         let client_state = client_state();
         let server_state = server_state_with_min_y(0, None);
 
         // When
         let batch = teleport_player_to_spawn(&client_state, &server_state, 10.0);
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 }

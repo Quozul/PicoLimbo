@@ -1,7 +1,9 @@
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
+use crate::forwarding::forwarding_result::LegacyForwardingResult;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
+use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
@@ -18,20 +20,31 @@ impl PacketHandler for HandshakePacket {
         let batch = Batch::new();
         client_state.set_protocol_version(self.get_protocol());
 
-        if let Ok(next_state) = self.get_next_state() {
-            client_state.set_state(next_state);
+        self.get_next_state().map_or_else(
+            |_| Err(PacketHandlerError::invalid_state("Unsupported next state.")),
+            |next_state| {
+                client_state.set_state(next_state);
 
-            if next_state == State::Login && !check_bungee_cord(server_state, &self.hostname)? {
-                client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
-                Err(PacketHandlerError::invalid_state(
-                    PROXY_REQUIRED_KICK_MESSAGE,
-                ))
-            } else {
-                Ok(batch)
-            }
-        } else {
-            Err(PacketHandlerError::invalid_state("Unsupported next state."))
-        }
+                let forwarding_result = check_bungee_cord(server_state, &self.hostname);
+                match forwarding_result {
+                    LegacyForwardingResult::Invalid => {
+                        client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
+                        Err(PacketHandlerError::invalid_state(
+                            PROXY_REQUIRED_KICK_MESSAGE,
+                        ))
+                    }
+                    LegacyForwardingResult::Anonymous {
+                        player_uuid,
+                        textures,
+                    } => {
+                        let game_profile = GameProfile::anonymous(player_uuid, textures);
+                        client_state.set_game_profile(game_profile);
+                        Ok(batch)
+                    }
+                    LegacyForwardingResult::NoForwarding => Ok(batch),
+                }
+            },
+        )
     }
 }
 
@@ -163,7 +176,7 @@ mod tests {
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
-            hostname: "part\0part\0part\0part".to_string(),
+            hostname: "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e".to_string(),
             next_state: VarInt::new(2),
             port: 25565,
         };

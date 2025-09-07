@@ -82,6 +82,7 @@ fn send_configuration_packets(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
     use minecraft_protocol::prelude::ProtocolVersion;
 
     fn server_state() -> ServerState {
@@ -99,8 +100,8 @@ mod tests {
         LoginAcknowledgedPacket::default()
     }
 
-    #[test]
-    fn test_login_ack_supported_protocol() {
+    #[tokio::test]
+    async fn test_login_ack_supported_protocol() {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20_2);
         let server_state = server_state();
@@ -108,11 +109,11 @@ mod tests {
 
         // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert_eq!(client_state.state(), State::Configuration);
-        assert!(batch.next().is_some());
+        assert!(batch.next().await.is_some());
     }
 
     #[test]
@@ -129,61 +130,61 @@ mod tests {
         assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
     }
 
-    #[test]
-    fn test_configuration_packets_v1_20_2() {
+    #[tokio::test]
+    async fn test_configuration_packets_v1_20_2() {
         // Given
         let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
         send_configuration_packets(&mut batch, ProtocolVersion::V1_20_2, &server_state);
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::ConfigurationClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::RegistryData(_)
         ));
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::FinishConfiguration(_)
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 
-    #[test]
-    fn test_configuration_packets_v1_20_5() {
+    #[tokio::test]
+    async fn test_configuration_packets_v1_20_5() {
         // Given
         let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
         send_configuration_packets(&mut batch, ProtocolVersion::V1_20_5, &server_state);
-        let mut batch = batch.into_iter();
+        let mut batch = batch.into_stream();
 
         // Then
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::ConfigurationClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::ClientBoundKnownPacks(_)
         ));
         for _ in 0..4 {
             assert!(matches!(
-                batch.next().unwrap(),
+                batch.next().await.unwrap(),
                 PacketRegistry::RegistryData(_)
             ));
         }
         assert!(matches!(
-            batch.next().unwrap(),
+            batch.next().await.unwrap(),
             PacketRegistry::FinishConfiguration(_)
         ));
-        assert!(batch.next().is_none());
+        assert!(batch.next().await.is_none());
     }
 }

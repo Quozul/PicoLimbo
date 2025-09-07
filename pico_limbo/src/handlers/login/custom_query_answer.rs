@@ -1,4 +1,5 @@
-use crate::forwarding::check_velocity_key_integrity::{VelocityKeyIntegrity, read_velocity_key};
+use crate::forwarding::check_velocity_key_integrity::read_velocity_key;
+use crate::forwarding::forwarding_result::ModernForwardingResult;
 use crate::handlers::login::login_start::fire_login_success;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::batch::Batch;
@@ -27,15 +28,16 @@ impl PacketHandler for CustomQueryAnswerPacket {
             let velocity_key = read_velocity_key(&mut reader, &secret_key);
 
             match velocity_key {
-                VelocityKeyIntegrity::Invalid => {
-                    client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
-                }
-                VelocityKeyIntegrity::Valid {
+                ModernForwardingResult::Valid {
                     player_uuid,
                     player_name,
+                    textures,
                 } => {
-                    let game_profile = GameProfile::new(&player_name, player_uuid);
+                    let game_profile = GameProfile::new(&player_name, player_uuid, textures);
                     fire_login_success(&mut batch, client_state, server_state, game_profile)?;
+                }
+                ModernForwardingResult::Invalid => {
+                    client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
                 }
             }
         }
@@ -46,6 +48,7 @@ impl PacketHandler for CustomQueryAnswerPacket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
     use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
 
     fn velocity() -> ServerState {
@@ -68,8 +71,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_custom_query_answer_kicks_on_invalid_key() {
+    #[tokio::test]
+    async fn test_custom_query_answer_kicks_on_invalid_key() {
         // Given
         let server_state = velocity();
         let mut client_state = client();
@@ -87,11 +90,11 @@ mod tests {
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
-        assert!(batch.into_iter().next().is_none());
+        assert!(batch.into_stream().next().await.is_none());
     }
 
-    #[test]
-    fn test_custom_query_answer_ignored_on_mismatching_id() {
+    #[tokio::test]
+    async fn test_custom_query_answer_ignored_on_mismatching_id() {
         // Given
         let server_state = velocity();
         let mut client_state = client();
@@ -104,6 +107,6 @@ mod tests {
 
         // Then
         assert!(client_state.should_kick().is_none());
-        assert!(batch.into_iter().next().is_none());
+        assert!(batch.into_stream().next().await.is_none());
     }
 }

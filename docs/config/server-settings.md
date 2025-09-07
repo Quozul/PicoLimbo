@@ -70,3 +70,17 @@ Spawns the player in hardcore mode.
 hardcore = true
 ```
 :::
+
+## Fetch Player Skins
+
+Set to true to fetch the player skin textures from Mojang API.  
+If set to false, the server will still send the skins if the limbo server is running behind a proxy in online mode.
+
+:::code-group
+```toml [server.toml]
+fetch_player_skins = true
+```
+:::
+
+> [!WARNING]
+> If you expect a large amount of player to connect to your limbo server instance, your server's IP may get black listed from Mojang API.

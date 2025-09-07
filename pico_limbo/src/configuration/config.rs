@@ -48,6 +48,8 @@ pub struct Config {
     pub hardcore: bool,
 
     pub tab_list: TabListConfig,
+
+    pub fetch_player_skins: bool,
 }
 
 impl Default for Config {
@@ -61,6 +63,7 @@ impl Default for Config {
             world: WorldConfig::default(),
             hardcore: false,
             tab_list: TabListConfig::default(),
+            fetch_player_skins: false,
         }
     }
 }

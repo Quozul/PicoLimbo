@@ -14,6 +14,8 @@ welcome_message = "Welcome to PicoLimbo!"
 default_game_mode = "spectator"
 # If set to true, will spawn the player in hardcode mode
 hardcore = false
+# Set to true to fetch the skin textures from Mojang API
+fetch_player_skins = false
 
 [forwarding.velocity]
 # Enable Velocity Modern Forwarding

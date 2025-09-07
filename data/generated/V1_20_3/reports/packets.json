@@ -97,6 +97,12 @@
       },
       "minecraft:tab_list": {
         "protocol_id": 106
+      },
+      "minecraft:player_info_update": {
+        "protocol_id": 60
+      },
+      "minecraft:set_entity_data": {
+        "protocol_id": 86
       }
     },
     "serverbound": {

@@ -53,6 +53,7 @@ pub enum TabList {
 }
 
 #[derive(Default)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
@@ -70,6 +71,7 @@ pub struct ServerState {
     world: Option<Arc<World>>,
     boundaries: Boundaries,
     tab_list: TabList,
+    fetch_player_skins: bool,
 }
 
 impl ServerState {
@@ -160,8 +162,13 @@ impl ServerState {
     pub const fn boundaries(&self) -> &Boundaries {
         &self.boundaries
     }
+
     pub const fn tab_list(&self) -> &TabList {
         &self.tab_list
+    }
+
+    pub const fn fetch_player_skins(&self) -> bool {
+        self.fetch_player_skins
     }
 
     pub fn increment(&self) {
@@ -174,6 +181,7 @@ impl ServerState {
 }
 
 #[derive(Default)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ServerStateBuilder {
     forwarding_mode: ForwardingMode,
     dimension: Option<Dimension>,
@@ -190,6 +198,7 @@ pub struct ServerStateBuilder {
     schematic_file_path: String,
     boundaries: Boundaries,
     tab_list: TabList,
+    fetch_player_skins: bool,
 }
 
 #[derive(Debug, Error)]
@@ -342,6 +351,11 @@ impl ServerStateBuilder {
         Ok(self)
     }
 
+    pub const fn fetch_player_skins(&mut self, fetch_player_skins: bool) -> &mut Self {
+        self.fetch_player_skins = fetch_player_skins;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
         let world = if self.schematic_file_path.is_empty() {
@@ -372,6 +386,7 @@ impl ServerStateBuilder {
             world,
             boundaries: self.boundaries,
             tab_list: self.tab_list,
+            fetch_player_skins: self.fetch_player_skins,
         })
     }
 }

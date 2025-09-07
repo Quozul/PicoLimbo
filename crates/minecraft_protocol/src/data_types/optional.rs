@@ -39,6 +39,24 @@ impl<T> Optional<T> {
     }
 }
 
+impl<T> From<Option<T>> for Optional<T> {
+    fn from(option: Option<T>) -> Self {
+        match option {
+            None => Self::None,
+            Some(value) => Self::Some(value),
+        }
+    }
+}
+
+impl<T> From<Optional<T>> for Option<T> {
+    fn from(option: Optional<T>) -> Self {
+        match option {
+            Optional::None => None,
+            Optional::Some(value) => Some(value),
+        }
+    }
+}
+
 impl<T: EncodePacket> EncodePacket for Optional<T> {
     fn encode(
         &self,

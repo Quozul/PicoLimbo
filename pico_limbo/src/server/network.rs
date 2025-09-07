@@ -5,6 +5,7 @@ use crate::server::packet_registry::{
 };
 use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
+use futures::StreamExt;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
@@ -163,7 +164,8 @@ async fn process_packet(
         info!("{} joined the game", username,);
     }
 
-    for pending_packet in batch {
+    let mut stream = batch.into_stream();
+    while let Some(pending_packet) = stream.next().await {
         let raw_packet = pending_packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
     }
