@@ -28,7 +28,7 @@ pub struct Component {
     pub extra: Vec<Component>,
 }
 
-fn is_false(b: &bool) -> bool {
+const fn is_false(b: &bool) -> bool {
     !*b
 }
 
@@ -44,7 +44,7 @@ impl Component {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+        serde_json::to_string(&self).unwrap_or_default()
     }
 
     pub fn to_nbt(&self) -> Nbt {
@@ -52,27 +52,27 @@ impl Component {
 
         if let Some(color) = &self.color {
             compound.push(Nbt::string("color", color));
-        };
+        }
 
         if self.bold {
             compound.push(Nbt::byte("bold", 1));
-        };
+        }
 
         if self.italic {
             compound.push(Nbt::byte("italic", 1));
-        };
+        }
 
         if self.underlined {
             compound.push(Nbt::byte("underlined", 1));
-        };
+        }
 
         if self.strikethrough {
             compound.push(Nbt::byte("strikethrough", 1));
-        };
+        }
 
         if self.obfuscated {
             compound.push(Nbt::byte("obfuscated", 1));
-        };
+        }
 
         if !self.extra.is_empty() {
             let mut extras = Vec::with_capacity(self.extra.len());

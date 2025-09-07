@@ -22,7 +22,7 @@ pub enum MiniMessageError {
 }
 
 pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
-    let wrapped_input = format!("<root>{}</root>", input);
+    let wrapped_input = format!("<root>{input}</root>");
     let mut reader = Reader::from_str(&wrapped_input);
 
     let mut flat_components = Vec::new();
@@ -32,8 +32,7 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
         match reader.read_event()? {
             Event::Start(e) => {
                 let mut new_style = style_stack.last().cloned().unwrap_or_default();
-                let tag_name = String::from_utf8(e.name().as_ref().to_vec())
-                    .unwrap_or_else(|_| "".to_string());
+                let tag_name = String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default();
 
                 match tag_name.as_str() {
                     "black" | "dark_blue" | "dark_green" | "dark_aqua" | "dark_red"
@@ -46,7 +45,6 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
                     "underlined" | "u" => new_style.underlined = true,
                     "strikethrough" | "st" => new_style.strikethrough = true,
                     "obfuscated" | "obf" => new_style.obfuscated = true,
-                    "root" => {}
                     _ => {}
                 }
                 style_stack.push(new_style);
@@ -62,18 +60,18 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
                     continue;
                 }
 
-                let current_style = style_stack.last().unwrap();
-
-                flat_components.push(Component {
-                    text: text.to_string(),
-                    color: current_style.color.clone(),
-                    bold: current_style.bold,
-                    italic: current_style.italic,
-                    underlined: current_style.underlined,
-                    strikethrough: current_style.strikethrough,
-                    obfuscated: current_style.obfuscated,
-                    extra: vec![],
-                });
+                if let Some(current_style) = style_stack.last() {
+                    flat_components.push(Component {
+                        text: text.to_string(),
+                        color: current_style.color.clone(),
+                        bold: current_style.bold,
+                        italic: current_style.italic,
+                        underlined: current_style.underlined,
+                        strikethrough: current_style.strikethrough,
+                        obfuscated: current_style.obfuscated,
+                        extra: vec![],
+                    });
+                }
             }
             Event::Eof => break,
             _ => (),
