@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 minecraft_protocol = { path = "../minecraft_protocol" }
-pico_binutils = { path = "../pico_binutils", features = ["string_indexer", "binary_reader"] }
+pico_binutils = { path = "../pico_binutils", features = ["binary_reader"] }
 pico_nbt = { path = "../pico_nbt" }
 blocks_report = { path = "../blocks_report" }
 flate2 = { workspace = true }

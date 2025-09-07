@@ -10,7 +10,6 @@ binary_writer = []
 length_prefixed = []
 var_int = []
 uuid = ["dep:uuid"]
-string_indexer = []
 
 [dependencies]
 thiserror = { workspace = true }
