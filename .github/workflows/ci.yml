@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'binaries/**'
+      - 'pico_limbo/**'
       - 'crates/**'
       - 'data/generated/**'
       - 'Cargo.lock'
@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [ master ]
     paths:
-      - 'binaries/**'
+      - 'pico_limbo/**'
       - 'crates/**'
       - 'data/generated/**'
       - 'Cargo.lock'
