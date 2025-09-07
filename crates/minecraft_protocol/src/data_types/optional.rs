@@ -15,7 +15,7 @@ impl<T: EncodePacket> EncodePacket for Omitted<T> {
         writer: &mut BinaryWriter,
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
-        if let Omitted::Some(value) = self {
+        if let Self::Some(value) = self {
             value.encode(writer, protocol_version)?;
         }
         Ok(())
@@ -33,17 +33,8 @@ pub enum Optional<T> {
 impl<T> Optional<T> {
     pub fn unwrap_or(self, default: T) -> T {
         match self {
-            Optional::None => default,
-            Optional::Some(x) => x,
-        }
-    }
-
-    pub fn unwrap(self) -> T {
-        match self {
-            Optional::None => {
-                panic!("called `Optional::unwrap()` on a `None` value")
-            }
-            Optional::Some(x) => x,
+            Self::None => default,
+            Self::Some(x) => x,
         }
     }
 }
@@ -55,10 +46,10 @@ impl<T: EncodePacket> EncodePacket for Optional<T> {
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
         match self {
-            Optional::None => {
+            Self::None => {
                 writer.write::<u8>(&0x00_u8)?;
             }
-            Optional::Some(value) => {
+            Self::Some(value) => {
                 writer.write::<u8>(&0x01_u8)?;
                 value.encode(writer, protocol_version)?;
             }
@@ -75,9 +66,9 @@ impl<T: DecodePacket> DecodePacket for Optional<T> {
         let is_present = bool::decode(reader, protocol_version)?;
         if is_present {
             let inner = T::decode(reader, protocol_version)?;
-            Ok(Optional::Some(inner))
+            Ok(Self::Some(inner))
         } else {
-            Ok(Optional::None)
+            Ok(Self::None)
         }
     }
 }
