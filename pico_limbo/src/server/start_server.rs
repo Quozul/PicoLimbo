@@ -1,3 +1,4 @@
+use crate::configuration::TaggedForwarding;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuilderError};
@@ -44,19 +45,23 @@ fn load_configuration(config_path: &PathBuf) -> Option<Config> {
 fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     let mut server_state_builder = ServerState::builder();
 
-    if cfg.forwarding.velocity.enabled {
-        debug!("Enabling modern forwarding");
-        server_state_builder.enable_modern_forwarding(cfg.forwarding.velocity.secret);
-    } else if cfg.forwarding.bungee_cord.enabled {
-        if cfg.forwarding.bungee_cord.bungee_guard {
-            debug!("Enabling BungeeGuard forwarding");
-            server_state_builder.enable_bungee_guard_forwarding(cfg.forwarding.bungee_cord.tokens);
-        } else {
-            debug!("Enabling legacy (BungeeCord) forwarding");
+    let forwarding: TaggedForwarding = cfg.forwarding.into();
+
+    match forwarding {
+        TaggedForwarding::None => {
+            server_state_builder.disable_forwarding();
+        }
+        TaggedForwarding::Legacy => {
+            debug!("Enabling legacy forwarding");
             server_state_builder.enable_legacy_forwarding();
         }
-    } else {
-        server_state_builder.disable_forwarding();
+        TaggedForwarding::BungeeGuard { tokens } => {
+            server_state_builder.enable_bungee_guard_forwarding(tokens);
+        }
+        TaggedForwarding::Modern { secret } => {
+            debug!("Enabling modern forwarding");
+            server_state_builder.enable_modern_forwarding(secret);
+        }
     }
 
     if cfg.world.boundaries.enabled

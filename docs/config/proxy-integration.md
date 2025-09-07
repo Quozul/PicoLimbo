@@ -11,36 +11,46 @@ Velocity Modern Forwarding is a method of forwarding player connections using th
 
 :::code-group
 ```toml [server.toml] {2-3}
-[forwarding.velocity]
-enabled = true
+[forwarding]
+method = "MODERN"
 secret = "<your-secret>"
 ```
 :::
 
 Replace `<your-secret>` with the forwarding secret of your Velocity proxy.
 
-## BungeeCord Legacy Forwarding
-
-BungeeCord Legacy Forwarding is a method of forwarding player connections using the BungeeCord proxy. To enable BungeeCord forwarding, set the following configuration options:
-
-:::code-group
-```toml [server.toml] {2}
-[forwarding.bungee_cord]
-enabled = true
-```
-:::
-
 ## BungeeGuard Authentication
 
-BungeeGuard and BungeeGuardPlus are additional security features for BungeeCord that provide token-based authentication for incoming player connections. To enable BungeeGuard authentication, set the following configuration options:
+BungeeGuard is an additional security feature that provide token-based authentication for incoming player connections. To enable BungeeGuard authentication, set the following configuration options:
 
 :::code-group
-```toml [server.toml] {3-5}
-[forwarding.bungee_cord]
-enabled = true
-bungee_guard = true
+```toml [server.toml] {2-3}
+[forwarding]
+method = "BUNGEE_GUARD"
 tokens = ["<token1>", "<token2>", ...]
 ```
 :::
 
 Replace `<token1>`, `<token2>`, etc., with valid BungeeGuard tokens for your BungeeCord proxy.
+
+## BungeeCord Legacy Forwarding
+
+To enable BungeeCord forwarding, set the following configuration options:
+
+:::code-group
+```toml [server.toml] {2}
+[forwarding]
+method = "LEGACY"
+```
+:::
+
+## None
+
+To disable forwarding altogether:
+
+:::code-group
+```toml [server.toml] {2}
+[forwarding]
+method = "NONE"
+```
+:::
