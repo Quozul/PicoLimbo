@@ -247,8 +247,14 @@ pub fn send_play_packets(
         );
     }
 
-    let packet = minecraft_packets::play::update_time_packet::UpdateTimePacket::new(1000, 18000);
-    client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+    let config_time_world = server_state.time_world_ticks();
+    let lock_time = server_state.is_time_locked();
+    if let Some(ticks) = config_time_world {
+        let packet = minecraft_packets::play::update_time_packet::UpdateTimePacket::new(
+            ticks, ticks, !lock_time,
+        );
+        client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+    }
 
     client_state.set_state(State::Play);
     client_state.set_keep_alive_should_enable();
