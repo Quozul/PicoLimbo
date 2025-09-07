@@ -1,6 +1,3 @@
-use crate::configuration::worldconfig::boundaries::BoundariesConfig;
-use crate::configuration::worldconfig::experimental::ExperimentalWorldConfig;
-use crate::configuration::worldconfig::spawn_dimension::SpawnDimensionConfig;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
@@ -56,40 +53,6 @@ impl From<TimeConfig> for i64 {
             TimeConfig::Night => 13_000,
             TimeConfig::Midnight => 18_000,
             TimeConfig::Ticks(ticks) => ticks,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(default)]
-#[serde(deny_unknown_fields)]
-pub struct WorldConfig {
-    /// Position to spawn the players at
-    pub spawn_position: (f64, f64, f64),
-
-    /// Name of the dimension to spawn the player in.
-    /// Supported: "overworld", "nether" or "end"
-    pub dimension: SpawnDimensionConfig,
-
-    /// Time of the world
-    /// Supported: "sunrise", "noon", "sunset", "midnight" or ticks (0 - 24000)
-    pub time: TimeConfig,
-
-    /// Experimental settings
-    pub experimental: ExperimentalWorldConfig,
-
-    /// World Boundaries settings
-    pub boundaries: BoundariesConfig,
-}
-
-impl Default for WorldConfig {
-    fn default() -> Self {
-        Self {
-            spawn_position: (0.0, 320.0, 0.0),
-            dimension: SpawnDimensionConfig::default(),
-            time: TimeConfig::default(),
-            experimental: ExperimentalWorldConfig::default(),
-            boundaries: BoundariesConfig::default(),
         }
     }
 }

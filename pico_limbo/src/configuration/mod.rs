@@ -2,5 +2,4 @@ pub mod config;
 mod forwarding;
 mod game_mode_config;
 mod server_list;
-mod world;
-mod worldconfig;
+mod world_config;

@@ -1,7 +1,7 @@
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
-use crate::configuration::world::WorldConfig;
+use crate::configuration::world_config::WorldConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::{fs, io};
