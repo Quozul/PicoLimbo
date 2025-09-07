@@ -92,7 +92,7 @@ Customize the message players receive when they fall below the minimum Y positio
 :::code-group
 ```toml [server.toml] {2}
 [world.boundaries]
-min_y_message = "<red>You have reached the bottom of the world.</red>"
+teleport_message = "<red>You have reached the bottom of the world.</red>"
 ```
 :::
 
@@ -101,7 +101,7 @@ The message can be disabled by setting an empty string:
 :::code-group
 ```toml [server.toml] {2}
 [world.boundaries]
-min_y_message = ""
+teleport_message = ""
 ```
 :::
 
