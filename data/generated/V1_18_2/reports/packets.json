@@ -58,6 +58,9 @@
       },
       "minecraft:disconnect": {
         "protocol_id": 26
+      },
+      "minecraft:set_time": {
+        "protocol_id": 89
       }
     },
     "serverbound": {

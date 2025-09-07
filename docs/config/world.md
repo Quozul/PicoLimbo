@@ -1,51 +1,22 @@
 # World Configuration
 
-PicoLimbo includes experimental world features that allow you to customize the spawn environment and load a custom structure using schematic files.
+## Dimension
 
-> [!WARNING]
-> This feature is work in progress and **only works with Minecraft client version 1.19 and above** as of now. It may
-> cause crashes or instability. While bug reports are welcome, expect issues and test thoroughly before production use.
-
-![Limbo's loaded from a schematic file](/world.png)
-> Loading of Loohp's Limbo [spawn.schem](https://github.com/LOOHP/Limbo/blob/master/spawn.schem) file inside PicoLimbo.
-
-## Schematic Loading
-
-Load `.schem` files to customize the spawn location. PicoLimbo implements version 2 of
-[SpongePowered's schematic specification](https://github.com/SpongePowered/Schematic-Specification).
+Default spawn dimension for new players.
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
-schematic_file = "spawn.schem"
+[world]
+dimension = "overworld"
 ```
 :::
 
-The schematic will be loaded with its minimum corner placed at world coordinates 0,0,0, extending in the positive x, y, and z directions.
-
-You can create compatible schematic files using WorldEdit with the following command:
-
+Possible values:
 ```
-//schem save <filename> sponge.2
+overworld
+nether
+end
 ```
-
-To disable schematic loading:
-
-:::code-group
-```toml [server.toml] {2}
-[experimental.world]
-schematic_file = ""
-```
-:::
-
-### Known Limitations
-
-Here's a list of what does not work when loading a schematic:
-- **Block entities**: Chests, signs, banners, player heads, and other tile entities
-- **Entities**: Armor stands, item frames, mobs, and other entities
-- **Light engine**: The world will always be fully lit
-- **Movement mechanics**: Ladder climbing or elytra does not work
-- **Block interactions**: Opening a door only half-opens it, buttons and pressure plates does not reset
 
 ## Spawn Position
 
@@ -53,18 +24,27 @@ Customize where players spawn using `[x, y, z]` coordinates. Supports floating p
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
+[world]
 spawn_position = [0.5, 320.0, 0.5]
 ```
 :::
 
-## View Distance
+## Time
 
-Configure how many chunks are sent to clients. Defaults to 2, with a range of 0-32. Values outside this range are clamped. The view distance should match or exceed your schematic's size in chunks.
+Sets the time in the world.
 
 :::code-group
 ```toml [server.toml] {2}
-[experimental.world]
-view_distance = 2
+[world]
+time = "midnight"
 ```
 :::
+
+Possible values:
+```
+day
+noon
+night
+midnight
+a specific time in ticks (0-24000)
+```

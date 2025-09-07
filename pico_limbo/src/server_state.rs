@@ -29,6 +29,8 @@ pub struct MisconfiguredForwardingError;
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
+    time_world: i64,
+    lock_time: bool,
     description_text: String,
     max_players: u32,
     welcome_message: String,
@@ -123,6 +125,15 @@ impl ServerState {
     pub const fn world(&self) -> Option<&World> {
         self.world.as_ref()
     }
+
+    pub const fn time_world_ticks(&self) -> i64 {
+        self.time_world
+    }
+
+    pub const fn is_time_locked(&self) -> bool {
+        self.lock_time
+    }
+
     pub const fn min_y_pos(&self) -> i32 {
         self.min_y_pos
     }
@@ -146,6 +157,8 @@ impl ServerState {
 pub struct ServerStateBuilder {
     forwarding_mode: ForwardingMode,
     dimension: Option<Dimension>,
+    time_world: i64,
+    lock_time: bool,
     description_text: String,
     max_players: u32,
     welcome_message: String,
@@ -198,6 +211,17 @@ impl ServerStateBuilder {
     /// Set the spawn dimension
     pub const fn dimension(&mut self, dimension: Dimension) -> &mut Self {
         self.dimension = Some(dimension);
+        self
+    }
+
+    /// Set the time of the world
+    pub const fn time_world(&mut self, time_world: i64) -> &mut Self {
+        self.time_world = time_world;
+        self
+    }
+
+    pub const fn lock_time(&mut self, lock_time: bool) -> &mut Self {
+        self.lock_time = lock_time;
         self
     }
 
@@ -281,6 +305,8 @@ impl ServerStateBuilder {
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),
+            time_world: self.time_world,
+            lock_time: self.lock_time,
             description_text: self.description_text,
             max_players: self.max_players,
             welcome_message: self.welcome_message,

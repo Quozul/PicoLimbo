@@ -7,18 +7,11 @@ If it is not generated, you can copy the following code block in your configurat
 ```toml [server.toml]
 # Server bind address and port
 bind = "0.0.0.0:25565"
-
-# Default spawn dimension
-# Allowed values: "overworld", "nether", or "end"
-spawn_dimension = "overworld"
-
 # Welcome message sent to players after spawning
 welcome_message = "Welcome to PicoLimbo!"
-
 # Sets the game mode for new players
 # Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
-
 # If set to true, will spawn the player in hardcode mode
 hardcore = false
 
@@ -44,13 +37,27 @@ message_of_the_day = "A Minecraft Server"
 # Show actual online player count in your server list?
 show_online_player_count = true
 
-[experimental.world]
+[world]
 # Custom spawn position as [x, y, z] coordinates
 spawn_position = [0.0, 320.0, 0.0]
+# Default spawn dimension
+# Allowed values: "overworld", "nether", or "end"
+dimension = "end"
+# Sets the time in the world
+# Allowed values: "day", "noon", "night", "midnight", or a specific time in ticks (0-24000)
+time = "day"
+# Lock the time in the world to `world.time` value
+lock_time = false
+
+[world.experimental]
 # Configure how many chunks are sent to clients
 view_distance = 2
 # Path to schematic file for custom world structures
 # Leave empty to disable schematic loading
 schematic_file = ""
+# Minimum Y position, players below this will be teleported back to spawn
+min_y_pos = -64
+# Message displayed when a player reaches the minimum Y position
+min_y_message = "You have reached the bottom of the world."
 ```
 :::
