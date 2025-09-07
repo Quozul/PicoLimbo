@@ -16,7 +16,7 @@ impl Default for BoundariesConfig {
         Self {
             enabled: false,
             min_y: -64,
-            teleport_message: "You have reached the bottom of the worldconfig.".into(),
+            teleport_message: "You have reached the bottom of the world.".into(),
         }
     }
 }
