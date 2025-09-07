@@ -78,8 +78,9 @@ Control player movement by setting a minimum Y coordinate. When players fall bel
 Set the lowest Y coordinate players can reach before being teleported back to spawn. Defaults to -64 (Minecraft's default world bottom).
 
 :::code-group
-```toml [server.toml] {2}
-[world.experimental]
+```toml [server.toml] {2-3}
+[world.boundaries]
+enabled = true
 min_y_pos = -64
 ```
 :::
@@ -90,8 +91,8 @@ Customize the message players receive when they fall below the minimum Y positio
 
 :::code-group
 ```toml [server.toml] {2}
-[world.experimental]
-min_y_message = "<red>You have reached the bottom of the world.</red>"
+[world.boundaries]
+teleport_message = "<red>You have reached the bottom of the world.</red>"
 ```
 :::
 
@@ -99,8 +100,8 @@ The message can be disabled by setting an empty string:
 
 :::code-group
 ```toml [server.toml] {2}
-[world.experimental]
-min_y_message = ""
+[world.boundaries]
+teleport_message = ""
 ```
 :::
 
