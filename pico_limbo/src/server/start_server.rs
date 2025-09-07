@@ -59,7 +59,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.disable_forwarding();
     }
 
-    if cfg.world.spawn_position.1 < f64::from(cfg.world.boundaries.min_y) {
+    if cfg.world.boundaries.enabled && cfg.world.spawn_position.1 < f64::from(cfg.world.boundaries.min_y) {
         return Err(ServerStateBuilderError::InvalidSpawnPosition());
     }
 
