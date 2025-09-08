@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Teleport player back to the spawn when they go bellow a certain y level
+- Teleport player back to the spawn when they go bellow the world boundaries
 - Time can now be configured in the configuration file
 
 ### Changed
@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Message of the day and welcome message now accept MiniMessage formatting
 - Remove limit for maximum view distance
 - Spawn position is now a stable world setting
+- Format for the forwarding configuration changed (refer to the docs)
+- Spawn dimension setting was renamed to dimension and moved to the world section
 
 ## [1.5.2+mc1.21.8] - 2025-09-06
 
