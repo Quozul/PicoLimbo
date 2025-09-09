@@ -229,7 +229,7 @@ pub fn send_play_packets(
     if let Some(header) = tablist.header.as_ref()
         && let Some(footer) = tablist.footer.as_ref()
     {
-        let packet = TabListPacket::new(&header, &footer);
+        let packet = TabListPacket::new(header, footer);
         client_state.queue_packet(PacketRegistry::TabList(packet));
     }
 

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct TabListConfig {
@@ -9,13 +9,4 @@ pub struct TabListConfig {
 
     /// Footer of the tab list displayed when the player presses the tab key.
     pub footer: String,
-}
-
-impl Default for TabListConfig {
-    fn default() -> Self {
-        Self {
-            header: "".into(),
-            footer: "".into(),
-        }
-    }
 }
