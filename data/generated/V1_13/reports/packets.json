@@ -55,6 +55,9 @@
       },
       "minecraft:set_time": {
         "protocol_id": 74
+      },
+      "minecraft:tab_list": {
+        "protocol_id": 78
       }
     },
     "serverbound": {
