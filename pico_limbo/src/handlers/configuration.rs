@@ -16,6 +16,7 @@ use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClient
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
@@ -223,6 +224,14 @@ pub fn send_play_packets(
     let lock_time = server_state.is_time_locked();
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
     client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+
+    let tablist = server_state.tablist();
+    if let Some(header) = tablist.header.as_ref()
+        && let Some(footer) = tablist.footer.as_ref()
+    {
+        let packet = TabListPacket::new(&header, &footer);
+        client_state.queue_packet(PacketRegistry::TabList(packet));
+    }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {

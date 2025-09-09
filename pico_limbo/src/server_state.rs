@@ -37,6 +37,12 @@ pub enum Boundaries {
 }
 
 #[derive(Default)]
+pub struct TabList {
+    pub header: Option<Component>,
+    pub footer: Option<Component>,
+}
+
+#[derive(Default)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
@@ -53,6 +59,7 @@ pub struct ServerState {
     view_distance: i32,
     world: Option<World>,
     boundaries: Boundaries,
+    tablist: TabList,
 }
 
 impl ServerState {
@@ -143,6 +150,9 @@ impl ServerState {
     pub const fn boundaries(&self) -> &Boundaries {
         &self.boundaries
     }
+    pub const fn tablist(&self) -> &TabList {
+        &self.tablist
+    }
 
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
@@ -169,6 +179,7 @@ pub struct ServerStateBuilder {
     view_distance: i32,
     schematic_file_path: String,
     boundaries: Boundaries,
+    tablist: TabList,
 }
 
 #[derive(Debug, Error)]
@@ -277,6 +288,20 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn tablist<S1, S2>(&mut self, header: S1, footer: S2) -> &mut Self
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
+        let header = parse_mini_message(header.as_ref());
+        let footer = parse_mini_message(footer.as_ref());
+        self.tablist = TabList {
+            header: header.ok(),
+            footer: footer.ok(),
+        };
+        self
+    }
+
     pub fn boundaries<S>(
         &mut self,
         min_y: i32,
@@ -322,6 +347,7 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             world,
             boundaries: self.boundaries,
+            tablist: self.tablist,
         })
     }
 }
