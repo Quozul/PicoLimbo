@@ -37,9 +37,19 @@ pub enum Boundaries {
 }
 
 #[derive(Default)]
-pub struct TabList {
-    pub header: Option<Component>,
-    pub footer: Option<Component>,
+pub enum TabList {
+    #[default]
+    None,
+    Header {
+        header: Component,
+    },
+    Footer {
+        footer: Component,
+    },
+    HeaderAndFooter {
+        header: Component,
+        footer: Component,
+    },
 }
 
 #[derive(Default)]
@@ -293,12 +303,22 @@ impl ServerStateBuilder {
         S1: AsRef<str>,
         S2: AsRef<str>,
     {
-        let header = parse_mini_message(header.as_ref());
-        let footer = parse_mini_message(footer.as_ref());
-        self.tablist = TabList {
-            header: header.ok(),
-            footer: footer.ok(),
+        let raw_header = header.as_ref();
+        let raw_footer = footer.as_ref();
+        if raw_header.is_empty() && raw_footer.is_empty() {
+            self.tablist = TabList::None;
+            return self;
+        }
+
+        let header = parse_mini_message(raw_header);
+        let footer = parse_mini_message(raw_footer);
+        self.tablist = match (header, footer) {
+            (Ok(header), Ok(footer)) => TabList::HeaderAndFooter { header, footer },
+            (Ok(header), Err(_)) => TabList::Header { header },
+            (Err(_), Ok(footer)) => TabList::Footer { footer },
+            (Err(_), Err(_)) => TabList::None,
         };
+
         self
     }
 

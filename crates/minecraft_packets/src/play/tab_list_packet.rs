@@ -8,10 +8,10 @@ pub struct TabListPacket {
 }
 
 impl TabListPacket {
-    pub fn new(content: &Component, overlay: &Component) -> Self {
+    pub fn new(header: &Component, footer: &Component) -> Self {
         Self {
-            header: content.clone(),
-            footer: overlay.clone(),
+            header: header.clone(),
+            footer: footer.clone(),
         }
     }
 }

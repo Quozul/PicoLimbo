@@ -5,7 +5,7 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::ServerState;
+use crate::server_state::{ServerState, TabList};
 use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
@@ -21,6 +21,8 @@ use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
+use pico_text_component::prelude::Component;
+use std::io::empty;
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -225,12 +227,22 @@ pub fn send_play_packets(
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
     client_state.queue_packet(PacketRegistry::UpdateTime(packet));
 
-    let tablist = server_state.tablist();
-    if let Some(header) = tablist.header.as_ref()
-        && let Some(footer) = tablist.footer.as_ref()
-    {
-        let packet = TabListPacket::new(header, footer);
-        client_state.queue_packet(PacketRegistry::TabList(packet));
+    match server_state.tablist() {
+        TabList::HeaderAndFooter { header, footer } => {
+            let packet = TabListPacket::new(header, footer);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::Header { header } => {
+            let empty = Component::default();
+            let packet = TabListPacket::new(header, &empty);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::Footer { footer } => {
+            let empty = Component::default();
+            let packet = TabListPacket::new(&empty, footer);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::None => {}
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
