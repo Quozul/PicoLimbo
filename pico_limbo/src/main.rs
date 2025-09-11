@@ -4,7 +4,6 @@ mod configuration;
 mod forwarding;
 mod handlers;
 mod kick_messages;
-mod registries;
 mod server;
 mod server_state;
 

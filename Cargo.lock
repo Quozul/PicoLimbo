@@ -556,7 +556,6 @@ dependencies = [
 name = "pico_limbo"
 version = "1.5.2+mc1.21.8"
 dependencies = [
- "anyhow",
  "blocks_report",
  "clap",
  "hmac",
@@ -566,9 +565,8 @@ dependencies = [
  "net",
  "pico_structures",
  "pico_text_component",
- "proc-macro2",
- "quote",
  "rand",
+ "registries",
  "serde",
  "serde_json",
  "sha2",
@@ -578,7 +576,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "walkdir",
 ]
 
 [[package]]
@@ -772,6 +769,26 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+
+[[package]]
+name = "registries"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "minecraft_protocol",
+ "proc-macro2",
+ "quote",
+ "registries_data",
+ "serde_json",
+ "walkdir",
+]
+
+[[package]]
+name = "registries_data"
+version = "0.1.0"
+dependencies = [
+ "minecraft_protocol",
+]
 
 [[package]]
 name = "rustc-demangle"

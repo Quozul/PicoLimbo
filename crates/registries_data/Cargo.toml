@@ -1,0 +1,7 @@
+[package]
+name = "registries_data"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+minecraft_protocol = { path = "../minecraft_protocol" }

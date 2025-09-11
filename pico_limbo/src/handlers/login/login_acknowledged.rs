@@ -1,4 +1,3 @@
-use crate::registries::get_registries::{Registries, get_registries};
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
@@ -10,6 +9,7 @@ use minecraft_packets::configuration::finish_configuration_packet::FinishConfigu
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
+use registries::{Registries, get_registries};
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
