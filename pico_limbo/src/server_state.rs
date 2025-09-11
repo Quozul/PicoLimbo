@@ -298,7 +298,11 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn tab_list<S>(&mut self, header: S, footer: S) -> Result<&mut Self, ServerStateBuilderError>
+    pub fn tab_list<S>(
+        &mut self,
+        header: S,
+        footer: S,
+    ) -> Result<&mut Self, ServerStateBuilderError>
     where
         S: AsRef<str>,
     {
