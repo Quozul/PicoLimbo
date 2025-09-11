@@ -1,6 +1,6 @@
-use minecraft_protocol::prelude::BinaryWriterError;
-use minecraft_protocol::prelude::{
-    BinaryWriter, EncodePacket, Identifier, LengthPaddedVec, Nbt, PacketOut, ProtocolVersion,
+use minecraft_protocol::prelude::*;
+use registries_data::grouped_registries::{
+    V1_20_5Registries, V1_20_5RegistryEntries, V1_20_5RegistryEntry,
 };
 use serde_json::Value;
 use std::collections::HashMap;
@@ -65,23 +65,6 @@ where
     writer.into_inner()
 }
 
-#[derive(PacketOut)]
-pub struct V1_20_5RegistryEntry {
-    identifier: Identifier,
-    nbt: LengthPaddedVec<u8>,
-}
-
-#[derive(PacketOut)]
-pub struct V1_20_5RegistryEntries {
-    identifier: Identifier,
-    entries: LengthPaddedVec<V1_20_5RegistryEntry>,
-}
-
-#[derive(PacketOut)]
-pub struct V1_20_5Registries {
-    pub(crate) registries: LengthPaddedVec<V1_20_5RegistryEntries>,
-}
-
 /// Way to get registries since 1.20.5
 pub fn get_v1_20_5_registries(
     protocol_version: ProtocolVersion,
@@ -94,13 +77,13 @@ pub fn get_v1_20_5_registries(
             let converted_entries: Vec<V1_20_5RegistryEntry> = entries_list
                 .iter()
                 .map(|(entry_id, entry_nbt)| V1_20_5RegistryEntry {
-                    identifier: entry_id.clone(),
-                    nbt: LengthPaddedVec::new(encode(entry_nbt, protocol_version)),
+                    entry_id: entry_id.clone(),
+                    nbt_bytes: LengthPaddedVec::new(encode(entry_nbt, protocol_version)),
                 })
                 .collect();
 
             V1_20_5RegistryEntries {
-                identifier: registry_id.clone(),
+                registry_id: registry_id.clone(),
                 entries: LengthPaddedVec::new(converted_entries),
             }
         })

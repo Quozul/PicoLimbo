@@ -1,6 +1,3 @@
-use crate::registries::get_registries::{
-    Registries, get_dimension_index, get_registries, get_void_biome_index,
-};
 use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -22,6 +19,7 @@ use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
 use pico_text_component::prelude::Component;
+use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {

@@ -2,7 +2,6 @@
 name = "pico_limbo"
 version = "1.5.2+mc1.21.8"
 edition = "2024"
-build = "build/main.rs"
 
 [dependencies]
 blocks_report = { path = "../crates/blocks_report" }
@@ -12,6 +11,7 @@ minecraft_protocol = { path = "../crates/minecraft_protocol" }
 net = { path = "../crates/net" }
 pico_structures = { path = "../crates/pico_structures" }
 pico_text_component = { path = "../crates/pico_text_component" }
+registries = { path = "../crates/registries" }
 clap = { workspace = true }
 hmac = { workspace = true }
 rand = { workspace = true }
@@ -24,11 +24,3 @@ tokio = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-
-[build-dependencies]
-anyhow = { workspace = true }
-minecraft_protocol = { path = "../crates/minecraft_protocol" }
-serde_json = { workspace = true }
-walkdir = { workspace = true }
-quote = { workspace = true }
-proc-macro2 = { workspace = true }

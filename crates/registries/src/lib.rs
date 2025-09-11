@@ -1,6 +1,8 @@
 use minecraft_protocol::prelude::*;
-
-include!(concat!(env!("OUT_DIR"), "/generated_registries.rs"));
+pub use registries_data::grouped_registries::{
+    V1_20_5Registries, V1_20_5RegistryEntries, V1_20_5RegistryEntry,
+};
+pub use registries_data::registry_format::RegistryFormat;
 
 /// This enum holds the pre-encoded, static registries data for a given format.
 /// All variants now hold static references, eliminating runtime allocations.
@@ -23,22 +25,7 @@ pub enum Registries {
     None,
 }
 
-#[derive(PacketIn)]
-pub struct V1_20_5RegistryEntry {
-    pub entry_id: Identifier,
-    pub nbt_bytes: LengthPaddedVec<u8>,
-}
-
-#[derive(PacketIn)]
-pub struct V1_20_5RegistryEntries {
-    pub registry_id: Identifier,
-    pub entries: LengthPaddedVec<V1_20_5RegistryEntry>,
-}
-
-#[derive(PacketIn)]
-pub struct V1_20_5Registries {
-    pub registries: LengthPaddedVec<V1_20_5RegistryEntries>,
-}
+include!(concat!(env!("OUT_DIR"), "/generated_registries.rs"));
 
 pub fn get_registries(protocol_version: ProtocolVersion, dimension: Dimension) -> Registries {
     let data_version = protocol_version.data();

@@ -18,6 +18,8 @@ members = [
     "crates/pico_text_component",
     "crates/protocol_version",
     "crates/protocol_version_macro",
+    "crates/registries",
+    "crates/registries_data",
     "pico_limbo",
 ]
 

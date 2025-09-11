@@ -1,15 +1,14 @@
 mod get_all_registries;
 mod registries_indexes;
-mod registry_format;
 
 use crate::get_all_registries::{
     encode, get_v1_16_2_registry_codec, get_v1_16_registry_codec, get_v1_20_5_registries,
 };
 use crate::registries_indexes::{get_dimension_type_index, get_the_void_index};
-use crate::registry_format::RegistryFormat;
 use minecraft_protocol::prelude::{Dimension, Nbt, ProtocolVersion};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
+use registries_data::registry_format::RegistryFormat;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
@@ -28,8 +27,9 @@ fn write_bytes_to_out_dir(out_dir: &Path, file_name: &str, data: &[u8]) -> anyho
 }
 
 fn main() -> anyhow::Result<()> {
-    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let data_location = manifest_dir
+    let data_location = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?)
+        .parent()
+        .unwrap()
         .parent()
         .unwrap()
         .join("data")
