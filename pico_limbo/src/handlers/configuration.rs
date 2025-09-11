@@ -226,7 +226,7 @@ pub fn send_play_packets(
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
     client_state.queue_packet(PacketRegistry::UpdateTime(packet));
 
-    match server_state.tablist() {
+    match server_state.tab_list() {
         TabList::HeaderAndFooter { header, footer } => {
             let packet = TabListPacket::new(header, footer);
             client_state.queue_packet(PacketRegistry::TabList(packet));

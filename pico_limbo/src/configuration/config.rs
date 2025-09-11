@@ -47,7 +47,7 @@ pub struct Config {
     /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
 
-    pub tablist: TabListConfig,
+    pub tab_list: TabListConfig,
 }
 
 impl Default for Config {
@@ -60,7 +60,7 @@ impl Default for Config {
             default_game_mode: GameModeConfig::default(),
             world: WorldConfig::default(),
             hardcore: false,
-            tablist: TabListConfig::default(),
+            tab_list: TabListConfig::default(),
         }
     }
 }

@@ -1,0 +1,37 @@
+bind = "0.0.0.0:25565"
+welcome_message = "Welcome to PicoLimbo!"
+default_game_mode = "survival"
+hardcore = false
+
+[forwarding.velocity]
+enabled = false
+secret = ""
+
+[forwarding.bungee_cord]
+enabled = false
+bungee_guard = false
+tokens = []
+
+[world]
+spawn_position = [19.5, 37.0, 25.5]
+dimension = "overworld"
+time = "midnight"
+
+[world.experimental]
+view_distance = 4
+schematic_file = "limbo.schem"
+lock_time = true
+
+[world.boundaries]
+enabled = true
+min_y = 0
+teleport_message = "<red>You have reached the bottom of the world.</red>"
+
+[server_list]
+max_players = 20
+message_of_the_day = "A Minecraft Server"
+show_online_player_count = true
+
+[tablist]
+header = ""
+footer = "<green>Enjoy your stay!</green>"

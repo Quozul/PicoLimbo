@@ -69,7 +69,7 @@ pub struct ServerState {
     view_distance: i32,
     world: Option<World>,
     boundaries: Boundaries,
-    tablist: TabList,
+    tab_list: TabList,
 }
 
 impl ServerState {
@@ -160,8 +160,8 @@ impl ServerState {
     pub const fn boundaries(&self) -> &Boundaries {
         &self.boundaries
     }
-    pub const fn tablist(&self) -> &TabList {
-        &self.tablist
+    pub const fn tab_list(&self) -> &TabList {
+        &self.tab_list
     }
 
     pub fn increment(&self) {
@@ -189,7 +189,7 @@ pub struct ServerStateBuilder {
     view_distance: i32,
     schematic_file_path: String,
     boundaries: Boundaries,
-    tablist: TabList,
+    tab_list: TabList,
 }
 
 #[derive(Debug, Error)]
@@ -298,7 +298,7 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn tablist<S1, S2>(&mut self, header: S1, footer: S2) -> &mut Self
+    pub fn tab_list<S1, S2>(&mut self, header: S1, footer: S2) -> &mut Self
     where
         S1: AsRef<str>,
         S2: AsRef<str>,
@@ -306,13 +306,13 @@ impl ServerStateBuilder {
         let raw_header = header.as_ref();
         let raw_footer = footer.as_ref();
         if raw_header.is_empty() && raw_footer.is_empty() {
-            self.tablist = TabList::None;
+            self.tab_list = TabList::None;
             return self;
         }
 
         let header = parse_mini_message(raw_header);
         let footer = parse_mini_message(raw_footer);
-        self.tablist = match (header, footer) {
+        self.tab_list = match (header, footer) {
             (Ok(header), Ok(footer)) => TabList::HeaderAndFooter { header, footer },
             (Ok(header), Err(_)) => TabList::Header { header },
             (Err(_), Ok(footer)) => TabList::Footer { footer },
@@ -367,7 +367,7 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             world,
             boundaries: self.boundaries,
-            tablist: self.tablist,
+            tab_list: self.tab_list,
         })
     }
 }
