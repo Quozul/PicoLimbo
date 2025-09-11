@@ -298,28 +298,28 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn tab_list<S1, S2>(&mut self, header: S1, footer: S2) -> &mut Self
+    pub fn tab_list<S>(&mut self, header: S, footer: S) -> Result<&mut Self, ServerStateBuilderError>
     where
-        S1: AsRef<str>,
-        S2: AsRef<str>,
+        S: AsRef<str>,
     {
-        let raw_header = header.as_ref();
-        let raw_footer = footer.as_ref();
-        if raw_header.is_empty() && raw_footer.is_empty() {
-            self.tab_list = TabList::None;
-            return self;
-        }
-
-        let header = parse_mini_message(raw_header);
-        let footer = parse_mini_message(raw_footer);
-        self.tab_list = match (header, footer) {
-            (Ok(header), Ok(footer)) => TabList::HeaderAndFooter { header, footer },
-            (Ok(header), Err(_)) => TabList::Header { header },
-            (Err(_), Ok(footer)) => TabList::Footer { footer },
-            (Err(_), Err(_)) => TabList::None,
+        self.tab_list = if header.as_ref().is_empty() && footer.as_ref().is_empty() {
+            TabList::None
+        } else if header.as_ref().is_empty() {
+            TabList::Footer {
+                footer: parse_mini_message(footer.as_ref())?,
+            }
+        } else if footer.as_ref().is_empty() {
+            TabList::Header {
+                header: parse_mini_message(header.as_ref())?,
+            }
+        } else {
+            TabList::HeaderAndFooter {
+                header: parse_mini_message(header.as_ref())?,
+                footer: parse_mini_message(footer.as_ref())?,
+            }
         };
 
-        self
+        Ok(self)
     }
 
     pub fn boundaries<S>(
