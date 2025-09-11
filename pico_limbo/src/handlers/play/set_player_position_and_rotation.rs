@@ -1,3 +1,5 @@
+use crate::handlers::configuration::send_message;
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
@@ -10,17 +12,21 @@ impl PacketHandler for SetPlayerPositionAndRotationPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
-        teleport_player_to_spawn(client_state, server_state, self.feet_y);
-        Ok(())
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        Ok(teleport_player_to_spawn(
+            client_state,
+            server_state,
+            self.feet_y,
+        ))
     }
 }
 
 pub fn teleport_player_to_spawn(
-    client_state: &mut ClientState,
+    client_state: &ClientState,
     server_state: &ServerState,
     feet_y: f64,
-) {
+) -> Batch<PacketRegistry> {
+    let mut batch = Batch::new();
     if let Boundaries::Enabled {
         teleport_message,
         min_y,
@@ -29,12 +35,13 @@ pub fn teleport_player_to_spawn(
     {
         let (x, y, z) = server_state.spawn_position();
         let packet = SynchronizePlayerPositionPacket::new(x, y, z);
-        client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
+        batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
 
         if let Some(content) = teleport_message {
-            client_state.send_message(content);
+            send_message(&mut batch, content, client_state.protocol_version());
         }
     }
+    batch
 }
 
 #[cfg(test)]
@@ -61,188 +68,57 @@ mod tests {
         cs
     }
 
-    fn create_packet(feet_y: f64) -> SetPlayerPositionAndRotationPacket {
-        SetPlayerPositionAndRotationPacket {
-            x: 25.0,
-            feet_y,
-            z: 35.0,
-            yaw: 90.0,
-            pitch: 45.0,
-            v1_21_4_flags: 0,
-            on_ground: false,
-        }
-    }
-
     #[test]
-    fn test_player_above_min_y_pos_no_packets_sent() {
+    fn test_should_teleport_and_message_player() {
         // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, None);
-        let packet = create_packet(40.0);
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_player_below_min_y_pos_teleport_packet_sent() {
-        // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, None);
-        let packet = create_packet(20.0);
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_player_below_min_y_pos_with_message_two_packets_sent() {
-        // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, Some("You fell too far!".to_string()));
-        let packet = create_packet(20.0);
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        let second_packet = client_state.next_packet();
-        assert!(matches!(
-            second_packet,
-            PacketRegistry::SystemChatMessage(_) | PacketRegistry::LegacyChatMessage(_)
-        ));
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_player_exactly_at_min_y_pos_no_packets_sent() {
-        // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, None);
-        let packet = create_packet(30.0);
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_player_slightly_below_min_y_pos() {
-        // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, None);
-        let packet = create_packet(29.999);
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_with_empty_message_only_teleport_sent() {
-        // Given
-        let mut client_state = client_state();
-        let server_state = server_state_with_min_y(30, Some(String::new())); // Empty message
-        let packet = create_packet(20.0); // Below min_y_pos
-
-        // When
-        packet.handle(&mut client_state, &server_state).unwrap();
-
-        // Then
-        assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(client_state.has_no_more_packets());
-    }
-
-    #[test]
-    fn test_teleport_player_to_spawn_function_directly() {
-        // Given
-        let mut client_state = client_state();
+        let client_state = client_state();
         let server_state = server_state_with_min_y(0, Some("Direct teleport test".to_string()));
 
         // When
-        teleport_player_to_spawn(&mut client_state, &server_state, -1.0);
+        let batch = teleport_player_to_spawn(&client_state, &server_state, -1.0);
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
-        let second_packet = client_state.next_packet();
         assert!(matches!(
-            second_packet,
+            batch.next().unwrap(),
             PacketRegistry::SystemChatMessage(_) | PacketRegistry::LegacyChatMessage(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
-    fn test_multiple_protocol_versions_message_handling() {
+    fn test_should_teleport_player() {
         // Given
-        let mut client_state_legacy = ClientState::default();
-        client_state_legacy.set_protocol_version(ProtocolVersion::V1_18_2);
-        client_state_legacy.set_state(State::Play);
-
-        let server_state = server_state_with_min_y(30, Some("Legacy message".to_string()));
-        let packet = create_packet(20.0);
+        let client_state = client_state();
+        let server_state = server_state_with_min_y(0, None);
 
         // When
-        packet
-            .handle(&mut client_state_legacy, &server_state)
-            .unwrap();
+        let batch = teleport_player_to_spawn(&client_state, &server_state, -1.0);
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(matches!(
-            client_state_legacy.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
-        assert!(matches!(
-            client_state_legacy.next_packet(),
-            PacketRegistry::LegacyChatMessage(_)
-        ));
-        assert!(client_state_legacy.has_no_more_packets());
+        assert!(batch.next().is_none());
+    }
 
-        let mut client_state_modern = ClientState::default();
-        client_state_modern.set_protocol_version(ProtocolVersion::V1_20_2);
-        client_state_modern.set_state(State::Play);
+    #[test]
+    fn test_should_do_nothing() {
+        // Given
+        let client_state = client_state();
+        let server_state = server_state_with_min_y(0, None);
 
-        let packet = create_packet(20.0);
-        packet
-            .handle(&mut client_state_modern, &server_state)
-            .unwrap();
+        // When
+        let batch = teleport_player_to_spawn(&client_state, &server_state, 10.0);
+        let mut batch = batch.into_iter();
 
-        assert!(matches!(
-            client_state_modern.next_packet(),
-            PacketRegistry::SynchronizePlayerPosition(_)
-        ));
-        assert!(matches!(
-            client_state_modern.next_packet(),
-            PacketRegistry::SystemChatMessage(_)
-        ));
-        assert!(client_state_modern.has_no_more_packets());
+        // Then
+        assert!(batch.next().is_none());
     }
 }

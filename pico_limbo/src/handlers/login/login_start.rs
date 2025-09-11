@@ -1,5 +1,6 @@
 use crate::handlers::configuration::send_play_packets;
 use crate::kick_messages::CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE;
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -17,33 +18,34 @@ impl PacketHandler for LoginStartPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let mut batch = Batch::new();
         if server_state.is_modern_forwarding() {
             if client_state.protocol_version().is_modern() {
-                login_start_velocity(client_state);
+                login_start_velocity(&mut batch, client_state);
             } else {
                 client_state.kick(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE);
             }
         } else {
             let game_profile: GameProfile = self.into();
-            fire_login_success(client_state, server_state, game_profile)?;
+            fire_login_success(&mut batch, client_state, server_state, game_profile)?;
         }
-
-        Ok(())
+        Ok(batch)
     }
 }
 
-fn login_start_velocity(client_state: &mut ClientState) {
+fn login_start_velocity(batch: &mut Batch<PacketRegistry>, client_state: &mut ClientState) {
     let message_id = {
         let mut rng = rand::rng();
         rng.random()
     };
     client_state.set_velocity_login_message_id(message_id);
     let packet = CustomQueryPacket::velocity_info_channel(message_id);
-    client_state.queue_packet(PacketRegistry::CustomQuery(packet));
+    batch.queue(|| PacketRegistry::CustomQuery(packet));
 }
 
 pub fn fire_login_success(
+    batch: &mut Batch<PacketRegistry>,
     client_state: &mut ClientState,
     server_state: &ServerState,
     game_profile: GameProfile,
@@ -52,16 +54,16 @@ pub fn fire_login_success(
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_2) {
         let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());
-        client_state.queue_packet(PacketRegistry::LoginSuccess(packet));
+        batch.queue(|| PacketRegistry::LoginSuccess(packet));
     } else {
         let packet = GameProfilePacket::new(game_profile.uuid(), game_profile.username());
-        client_state.queue_packet(PacketRegistry::GameProfile(packet));
+        batch.queue(|| PacketRegistry::GameProfile(packet));
     }
 
     client_state.set_game_profile(game_profile);
 
     if !protocol_version.supports_configuration_state() {
-        send_play_packets(client_state, server_state)?;
+        send_play_packets(batch, client_state, server_state)?;
     }
     Ok(())
 }
@@ -102,16 +104,17 @@ mod tests {
         let pkt = packet();
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(
-            matches!(client_state.next_packet(), PacketRegistry::CustomQuery(_)),
+            matches!(batch.next().unwrap(), PacketRegistry::CustomQuery(_)),
             "first packet should be the velocity CustomQuery"
         );
         assert_ne!(client_state.get_velocity_login_message_id(), -1);
         assert!(client_state.should_kick().is_none());
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -130,7 +133,6 @@ mod tests {
             client_state.should_kick(),
             Some(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE.to_string())
         );
-        assert!(client_state.has_no_more_packets());
     }
 
     // vanilla login
@@ -142,11 +144,12 @@ mod tests {
         let pkt = packet();
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(
-            matches!(client_state.next_packet(), PacketRegistry::LoginSuccess(_)),
+            matches!(batch.next().unwrap(), PacketRegistry::LoginSuccess(_)),
             "first packet should be LoginSuccess for ≥ 1.21.2"
         );
     }
@@ -159,11 +162,12 @@ mod tests {
         let pkt = packet();
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(
-            matches!(client_state.next_packet(), PacketRegistry::GameProfile(_)),
+            matches!(batch.next().unwrap(), PacketRegistry::GameProfile(_)),
             "first packet should be GameProfile for < 1.21.2"
         );
     }
@@ -176,11 +180,12 @@ mod tests {
         let pkt = packet();
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
-        let _ = client_state.next_packet();
-        assert!(client_state.has_no_more_packets(),);
+        let _ = batch.next().unwrap();
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -191,10 +196,11 @@ mod tests {
         let pkt = packet();
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
-        let _ = client_state.next_packet();
-        assert!(!client_state.has_no_more_packets());
+        let _ = batch.next().unwrap();
+        assert!(batch.next().is_some());
     }
 }

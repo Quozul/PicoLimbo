@@ -1,9 +1,11 @@
 use crate::forwarding::check_velocity_key_integrity::{VelocityKeyIntegrity, read_velocity_key};
 use crate::handlers::login::login_start::fire_login_success;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
+use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_protocol::prelude::BinaryReader;
@@ -13,7 +15,8 @@ impl PacketHandler for CustomQueryAnswerPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let mut batch = Batch::new();
         let client_message_id = client_state.get_velocity_login_message_id();
 
         if server_state.is_modern_forwarding() && self.message_id.inner() == client_message_id {
@@ -32,11 +35,11 @@ impl PacketHandler for CustomQueryAnswerPacket {
                     player_name,
                 } => {
                     let game_profile = GameProfile::new(&player_name, player_uuid);
-                    fire_login_success(client_state, server_state, game_profile)?;
+                    fire_login_success(&mut batch, client_state, server_state, game_profile)?;
                 }
             }
         }
-        Ok(())
+        Ok(batch)
     }
 }
 
@@ -77,14 +80,14 @@ mod tests {
         let pkt = packet(message_id, vec![]);
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
 
         // Then
         assert_eq!(
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.into_iter().next().is_none());
     }
 
     #[test]
@@ -97,10 +100,10 @@ mod tests {
         let pkt = packet(11, vec![]);
 
         // When
-        pkt.handle(&mut client_state, &server_state).unwrap();
+        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
 
         // Then
         assert!(client_state.should_kick().is_none());
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.into_iter().next().is_none());
     }
 }

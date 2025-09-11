@@ -1,3 +1,4 @@
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server_state::ServerState;
@@ -256,7 +257,7 @@ impl PacketHandler for PacketRegistry {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         match self {
             Self::Handshake(packet) => packet.handle(client_state, server_state),
             Self::StatusRequest(packet) => packet.handle(client_state, server_state),

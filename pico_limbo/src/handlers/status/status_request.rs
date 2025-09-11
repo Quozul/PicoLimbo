@@ -1,3 +1,4 @@
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
@@ -12,7 +13,8 @@ impl PacketHandler for StatusRequestPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let mut batch = Batch::new();
         let client_protocol_version = client_state.protocol_version();
         let (version_string, version_number) = if client_protocol_version.is_any() {
             let oldest = ProtocolVersion::oldest();
@@ -35,8 +37,8 @@ impl PacketHandler for StatusRequestPacket {
             false,
         );
         let packet = StatusResponsePacket::from_status_response(&status_response);
-        client_state.queue_packet(PacketRegistry::StatusResponse(packet));
-        Ok(())
+        batch.queue(|| PacketRegistry::StatusResponse(packet));
+        Ok(batch)
     }
 }
 
@@ -63,18 +65,19 @@ mod tests {
         let status_request_packet = StatusRequestPacket::default();
 
         // When
-        status_request_packet
+        let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
-        let packet = client_state.next_packet();
+        let packet = batch.next().unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -86,18 +89,19 @@ mod tests {
         let status_request_packet = StatusRequestPacket::default();
 
         // When
-        status_request_packet
+        let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
-        let packet = client_state.next_packet();
+        let packet = batch.next().unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -109,18 +113,19 @@ mod tests {
         let status_request_packet = StatusRequestPacket::default();
 
         // When
-        status_request_packet
+        let batch = status_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
-        let packet = client_state.next_packet();
+        let packet = batch.next().unwrap();
         assert!(matches!(
           packet,
           PacketRegistry::StatusResponse(ref status_packet)
            if status_packet.status_response().unwrap().version.protocol == ProtocolVersion::latest().version_number()
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -134,19 +139,20 @@ mod tests {
             let status_request_packet = StatusRequestPacket::default();
 
             // When
-            status_request_packet
+            let batch = status_request_packet
                 .handle(&mut client_state, &server_state)
                 .unwrap();
+            let mut batch = batch.into_iter();
 
             // Then
-            let packet = client_state.next_packet();
+            let packet = batch.next().unwrap();
             assert!(matches!(
                 packet,
                 PacketRegistry::StatusResponse(ref status_packet)
                     if status_packet.status_response().unwrap().version.protocol ==
                         ProtocolVersion::V1_7_2.version_number()
             ));
-            assert!(client_state.has_no_more_packets());
+            assert!(batch.next().is_none());
         }
     }
 }

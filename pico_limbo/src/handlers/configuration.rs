@@ -1,23 +1,24 @@
+use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::{ServerState, TabList};
-use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
-use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
+use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
-use minecraft_packets::play::{VoidChunkContext, WorldContext};
-use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
-use pico_structures::prelude::{SchematicError, World};
+use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
+use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
@@ -27,8 +28,10 @@ impl PacketHandler for AcknowledgeConfigurationPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
-        send_play_packets(client_state, server_state)
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let mut batch = Batch::new();
+        send_play_packets(&mut batch, client_state, server_state)?;
+        Ok(batch)
     }
 }
 
@@ -99,68 +102,6 @@ fn world_position_to_chunk_position(
     Ok((chunk_x, chunk_z))
 }
 
-fn create_circular_chunk_iterator(
-    center_chunk: (i32, i32),
-    view_distance: i32,
-) -> impl Iterator<Item = (i32, i32)> {
-    let (center_x, center_z) = center_chunk;
-    let mut offsets = Vec::new();
-    for dx in -view_distance..=view_distance {
-        for dz in -view_distance..=view_distance {
-            offsets.push((dx, dz));
-        }
-    }
-
-    // Sort by squared distance for efficiency (avoids sqrt)
-    offsets.sort_unstable_by_key(|(dx, dz)| dx.pow(2) + dz.pow(2));
-
-    offsets
-        .into_iter()
-        .map(move |(dx, dz)| (center_x + dx, center_z + dz))
-}
-
-fn send_chunks_circularly(
-    client_state: &mut ClientState,
-    center_chunk: (i32, i32),
-    view_distance: i32,
-    world: Option<&World>,
-    biome_index: i32,
-    dimension: Dimension,
-    protocol_version: ProtocolVersion,
-) {
-    let chunk_positions = create_circular_chunk_iterator(center_chunk, view_distance);
-
-    let paste_origin = Coordinates::new_uniform(0);
-    let report_id_mapping = get_block_report_id_mapping(protocol_version);
-    let schematic_context = world.and_then(|world| {
-        report_id_mapping
-            .as_ref()
-            .map(|report_id_mapping| WorldContext {
-                paste_origin,
-                world,
-                report_id_mapping,
-            })
-            .ok()
-    });
-
-    for (chunk_x, chunk_z) in chunk_positions {
-        let chunk_context = VoidChunkContext {
-            chunk_x,
-            chunk_z,
-            biome_index,
-            dimension,
-        };
-
-        let packet = if let Some(ref context) = schematic_context {
-            ChunkDataAndUpdateLightPacket::from_structure(chunk_context, context)
-        } else {
-            ChunkDataAndUpdateLightPacket::void(chunk_context)
-        };
-
-        client_state.queue_packet(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
-    }
-}
-
 impl From<SchematicError> for PacketHandlerError {
     fn from(value: SchematicError) -> Self {
         Self::Custom(value.to_string())
@@ -168,6 +109,7 @@ impl From<SchematicError> for PacketHandlerError {
 }
 
 pub fn send_play_packets(
+    batch: &mut Batch<PacketRegistry>,
     client_state: &mut ClientState,
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
@@ -190,54 +132,54 @@ pub fn send_play_packets(
         .set_game_mode(game_mode.value())
         .set_view_distance(view_distance)
         .set_hardcore(protocol_version, server_state.is_hardcore());
-    client_state.queue_packet(PacketRegistry::Login(Box::new(packet)));
+    batch.queue(|| PacketRegistry::Login(Box::new(packet)));
 
     let (x, y, z) = server_state.spawn_position();
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         // Send Set Default Spawn Position
         let packet = SetDefaultSpawnPositionPacket::new(x, y, z);
-        client_state.queue_packet(PacketRegistry::SetDefaultSpawnPosition(packet));
+        batch.queue(|| PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
     // Send Synchronize Player Position
     let packet = SynchronizePlayerPositionPacket::new(x, y, z);
-    client_state.queue_packet(PacketRegistry::SynchronizePlayerPosition(packet));
+    batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
         let packet = CommandsPacket::empty();
-        client_state.queue_packet(PacketRegistry::Commands(packet));
+        batch.queue(|| PacketRegistry::Commands(packet));
     }
 
     // The brand is not visible for clients prior to 1.13, no need to send it
     // The brand is sent during the configuration state after 1.20.2 included
     if protocol_version.between_inclusive(ProtocolVersion::V1_13, ProtocolVersion::V1_20) {
         let packet = PlayClientBoundPluginMessagePacket::brand("PicoLimbo");
-        client_state.queue_packet(PacketRegistry::PlayClientBoundPluginMessage(packet));
+        batch.queue(|| PacketRegistry::PlayClientBoundPluginMessage(packet));
     }
 
     if let Some(component) = server_state.welcome_message() {
-        client_state.send_message(component);
+        send_message(batch, component, protocol_version);
     }
 
     let ticks = server_state.time_world_ticks();
     let lock_time = server_state.is_time_locked();
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
-    client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+    batch.queue(|| PacketRegistry::UpdateTime(packet));
 
     match server_state.tab_list() {
         TabList::HeaderAndFooter { header, footer } => {
             let packet = TabListPacket::new(header, footer);
-            client_state.queue_packet(PacketRegistry::TabList(packet));
+            batch.queue(|| PacketRegistry::TabList(packet));
         }
         TabList::Header { header } => {
             let empty = Component::default();
             let packet = TabListPacket::new(header, &empty);
-            client_state.queue_packet(PacketRegistry::TabList(packet));
+            batch.queue(|| PacketRegistry::TabList(packet));
         }
         TabList::Footer { footer } => {
             let empty = Component::default();
             let packet = TabListPacket::new(&empty, footer);
-            client_state.queue_packet(PacketRegistry::TabList(packet));
+            batch.queue(|| PacketRegistry::TabList(packet));
         }
         TabList::None => {}
     }
@@ -246,7 +188,7 @@ pub fn send_play_packets(
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
             // Send Game Event
             let packet = GameEventPacket::start_waiting_for_chunks(0.0);
-            client_state.queue_packet(PacketRegistry::GameEvent(packet));
+            batch.queue(|| PacketRegistry::GameEvent(packet));
         }
 
         // Send Chunk Data and Update Light
@@ -258,10 +200,9 @@ pub fn send_play_packets(
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
         let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
-        client_state.queue_packet(PacketRegistry::SetCenterChunk(packet));
+        batch.queue(|| PacketRegistry::SetCenterChunk(packet));
 
-        send_chunks_circularly(
-            client_state,
+        let iter = CircularChunkPacketIterator::new(
             center_chunk,
             view_distance,
             server_state.world(),
@@ -269,6 +210,7 @@ pub fn send_play_packets(
             dimension,
             protocol_version,
         );
+        batch.chain_iter(iter);
     }
 
     client_state.set_state(State::Play);
@@ -280,6 +222,20 @@ pub fn send_play_packets(
 impl From<TryFromIntError> for PacketHandlerError {
     fn from(_: TryFromIntError) -> Self {
         Self::custom("failed to cast int")
+    }
+}
+
+pub fn send_message(
+    batch: &mut Batch<PacketRegistry>,
+    component: &Component,
+    protocol_version: ProtocolVersion,
+) {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+        let packet = SystemChatMessagePacket::component(component);
+        batch.queue(|| PacketRegistry::SystemChatMessage(packet));
+    } else {
+        let packet = LegacyChatMessagePacket::component(component);
+        batch.queue(|| PacketRegistry::LegacyChatMessage(packet));
     }
 }
 
@@ -311,48 +267,44 @@ mod tests {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20_3);
         let server_state = server_state();
+        let mut batch = Batch::new();
 
         // When
-        send_play_packets(&mut client_state, &server_state).unwrap();
+        send_play_packets(&mut batch, &mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Login(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Login(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Commands(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Commands(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SystemChatMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::GameEvent(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -360,48 +312,44 @@ mod tests {
         // Given
         let mut client_state = client(ProtocolVersion::V1_19);
         let server_state = server_state();
+        let mut batch = Batch::new();
 
         // When
-        send_play_packets(&mut client_state, &server_state).unwrap();
+        send_play_packets(&mut batch, &mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Login(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Login(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Commands(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Commands(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::PlayClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SystemChatMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -409,36 +357,32 @@ mod tests {
         // Given
         let mut client_state = client(ProtocolVersion::V1_13);
         let server_state = server_state();
+        let mut batch = Batch::new();
 
         // When
-        send_play_packets(&mut client_state, &server_state).unwrap();
+        send_play_packets(&mut batch, &mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Login(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Login(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Commands(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Commands(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::PlayClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::LegacyChatMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::UpdateTime(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 
     #[test]
@@ -446,27 +390,26 @@ mod tests {
         // Given
         let mut client_state = client(ProtocolVersion::V1_12_2);
         let server_state = server_state();
+        let mut batch = Batch::new();
 
         // When
-        send_play_packets(&mut client_state, &server_state).unwrap();
+        send_play_packets(&mut batch, &mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
+        assert!(matches!(batch.next().unwrap(), PacketRegistry::Login(_)));
         assert!(matches!(
-            client_state.next_packet(),
-            PacketRegistry::Login(_)
-        ));
-        assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::LegacyChatMessage(_)
         ));
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::UpdateTime(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 }

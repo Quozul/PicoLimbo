@@ -1,7 +1,9 @@
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
+use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
@@ -12,7 +14,8 @@ impl PacketHandler for HandshakePacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let batch = Batch::new();
         client_state.set_protocol_version(self.get_protocol());
 
         if let Ok(next_state) = self.get_next_state() {
@@ -24,7 +27,7 @@ impl PacketHandler for HandshakePacket {
                     PROXY_REQUIRED_KICK_MESSAGE,
                 ))
             } else {
-                Ok(())
+                Ok(batch)
             }
         } else {
             Err(PacketHandlerError::invalid_state("Unsupported next state."))
