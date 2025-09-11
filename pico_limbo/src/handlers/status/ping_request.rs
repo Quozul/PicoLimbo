@@ -1,3 +1,4 @@
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
@@ -8,14 +9,15 @@ use minecraft_packets::status::ping_response_packet::PongResponsePacket;
 impl PacketHandler for PingRequestPacket {
     fn handle(
         &self,
-        client_state: &mut ClientState,
+        _client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError> {
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+        let mut batch = Batch::new();
         let packet = PongResponsePacket {
             timestamp: self.timestamp,
         };
-        client_state.queue_packet(PacketRegistry::PongResponse(packet));
-        Ok(())
+        batch.queue(|| PacketRegistry::PongResponse(packet));
+        Ok(batch)
     }
 }
 
@@ -31,15 +33,16 @@ mod tests {
         let ping_request_packet = PingRequestPacket::default();
 
         // When
-        ping_request_packet
+        let batch = ping_request_packet
             .handle(&mut client_state, &server_state)
             .unwrap();
+        let mut batch = batch.into_iter();
 
         // Then
         assert!(matches!(
-            client_state.next_packet(),
+            batch.next().unwrap(),
             PacketRegistry::PongResponse(_)
         ));
-        assert!(client_state.has_no_more_packets());
+        assert!(batch.next().is_none());
     }
 }

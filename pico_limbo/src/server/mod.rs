@@ -1,7 +1,7 @@
+pub mod batch;
 mod client_data;
 pub mod client_state;
 mod controllable_interval;
-mod fifo;
 pub mod game_mode;
 pub mod game_profile;
 pub mod network;

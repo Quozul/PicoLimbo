@@ -143,10 +143,10 @@ async fn process_packet(
     let state = client_state.state();
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
 
-    {
+    let batch = {
         let server_state_guard = server_state.read().await;
-        decoded_packet.handle(&mut client_state, &server_state_guard)?;
-    }
+        decoded_packet.handle(&mut client_state, &server_state_guard)?
+    };
 
     let protocol_version = client_state.protocol_version();
     let state = client_state.state();
@@ -163,8 +163,7 @@ async fn process_packet(
         info!("{} joined the game", username,);
     }
 
-    let pending_packets = client_state.pending_packets();
-    for pending_packet in pending_packets.drain() {
+    for pending_packet in batch {
         let raw_packet = pending_packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
     }

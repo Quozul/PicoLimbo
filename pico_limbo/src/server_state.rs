@@ -67,7 +67,7 @@ pub struct ServerState {
     hardcore: bool,
     spawn_position: (f64, f64, f64),
     view_distance: i32,
-    world: Option<World>,
+    world: Option<Arc<World>>,
     boundaries: Boundaries,
     tab_list: TabList,
 }
@@ -145,8 +145,8 @@ impl ServerState {
         self.view_distance
     }
 
-    pub const fn world(&self) -> Option<&World> {
-        self.world.as_ref()
+    pub fn world(&self) -> Option<Arc<World>> {
+        self.world.clone()
     }
 
     pub const fn time_world_ticks(&self) -> i64 {
@@ -353,7 +353,7 @@ impl ServerStateBuilder {
                 Schematic::load_schematic_file(&schematic_file_path, &internal_mapping)
             })?;
             let world = time_operation("Loading world", || World::from_schematic(&schematic))?;
-            Some(world)
+            Some(Arc::new(world))
         };
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,

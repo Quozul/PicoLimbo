@@ -1,4 +1,6 @@
+use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
+use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use thiserror::Error;
 
@@ -27,5 +29,5 @@ pub trait PacketHandler {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<(), PacketHandlerError>;
+    ) -> Result<Batch<PacketRegistry>, PacketHandlerError>;
 }

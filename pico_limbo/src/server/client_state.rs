@@ -1,10 +1,5 @@
-use crate::server::fifo::Fifo;
 use crate::server::game_profile::GameProfile;
-use crate::server::packet_registry::PacketRegistry;
-use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
-use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
-use pico_text_component::prelude::Component;
 use tracing::info;
 
 #[derive(PartialEq, Eq)]
@@ -20,7 +15,6 @@ impl Default for ClientState {
             state: State::Handshake,
             protocol_version: ProtocolVersion::Any,
             kick_message: None,
-            pending_packets: Fifo::new(),
             message_id: -1,
             game_profile: None,
             keep_alive_enabled: KeepAliveStatus::Disabled,
@@ -32,7 +26,6 @@ pub struct ClientState {
     state: State,
     protocol_version: ProtocolVersion,
     kick_message: Option<String>,
-    pending_packets: Fifo<PacketRegistry>,
     message_id: i32,
     game_profile: Option<GameProfile>,
     keep_alive_enabled: KeepAliveStatus,
@@ -69,26 +62,6 @@ impl ClientState {
 
     pub const fn set_protocol_version(&mut self, new_protocol_version: ProtocolVersion) {
         self.protocol_version = new_protocol_version;
-    }
-
-    // Packets
-
-    pub fn queue_packet(&mut self, packet: PacketRegistry) {
-        self.pending_packets.push(packet);
-    }
-
-    pub const fn pending_packets(&mut self) -> &mut Fifo<PacketRegistry> {
-        &mut self.pending_packets
-    }
-
-    #[cfg(test)]
-    pub fn next_packet(&mut self) -> PacketRegistry {
-        self.pending_packets.pop().unwrap()
-    }
-
-    #[cfg(test)]
-    pub fn has_no_more_packets(&self) -> bool {
-        self.pending_packets.is_empty()
     }
 
     // Velocity
@@ -138,19 +111,6 @@ impl ClientState {
     pub fn set_keep_alive_enabled(&mut self) {
         if self.keep_alive_enabled == KeepAliveStatus::ShouldEnable {
             self.keep_alive_enabled = KeepAliveStatus::Enabled;
-        }
-    }
-
-    pub fn send_message(&mut self, component: &Component) {
-        if self
-            .protocol_version
-            .is_after_inclusive(ProtocolVersion::V1_19)
-        {
-            let packet = SystemChatMessagePacket::component(component);
-            self.queue_packet(PacketRegistry::SystemChatMessage(packet));
-        } else {
-            let packet = LegacyChatMessagePacket::component(component);
-            self.queue_packet(PacketRegistry::LegacyChatMessage(packet));
         }
     }
 }

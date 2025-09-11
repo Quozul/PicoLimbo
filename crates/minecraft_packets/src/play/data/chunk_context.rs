@@ -1,6 +1,7 @@
 use blocks_report::ReportIdMapping;
 use minecraft_protocol::prelude::{Coordinates, Dimension};
 use pico_structures::prelude::World;
+use std::sync::Arc;
 
 pub struct VoidChunkContext {
     pub chunk_x: i32,
@@ -9,8 +10,8 @@ pub struct VoidChunkContext {
     pub dimension: Dimension,
 }
 
-pub struct WorldContext<'a> {
-    pub world: &'a World,
+pub struct WorldContext {
+    pub world: Arc<World>,
     pub paste_origin: Coordinates,
-    pub report_id_mapping: &'a ReportIdMapping,
+    pub report_id_mapping: Arc<ReportIdMapping>,
 }
