@@ -25,7 +25,7 @@ members = [
 
 [workspace.dependencies]
 anyhow = "1.0.99"
-clap = { version = "4.5.45", features = ["derive"] }
+clap = { version = "4.5.47", features = ["derive"] }
 flate2 = "1.1.2"
 hmac = "0.12.1"
 proc-macro2 = "1.0.101"
@@ -42,6 +42,6 @@ thiserror = "2.0.16"
 tokio = { version = "1.47.1", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
 toml = "0.9.5"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-uuid = { version = "1.18.0", features = ["v4"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+uuid = { version = "1.18.1", features = ["v4"] }
 walkdir = "2.5.0"
