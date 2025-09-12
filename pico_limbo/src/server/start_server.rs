@@ -89,7 +89,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .hardcore(cfg.hardcore)
         .spawn_position(cfg.world.spawn_position)
         .view_distance(cfg.world.experimental.view_distance)
-        .schematic(cfg.world.experimental.schematic_file);
+        .schematic(cfg.world.experimental.schematic_file)
+        .tab_list(cfg.tab_list.header, cfg.tab_list.footer)?;
 
     server_state_builder.build()
 }

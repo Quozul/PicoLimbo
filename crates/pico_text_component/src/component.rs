@@ -1,3 +1,4 @@
+use minecraft_protocol::prelude::{BinaryWriter, BinaryWriterError, EncodePacket, ProtocolVersion};
 use pico_nbt::prelude::Nbt;
 use serde::Serialize;
 
@@ -83,5 +84,20 @@ impl Component {
         }
 
         Nbt::compound("", compound)
+    }
+}
+
+impl EncodePacket for Component {
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
+            self.to_nbt().encode(writer, protocol_version)?;
+        } else {
+            self.to_json().encode(writer, protocol_version)?;
+        }
+        Ok(())
     }
 }

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 pico_nbt = { path = "../pico_nbt" }
+minecraft_protocol = { path = "../minecraft_protocol" }
 quick-xml = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

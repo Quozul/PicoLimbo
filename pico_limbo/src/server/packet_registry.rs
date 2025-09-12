@@ -29,6 +29,7 @@ use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerP
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
+use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PongResponsePacket;
@@ -245,6 +246,9 @@ pub enum PacketRegistry {
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:set_time")]
     UpdateTime(UpdateTimePacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:tab_list")]
+    TabList(TabListPacket),
 }
 
 impl PacketHandler for PacketRegistry {

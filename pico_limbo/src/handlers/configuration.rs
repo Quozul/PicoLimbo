@@ -5,7 +5,7 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::ServerState;
+use crate::server_state::{ServerState, TabList};
 use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
@@ -16,10 +16,12 @@ use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClient
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion, State};
 use pico_structures::prelude::{SchematicError, World};
+use pico_text_component::prelude::Component;
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -223,6 +225,24 @@ pub fn send_play_packets(
     let lock_time = server_state.is_time_locked();
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
     client_state.queue_packet(PacketRegistry::UpdateTime(packet));
+
+    match server_state.tab_list() {
+        TabList::HeaderAndFooter { header, footer } => {
+            let packet = TabListPacket::new(header, footer);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::Header { header } => {
+            let empty = Component::default();
+            let packet = TabListPacket::new(header, &empty);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::Footer { footer } => {
+            let empty = Component::default();
+            let packet = TabListPacket::new(&empty, footer);
+            client_state.queue_packet(PacketRegistry::TabList(packet));
+        }
+        TabList::None => {}
+    }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {

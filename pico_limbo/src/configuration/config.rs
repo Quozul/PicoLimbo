@@ -1,6 +1,7 @@
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
+use crate::configuration::tablist::TabListConfig;
 use crate::configuration::world_config::WorldConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -45,6 +46,8 @@ pub struct Config {
 
     /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
+
+    pub tab_list: TabListConfig,
 }
 
 impl Default for Config {
@@ -57,6 +60,7 @@ impl Default for Config {
             default_game_mode: GameModeConfig::default(),
             world: WorldConfig::default(),
             hardcore: false,
+            tab_list: TabListConfig::default(),
         }
     }
 }

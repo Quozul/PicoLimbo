@@ -37,6 +37,22 @@ pub enum Boundaries {
 }
 
 #[derive(Default)]
+pub enum TabList {
+    #[default]
+    None,
+    Header {
+        header: Component,
+    },
+    Footer {
+        footer: Component,
+    },
+    HeaderAndFooter {
+        header: Component,
+        footer: Component,
+    },
+}
+
+#[derive(Default)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
     spawn_dimension: Dimension,
@@ -53,6 +69,7 @@ pub struct ServerState {
     view_distance: i32,
     world: Option<World>,
     boundaries: Boundaries,
+    tab_list: TabList,
 }
 
 impl ServerState {
@@ -143,6 +160,9 @@ impl ServerState {
     pub const fn boundaries(&self) -> &Boundaries {
         &self.boundaries
     }
+    pub const fn tab_list(&self) -> &TabList {
+        &self.tab_list
+    }
 
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
@@ -169,6 +189,7 @@ pub struct ServerStateBuilder {
     view_distance: i32,
     schematic_file_path: String,
     boundaries: Boundaries,
+    tab_list: TabList,
 }
 
 #[derive(Debug, Error)]
@@ -277,6 +298,34 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn tab_list<S>(
+        &mut self,
+        header: S,
+        footer: S,
+    ) -> Result<&mut Self, ServerStateBuilderError>
+    where
+        S: AsRef<str>,
+    {
+        self.tab_list = if header.as_ref().is_empty() && footer.as_ref().is_empty() {
+            TabList::None
+        } else if header.as_ref().is_empty() {
+            TabList::Footer {
+                footer: parse_mini_message(footer.as_ref())?,
+            }
+        } else if footer.as_ref().is_empty() {
+            TabList::Header {
+                header: parse_mini_message(header.as_ref())?,
+            }
+        } else {
+            TabList::HeaderAndFooter {
+                header: parse_mini_message(header.as_ref())?,
+                footer: parse_mini_message(footer.as_ref())?,
+            }
+        };
+
+        Ok(self)
+    }
+
     pub fn boundaries<S>(
         &mut self,
         min_y: i32,
@@ -322,6 +371,7 @@ impl ServerStateBuilder {
             view_distance: self.view_distance,
             world,
             boundaries: self.boundaries,
+            tab_list: self.tab_list,
         })
     }
 }
