@@ -1,6 +1,6 @@
-use crate::configuration::boss_bar::{BossBarConfig, BossBarDivisionConfig};
+use crate::configuration::boss_bar::{BossBarColorConfig, BossBarConfig, BossBarDivisionConfig};
 use crate::server::game_mode::GameMode;
-use minecraft_packets::play::boss_bar_packet::{BossBarColor};
+use minecraft_packets::play::boss_bar_packet::BossBarColor;
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
@@ -382,12 +382,20 @@ impl ServerStateBuilder {
     ) -> Result<&mut Self, ServerStateBuilderError> {
         if boss_bar_config.enabled {
             let title = parse_mini_message(boss_bar_config.title.as_ref())?;
-            let color: BossBarColor = boss_bar_config.color.into();
+            let color = match boss_bar_config.color {
+                BossBarColorConfig::Pink => BossBarColor::Pink,
+                BossBarColorConfig::Blue => BossBarColor::Blue,
+                BossBarColorConfig::Red => BossBarColor::Red,
+                BossBarColorConfig::Green => BossBarColor::Green,
+                BossBarColorConfig::Yellow => BossBarColor::Yellow,
+                BossBarColorConfig::Purple => BossBarColor::Purple,
+                BossBarColorConfig::White => BossBarColor::White,
+            };
             self.boss_bar = BossBar::Enabled {
                 title,
                 health: boss_bar_config.health.clamp(0.0, 1.0),
                 color,
-                division: boss_bar_config.division
+                division: boss_bar_config.division,
             };
         } else {
             self.boss_bar = BossBar::Disabled;
