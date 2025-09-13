@@ -1,6 +1,6 @@
-use crate::configuration::boss_bar::BossBarConfig;
+use crate::configuration::boss_bar::{BossBarConfig, BossBarDivisionConfig};
 use crate::server::game_mode::GameMode;
-use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
+use minecraft_packets::play::boss_bar_packet::{BossBarColor};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
@@ -62,7 +62,7 @@ pub enum BossBar {
         title: Component,
         health: f32,
         color: BossBarColor,
-        division: BossBarDivision,
+        division: BossBarDivisionConfig,
     },
 }
 
@@ -387,7 +387,7 @@ impl ServerStateBuilder {
                 title,
                 health: boss_bar_config.health.clamp(0.0, 1.0),
                 color,
-                division: boss_bar_config.division.0,
+                division: boss_bar_config.division
             };
         } else {
             self.boss_bar = BossBar::Disabled;
