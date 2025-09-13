@@ -27,7 +27,6 @@ use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
-use tracing::debug;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -276,13 +275,12 @@ fn send_skin_packets(
                 None
             };
 
-            if let Some(textures) = textures {
-                let packet = PlayerInfoUpdatePacket::skin(username, unique_id, textures);
-                Some(PacketRegistry::PlayerInfoUpdate(packet))
+            let packet = if let Some(textures) = textures {
+                PlayerInfoUpdatePacket::skin(username, unique_id, textures)
             } else {
-                debug!("No skin for player {username}");
-                None
-            }
+                PlayerInfoUpdatePacket::skinless(username, unique_id)
+            };
+            PacketRegistry::PlayerInfoUpdate(packet)
         });
     }
 
