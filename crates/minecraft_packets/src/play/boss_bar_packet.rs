@@ -31,10 +31,9 @@ pub enum BossBarAction {
     },
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 #[repr(i32)]
 pub enum BossBarColor {
-    #[default]
     Pink = 0,
     Blue = 1,
     Red = 2,
@@ -44,10 +43,9 @@ pub enum BossBarColor {
     White = 6,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 #[repr(i32)]
 pub enum BossBarDivision {
-    #[default]
     NoDivision = 0,
     SixNotches = 1,
     TenNotches = 2,
@@ -70,7 +68,7 @@ impl EncodePacket for BossBarAction {
                 flags,
             } => {
                 VarInt::new(0).encode(writer, protocol_version)?;
-                title.encode(writer, protocol_version)?;
+                title.clone().encode(writer, protocol_version)?;
                 health.encode(writer, protocol_version)?;
                 VarInt::new(*color as i32).encode(writer, protocol_version)?;
                 VarInt::new(*division as i32).encode(writer, protocol_version)?;
@@ -85,7 +83,7 @@ impl EncodePacket for BossBarAction {
             }
             BossBarAction::UpdateTitle { title } => {
                 VarInt::new(3).encode(writer, protocol_version)?;
-                title.encode(writer, protocol_version)?;
+                title.clone().encode(writer, protocol_version)?;
             }
             BossBarAction::UpdateStyle { color, division } => {
                 VarInt::new(4).encode(writer, protocol_version)?;
