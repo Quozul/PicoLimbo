@@ -65,5 +65,19 @@ view_distance = 2
 schematic_file = ""
 # Lock the time in the world to `world.time` value
 lock_time = false
+
+[boss_bar]
+# Enable boss bar display
+enabled = true
+# Boss bar title displayed to players
+title = "<blue><bold>Welcome to PicoLimbo!</bold></blue>"
+# Boss bar health (0.0 to 1.0, where 1.0 is full health)
+health = 1
+# Boss bar color
+# Allowed values: "pink", "blue", "red", "green", "yellow", "purple", or "white"
+color = "blue"
+# Boss bar style
+# Allowed values: 0, 6, 10, 12 or 20, representing the number of segments
+division = 0
 ```
 :::
