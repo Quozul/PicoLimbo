@@ -29,6 +29,7 @@ PicoLimbo currently supports a **subset** of MiniMessage features:
 ### ✅ Supported
 - **Colors** - All standard Minecraft colors
 - **Formatting** - `<bold>`, `<italic>`, `<underlined>`, `<strikethrough>` and `<obfuscated>`
+- **New lines** - `<newline>`
 
 ### ❌ Not Yet Supported
 - Gradients and custom colors
