@@ -16,6 +16,7 @@ use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
@@ -266,6 +267,9 @@ pub enum PacketRegistry {
         name = "minecraft:set_entity_data"
     )]
     SetEntityMetadata(SetEntityMetadataPacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:boss_event")]
+    BossBar(BossBarPacket),
 }
 
 impl PacketHandler for PacketRegistry {

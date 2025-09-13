@@ -1,3 +1,4 @@
+pub mod boss_bar_packet;
 pub mod chunk_data_and_update_light_packet;
 pub mod client_bound_keep_alive_packet;
 pub mod commands_packet;
