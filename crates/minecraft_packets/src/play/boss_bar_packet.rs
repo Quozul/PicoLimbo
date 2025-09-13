@@ -1,4 +1,3 @@
-use serde::Deserialize;
 use minecraft_protocol::prelude::*;
 use pico_text_component::prelude::Component;
 
@@ -63,7 +62,13 @@ impl EncodePacket for BossBarAction {
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
         match self {
-            BossBarAction::Add { title, health, color, division, flags } => {
+            BossBarAction::Add {
+                title,
+                health,
+                color,
+                division,
+                flags,
+            } => {
                 VarInt::new(0).encode(writer, protocol_version)?;
                 title.encode(writer, protocol_version)?;
                 health.encode(writer, protocol_version)?;
