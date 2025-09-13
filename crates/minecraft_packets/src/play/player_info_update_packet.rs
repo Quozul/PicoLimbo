@@ -14,7 +14,15 @@ pub struct PlayerInfoUpdatePacket {
 
 impl PlayerInfoUpdatePacket {
     pub fn skin(name: String, uuid: Uuid, property: Property) -> Self {
-        let properties = LengthPaddedVec::new(vec![property]);
+        Self::new(name, uuid, vec![property])
+    }
+
+    pub fn skinless(name: String, uuid: Uuid) -> Self {
+        Self::new(name, uuid, Vec::new())
+    }
+
+    fn new(name: String, uuid: Uuid, properties: Vec<Property>) -> Self {
+        let properties = LengthPaddedVec::new(properties);
         let add_player_action = AddPlayer {
             name,
             properties,

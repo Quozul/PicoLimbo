@@ -5,7 +5,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 type AsyncClosure<T> =
-    Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Option<T>> + Send>> + Send + 'static>;
+    Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = T> + Send>> + Send + 'static>;
 
 enum Producer<T> {
     SyncClosure(Box<dyn FnOnce() -> T + Send + 'static>),
@@ -36,9 +36,9 @@ impl<T: Send + 'static> Batch<T> {
     pub fn queue_async<F, Fut>(&mut self, f: F)
     where
         F: FnOnce() -> Fut + Send + 'static,
-        Fut: Future<Output = Option<T>> + Send + 'static,
+        Fut: Future<Output = T> + Send + 'static,
     {
-        let closure = move || -> Pin<Box<dyn Future<Output = Option<T>> + Send>> { Box::pin(f()) };
+        let closure = move || -> Pin<Box<dyn Future<Output = T> + Send>> { Box::pin(f()) };
         self.producers
             .push_back(Producer::AsyncClosure(Box::new(closure)));
     }
@@ -63,7 +63,7 @@ impl<T: Send + 'static> Batch<T> {
 
 enum Current<T> {
     Idle,
-    Future(Pin<Box<dyn Future<Output = Option<T>> + Send>>),
+    Future(Pin<Box<dyn Future<Output = T> + Send>>),
     Iterator(Box<dyn Iterator<Item = T> + Send>),
 }
 
@@ -80,18 +80,15 @@ impl<T: Send + 'static> Stream for BatchStream<T> {
 
         loop {
             match &mut this.current {
-                Current::Future(fut) => match fut.as_mut().poll(cx) {
-                    Poll::Ready(Some(item)) => {
-                        this.current = Current::Idle;
-                        return Poll::Ready(Some(item));
-                    }
-                    Poll::Ready(None) => {
-                        this.current = Current::Idle;
-                    }
-                    Poll::Pending => {
-                        return Poll::Pending;
-                    }
-                },
+                Current::Future(fut) => {
+                    return match fut.as_mut().poll(cx) {
+                        Poll::Ready(item) => {
+                            this.current = Current::Idle;
+                            Poll::Ready(Some(item))
+                        }
+                        Poll::Pending => Poll::Pending,
+                    };
+                }
                 Current::Iterator(iter) => {
                     if let Some(item) = iter.next() {
                         return Poll::Ready(Some(item));
@@ -127,7 +124,7 @@ mod tests {
         let mut batch = Batch::new();
 
         batch.queue(|| 1);
-        batch.queue_async(|| async { Some(2) });
+        batch.queue_async(|| async { 2 });
         batch.chain_iter(3..5);
 
         let mut stream = batch.into_stream();
