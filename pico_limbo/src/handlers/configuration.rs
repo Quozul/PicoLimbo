@@ -248,7 +248,7 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
             BossBarDivisionConfig::TwelveNotches => BossBarDivision::TwelveNotches,
             BossBarDivisionConfig::TwentyNotches => BossBarDivision::TwentyNotches,
         };
-        let packet = BossBarPacket::add(uuid, title.clone(), *health, (*color).into(), division, 0);
+        let packet = BossBarPacket::add(uuid, title.clone(), *health, *color, division, 0);
         batch.queue(|| PacketRegistry::BossBar(packet));
     }
 }
