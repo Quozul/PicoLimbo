@@ -52,11 +52,11 @@ impl Serialize for BossBarDivisionConfig {
         S: Serializer,
     {
         let value = match self {
-            BossBarDivisionConfig::NoDivision => 0,
-            BossBarDivisionConfig::SixNotches => 6,
-            BossBarDivisionConfig::TenNotches => 10,
-            BossBarDivisionConfig::TwelveNotches => 12,
-            BossBarDivisionConfig::TwentyNotches => 20,
+            Self::NoDivision => 0,
+            Self::SixNotches => 6,
+            Self::TenNotches => 10,
+            Self::TwelveNotches => 12,
+            Self::TwentyNotches => 20,
         };
         serializer.serialize_u8(value)
     }
@@ -69,15 +69,12 @@ impl<'de> Deserialize<'de> for BossBarDivisionConfig {
     {
         let value = u8::deserialize(deserializer)?;
         match value {
-            0 => Ok(BossBarDivisionConfig::NoDivision),
-            6 => Ok(BossBarDivisionConfig::SixNotches),
-            10 => Ok(BossBarDivisionConfig::TenNotches),
-            12 => Ok(BossBarDivisionConfig::TwelveNotches),
-            20 => Ok(BossBarDivisionConfig::TwentyNotches),
-            _ => Err(Error::custom(format!(
-                "Invalid value for BossBarDivision: {}",
-                value
-            ))),
+            0 => Ok(Self::NoDivision),
+            6 => Ok(Self::SixNotches),
+            10 => Ok(Self::TenNotches),
+            12 => Ok(Self::TwelveNotches),
+            20 => Ok(Self::TwentyNotches),
+            _ => Err(Error::custom(format!("Invalid value for BossBarDivision: {value}"))),
         }
     }
 }
