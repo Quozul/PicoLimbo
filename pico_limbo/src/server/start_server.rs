@@ -67,7 +67,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     if cfg.world.boundaries.enabled
         && cfg.world.spawn_position.1 < f64::from(cfg.world.boundaries.min_y)
     {
-        return Err(ServerStateBuilderError::InvalidSpawnPosition());
+        return Err(ServerStateBuilderError::InvalidSpawnPosition);
     }
 
     if cfg.world.boundaries.enabled {
@@ -79,6 +79,11 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
 
     if cfg.boss_bar.enabled {
         server_state_builder.boss_bar(cfg.boss_bar)?;
+    }
+
+    let server_icon = cfg.server_list.server_icon;
+    if std::fs::exists(&server_icon)? {
+        server_state_builder.fav_icon(server_icon)?;
     }
 
     server_state_builder

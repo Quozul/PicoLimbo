@@ -46,3 +46,25 @@ When `show_online_player_count` is set to `true`, the server will display the ac
 show_online_player_count = true
 ```
 :::
+
+## Server Icon
+
+Custom icon displayed in server list.
+
+:::code-group
+```toml [server.toml] {2}
+[server_list]
+server_icon = "server-icon.png"
+```
+:::
+
+The default value is `"server-icon.png"`. If the specified file does not exist, the server will simply not send an icon to the client. The image must be a PNG file with dimensions of exactly 64x64 pixels.
+
+To disable the server icon entirely:
+
+:::code-group
+```toml [server.toml] {2}
+[server_list]
+server_icon = ""
+```
+:::

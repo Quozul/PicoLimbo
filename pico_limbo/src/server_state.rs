@@ -1,10 +1,14 @@
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::server::game_mode::GameMode;
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
+use base64::engine::general_purpose;
+use base64::{Engine, alphabet, engine};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
-use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
@@ -82,6 +86,7 @@ pub struct ServerState {
     tab_list: TabList,
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
+    fav_icon: Option<String>,
 }
 
 impl ServerState {
@@ -185,6 +190,10 @@ impl ServerState {
         self.boss_bar.as_ref()
     }
 
+    pub fn fav_icon(&self) -> Option<String> {
+        self.fav_icon.clone()
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -214,6 +223,7 @@ pub struct ServerStateBuilder {
     tab_list: TabList,
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
+    fav_icon: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -227,7 +237,9 @@ pub enum ServerStateBuilderError {
     #[error(transparent)]
     MiniMessage(#[from] MiniMessageError),
     #[error("the configured spawn position Y is below the configured minimum Y position")]
-    InvalidSpawnPosition(),
+    InvalidSpawnPosition,
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 impl ServerStateBuilder {
@@ -366,6 +378,22 @@ impl ServerStateBuilder {
         Ok(self)
     }
 
+    pub fn fav_icon<P>(&mut self, file_path: P) -> Result<&mut Self, ServerStateBuilderError>
+    where
+        P: AsRef<Path>,
+    {
+        let mut file = File::open(file_path)?;
+
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)?;
+
+        let engine = engine::GeneralPurpose::new(&alphabet::STANDARD, general_purpose::PAD);
+        let base64_encoded = engine.encode(&buffer);
+
+        self.fav_icon = Some(format!("data:image/png;base64,{base64_encoded}"));
+        Ok(self)
+    }
+
     pub const fn fetch_player_skins(&mut self, fetch_player_skins: bool) -> &mut Self {
         self.fetch_player_skins = fetch_player_skins;
         self
@@ -418,6 +446,7 @@ impl ServerStateBuilder {
             tab_list: self.tab_list,
             fetch_player_skins: self.fetch_player_skins,
             boss_bar: self.boss_bar,
+            fav_icon: self.fav_icon,
         })
     }
 }

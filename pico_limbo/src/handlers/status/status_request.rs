@@ -34,7 +34,7 @@ impl PacketHandler for StatusRequestPacket {
             server_state.motd(),
             server_state.online_players(),
             server_state.max_players(),
-            false,
+            server_state.fav_icon(),
         );
         let packet = StatusResponsePacket::from_status_response(&status_response);
         batch.queue(|| PacketRegistry::StatusResponse(packet));

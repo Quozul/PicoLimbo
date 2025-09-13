@@ -2,19 +2,19 @@ use pico_text_component::prelude::Component;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Version {
     pub name: String,
     pub protocol: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct PlayerSample {
     pub name: String,
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Players {
     pub max: u32,
     pub online: u32,
@@ -22,7 +22,7 @@ pub struct Players {
     pub sample: Option<Vec<PlayerSample>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct StatusResponse {
     pub version: Version,
     pub players: Players,
@@ -47,7 +47,7 @@ impl StatusResponse {
         description: &Component,
         online_players: u32,
         max_players: u32,
-        enforces_secure_chat: bool,
+        favicon: Option<String>,
     ) -> Self {
         let description = serde_json::to_value(description).unwrap();
         StatusResponse {
@@ -61,8 +61,8 @@ impl StatusResponse {
                 sample: None,
             },
             description,
-            favicon: None,
-            enforces_secure_chat,
+            favicon,
+            enforces_secure_chat: false,
         }
     }
 }
