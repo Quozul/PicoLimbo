@@ -40,6 +40,7 @@ export default defineConfig({
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
 					{ text: "Tab List", link: "/config/tab-list.html" },
+                    { text: "Boss Bar", link: "/config/boss-bar.html" },
 					{ text: "Experimental World Features", link: "/config/experimental-world.html" },
 					{
 						text: "Default Configuration",
