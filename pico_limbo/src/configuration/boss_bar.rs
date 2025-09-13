@@ -74,7 +74,9 @@ impl<'de> Deserialize<'de> for BossBarDivisionConfig {
             10 => Ok(Self::TenNotches),
             12 => Ok(Self::TwelveNotches),
             20 => Ok(Self::TwentyNotches),
-            _ => Err(Error::custom(format!("Invalid value for BossBarDivision: {value}"))),
+            _ => Err(Error::custom(format!(
+                "Invalid value for BossBarDivision: {value}"
+            ))),
         }
     }
 }
