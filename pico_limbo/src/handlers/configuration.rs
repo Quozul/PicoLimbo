@@ -150,6 +150,7 @@ pub fn send_play_packets(
     // Send Synchronize Player Position
     let packet = SynchronizePlayerPositionPacket::new(x, y, z);
     batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
+    client_state.set_feet_position(y);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
         let packet = CommandsPacket::empty();
