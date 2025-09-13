@@ -3,6 +3,7 @@ FROM rust:1.90-alpine AS builder
 
 ARG TARGETPLATFORM
 ARG BINARY_NAME=pico_limbo
+ARG RUST_FEATURES=""
 
 WORKDIR /usr/src/app
 COPY --parents ./Cargo.toml ./Cargo.lock ./crates ./pico_limbo ./data/generated ./
@@ -16,17 +17,18 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
         *) echo "Unsupported platform: ${TARGETPLATFORM}"; exit 1;; \
     esac && \
     rustup target add $TARGET && \
-    cargo build --release --target $TARGET --bin $BINARY_NAME && \
+    FEATURES_FLAG="" && \
+    if [ -n "$RUST_FEATURES" ]; then \
+        FEATURES_FLAG="--features ${RUST_FEATURES}"; \
+    fi && \
+    cargo build --release --target $TARGET --bin $BINARY_NAME $FEATURES_FLAG && \
     cp target/$TARGET/release/$BINARY_NAME /usr/local/bin/pico_limbo
+
 
 FROM gcr.io/distroless/static:latest
 
-COPY --from=builder --chown=nonroot:nonroot /usr/src/app /usr/src/app
-
 WORKDIR /usr/src/app
 
-COPY --from=builder --chown=nonroot:nonroot /usr/local/bin/pico_limbo /usr/local/bin/pico_limbo
+COPY --from=builder /usr/local/bin/pico_limbo /usr/local/bin/pico_limbo
 
-USER nonroot
-
-CMD ["pico_limbo"]
+CMD ["/usr/local/bin/pico_limbo"]
