@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
@@ -12,6 +13,8 @@ pub struct ServerListConfig {
 
     /// Set to false to always show 0 online players
     pub show_online_player_count: bool,
+
+    pub server_icon: PathBuf,
 }
 
 impl Default for ServerListConfig {
@@ -20,6 +23,7 @@ impl Default for ServerListConfig {
             max_players: 20,
             message_of_the_day: "A Minecraft Server".into(),
             show_online_player_count: true,
+            server_icon: PathBuf::from("server-icon.png"),
         }
     }
 }

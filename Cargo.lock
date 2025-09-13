@@ -992,6 +992,7 @@ dependencies = [
 name = "pico_limbo"
 version = "1.5.2+mc1.21.8"
 dependencies = [
+ "base64",
  "blocks_report",
  "clap",
  "futures",
