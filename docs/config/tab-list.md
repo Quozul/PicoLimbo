@@ -30,6 +30,8 @@ header = ""
 
 ## Footer
 
+The footer text displayed at the bottom of the player list.
+
 :::code-group
 ```toml [server.toml] {2}
 [tab_list]

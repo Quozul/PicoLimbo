@@ -17,19 +17,15 @@ hardcore = false
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
 
-[forwarding.velocity]
-# Enable Velocity Modern Forwarding
-enabled = false
-# Shared secret for Velocity proxy
-secret = ""
+[forwarding]
+# Disable forwarding
+method = "NONE"
 
-[forwarding.bungee_cord]
-# Enable BungeeCord forwarding
-enabled = false
-# Enable BungeeGuard (requires BungeeCord to be enabled)
-bungee_guard = false
-# List of valid BungeeGuard tokens for authenticating incoming players
-tokens = []
+[tab_list]
+# The header text displayed at the top of the player list
+header = "<bold>Welcome to PicoLimbo</bold>"
+# The footer text displayed at the bottom of the player list
+footer = "<green>Enjoy your stay!</green>"
 
 [server_list]
 # Maximum count shown in your server list, does not affect the player limit
