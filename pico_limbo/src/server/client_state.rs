@@ -19,6 +19,7 @@ impl Default for ClientState {
             message_id: -1,
             game_profile: None,
             keep_alive_enabled: KeepAliveStatus::Disabled,
+            feet_y: 0.0,
         }
     }
 }
@@ -30,6 +31,7 @@ pub struct ClientState {
     message_id: i32,
     game_profile: Option<GameProfile>,
     keep_alive_enabled: KeepAliveStatus,
+    feet_y: f64,
 }
 
 impl ClientState {
@@ -132,5 +134,15 @@ impl ClientState {
         if self.keep_alive_enabled == KeepAliveStatus::ShouldEnable {
             self.keep_alive_enabled = KeepAliveStatus::Enabled;
         }
+    }
+
+    // Position
+
+    pub const fn get_y_position(&self) -> f64 {
+        self.feet_y
+    }
+
+    pub const fn set_feet_position(&mut self, feet_y: f64) {
+        self.feet_y = feet_y;
     }
 }
