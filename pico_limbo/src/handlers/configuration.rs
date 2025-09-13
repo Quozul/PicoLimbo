@@ -9,7 +9,7 @@ use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::{BossBar, ServerState, TabList};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
-use minecraft_packets::play::boss_bar_packet::{BossBarAction, BossBarPacket};
+use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
@@ -233,30 +233,23 @@ fn send_tab_list_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
 }
 
 fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
-    match server_state.boss_bar() {
-        BossBar::Enabled {
-            title,
-            health,
-            color,
-            division,
-        } => {
-            let uuid = Uuid::new_v4();
-            let (most_sig, least_sig) = uuid.as_u64_pair();
-            let packet = BossBarPacket {
-                v1_16_uuid: uuid,
-                uuid_most_sig: most_sig,
-                uuid_least_sig: least_sig,
-                action: BossBarAction::Add {
-                    title: title.clone(),
-                    health: *health,
-                    color: (*color).into(),
-                    division: BossBarDivisionSerde(*division).0,
-                    flags: 0,
-                },
-            };
-            batch.queue(|| PacketRegistry::BossBar(packet));
-        }
-        BossBar::Disabled => return,
+    if let BossBar::Enabled {
+        title,
+        health,
+        color,
+        division,
+    } = server_state.boss_bar()
+    {
+        let uuid = Uuid::new_v4();
+        let packet = BossBarPacket::add(
+            uuid,
+            title.clone(),
+            *health,
+            (*color).into(),
+            BossBarDivisionSerde(*division).0,
+            0,
+        );
+        batch.queue(|| PacketRegistry::BossBar(packet));
     }
 }
 
