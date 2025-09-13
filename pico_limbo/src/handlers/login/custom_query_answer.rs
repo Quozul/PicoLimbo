@@ -23,7 +23,7 @@ impl PacketHandler for CustomQueryAnswerPacket {
         if server_state.is_modern_forwarding() && self.message_id.inner() == client_message_id {
             let secret_key = server_state
                 .secret_key()
-                .map_err(|_| PacketHandlerError::custom("No secret key"))?;
+                .map_err(|_| PacketHandlerError::MissingSecretKey)?;
             let mut reader = BinaryReader::new(&self.data);
             let velocity_key = read_velocity_key(&mut reader, &secret_key);
 
