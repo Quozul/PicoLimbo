@@ -1,27 +1,34 @@
+use crate::handlers::UnknownStateError;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
+use minecraft_protocol::prelude::ProtocolVersion;
+use std::num::TryFromIntError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum PacketHandlerError {
-    #[error("An error occurred while handling a packet: {0}")]
-    Custom(String),
-    #[error("{0}")]
-    InvalidState(String),
-}
-
-impl PacketHandlerError {
-    #[inline]
-    pub fn custom(message: &str) -> Self {
-        Self::Custom(message.to_string())
-    }
-
-    #[inline]
-    pub fn invalid_state(message: &str) -> Self {
-        Self::InvalidState(message.to_string())
-    }
+    #[error("Unhandled packet {0}")]
+    UnhandledPacket(String),
+    #[error("Dimension index was not found for version {0}")]
+    DimensionIndexNotFound(ProtocolVersion),
+    #[error("Cannot build login packet for version {0}")]
+    CannotBuildLoginPacket(ProtocolVersion),
+    #[error("Player must connect through a proxy")]
+    ProxyRequired,
+    #[error(transparent)]
+    UnknownState(#[from] UnknownStateError),
+    #[error("Missing secret key")]
+    MissingSecretKey,
+    #[error("Configuration state not supported for version {0}")]
+    ConfigurationStateNotHandled(ProtocolVersion),
+    #[error("Conversion failed: Invalid or out-of-range float")]
+    DoubleConversionFailed,
+    #[error(transparent)]
+    TryFromInt(#[from] TryFromIntError),
+    #[error("Cannot find void biome index for version {0}")]
+    BiomeNotFound(ProtocolVersion),
 }
 
 pub trait PacketHandler {

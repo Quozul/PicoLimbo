@@ -25,8 +25,8 @@ impl PacketHandler for LoginAcknowledgedPacket {
             send_configuration_packets(&mut batch, protocol_version, server_state);
             Ok(batch)
         } else {
-            Err(PacketHandlerError::invalid_state(
-                "Configuration state not supported for this version",
+            Err(PacketHandlerError::ConfigurationStateNotHandled(
+                protocol_version,
             ))
         }
     }
@@ -116,8 +116,8 @@ mod tests {
         assert!(batch.next().await.is_some());
     }
 
-    #[test]
-    fn test_login_ack_unsupported_protocol() {
+    #[tokio::test]
+    async fn test_login_ack_unsupported_protocol() {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20);
         let server_state = server_state();
@@ -127,7 +127,10 @@ mod tests {
         let result = pkt.handle(&mut client_state, &server_state);
 
         // Then
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::ConfigurationStateNotHandled(_))
+        ));
     }
 
     #[tokio::test]

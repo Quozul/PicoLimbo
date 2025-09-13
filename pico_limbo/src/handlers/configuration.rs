@@ -27,10 +27,8 @@ use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
-use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_plains_biome_index, get_registries};
-use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -71,11 +69,7 @@ fn build_login_packet(
         Ok(LoginPacket::with_dimension_post_v1_20_2(spawn_dimension))
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         get_dimension_index(protocol_version, spawn_dimension).map_or_else(
-            || {
-                Err(PacketHandlerError::InvalidState(format!(
-                    "Dimension index was not found for version {protocol_version}",
-                )))
-            },
+            || Err(PacketHandlerError::DimensionIndexNotFound(protocol_version)),
             |dimension_index| {
                 Ok(LoginPacket::with_dimension_index(
                     spawn_dimension,
@@ -84,13 +78,9 @@ fn build_login_packet(
             },
         )
     } else {
-        Err(PacketHandlerError::InvalidState(format!(
-            "Cannot build login packet for version {protocol_version}",
-        )))
+        Err(PacketHandlerError::CannotBuildLoginPacket(protocol_version))
     }
 }
-
-const F64_CONVERSION_FAILED: &str = "Conversion failed: Invalid or out-of-range float";
 
 fn safe_f64_to_i32(f: f64) -> Option<i32> {
     if f.is_finite() && f >= f64::from(i32::MIN) && f <= f64::from(i32::MAX) {
@@ -105,16 +95,10 @@ fn world_position_to_chunk_position(
     position: (f64, f64),
 ) -> Result<(i32, i32), PacketHandlerError> {
     let chunk_x = safe_f64_to_i32((position.0 / 16.0).floor())
-        .ok_or_else(|| PacketHandlerError::invalid_state(F64_CONVERSION_FAILED))?;
+        .ok_or(PacketHandlerError::DoubleConversionFailed)?;
     let chunk_z = safe_f64_to_i32((position.1 / 16.0).floor())
-        .ok_or_else(|| PacketHandlerError::invalid_state(F64_CONVERSION_FAILED))?;
+        .ok_or(PacketHandlerError::DoubleConversionFailed)?;
     Ok((chunk_x, chunk_z))
-}
-
-impl From<SchematicError> for PacketHandlerError {
-    fn from(value: SchematicError) -> Self {
-        Self::Custom(value.to_string())
-    }
 }
 
 pub fn send_play_packets(
@@ -197,11 +181,8 @@ pub fn send_play_packets(
         }
 
         // Send Chunk Data and Update Light
-        let biome_id = get_plains_biome_index(protocol_version).ok_or_else(|| {
-            PacketHandlerError::InvalidState(format!(
-                "Cannot find plains biome index for version {protocol_version}"
-            ))
-        })?;
+        let biome_id = get_plains_biome_index(protocol_version)
+            .ok_or(PacketHandlerError::BiomeNotFound(protocol_version))?;
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
@@ -365,12 +346,6 @@ fn send_skin_packets(
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
         let packet = SetEntityMetadataPacket::skin_layers(0);
         batch.queue(|| PacketRegistry::SetEntityMetadata(packet));
-    }
-}
-
-impl From<TryFromIntError> for PacketHandlerError {
-    fn from(_: TryFromIntError) -> Self {
-        Self::custom("failed to cast int")
     }
 }
 

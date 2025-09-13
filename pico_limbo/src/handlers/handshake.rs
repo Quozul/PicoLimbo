@@ -20,37 +20,31 @@ impl PacketHandler for HandshakePacket {
         let batch = Batch::new();
         client_state.set_protocol_version(self.get_protocol());
 
-        self.get_next_state().map_or_else(
-            |_| Err(PacketHandlerError::invalid_state("Unsupported next state.")),
-            |next_state| {
-                client_state.set_state(next_state);
+        let next_state = self.get_next_state()?;
+        client_state.set_state(next_state);
 
-                let forwarding_result = check_bungee_cord(server_state, &self.hostname);
-                match forwarding_result {
-                    LegacyForwardingResult::Invalid => {
-                        client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
-                        Err(PacketHandlerError::invalid_state(
-                            PROXY_REQUIRED_KICK_MESSAGE,
-                        ))
-                    }
-                    LegacyForwardingResult::Anonymous {
-                        player_uuid,
-                        textures,
-                    } => {
-                        let game_profile = GameProfile::anonymous(player_uuid, textures);
-                        client_state.set_game_profile(game_profile);
-                        Ok(batch)
-                    }
-                    LegacyForwardingResult::NoForwarding => Ok(batch),
-                }
-            },
-        )
+        let forwarding_result = check_bungee_cord(server_state, &self.hostname);
+        match forwarding_result {
+            LegacyForwardingResult::Invalid => {
+                client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
+                Err(PacketHandlerError::ProxyRequired)
+            }
+            LegacyForwardingResult::Anonymous {
+                player_uuid,
+                textures,
+            } => {
+                let game_profile = GameProfile::anonymous(player_uuid, textures);
+                client_state.set_game_profile(game_profile);
+                Ok(batch)
+            }
+            LegacyForwardingResult::NoForwarding => Ok(batch),
+        }
     }
 }
 
 #[derive(Error, Debug)]
 #[error("unknown state {0}")]
-struct UnknownStateError(i32);
+pub struct UnknownStateError(i32);
 
 trait GetStateProtocol {
     fn get_next_state(&self) -> Result<State, UnknownStateError>;
@@ -147,7 +141,10 @@ mod tests {
         let result = handshake_packet.handle(&mut client_state, &server_state());
 
         // Then
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::UnknownState(UnknownStateError(42)))
+        ));
     }
 
     #[test]
@@ -209,6 +206,6 @@ mod tests {
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(result, Err(PacketHandlerError::ProxyRequired)));
     }
 }

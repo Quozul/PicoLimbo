@@ -42,6 +42,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
 
     let decode_impl = generate_decode_impl(&variants, &protocol_data);
     let encode_impl = generate_encode_impl(enum_ident, &variants, &protocol_data);
+    let state_and_name_impls = generate_state_and_name_impls(enum_ident, &variants);
 
     let expanded = quote! {
         #[derive(Debug, thiserror::Error)]
@@ -69,6 +70,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
         impl #enum_ident {
             #decode_impl
             #encode_impl
+            #state_and_name_impls
         }
     };
 
@@ -312,7 +314,7 @@ fn generate_encode_impl(
         });
 
     quote! {
-        pub fn encode_packet(self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryEncodeError> {
+        pub fn encode_packet(&self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryEncodeError> {
             let reports_version = protocol_version.reports().version_number();
             let mut packet_writer = BinaryWriter::new();
             let raw_packet = match self {
@@ -320,6 +322,48 @@ fn generate_encode_impl(
                 _ => return Err(PacketRegistryEncodeError::CannotBeEncoded),
             };
             Ok(raw_packet)
+        }
+    }
+}
+
+fn generate_state_and_name_impls(
+    _enum_ident: &Ident,
+    variants: &[PacketVariantInfo],
+) -> proc_macro2::TokenStream {
+    let mut variants_by_state: HashMap<String, Vec<&Ident>> = HashMap::new();
+    for v in variants {
+        variants_by_state
+            .entry(v.state.clone())
+            .or_default()
+            .push(&v.variant_ident);
+    }
+
+    let state_arms = variants_by_state.iter().map(|(state_str, idents)| {
+        let state_ident = format_ident!("{}", capitalize_first(state_str));
+        quote! {
+            #(Self::#idents(_))|* => State::#state_ident,
+        }
+    });
+
+    let name_arms = variants.iter().map(|v| {
+        let variant_ident = &v.variant_ident;
+        let packet_name = &v.name;
+        quote! {
+            Self::#variant_ident(_) => #packet_name,
+        }
+    });
+
+    quote! {
+        pub fn state(&self) -> State {
+            match self {
+                #(#state_arms)*
+            }
+        }
+
+        pub fn packet_name(&self) -> &'static str {
+            match self {
+                #(#name_arms)*
+            }
         }
     }
 }

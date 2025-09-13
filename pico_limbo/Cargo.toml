@@ -3,6 +3,10 @@ name = "pico_limbo"
 version = "1.6.0+mc1.21.9"
 edition = "2024"
 
+[features]
+default = []
+monitoring = ["axum", "prometheus-client"]
+
 [dependencies]
 blocks_report = { path = "../crates/blocks_report" }
 macros = { path = "../crates/macros" }
@@ -12,10 +16,12 @@ net = { path = "../crates/net" }
 pico_structures = { path = "../crates/pico_structures" }
 pico_text_component = { path = "../crates/pico_text_component" }
 registries = { path = "../crates/registries" }
+axum = { workspace = true, optional = true }
 base64 = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }
 hmac = { workspace = true }
+prometheus-client = { workspace = true, optional = true }
 rand = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }

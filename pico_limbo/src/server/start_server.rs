@@ -5,10 +5,13 @@ use crate::configuration::tab_list::TabListConfig;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::server::network::Server;
+use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
 use std::process::ExitCode;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
+
+use crate::monitoring::get_metrics_provider;
 
 pub async fn start_server(config_path: PathBuf) -> ExitCode {
     let Some(cfg) = load_configuration(&config_path) else {
@@ -19,7 +22,18 @@ pub async fn start_server(config_path: PathBuf) -> ExitCode {
 
     match build_state(cfg) {
         Ok(server_state) => {
-            Server::new(&bind, server_state).run().await;
+            let metrics = get_metrics_provider();
+            let server = Server::new(&bind, server_state, metrics);
+
+            let game_server_handle = tokio::spawn(async move {
+                server.run().await;
+            });
+
+            shutdown_signal().await;
+            info!("Shutdown signal received, shutting down gracefully.");
+
+            game_server_handle.abort();
+
             ExitCode::SUCCESS
         }
         Err(err) => {
