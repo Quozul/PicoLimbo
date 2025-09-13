@@ -1,3 +1,4 @@
+use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -50,6 +51,8 @@ pub struct Config {
     pub tab_list: TabListConfig,
 
     pub fetch_player_skins: bool,
+
+    pub boss_bar: BossBarConfig,
 }
 
 impl Default for Config {
@@ -64,6 +67,7 @@ impl Default for Config {
             hardcore: false,
             tab_list: TabListConfig::default(),
             fetch_player_skins: false,
+            boss_bar: BossBarConfig::default(),
         }
     }
 }

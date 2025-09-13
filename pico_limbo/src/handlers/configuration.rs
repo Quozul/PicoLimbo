@@ -1,3 +1,4 @@
+use crate::configuration::boss_bar::BossBarDivisionSerde;
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
 use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
 use crate::server::batch::Batch;
@@ -5,9 +6,10 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::{ServerState, TabList};
+use crate::server_state::{BossBar, ServerState, TabList};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
+use minecraft_packets::play::boss_bar_packet::{BossBarAction, BossBarPacket};
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
@@ -21,7 +23,7 @@ use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlay
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
-use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
+use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State, Uuid};
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
@@ -173,6 +175,7 @@ pub fn send_play_packets(
 
     send_tab_list_packets(batch, server_state);
     send_skin_packets(batch, client_state, server_state);
+    send_boss_bar_packets(batch, server_state);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
@@ -226,6 +229,34 @@ fn send_tab_list_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
             batch.queue(|| PacketRegistry::TabList(packet));
         }
         TabList::None => {}
+    }
+}
+
+fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
+    match server_state.boss_bar() {
+        BossBar::Enabled {
+            title,
+            health,
+            color,
+            division,
+        } => {
+            let uuid = Uuid::new_v4();
+            let (most_sig, least_sig) = uuid.as_u64_pair();
+            let packet = BossBarPacket {
+                v1_16_uuid: uuid,
+                uuid_most_sig: most_sig,
+                uuid_least_sig: least_sig,
+                action: BossBarAction::Add {
+                    title: title.clone(),
+                    health: *health,
+                    color: (*color).into(),
+                    division: BossBarDivisionSerde(*division).0,
+                    flags: 0,
+                },
+            };
+            batch.queue(|| PacketRegistry::BossBar(packet));
+        }
+        BossBar::Disabled => return,
     }
 }
 

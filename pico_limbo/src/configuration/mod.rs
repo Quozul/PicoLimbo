@@ -1,3 +1,4 @@
+pub mod boss_bar;
 pub mod config;
 mod forwarding;
 mod game_mode_config;
