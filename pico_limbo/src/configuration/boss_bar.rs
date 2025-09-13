@@ -1,4 +1,3 @@
-use minecraft_packets::play::boss_bar_packet::{BossBarColor};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -6,13 +5,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[serde(rename_all = "lowercase")]
 pub enum BossBarColorConfig {
     #[default]
-    Pink,
-    Blue,
-    Red,
-    Green,
-    Yellow,
-    Purple,
-    White,
+    Pink = 0,
+    Blue = 1,
+    Red = 2,
+    Green = 3,
+    Yellow = 4,
+    Purple = 5,
+    White = 6,
 }
 
 #[derive(Default)]
@@ -43,20 +42,6 @@ impl Default for BossBarConfig {
             health: 1.0,
             color: BossBarColorConfig::Pink,
             division: BossBarDivisionConfig::NoDivision,
-        }
-    }
-}
-
-impl From<BossBarColorConfig> for BossBarColor {
-    fn from(value: BossBarColorConfig) -> Self {
-        match value {
-            BossBarColorConfig::Pink => Self::Pink,
-            BossBarColorConfig::Blue => Self::Blue,
-            BossBarColorConfig::Red => Self::Red,
-            BossBarColorConfig::Green => Self::Green,
-            BossBarColorConfig::Yellow => Self::Yellow,
-            BossBarColorConfig::Purple => Self::Purple,
-            BossBarColorConfig::White => Self::White,
         }
     }
 }

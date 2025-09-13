@@ -1,3 +1,4 @@
+use crate::configuration::boss_bar::BossBarDivisionConfig;
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
 use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
 use crate::server::batch::Batch;
@@ -28,7 +29,6 @@ use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
 use tracing::debug;
-use crate::configuration::boss_bar::BossBarDivisionConfig;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -248,14 +248,7 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
             BossBarDivisionConfig::TwelveNotches => BossBarDivision::TwelveNotches,
             BossBarDivisionConfig::TwentyNotches => BossBarDivision::TwentyNotches,
         };
-        let packet = BossBarPacket::add(
-            uuid,
-            title.clone(),
-            *health,
-            (*color).into(),
-            division,
-            0,
-        );
+        let packet = BossBarPacket::add(uuid, title.clone(), *health, (*color).into(), division, 0);
         batch.queue(|| PacketRegistry::BossBar(packet));
     }
 }
