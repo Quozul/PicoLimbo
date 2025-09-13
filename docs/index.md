@@ -14,7 +14,7 @@ hero:
       text: Documentation
       link: /about/introduction/
     - theme: alt
-      text: Community & Support
+      text: Join Discord
       link: https://discord.gg/M2a9dxJPRy
 
 features:
@@ -33,6 +33,9 @@ features:
     details: "Integrates with all major Minecraft proxies: Velocity, BungeeCord and BungeeGuard authentication."
     link: /config/proxy-integration
     linkText: Read the documentation
+  - icon: 👤
+    title: Skin Support
+    details: "Player skins are supported. What else to say about that?"
   - icon: ⚙️
     title: Highly Configurable
     details: "Customize your server using a simple TOML configuration file."
@@ -41,6 +44,6 @@ features:
   - icon: 🌍
     title: Schematic World (Experimental)
     details: "Load a custom world from a schematic file and customize spawn location (1.19+ only)."
-    link: /config/experimental_world.html
+    link: /config/experimental-world.html
     linkText: Read the documentation
 ---

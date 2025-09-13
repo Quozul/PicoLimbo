@@ -104,4 +104,3 @@ The message can be disabled by setting an empty string:
 teleport_message = ""
 ```
 :::
-

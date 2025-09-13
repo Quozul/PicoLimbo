@@ -9,5 +9,6 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Server Settings](./server-settings) - Core server configuration
 - [Server List Settings](./server-list) - Customize your server's appearance in the Minecraft client
 - [Forwarding Proxy Settings](./proxy-integration) - Configure proxy integration
+- [Tab List](./tab-list) - Configure the tab list
 - [World Settings](./world) - Configure the world
-- [Experimental World Settings](./experimental_world) - Experimental features for world customization
+- [Experimental World Settings](./experimental-world) - Experimental features for world customization

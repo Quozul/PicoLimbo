@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Teleport player back to the spawn when they go bellow the world boundaries
 - Time can now be configured in the configuration file
+- Tab list header and footer customization
+- Player now shows up in the tab list
+- Added support for player skins
 
 ### Changed
 
@@ -19,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spawn position is now a stable world setting
 - Format for the forwarding configuration changed (refer to the docs)
 - Spawn dimension setting was renamed to dimension and moved to the world section
+
+### Fixed
+
+- High memory usage when sending a large schematic over the network
 
 ## [1.5.2+mc1.21.8] - 2025-09-06
 

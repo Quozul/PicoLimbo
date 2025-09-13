@@ -39,7 +39,8 @@ export default defineConfig({
                     { text: "World Configuration", link: "/config/world.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
-					{ text: "Experimental World Features", link: "/config/experimental_world.html" },
+					{ text: "Tab List", link: "/config/tab-list.html" },
+					{ text: "Experimental World Features", link: "/config/experimental-world.html" },
 					{
 						text: "Default Configuration",
 						link: "/config/default-configuration.html",
