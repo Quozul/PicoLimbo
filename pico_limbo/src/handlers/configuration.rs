@@ -1,4 +1,3 @@
-use crate::configuration::boss_bar::BossBarDivisionSerde;
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
 use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
 use crate::server::batch::Batch;
@@ -9,7 +8,7 @@ use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::{BossBar, ServerState, TabList};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
-use minecraft_packets::play::boss_bar_packet::BossBarPacket;
+use minecraft_packets::play::boss_bar_packet::{BossBarDivision, BossBarPacket};
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
@@ -29,6 +28,7 @@ use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
 use tracing::debug;
+use crate::configuration::boss_bar::BossBarDivisionConfig;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -241,12 +241,19 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
     } = server_state.boss_bar()
     {
         let uuid = Uuid::new_v4();
+        let division: BossBarDivision = match division {
+            BossBarDivisionConfig::NoDivision => BossBarDivision::NoDivision,
+            BossBarDivisionConfig::SixNotches => BossBarDivision::SixNotches,
+            BossBarDivisionConfig::TenNotches => BossBarDivision::TenNotches,
+            BossBarDivisionConfig::TwelveNotches => BossBarDivision::TwelveNotches,
+            BossBarDivisionConfig::TwentyNotches => BossBarDivision::TwentyNotches,
+        };
         let packet = BossBarPacket::add(
             uuid,
             title.clone(),
             *health,
             (*color).into(),
-            BossBarDivisionSerde(*division).0,
+            division,
             0,
         );
         batch.queue(|| PacketRegistry::BossBar(packet));

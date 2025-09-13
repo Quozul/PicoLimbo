@@ -1,4 +1,4 @@
-use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
+use minecraft_packets::play::boss_bar_packet::{BossBarColor};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -15,8 +15,15 @@ pub enum BossBarColorConfig {
     White,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct BossBarDivisionSerde(pub BossBarDivision);
+#[derive(Default)]
+pub enum BossBarDivisionConfig {
+    #[default]
+    NoDivision,
+    SixNotches,
+    TenNotches,
+    TwelveNotches,
+    TwentyNotches,
+}
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -25,7 +32,7 @@ pub struct BossBarConfig {
     pub title: String,
     pub health: f32,
     pub color: BossBarColorConfig,
-    pub division: BossBarDivisionSerde,
+    pub division: BossBarDivisionConfig,
 }
 
 impl Default for BossBarConfig {
@@ -35,7 +42,7 @@ impl Default for BossBarConfig {
             title: "<bold>Welcome to PicoLimbo!</bold>".to_string(),
             health: 1.0,
             color: BossBarColorConfig::Pink,
-            division: BossBarDivisionSerde(BossBarDivision::NoDivision),
+            division: BossBarDivisionConfig::NoDivision,
         }
     }
 }
@@ -54,36 +61,38 @@ impl From<BossBarColorConfig> for BossBarColor {
     }
 }
 
-impl Serialize for BossBarDivisionSerde {
+impl Serialize for BossBarDivisionConfig {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let value = match self.0 {
-            BossBarDivision::NoDivision => 0,
-            BossBarDivision::SixNotches => 6,
-            BossBarDivision::TenNotches => 10,
-            BossBarDivision::TwelveNotches => 12,
-            BossBarDivision::TwentyNotches => 20,
+        let value = match self {
+            BossBarDivisionConfig::NoDivision => 0,
+            BossBarDivisionConfig::SixNotches => 6,
+            BossBarDivisionConfig::TenNotches => 10,
+            BossBarDivisionConfig::TwelveNotches => 12,
+            BossBarDivisionConfig::TwentyNotches => 20,
         };
         serializer.serialize_u8(value)
     }
 }
 
-impl<'de> Deserialize<'de> for BossBarDivisionSerde {
+impl<'de> Deserialize<'de> for BossBarDivisionConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let value = u8::deserialize(deserializer)?;
-        let division = match value {
-            0 => BossBarDivision::NoDivision,
-            6 => BossBarDivision::SixNotches,
-            10 => BossBarDivision::TenNotches,
-            12 => BossBarDivision::TwelveNotches,
-            20 => BossBarDivision::TwentyNotches,
-            other => return Err(Error::custom(format!("invalid division value: {}", other))),
-        };
-        Ok(BossBarDivisionSerde(division))
+        match value {
+            0 => Ok(BossBarDivisionConfig::NoDivision),
+            6 => Ok(BossBarDivisionConfig::SixNotches),
+            10 => Ok(BossBarDivisionConfig::TenNotches),
+            12 => Ok(BossBarDivisionConfig::TwelveNotches),
+            20 => Ok(BossBarDivisionConfig::TwentyNotches),
+            _ => Err(Error::custom(format!(
+                "Invalid value for BossBarDivision: {}",
+                value
+            ))),
+        }
     }
 }
