@@ -73,6 +73,9 @@
       },
       "minecraft:set_entity_data": {
         "protocol_id": 80
+      },
+      "minecraft:boss_event": {
+        "protocol_id": 10
       }
     },
     "serverbound": {

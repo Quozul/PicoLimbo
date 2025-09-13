@@ -58,6 +58,9 @@
       },
       "minecraft:player_info_update": {
         "protocol_id": 45
+      },
+      "minecraft:boss_event": {
+        "protocol_id": 12
       }
     },
     "serverbound": {

@@ -3,7 +3,12 @@ use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct BossBarPacket {
-    pub uuid: Uuid,
+    #[pvn(735..)]
+    pub v1_16_uuid: Uuid,
+    #[pvn(..735)]
+    pub uuid_most_sig: u64,
+    #[pvn(..735)]
+    pub uuid_least_sig: u64,
     pub action: BossBarAction,
 }
 
