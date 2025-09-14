@@ -66,7 +66,7 @@ impl LegacySetTitlePacket {
             action: LegacySetTitleAction::SetActionBar {
                 action_bar: action_bar.clone(),
             },
-            v1_11_action: LegacyV1_11SetTitleAction::Hide {}
+            v1_11_action: LegacyV1_11SetTitleAction::Hide {},
         }
     }
 
