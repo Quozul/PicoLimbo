@@ -4,20 +4,46 @@ use pico_text_component::prelude::Component;
 #[derive(PacketOut)]
 pub struct BossBarPacket {
     #[pvn(735..)]
-    pub v1_16_uuid: Uuid,
+    v1_16_uuid: Uuid,
     #[pvn(..735)]
-    pub uuid_most_sig: u64,
+    uuid_most_sig: u64,
     #[pvn(..735)]
-    pub uuid_least_sig: u64,
-    pub action: BossBarAction,
+    uuid_least_sig: u64,
+    action: BossBarAction,
 }
 
-pub enum BossBarAction {
-    Add {
-        title: Component,
+impl BossBarPacket {
+    pub fn add(
+        title: &Component,
         health: f32,
         color: BossBarColor,
         division: BossBarDivision,
+    ) -> Self {
+        let uuid = Uuid::new_v4();
+        let (most_sig, least_sig) = uuid.as_u64_pair();
+        Self {
+            v1_16_uuid: uuid,
+            uuid_most_sig: most_sig,
+            uuid_least_sig: least_sig,
+            action: BossBarAction::Add {
+                title: title.clone(),
+                health,
+                color: VarInt::from(color as i32),
+                division: VarInt::from(division as i32),
+                flags: 0,
+            },
+        }
+    }
+}
+
+#[allow(dead_code)]
+enum BossBarAction {
+    Add {
+        title: Component,
+        health: f32,
+        color: VarInt,
+        division: VarInt,
+        /// Bit mask. 0x01: should darken sky, 0x02: is dragon bar (used to play end music), 0x04: create fog (previously was also controlled by 0x02).
         flags: u8,
     },
     Remove,
@@ -28,8 +54,8 @@ pub enum BossBarAction {
         title: Component,
     },
     UpdateStyle {
-        color: BossBarColor,
-        division: BossBarDivision,
+        color: VarInt,
+        division: VarInt,
     },
     UpdateFlags {
         flags: u8,
@@ -59,81 +85,14 @@ pub enum BossBarDivision {
 }
 
 impl BossBarAction {
-    pub fn type_id(&self) -> i32 {
+    fn type_id(&self) -> VarInt {
         match self {
-            BossBarAction::Add { .. } => 0,
-            BossBarAction::Remove => 1,
-            BossBarAction::UpdateHealth { .. } => 2,
-            BossBarAction::UpdateTitle { .. } => 3,
-            BossBarAction::UpdateStyle { .. } => 4,
-            BossBarAction::UpdateFlags { .. } => 5,
-        }
-    }
-}
-
-impl BossBarPacket {
-    pub fn add(
-        uuid: Uuid,
-        title: Component,
-        health: f32,
-        color: BossBarColor,
-        division: BossBarDivision,
-        flags: u8,
-    ) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::Add {
-                title,
-                health,
-                color,
-                division,
-                flags,
-            },
-        }
-    }
-    pub fn remove(uuid: Uuid) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::Remove,
-        }
-    }
-    pub fn update_health(uuid: Uuid, health: f32) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::UpdateHealth { health },
-        }
-    }
-
-    pub fn update_title(uuid: Uuid, title: Component) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::UpdateTitle { title },
-        }
-    }
-
-    pub fn update_style(uuid: Uuid, color: BossBarColor, division: BossBarDivision) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::UpdateStyle { color, division },
-        }
-    }
-
-    pub fn update_flags(uuid: Uuid, flags: u8) -> Self {
-        Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: uuid.as_u64_pair().0,
-            uuid_least_sig: uuid.as_u64_pair().1,
-            action: BossBarAction::UpdateFlags { flags },
+            Self::Add { .. } => 0.into(),
+            Self::Remove => 1.into(),
+            Self::UpdateHealth { .. } => 2.into(),
+            Self::UpdateTitle { .. } => 3.into(),
+            Self::UpdateStyle { .. } => 4.into(),
+            Self::UpdateFlags { .. } => 5.into(),
         }
     }
 }
@@ -144,33 +103,35 @@ impl EncodePacket for BossBarAction {
         writer: &mut BinaryWriter,
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
-        VarInt::new(self.type_id()).encode(writer, protocol_version)?;
+        self.type_id().encode(writer, protocol_version)?;
         match self {
-            BossBarAction::Add {
+            Self::Add {
                 title,
                 health,
                 color,
                 division,
                 flags,
             } => {
-                title.clone().encode(writer, protocol_version)?;
+                title.encode(writer, protocol_version)?;
                 health.encode(writer, protocol_version)?;
-                VarInt::new(*color as i32).encode(writer, protocol_version)?;
-                VarInt::new(*division as i32).encode(writer, protocol_version)?;
+                color.encode(writer, protocol_version)?;
+                division.encode(writer, protocol_version)?;
                 flags.encode(writer, protocol_version)?;
             }
-            BossBarAction::Remove => {}
-            BossBarAction::UpdateHealth { health } => {
+            Self::Remove => {
+                // Nothing to encode
+            }
+            Self::UpdateHealth { health } => {
                 health.encode(writer, protocol_version)?;
             }
-            BossBarAction::UpdateTitle { title } => {
-                title.clone().encode(writer, protocol_version)?;
+            Self::UpdateTitle { title } => {
+                title.encode(writer, protocol_version)?;
             }
-            BossBarAction::UpdateStyle { color, division } => {
-                VarInt::new(*color as i32).encode(writer, protocol_version)?;
-                VarInt::new(*division as i32).encode(writer, protocol_version)?;
+            Self::UpdateStyle { color, division } => {
+                color.encode(writer, protocol_version)?;
+                division.encode(writer, protocol_version)?;
             }
-            BossBarAction::UpdateFlags { flags } => {
+            Self::UpdateFlags { flags } => {
                 flags.encode(writer, protocol_version)?;
             }
         }
