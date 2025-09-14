@@ -2,6 +2,9 @@
 
 Representing the `[boss_bar]` section in `server.toml`.
 
+> ![NOTE]
+> The boss bar will only show to clients after 1.9 (included).
+
 ## Boss Bar Title
 
 The title text displayed at the top of the player list.
@@ -20,7 +23,7 @@ The health of the boss bar, represented as a float between `0.0` (empty) and `1.
 
 :::code-group
 ```toml [server.toml] {2}
-[tab_list]
+[boss_bar]
 health = 1.0
 ```
 :::
@@ -38,13 +41,13 @@ color = "blue"
 
 Possible values:
 ```
-pink
 blue
-red
 green
-yellow
+pink
 purple
+red
 white
+yellow
 ```
 
 ## Boss Bar Divisions

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tab list header and footer customization
 - Player now shows up in the tab list
 - Added support for player skins
+- Added boss bar (1.9+)
 
 ### Changed
 
