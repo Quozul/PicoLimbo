@@ -15,7 +15,7 @@ pub struct LegacyChatMessagePacket {
     position: u8,
     /// Used by the Notchian client for the disableChat launch option. Setting both longs to 0 will always display the message regardless of the setting.
     #[pvn(735..)]
-    sender: Uuid,
+    sender: UuidAsString,
 }
 
 impl LegacyChatMessagePacket {
@@ -23,7 +23,7 @@ impl LegacyChatMessagePacket {
         Self {
             content: component.to_json(),
             position: 1,
-            sender: Uuid::nil(),
+            sender: UuidAsString::default(),
         }
     }
 }

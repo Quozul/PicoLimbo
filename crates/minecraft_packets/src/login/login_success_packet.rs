@@ -4,7 +4,7 @@ use minecraft_protocol::prelude::*;
 /// This packet was introduced in 1.21.2, previous versions uses the GameProfilePacket.
 #[derive(PacketOut)]
 pub struct LoginSuccessPacket {
-    uuid: Uuid,
+    uuid: UuidAsString,
     username: String,
     #[pvn(735..)]
     properties: LengthPaddedVec<Property>,
@@ -13,7 +13,7 @@ pub struct LoginSuccessPacket {
 impl LoginSuccessPacket {
     pub fn new(uuid: Uuid, username: impl ToString) -> Self {
         Self {
-            uuid,
+            uuid: uuid.into(),
             username: username.to_string(),
             properties: LengthPaddedVec::default(),
         }

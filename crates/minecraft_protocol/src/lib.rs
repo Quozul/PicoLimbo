@@ -13,6 +13,7 @@ pub mod prelude {
     pub use crate::data_types::optional::{Omitted, Optional};
     pub use crate::data_types::position::Position;
     pub use crate::data_types::prefixed::LengthPaddedVec;
+    pub use crate::data_types::uuid::{UuidAsLongs, UuidAsString};
     pub use crate::packet_serializer::decode_packet::DecodePacket;
     pub use crate::packet_serializer::encode_packet::EncodePacket;
     pub use crate::packet_serializer::packet_id::Identifiable;

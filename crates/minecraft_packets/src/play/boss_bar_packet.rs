@@ -3,12 +3,7 @@ use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct BossBarPacket {
-    #[pvn(735..)]
-    v1_16_uuid: Uuid,
-    #[pvn(..735)]
-    uuid_most_sig: u64,
-    #[pvn(..735)]
-    uuid_least_sig: u64,
+    uuid: UuidAsLongs,
     action: BossBarAction,
 }
 
@@ -20,11 +15,8 @@ impl BossBarPacket {
         division: BossBarDivision,
     ) -> Self {
         let uuid = Uuid::new_v4();
-        let (most_sig, least_sig) = uuid.as_u64_pair();
         Self {
-            v1_16_uuid: uuid,
-            uuid_most_sig: most_sig,
-            uuid_least_sig: least_sig,
+            uuid: uuid.into(),
             action: BossBarAction::Add {
                 title: title.clone(),
                 health,
