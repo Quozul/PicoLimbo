@@ -68,7 +68,7 @@
       "minecraft:boss_event": {
         "protocol_id": 12
       },
-      "minecraft:set_title": {
+      "minecraft:legacy_set_title": {
         "protocol_id": 79
       }
     },
