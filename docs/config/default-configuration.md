@@ -22,6 +22,8 @@ fetch_player_skins = false
 method = "NONE"
 
 [tab_list]
+# Enable tab list customization
+enabled = true
 # The header text displayed at the top of the player list
 header = "<bold>Welcome to PicoLimbo</bold>"
 # The footer text displayed at the bottom of the player list
@@ -47,7 +49,7 @@ time = "day"
 
 [world.boundaries]
 # Enable world boundaries
-enabled = false
+enabled = true
 # Minimum Y position, players below this will be teleported back to spawn
 min_y = -64
 # Message displayed when a player reaches the minimum Y position

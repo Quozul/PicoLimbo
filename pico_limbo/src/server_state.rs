@@ -1,4 +1,4 @@
-use crate::configuration::boss_bar::BossBarConfig;
+use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -33,29 +33,15 @@ pub enum ForwardingMode {
 pub struct MisconfiguredForwardingError;
 
 #[derive(Default)]
-pub enum Boundaries {
-    #[default]
-    Disabled,
-    Enabled {
-        min_y: i32,
-        teleport_message: Option<Component>,
-    },
+pub struct Boundaries {
+    pub min_y: i32,
+    pub teleport_message: Option<Component>,
 }
 
 #[derive(Default)]
-pub enum TabList {
-    #[default]
-    None,
-    Header {
-        header: Component,
-    },
-    Footer {
-        footer: Component,
-    },
-    HeaderAndFooter {
-        header: Component,
-        footer: Component,
-    },
+pub struct TabList {
+    pub header: Component,
+    pub footer: Component,
 }
 
 pub struct BossBar {
@@ -82,8 +68,8 @@ pub struct ServerState {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     world: Option<Arc<World>>,
-    boundaries: Boundaries,
-    tab_list: TabList,
+    boundaries: Option<Boundaries>,
+    tab_list: Option<TabList>,
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
@@ -174,12 +160,12 @@ impl ServerState {
         self.lock_time
     }
 
-    pub const fn boundaries(&self) -> &Boundaries {
-        &self.boundaries
+    pub const fn boundaries(&self) -> Option<&Boundaries> {
+        self.boundaries.as_ref()
     }
 
-    pub const fn tab_list(&self) -> &TabList {
-        &self.tab_list
+    pub const fn tab_list(&self) -> Option<&TabList> {
+        self.tab_list.as_ref()
     }
 
     pub const fn fetch_player_skins(&self) -> bool {
@@ -219,8 +205,8 @@ pub struct ServerStateBuilder {
     spawn_position: (f64, f64, f64),
     view_distance: i32,
     schematic_file_path: String,
-    boundaries: Boundaries,
-    tab_list: TabList,
+    boundaries: Option<Boundaries>,
+    tab_list: Option<TabList>,
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
@@ -342,22 +328,10 @@ impl ServerStateBuilder {
     where
         S: AsRef<str>,
     {
-        self.tab_list = if header.as_ref().is_empty() && footer.as_ref().is_empty() {
-            TabList::None
-        } else if header.as_ref().is_empty() {
-            TabList::Footer {
-                footer: parse_mini_message(footer.as_ref())?,
-            }
-        } else if footer.as_ref().is_empty() {
-            TabList::Header {
-                header: parse_mini_message(header.as_ref())?,
-            }
-        } else {
-            TabList::HeaderAndFooter {
-                header: parse_mini_message(header.as_ref())?,
-                footer: parse_mini_message(footer.as_ref())?,
-            }
-        };
+        self.tab_list = Some(TabList {
+            header: parse_mini_message(header.as_ref())?,
+            footer: parse_mini_message(footer.as_ref())?,
+        });
 
         Ok(self)
     }
@@ -371,10 +345,10 @@ impl ServerStateBuilder {
         S: AsRef<str>,
     {
         let teleport_message = optional_mini_message(teleport_message.as_ref())?;
-        self.boundaries = Boundaries::Enabled {
+        self.boundaries = Some(Boundaries {
             min_y,
             teleport_message,
-        };
+        });
         Ok(self)
     }
 
@@ -401,7 +375,7 @@ impl ServerStateBuilder {
 
     pub fn boss_bar(
         &mut self,
-        boss_bar_config: BossBarConfig,
+        boss_bar_config: EnabledBossBarConfig,
     ) -> Result<&mut Self, ServerStateBuilderError> {
         let title = parse_mini_message(boss_bar_config.title.as_ref())?;
         self.boss_bar = Some(BossBar {

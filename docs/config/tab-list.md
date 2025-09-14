@@ -3,10 +3,6 @@
 Representing the `[tab_list]` section in `server.toml`.
 
 Both the header and the footer supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
-You can use `\n` for line breaks in multi-line headers and footers.
-
-> [!NOTE]
-> You can fully disable the tab list by setting both the header and footer to an empty string.
 
 ## Header
 

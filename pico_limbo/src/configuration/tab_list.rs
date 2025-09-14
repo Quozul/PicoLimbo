@@ -3,32 +3,32 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum BoundariesConfig {
-    Enabled(EnabledBoundariesConfig),
-    Disabled(DisabledBoundariesConfig),
+pub enum TabListConfig {
+    Enabled(EnabledTabListConfig),
+    Disabled(DisabledTabListConfig),
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct EnabledBoundariesConfig {
+pub struct EnabledTabListConfig {
     #[serde(deserialize_with = "require_true")]
     enabled: bool,
-    pub min_y: i32,
-    pub teleport_message: String,
+    pub header: String,
+    pub footer: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DisabledBoundariesConfig {
+pub struct DisabledTabListConfig {
     #[serde(deserialize_with = "require_false")]
     enabled: bool,
 }
 
-impl Default for BoundariesConfig {
+impl Default for TabListConfig {
     fn default() -> Self {
-        Self::Enabled(EnabledBoundariesConfig {
+        Self::Enabled(EnabledTabListConfig {
             enabled: true,
-            min_y: -64,
-            teleport_message: "<red>You have reached the bottom of the world.</red>".into(),
+            header: "<bold>Welcome to PicoLimbo</bold>".to_string(),
+            footer: "<green>Enjoy your stay!</green>".to_string(),
         })
     }
 }

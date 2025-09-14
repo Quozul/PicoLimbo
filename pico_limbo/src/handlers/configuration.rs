@@ -212,22 +212,9 @@ pub fn send_play_packets(
 }
 
 fn send_tab_list_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
-    match server_state.tab_list() {
-        TabList::HeaderAndFooter { header, footer } => {
-            let packet = TabListPacket::new(header, footer);
-            batch.queue(|| PacketRegistry::TabList(packet));
-        }
-        TabList::Header { header } => {
-            let empty = Component::default();
-            let packet = TabListPacket::new(header, &empty);
-            batch.queue(|| PacketRegistry::TabList(packet));
-        }
-        TabList::Footer { footer } => {
-            let empty = Component::default();
-            let packet = TabListPacket::new(&empty, footer);
-            batch.queue(|| PacketRegistry::TabList(packet));
-        }
-        TabList::None => {}
+    if let Some(TabList { header, footer }) = server_state.tab_list() {
+        let packet = TabListPacket::new(header, footer);
+        batch.queue(|| PacketRegistry::TabList(packet));
     }
 }
 

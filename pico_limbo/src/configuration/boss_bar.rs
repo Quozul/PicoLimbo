@@ -1,6 +1,31 @@
+use crate::configuration::require_boolean::{require_false, require_true};
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum BossBarConfig {
+    Enabled(EnabledBossBarConfig),
+    Disabled(DisabledBossBarConfig),
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnabledBossBarConfig {
+    #[serde(deserialize_with = "require_true")]
+    enabled: bool,
+    pub title: String,
+    pub health: f32,
+    pub color: BossBarColorConfig,
+    pub division: BossBarDivisionConfig,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct DisabledBossBarConfig {
+    #[serde(deserialize_with = "require_false")]
+    enabled: bool,
+}
 
 #[derive(Deserialize, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -25,25 +50,15 @@ pub enum BossBarDivisionConfig {
     TwentyNotches,
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct BossBarConfig {
-    pub enabled: bool,
-    pub title: String,
-    pub health: f32,
-    pub color: BossBarColorConfig,
-    pub division: BossBarDivisionConfig,
-}
-
 impl Default for BossBarConfig {
     fn default() -> Self {
-        Self {
+        Self::Enabled(EnabledBossBarConfig {
             enabled: false,
             title: "<bold>Welcome to PicoLimbo!</bold>".to_string(),
             health: 1.0,
             color: BossBarColorConfig::Pink,
             division: BossBarDivisionConfig::NoDivision,
-        }
+        })
     }
 }
 

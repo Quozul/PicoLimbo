@@ -1,5 +1,8 @@
 use crate::configuration::TaggedForwarding;
+use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
+use crate::configuration::tab_list::TabListConfig;
+use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
@@ -64,21 +67,19 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         }
     }
 
-    if cfg.world.boundaries.enabled
-        && cfg.world.spawn_position.1 < f64::from(cfg.world.boundaries.min_y)
-    {
-        return Err(ServerStateBuilderError::InvalidSpawnPosition);
+    if let BoundariesConfig::Enabled(boundaries) = cfg.world.boundaries {
+        if cfg.world.spawn_position.1 < f64::from(boundaries.min_y) {
+            return Err(ServerStateBuilderError::InvalidSpawnPosition);
+        }
+        server_state_builder.boundaries(boundaries.min_y, boundaries.teleport_message)?;
     }
 
-    if cfg.world.boundaries.enabled {
-        server_state_builder.boundaries(
-            cfg.world.boundaries.min_y,
-            cfg.world.boundaries.teleport_message,
-        )?;
+    if let TabListConfig::Enabled(tab_list) = cfg.tab_list {
+        server_state_builder.tab_list(tab_list.header, tab_list.footer)?;
     }
 
-    if cfg.boss_bar.enabled {
-        server_state_builder.boss_bar(cfg.boss_bar)?;
+    if let BossBarConfig::Enabled(boss_bar) = cfg.boss_bar {
+        server_state_builder.boss_bar(boss_bar)?;
     }
 
     let server_icon = cfg.server_list.server_icon;
@@ -99,7 +100,6 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.world.spawn_position)
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
-        .tab_list(cfg.tab_list.header, cfg.tab_list.footer)?
         .fetch_player_skins(cfg.fetch_player_skins);
 
     server_state_builder.build()

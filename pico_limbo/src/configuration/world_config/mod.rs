@@ -4,7 +4,7 @@ use crate::configuration::world_config::spawn_dimension::SpawnDimensionConfig;
 use crate::configuration::world_config::time::TimeConfig;
 use serde::{Deserialize, Serialize};
 
-mod boundaries;
+pub mod boundaries;
 mod experimental;
 mod spawn_dimension;
 mod time;

@@ -2,7 +2,7 @@ use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
-use crate::configuration::tablist::TabListConfig;
+use crate::configuration::tab_list::TabListConfig;
 use crate::configuration::world_config::WorldConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

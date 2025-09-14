@@ -29,10 +29,10 @@ pub fn teleport_player_to_spawn(
     feet_y: f64,
 ) -> Batch<PacketRegistry> {
     let mut batch = Batch::new();
-    if let Boundaries::Enabled {
+    if let Some(Boundaries {
         teleport_message,
         min_y,
-    } = server_state.boundaries()
+    }) = server_state.boundaries()
     {
         let previous_position = client_state.get_y_position();
         client_state.set_feet_position(feet_y);
