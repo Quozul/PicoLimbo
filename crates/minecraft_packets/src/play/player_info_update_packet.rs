@@ -34,12 +34,8 @@ impl PlayerInfoUpdatePacket {
             mask |= action.get_mask();
         }
 
-        let (most_sig, least_sig) = uuid.as_u64_pair();
-
         let player_action = Player {
-            v1_16_uuid: uuid,
-            uuid_most_sig: most_sig,
-            uuid_least_sig: least_sig,
+            uuid: uuid.into(),
             action: add_player_action,
             actions,
         };
@@ -54,12 +50,7 @@ impl PlayerInfoUpdatePacket {
 
 #[derive(PacketOut)]
 struct Player {
-    #[pvn(735..)]
-    v1_16_uuid: Uuid,
-    #[pvn(..735)]
-    uuid_most_sig: u64,
-    #[pvn(..735)]
-    uuid_least_sig: u64,
+    uuid: UuidAsLongs,
     #[pvn(..761)]
     action: AddPlayer,
     #[pvn(761..)]
