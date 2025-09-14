@@ -1,0 +1,9 @@
+{
+  "login": {
+    "clientbound": {
+      "minecraft:login_compression": {
+        "protocol_id": 3
+      }
+    }
+  }
+}
