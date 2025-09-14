@@ -18,6 +18,7 @@ use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_title_packet::SetTitlePacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -177,7 +178,7 @@ pub fn send_play_packets(
     send_tab_list_packets(batch, server_state);
     send_skin_packets(batch, client_state, server_state);
     send_boss_bar_packets(batch, server_state);
-    send_title_text_packets(batch, server_state);
+    send_title_text_packets(batch, server_state, protocol_version);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
@@ -246,14 +247,33 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
     }
 }
 
-fn send_title_text_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
-    if let Some(welcome_message) = server_state.welcome_message() {
-        let packet = SetTitleTextPacket::new(welcome_message);
-        let animation_packet = SetTitlesAnimationPacket::new(100, 10, 200);
-        let subtitle_packet = SetTitleTextPacket::new(welcome_message);
-        batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
-        batch.queue(|| PacketRegistry::SetTitleText(packet));
-        batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+fn send_title_text_packets(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion,
+) {
+    println!("send_title_text_packets: protocol_version = {protocol_version}");
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+        if let Some(welcome_message) = server_state.welcome_message() {
+            let packet = SetTitleTextPacket::new(welcome_message);
+            let animation_packet = SetTitlesAnimationPacket::new(100, 10, 200);
+            let subtitle_packet = SetTitleTextPacket::new(welcome_message);
+            batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
+            batch.queue(|| PacketRegistry::SetTitleText(packet));
+            batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+        }
+    } else {
+        println!(
+            "send_title_text_packets: protocol_version is before 1.17, skipping title packets"
+        );
+        if let Some(welcome_message) = server_state.welcome_message() {
+            let packets =
+                SetTitlePacket::create_title(welcome_message, welcome_message, 100, 10, 200);
+            for packet in packets {
+                batch.queue(|| PacketRegistry::SetTitle(packet));
+            }
+            println!("send_title_text_packets: queued title packet for welcome message")
+        }
     }
 }
 
