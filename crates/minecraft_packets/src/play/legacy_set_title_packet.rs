@@ -10,13 +10,6 @@ pub struct LegacySetTitlePacket {
 }
 
 impl LegacySetTitlePacket {
-    fn new(title_action: LegacySetTitleAction, v1_11_action: LegacyV1_11SetTitleAction) -> Self {
-        Self {
-            action: title_action,
-            v1_11_action,
-        }
-    }
-
     pub fn set_title(title: &Component) -> Self {
         Self {
             action: LegacySetTitleAction::SetTitle {

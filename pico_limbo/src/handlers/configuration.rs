@@ -252,18 +252,15 @@ fn send_title_text_packets(
     server_state: &ServerState,
     protocol_version: ProtocolVersion,
 ) {
-    println!("send_title_text_packets: protocol_version = {protocol_version}");
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
-        if let Some(welcome_message) = server_state.welcome_message() {
+    if let Some(welcome_message) = server_state.welcome_message() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
             let packet = SetTitleTextPacket::new(welcome_message);
             let animation_packet = SetTitlesAnimationPacket::new(100, 10, 200);
             let subtitle_packet = SetTitleTextPacket::new(welcome_message);
             batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
             batch.queue(|| PacketRegistry::SetTitleText(packet));
             batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
-        }
-    } else {
-        if let Some(welcome_message) = server_state.welcome_message() {
+        } else {
             let packets =
                 LegacySetTitlePacket::create_title(welcome_message, welcome_message, 100, 10, 200);
             for packet in packets {
