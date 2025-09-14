@@ -77,7 +77,6 @@ pub enum ProtocolVersion {
 
     V1_10 = 210,
 
-    #[pvn(reports = V1_9)]
     V1_9_3 = 110,
     #[pvn(reports = V1_9)]
     V1_9_2 = 109,

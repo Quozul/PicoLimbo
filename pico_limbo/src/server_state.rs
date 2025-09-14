@@ -1,8 +1,8 @@
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::server::game_mode::GameMode;
-use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
+use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
