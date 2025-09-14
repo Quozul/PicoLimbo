@@ -31,6 +31,8 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
+use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
+use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
@@ -270,6 +272,27 @@ pub enum PacketRegistry {
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:boss_event")]
     BossBar(BossBarPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:set_title_text"
+    )]
+    SetTitleText(SetTitleTextPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:set_titles_animation"
+    )]
+    SetTitlesAnimation(SetTitlesAnimationPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:set_subtitle_text"
+    )]
+    SetSubtitleText(SetTitleTextPacket),
 }
 
 impl PacketHandler for PacketRegistry {
