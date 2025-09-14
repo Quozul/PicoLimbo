@@ -61,6 +61,9 @@
       },
       "minecraft:player_info_update": {
         "protocol_id": 56
+      },
+      "minecraft:legacy_set_title": {
+        "protocol_id": 69
       }
     },
     "serverbound": {

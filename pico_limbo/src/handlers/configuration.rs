@@ -12,12 +12,16 @@ use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
+use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
+use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
+use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
@@ -182,6 +186,8 @@ pub fn send_play_packets(
         send_boss_bar_packets(batch, server_state);
     }
     send_skin_packets(batch, client_state, server_state);
+    send_title_text_packets(batch, server_state, protocol_version);
+    send_action_bar_packet(batch, server_state, protocol_version);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
@@ -236,6 +242,45 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
             boss_bar.division,
         );
         batch.queue(|| PacketRegistry::BossBar(packet));
+    }
+}
+
+fn send_title_text_packets(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion,
+) {
+    if let Some(welcome_message) = server_state.welcome_message() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+            let packet = SetTitleTextPacket::new(welcome_message);
+            let animation_packet = SetTitlesAnimationPacket::new(100, 10, 200);
+            let subtitle_packet = SetTitleTextPacket::new(welcome_message);
+            batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
+            batch.queue(|| PacketRegistry::SetTitleText(packet));
+            batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+        } else {
+            let packets =
+                LegacySetTitlePacket::create_title(welcome_message, welcome_message, 100, 10, 200);
+            for packet in packets {
+                batch.queue(|| PacketRegistry::LegacySetTitle(packet));
+            }
+        }
+    }
+}
+
+fn send_action_bar_packet(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion,
+) {
+    if let Some(welcome_message) = server_state.welcome_message() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+            let packet = SetActionBarTextPacket::new(welcome_message);
+            batch.queue(|| PacketRegistry::SetActionBarText(packet));
+        } else {
+            let packet = LegacySetTitlePacket::action_bar(welcome_message);
+            batch.queue(|| PacketRegistry::LegacySetTitle(packet));
+        }
     }
 }
 
