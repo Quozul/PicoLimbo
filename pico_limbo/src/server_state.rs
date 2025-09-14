@@ -1,6 +1,6 @@
-use crate::configuration::boss_bar::{BossBarColorConfig, BossBarConfig, BossBarDivisionConfig};
+use crate::configuration::boss_bar::BossBarConfig;
 use crate::server::game_mode::GameMode;
-use minecraft_packets::play::boss_bar_packet::BossBarColor;
+use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
@@ -54,16 +54,11 @@ pub enum TabList {
     },
 }
 
-#[derive(Default)]
-pub enum BossBar {
-    #[default]
-    Disabled,
-    Enabled {
-        title: Component,
-        health: f32,
-        color: BossBarColor,
-        division: BossBarDivisionConfig,
-    },
+pub struct BossBar {
+    pub title: Component,
+    pub health: f32,
+    pub color: BossBarColor,
+    pub division: BossBarDivision,
 }
 
 #[derive(Default)]
@@ -86,7 +81,7 @@ pub struct ServerState {
     boundaries: Boundaries,
     tab_list: TabList,
     fetch_player_skins: bool,
-    boss_bar: BossBar,
+    boss_bar: Option<BossBar>,
 }
 
 impl ServerState {
@@ -186,8 +181,8 @@ impl ServerState {
         self.fetch_player_skins
     }
 
-    pub const fn boss_bar(&self) -> &BossBar {
-        &self.boss_bar
+    pub const fn boss_bar(&self) -> Option<&BossBar> {
+        self.boss_bar.as_ref()
     }
 
     pub fn increment(&self) {
@@ -218,7 +213,7 @@ pub struct ServerStateBuilder {
     boundaries: Boundaries,
     tab_list: TabList,
     fetch_player_skins: bool,
-    boss_bar: BossBar,
+    boss_bar: Option<BossBar>,
 }
 
 #[derive(Debug, Error)]
@@ -380,26 +375,13 @@ impl ServerStateBuilder {
         &mut self,
         boss_bar_config: BossBarConfig,
     ) -> Result<&mut Self, ServerStateBuilderError> {
-        if boss_bar_config.enabled {
-            let title = parse_mini_message(boss_bar_config.title.as_ref())?;
-            let color = match boss_bar_config.color {
-                BossBarColorConfig::Pink => BossBarColor::Pink,
-                BossBarColorConfig::Blue => BossBarColor::Blue,
-                BossBarColorConfig::Red => BossBarColor::Red,
-                BossBarColorConfig::Green => BossBarColor::Green,
-                BossBarColorConfig::Yellow => BossBarColor::Yellow,
-                BossBarColorConfig::Purple => BossBarColor::Purple,
-                BossBarColorConfig::White => BossBarColor::White,
-            };
-            self.boss_bar = BossBar::Enabled {
-                title,
-                health: boss_bar_config.health.clamp(0.0, 1.0),
-                color,
-                division: boss_bar_config.division,
-            };
-        } else {
-            self.boss_bar = BossBar::Disabled;
-        }
+        let title = parse_mini_message(boss_bar_config.title.as_ref())?;
+        self.boss_bar = Some(BossBar {
+            title,
+            health: boss_bar_config.health.clamp(0.0, 1.0),
+            color: boss_bar_config.color.into(),
+            division: boss_bar_config.division.into(),
+        });
         Ok(self)
     }
 
@@ -416,6 +398,7 @@ impl ServerStateBuilder {
             let world = time_operation("Loading world", || World::from_schematic(&schematic))?;
             Some(Arc::new(world))
         };
+
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
             spawn_dimension: self.dimension.unwrap_or_default(),

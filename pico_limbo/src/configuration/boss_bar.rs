@@ -1,3 +1,4 @@
+use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -77,6 +78,32 @@ impl<'de> Deserialize<'de> for BossBarDivisionConfig {
             _ => Err(Error::custom(format!(
                 "Invalid value for BossBarDivision: {value}"
             ))),
+        }
+    }
+}
+
+impl From<BossBarColorConfig> for BossBarColor {
+    fn from(value: BossBarColorConfig) -> Self {
+        match value {
+            BossBarColorConfig::Pink => Self::Pink,
+            BossBarColorConfig::Blue => Self::Blue,
+            BossBarColorConfig::Red => Self::Red,
+            BossBarColorConfig::Green => Self::Green,
+            BossBarColorConfig::Yellow => Self::Yellow,
+            BossBarColorConfig::Purple => Self::Purple,
+            BossBarColorConfig::White => Self::White,
+        }
+    }
+}
+
+impl From<BossBarDivisionConfig> for BossBarDivision {
+    fn from(value: BossBarDivisionConfig) -> Self {
+        match value {
+            BossBarDivisionConfig::NoDivision => Self::NoDivision,
+            BossBarDivisionConfig::SixNotches => Self::SixNotches,
+            BossBarDivisionConfig::TenNotches => Self::TenNotches,
+            BossBarDivisionConfig::TwelveNotches => Self::TwelveNotches,
+            BossBarDivisionConfig::TwentyNotches => Self::TwentyNotches,
         }
     }
 }

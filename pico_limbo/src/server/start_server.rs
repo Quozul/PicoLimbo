@@ -77,6 +77,10 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         )?;
     }
 
+    if cfg.boss_bar.enabled {
+        server_state_builder.boss_bar(cfg.boss_bar)?;
+    }
+
     server_state_builder
         .dimension(cfg.world.dimension.into())
         .time_world(cfg.world.time.into())
@@ -91,8 +95,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
         .tab_list(cfg.tab_list.header, cfg.tab_list.footer)?
-        .fetch_player_skins(cfg.fetch_player_skins)
-        .boss_bar(cfg.boss_bar)?;
+        .fetch_player_skins(cfg.fetch_player_skins);
 
     server_state_builder.build()
 }

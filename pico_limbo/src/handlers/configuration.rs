@@ -1,4 +1,3 @@
-use crate::configuration::boss_bar::BossBarDivisionConfig;
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
 use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
 use crate::server::batch::Batch;
@@ -6,10 +5,10 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::{BossBar, ServerState, TabList};
+use crate::server_state::{ServerState, TabList};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
-use minecraft_packets::play::boss_bar_packet::{BossBarDivision, BossBarPacket};
+use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
@@ -23,7 +22,7 @@ use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlay
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
-use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State, Uuid};
+use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
@@ -233,22 +232,13 @@ fn send_tab_list_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
 }
 
 fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
-    if let BossBar::Enabled {
-        title,
-        health,
-        color,
-        division,
-    } = server_state.boss_bar()
-    {
-        let uuid = Uuid::new_v4();
-        let division: BossBarDivision = match division {
-            BossBarDivisionConfig::NoDivision => BossBarDivision::NoDivision,
-            BossBarDivisionConfig::SixNotches => BossBarDivision::SixNotches,
-            BossBarDivisionConfig::TenNotches => BossBarDivision::TenNotches,
-            BossBarDivisionConfig::TwelveNotches => BossBarDivision::TwelveNotches,
-            BossBarDivisionConfig::TwentyNotches => BossBarDivision::TwentyNotches,
-        };
-        let packet = BossBarPacket::add(uuid, title.clone(), *health, *color, division, 0);
+    if let Some(boss_bar) = server_state.boss_bar() {
+        let packet = BossBarPacket::add(
+            &boss_bar.title,
+            boss_bar.health,
+            boss_bar.color,
+            boss_bar.division,
+        );
         batch.queue(|| PacketRegistry::BossBar(packet));
     }
 }
