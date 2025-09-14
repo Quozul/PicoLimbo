@@ -18,7 +18,7 @@ use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
-use minecraft_packets::play::set_title_packet::SetTitlePacket;
+use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -263,16 +263,12 @@ fn send_title_text_packets(
             batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
         }
     } else {
-        println!(
-            "send_title_text_packets: protocol_version is before 1.17, skipping title packets"
-        );
         if let Some(welcome_message) = server_state.welcome_message() {
             let packets =
-                SetTitlePacket::create_title(welcome_message, welcome_message, 100, 10, 200);
+                LegacySetTitlePacket::create_title(welcome_message, welcome_message, 100, 10, 200);
             for packet in packets {
-                batch.queue(|| PacketRegistry::SetTitle(packet));
+                batch.queue(|| PacketRegistry::LegacySetTitle(packet));
             }
-            println!("send_title_text_packets: queued title packet for welcome message")
         }
     }
 }

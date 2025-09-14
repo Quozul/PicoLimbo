@@ -16,7 +16,7 @@ pub mod set_entity_data_packet;
 pub mod set_player_position_and_rotation_packet;
 pub mod set_player_position_packet;
 pub mod set_subtitle_text_packet;
-pub mod set_title_packet;
+pub mod legacy_set_title_packet;
 pub mod set_title_text_packet;
 pub mod set_titles_animation;
 pub mod synchronize_player_position_packet;

@@ -2,14 +2,14 @@ use minecraft_protocol::prelude::*;
 use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
-pub struct SetTitlePacket {
-    action: SetTitleAction,
+pub struct LegacySetTitlePacket {
+    action: LegacySetTitleAction,
 }
 
-impl SetTitlePacket {
+impl LegacySetTitlePacket {
     pub fn set_title(title: &Component) -> Self {
         Self {
-            action: SetTitleAction::SetTitle {
+            action: LegacySetTitleAction::SetTitle {
                 title: title.clone(),
             },
         }
@@ -17,7 +17,7 @@ impl SetTitlePacket {
 
     pub fn set_subtitle(subtitle: &Component) -> Self {
         Self {
-            action: SetTitleAction::SetSubtitle {
+            action: LegacySetTitleAction::SetSubtitle {
                 subtitle: subtitle.clone(),
             },
         }
@@ -25,7 +25,7 @@ impl SetTitlePacket {
 
     pub fn set_action_bar(action_bar: &Component) -> Self {
         Self {
-            action: SetTitleAction::SetActionBar {
+            action: LegacySetTitleAction::SetActionBar {
                 action_bar: action_bar.clone(),
             },
         }
@@ -33,7 +33,7 @@ impl SetTitlePacket {
 
     pub fn set_times_and_display(fade_in: i32, stay: i32, fade_out: i32) -> Self {
         Self {
-            action: SetTitleAction::SetTimesAndDisplay {
+            action: LegacySetTitleAction::SetTimesAndDisplay {
                 fade_in,
                 stay,
                 fade_out,
@@ -43,13 +43,13 @@ impl SetTitlePacket {
 
     pub fn hide() -> Self {
         Self {
-            action: SetTitleAction::Hide {},
+            action: LegacySetTitleAction::Hide {},
         }
     }
 
     pub fn reset() -> Self {
         Self {
-            action: SetTitleAction::Reset {},
+            action: LegacySetTitleAction::Reset {},
         }
     }
 
@@ -69,7 +69,7 @@ impl SetTitlePacket {
 }
 
 #[allow(dead_code)]
-enum SetTitleAction {
+enum LegacySetTitleAction {
     SetTitle {
         title: Component,
     },
@@ -88,20 +88,20 @@ enum SetTitleAction {
     Reset {},
 }
 
-impl SetTitleAction {
+impl LegacySetTitleAction {
     fn type_id(&self) -> u8 {
         match self {
-            SetTitleAction::SetTitle { .. } => 0,
-            SetTitleAction::SetSubtitle { .. } => 1,
-            SetTitleAction::SetActionBar { .. } => 2,
-            SetTitleAction::SetTimesAndDisplay { .. } => 3,
-            SetTitleAction::Hide {} => 4,
-            SetTitleAction::Reset {} => 5,
+            LegacySetTitleAction::SetTitle { .. } => 0,
+            LegacySetTitleAction::SetSubtitle { .. } => 1,
+            LegacySetTitleAction::SetActionBar { .. } => 2,
+            LegacySetTitleAction::SetTimesAndDisplay { .. } => 3,
+            LegacySetTitleAction::Hide {} => 4,
+            LegacySetTitleAction::Reset {} => 5,
         }
     }
 }
 
-impl EncodePacket for SetTitleAction {
+impl EncodePacket for LegacySetTitleAction {
     fn encode(
         &self,
         writer: &mut BinaryWriter,
@@ -109,16 +109,16 @@ impl EncodePacket for SetTitleAction {
     ) -> Result<(), BinaryWriterError> {
         self.type_id().encode(writer, protocol_version)?;
         match self {
-            SetTitleAction::SetTitle { title } => {
+            LegacySetTitleAction::SetTitle { title } => {
                 title.encode(writer, protocol_version)?;
             }
-            SetTitleAction::SetSubtitle { subtitle } => {
+            LegacySetTitleAction::SetSubtitle { subtitle } => {
                 subtitle.encode(writer, protocol_version)?;
             }
-            SetTitleAction::SetActionBar { action_bar } => {
+            LegacySetTitleAction::SetActionBar { action_bar } => {
                 action_bar.encode(writer, protocol_version)?;
             }
-            SetTitleAction::SetTimesAndDisplay {
+            LegacySetTitleAction::SetTimesAndDisplay {
                 fade_in,
                 stay,
                 fade_out,
@@ -127,10 +127,10 @@ impl EncodePacket for SetTitleAction {
                 stay.encode(writer, protocol_version)?;
                 fade_out.encode(writer, protocol_version)?;
             }
-            SetTitleAction::Hide {} => {
+            LegacySetTitleAction::Hide {} => {
                 // Nothing to encode
             }
-            SetTitleAction::Reset {} => {
+            LegacySetTitleAction::Reset {} => {
                 // Nothing to encode
             }
         }
