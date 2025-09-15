@@ -9,22 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Teleport player back to the spawn when they go bellow the world boundaries
-- Time can now be configured in the configuration file
-- Tab list header and footer customization
-- Player now shows up in the tab list
-- Added support for player skins
-- Added boss bar (1.9+)
-- Support for server icon
-- Network compression
+- Player teleportation system when falling below world boundaries with configurable minimum Y position and teleport message
+- Time configuration for all versions with lock time for 1.21.5+ clients
+- Tab list header/footer (1.8+)
+- Player shows up in the tab list
+- Player skins (1.8+)
+- Boss bar (1.9+)
+- Configurable server icon
+- Network compression options
+- MiniMessage formatting support for MOTD and welcome messages
 
 ### Changed
 
-- Message of the day and welcome message now accept MiniMessage formatting
-- Remove limit for maximum view distance
-- Spawn position is now a stable world setting
-- Format for the forwarding configuration changed (refer to the docs)
-- Spawn dimension setting was renamed to dimension and moved to the world section
+- Removed maximum view distance limit
+- Spawn position is now a persistent world setting
+- Updated forwarding configuration format (see documentation)
+- Renamed and relocated spawn dimension setting to `world.dimension`
 
 ### Fixed
 
