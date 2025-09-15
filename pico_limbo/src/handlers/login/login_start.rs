@@ -10,6 +10,7 @@ use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_protocol::prelude::ProtocolVersion;
 use rand::Rng;
 
@@ -51,6 +52,13 @@ pub fn fire_login_success(
     game_profile: GameProfile,
 ) -> Result<(), PacketHandlerError> {
     let protocol_version = client_state.protocol_version();
+
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_8)
+        && let Some(threshold) = server_state.compression_threshold()
+    {
+        let packet = SetCompressionPacket::new(i32::try_from(threshold)?);
+        batch.queue(|| PacketRegistry::SetCompression(packet));
+    }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_2) {
         let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());

@@ -43,6 +43,9 @@
       },
       "minecraft:login_disconnect": {
         "protocol_id": 0
+      },
+      "minecraft:login_compression": {
+        "protocol_id": 3
       }
     },
     "serverbound": {

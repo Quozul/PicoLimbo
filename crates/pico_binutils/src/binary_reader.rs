@@ -27,6 +27,12 @@ impl<'a> BinaryReader<'a> {
         total_len.saturating_sub(current_pos)
     }
 
+    pub fn remaining_bytes(&mut self) -> Result<Vec<u8>, BinaryReaderError> {
+        let mut buf = vec![0u8; self.remaining()];
+        self.read_bytes(&mut buf)?;
+        Ok(buf)
+    }
+
     pub fn position(&self) -> u64 {
         self.0.position()
     }

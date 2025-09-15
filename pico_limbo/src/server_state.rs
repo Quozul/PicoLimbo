@@ -8,6 +8,7 @@ use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingErr
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
 use std::fs::File;
 use std::io::Read;
+use std::num::TryFromIntError;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -73,6 +74,7 @@ pub struct ServerState {
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
+    compression_threshold: Option<usize>,
 }
 
 impl ServerState {
@@ -180,6 +182,10 @@ impl ServerState {
         self.fav_icon.clone()
     }
 
+    pub const fn compression_threshold(&self) -> Option<usize> {
+        self.compression_threshold
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -210,6 +216,7 @@ pub struct ServerStateBuilder {
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
+    compression_threshold: Option<usize>,
 }
 
 #[derive(Debug, Error)]
@@ -226,6 +233,8 @@ pub enum ServerStateBuilderError {
     InvalidSpawnPosition,
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    TryFromInt(#[from] TryFromIntError),
 }
 
 impl ServerStateBuilder {
@@ -373,6 +382,18 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn enable_compression(
+        &mut self,
+        compression_threshold: i32,
+    ) -> Result<&mut Self, ServerStateBuilderError> {
+        self.compression_threshold = if compression_threshold >= 0 {
+            Some(usize::try_from(compression_threshold)?)
+        } else {
+            None
+        };
+        Ok(self)
+    }
+
     pub fn boss_bar(
         &mut self,
         boss_bar_config: EnabledBossBarConfig,
@@ -421,6 +442,7 @@ impl ServerStateBuilder {
             fetch_player_skins: self.fetch_player_skins,
             boss_bar: self.boss_bar,
             fav_icon: self.fav_icon,
+            compression_threshold: self.compression_threshold,
         })
     }
 }

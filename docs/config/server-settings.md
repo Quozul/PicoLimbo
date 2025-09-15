@@ -84,3 +84,29 @@ fetch_player_skins = true
 
 > [!WARNING]
 > If you expect a large amount of player to connect to your limbo server instance, your server's IP may get black listed from Mojang API.
+
+## Compression Threshold
+
+How big should a packet be to be compressed. Only available for 1.8+ clients.
+
+:::code-group
+```toml [server.toml]
+compression_threshold = 256
+```
+:::
+
+Compress all the packets by setting a value of `0`.
+
+:::code-group
+```toml [server.toml]
+compression_threshold = 0
+```
+:::
+
+You can disable the compression by setting a negative value.
+
+:::code-group
+```toml [server.toml]
+compression_threshold = -1
+```
+:::

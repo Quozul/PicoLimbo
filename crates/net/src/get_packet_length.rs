@@ -1,4 +1,5 @@
 use minecraft_protocol::prelude::*;
+use std::num::TryFromIntError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,6 +10,10 @@ pub enum PacketLengthParseError {
     PacketTooLarge,
     #[error(transparent)]
     BinaryReader(#[from] BinaryReaderError),
+    #[error("var int is too long")]
+    VarIntTooLong,
+    #[error(transparent)]
+    TryFromInt(#[from] TryFromIntError),
 }
 
 pub const MAXIMUM_PACKET_LENGTH: usize = 2_097_151;
@@ -18,7 +23,7 @@ pub fn get_packet_length(bytes: &[u8]) -> Result<usize, PacketLengthParseError> 
     let packet_length = reader.read::<VarInt>()?.inner();
 
     if packet_length >= 0 {
-        let packet_length = packet_length as usize;
+        let packet_length = usize::try_from(packet_length)?;
 
         if packet_length > MAXIMUM_PACKET_LENGTH {
             Err(PacketLengthParseError::PacketTooLarge)

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 minecraft_protocol = { path = "../minecraft_protocol" }
+flate2 = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 

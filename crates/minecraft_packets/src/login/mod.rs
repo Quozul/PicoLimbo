@@ -6,5 +6,6 @@ pub mod login_acknowledged_packet;
 pub mod login_disconnect_packet;
 pub mod login_state_packet;
 pub mod login_success_packet;
+pub mod set_compression_packet;
 
 pub use data::property::Property;

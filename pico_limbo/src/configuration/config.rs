@@ -48,6 +48,8 @@ pub struct Config {
     /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
 
+    pub compression_threshold: i32,
+
     pub tab_list: TabListConfig,
 
     pub fetch_player_skins: bool,
@@ -68,6 +70,7 @@ impl Default for Config {
             tab_list: TabListConfig::default(),
             fetch_player_skins: false,
             boss_bar: BossBarConfig::default(),
+            compression_threshold: -1,
         }
     }
 }

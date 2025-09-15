@@ -931,6 +931,7 @@ dependencies = [
 name = "net"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "minecraft_protocol",
  "thiserror",
  "tokio",
@@ -1168,7 +1169,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]

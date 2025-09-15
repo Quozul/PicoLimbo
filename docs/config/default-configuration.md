@@ -16,6 +16,8 @@ default_game_mode = "spectator"
 hardcore = false
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
+# Enable compression
+compression_threshold = -1
 
 [forwarding]
 # Disable forwarding
