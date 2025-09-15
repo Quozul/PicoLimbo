@@ -30,6 +30,7 @@ use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
 use std::num::TryFromIntError;
+use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
     fn handle(
@@ -179,6 +180,7 @@ pub fn send_play_packets(
     send_skin_packets(batch, client_state, server_state);
     send_boss_bar_packets(batch, server_state);
     send_title_text_packets(batch, server_state, protocol_version);
+    send_action_bar_packet(batch, server_state, protocol_version);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
@@ -266,6 +268,22 @@ fn send_title_text_packets(
             for packet in packets {
                 batch.queue(|| PacketRegistry::LegacySetTitle(packet));
             }
+        }
+    }
+}
+
+fn send_action_bar_packet(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion
+) {
+    if let Some(welcome_message) = server_state.welcome_message() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+            let packet = SetActionBarTextPacket::new(welcome_message);
+            batch.queue(|| PacketRegistry::SetActionBarText(packet));
+        } else {
+            let packet = LegacySetTitlePacket::action_bar(welcome_message);
+            batch.queue(|| PacketRegistry::LegacySetTitle(packet));
         }
     }
 }

@@ -27,6 +27,7 @@ use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
+use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
@@ -301,6 +302,9 @@ pub enum PacketRegistry {
         name = "minecraft:legacy_set_title"
     )]
     LegacySetTitle(LegacySetTitlePacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:set_action_bar_text")]
+    SetActionBarText(SetActionBarTextPacket),
 }
 
 impl PacketHandler for PacketRegistry {
