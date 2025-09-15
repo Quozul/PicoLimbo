@@ -73,6 +73,15 @@
       },
       "minecraft:boss_event": {
         "protocol_id": 13
+      },
+      "minecraft:set_subtitle_text": {
+        "protocol_id": 87
+      },
+      "minecraft:set_title_text": {
+        "protocol_id": 89
+      },
+      "minecraft:set_titles_animation": {
+        "protocol_id": 90
       }
     },
     "serverbound": {
