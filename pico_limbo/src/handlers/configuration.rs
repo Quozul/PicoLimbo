@@ -172,9 +172,13 @@ pub fn send_play_packets(
     let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
     batch.queue(|| PacketRegistry::UpdateTime(packet));
 
-    send_tab_list_packets(batch, server_state);
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
+        send_tab_list_packets(batch, server_state);
+    }
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_9) {
+        send_boss_bar_packets(batch, server_state);
+    }
     send_skin_packets(batch, client_state, server_state);
-    send_boss_bar_packets(batch, server_state);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
