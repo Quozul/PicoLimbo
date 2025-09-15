@@ -122,7 +122,7 @@ impl From<TryFromIntError> for PacketProcessingError {
 impl From<PacketStreamError> for PacketProcessingError {
     fn from(value: PacketStreamError) -> Self {
         match value {
-            PacketStreamError::IoError(ref e)
+            PacketStreamError::Io(ref e)
                 if e.kind() == std::io::ErrorKind::UnexpectedEof
                     || e.kind() == std::io::ErrorKind::ConnectionReset =>
             {
@@ -166,8 +166,14 @@ async fn process_packet(
 
     let mut stream = batch.into_stream();
     while let Some(pending_packet) = stream.next().await {
+        let enable_compression = matches!(pending_packet, PacketRegistry::SetCompression(..));
         let raw_packet = pending_packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
+        if enable_compression {
+            let threshold = server_state.read().await.compression_threshold();
+            let mut packet_stream = client_data.stream().await;
+            packet_stream.set_compression(threshold);
+        }
     }
 
     if let Some(reason) = client_state.should_kick() {

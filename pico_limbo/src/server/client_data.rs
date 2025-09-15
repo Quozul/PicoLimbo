@@ -43,8 +43,7 @@ impl ClientData {
 
     // Stream
 
-    #[inline]
-    async fn stream(&self) -> tokio::sync::MutexGuard<'_, PacketStream<TcpStream>> {
+    pub async fn stream(&self) -> tokio::sync::MutexGuard<'_, PacketStream<TcpStream>> {
         self.packet_stream.lock().await
     }
 

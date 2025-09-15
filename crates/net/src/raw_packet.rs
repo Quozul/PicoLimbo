@@ -24,7 +24,7 @@ impl RawPacket {
         if data.is_empty() {
             Err(RawPacketError::InvalidPacketLength)
         } else {
-            Ok(RawPacket { data })
+            Ok(Self { data })
         }
     }
 
@@ -51,7 +51,7 @@ impl RawPacket {
         Ok(Self { data })
     }
 
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         self.data.len()
     }
 
@@ -65,6 +65,10 @@ impl RawPacket {
         } else {
             &self.data[1..]
         }
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.data
     }
 }
 

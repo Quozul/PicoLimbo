@@ -16,6 +16,7 @@ use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
@@ -129,6 +130,13 @@ pub enum PacketRegistry {
         name = "minecraft:login_disconnect"
     )]
     LoginDisconnect(LoginDisconnectPacket),
+
+    #[protocol_id(
+        state = "login",
+        bound = "clientbound",
+        name = "minecraft:login_compression"
+    )]
+    SetCompression(SetCompressionPacket),
 
     // Configuration packets
     #[protocol_id(
