@@ -172,10 +172,7 @@ impl EncodePacket for LegacySetTitleAction {
                 stay.encode(writer, protocol_version)?;
                 fade_out.encode(writer, protocol_version)?;
             }
-            LegacySetTitleAction::Hide {} => {
-                // Nothing to encode
-            }
-            LegacySetTitleAction::Reset {} => {
+            LegacySetTitleAction::Hide {} | LegacySetTitleAction::Reset {} => {
                 // Nothing to encode
             }
         }
@@ -206,10 +203,7 @@ impl EncodePacket for LegacyV1_11SetTitleAction {
                 stay.encode(writer, protocol_version)?;
                 fade_out.encode(writer, protocol_version)?;
             }
-            LegacyV1_11SetTitleAction::Hide {} => {
-                // Nothing to encode
-            }
-            LegacyV1_11SetTitleAction::Reset {} => {
+            LegacyV1_11SetTitleAction::Hide {} | LegacyV1_11SetTitleAction::Reset {} => {
                 // Nothing to encode
             }
         }
