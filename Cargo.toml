@@ -20,6 +20,7 @@ members = [
     "crates/protocol_version_macro",
     "crates/registries",
     "crates/registries_data",
+    "data/generator",
     "pico_limbo",
 ]
 
@@ -48,3 +49,4 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 uuid = { version = "1.19.0", features = ["v4"] }
 walkdir = "2.5.0"
+tempfile = "3.24.0"

@@ -1,0 +1,13 @@
+[package]
+name = "data_generator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../../crates/protocol_version" }
+anyhow = { workspace = true }
+serde = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["fs", "process"] }
+futures = { workspace = true }
+tempfile = { workspace = true }
