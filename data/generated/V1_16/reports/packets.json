@@ -70,6 +70,9 @@
       },
       "minecraft:boss_event": {
         "protocol_id": 12
+      },
+      "minecraft:level_chunk_with_light": {
+        "protocol_id": 33
       }
     },
     "serverbound": {

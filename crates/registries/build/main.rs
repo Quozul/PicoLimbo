@@ -226,8 +226,7 @@ fn main() -> anyhow::Result<()> {
             dimensions_arms.push(arm);
         }
 
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let void_biome_index = get_the_void_index(protocol_version, &data_location);
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
             let plains_biome_index = get_the_void_index(protocol_version, &data_location);
             let arm = quote! {
                 ProtocolVersion::#version_ident => { Some(#plains_biome_index) },

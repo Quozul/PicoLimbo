@@ -68,6 +68,6 @@ fn write<T: EncodePacket>(element: &T, save_path: &Path) -> anyhow::Result<()> {
     let mut writer = BinaryWriter::new();
     element.encode(&mut writer, ProtocolVersion::latest())?;
     let bytes = writer.into_inner();
-    std::fs::write(save_path, bytes)?;
+    fs::write(save_path, bytes)?;
     Ok(())
 }

@@ -59,7 +59,7 @@ pub fn load_block_data() -> anyhow::Result<Vec<BlocksReport>> {
             ProtocolVersion::from_str(&name)
                 .ok()
                 .and_then(|protocol_version| {
-                    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+                    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
                         let version_path = entry.path();
                         let blocks_report_path = version_path.join("reports").join("blocks.json");
                         println!("cargo:rerun-if-changed={}", blocks_report_path.display());
