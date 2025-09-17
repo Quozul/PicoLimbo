@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spawn position is now a persistent world setting
 - Updated forwarding configuration format (see documentation)
 - Renamed and relocated spawn dimension setting to `world.dimension`
+- Schematic is sent to clients starting from 1.16
 
 ### Fixed
 

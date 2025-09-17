@@ -12,11 +12,13 @@ pub struct ChunkData {
 
     /// Biome IDs, ordered by x then z then y, in 4×4×4 blocks.
     /// Up until 1.17.1 included
-    #[pvn(..757)]
-    biomes: LengthPaddedVec<VarInt>,
+    #[pvn(751..757)]
+    v1_16_2_biomes: LengthPaddedVec<VarInt>,
 
-    /// Size of Data in bytes!
-    /// LengthPaddedVec prefixes with the number of elements!
+    /// This array is always of length 1024
+    #[pvn(..751)]
+    biomes: Vec<i32>,
+
     data: EncodeAsBytes<Vec<ChunkSection>>,
     block_entities: LengthPaddedVec<BlockEntity>,
 }
@@ -40,7 +42,8 @@ impl ChunkData {
                 height_map_type: VarInt::new(4), // Motionblock type
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
-            biomes: LengthPaddedVec::new(vec![VarInt::new(127); 1024]),
+            v1_16_2_biomes: LengthPaddedVec::new(vec![VarInt::new(context.biome_index); 1024]),
+            biomes: vec![context.biome_index; 1024],
             data: EncodeAsBytes::new(vec![
                 ChunkSection::void(context.biome_index);
                 section_count as usize
@@ -85,8 +88,12 @@ impl ChunkData {
                 height_map_type: VarInt::new(4), // Motionblock type
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
+            v1_16_2_biomes: LengthPaddedVec::new(vec![
+                VarInt::new(chunk_context.biome_index);
+                1024
+            ]),
+            biomes: vec![chunk_context.biome_index; 1024],
             data: EncodeAsBytes::new(data),
-            biomes: LengthPaddedVec::default(),
             block_entities: LengthPaddedVec::default(),
         }
     }

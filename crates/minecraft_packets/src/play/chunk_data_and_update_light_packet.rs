@@ -11,10 +11,20 @@ pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,
 
+    #[pvn(..755)]
+    full_chunk: bool,
+
+    /// If false, the client will recalculate lighting based on the old/new chunk data
+    #[pvn(..751)]
+    ignore_old_data: bool,
+
     /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
     /// Up until 1.17.1 included
-    #[pvn(..757)]
-    primary_bit_mask: LengthPaddedVec<i64>,
+    #[pvn(755..757)]
+    v1_17_primary_bit_mask: LengthPaddedVec<u64>, // availableSections bitset?
+
+    #[pvn(..755)]
+    primary_bit_mask: VarInt,
 
     chunk_data: ChunkData,
 
@@ -33,7 +43,10 @@ impl ChunkDataAndUpdateLightPacket {
         Self {
             chunk_x: context.chunk_x,
             chunk_z: context.chunk_z,
-            primary_bit_mask: LengthPaddedVec::default(),
+            v1_17_primary_bit_mask: LengthPaddedVec::default(),
+            primary_bit_mask: VarInt::default(),
+            full_chunk: true,
+            ignore_old_data: false,
             chunk_data: ChunkData::void(context),
             trust_edges: true,
             v1_18_light_data: LightData::default(),
@@ -44,10 +57,14 @@ impl ChunkDataAndUpdateLightPacket {
         chunk_context: VoidChunkContext,
         schematic_context: &WorldContext,
     ) -> Self {
+        let all_sections_bit_mask = 0b1111_1111_1111_1111i32;
         Self {
             chunk_x: chunk_context.chunk_x,
             chunk_z: chunk_context.chunk_z,
-            primary_bit_mask: LengthPaddedVec::default(),
+            v1_17_primary_bit_mask: LengthPaddedVec::new(vec![all_sections_bit_mask as u64]),
+            primary_bit_mask: VarInt::new(all_sections_bit_mask),
+            full_chunk: true,
+            ignore_old_data: false,
             chunk_data: ChunkData::from_schematic(chunk_context, schematic_context),
             trust_edges: true,
             v1_18_light_data: LightData::new_with_level(15),

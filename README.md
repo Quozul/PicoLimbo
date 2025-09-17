@@ -65,7 +65,7 @@ MOTD, and more. [View configuration docs](https://picolimbo.quozul.dev/config/in
 
 ### 🌍 Schematic World (Experimental)
 
-Load a custom world from a schematic file and customize spawn location (1.19+ only).
+Load a custom world from a schematic file and customize spawn location (1.16+ only).
 
 ![PicoLimbo.png](docs/public/PicoLimbo.png)  
 *The screenshot shows just a few of the supported Minecraft versions.*
