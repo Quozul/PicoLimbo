@@ -2,7 +2,7 @@ use blocks_report::{BlocksReportId, InternalId, ReportIdMapping, get_block_id};
 use minecraft_protocol::prelude::*;
 use pico_structures::prelude::{Palette, pack_direct};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub enum PaletteContainer {
     SingleValued {
@@ -15,13 +15,13 @@ pub enum PaletteContainer {
         bits_per_entry: u8,
         /// Mapping of IDs in the registry to indices of this array.
         palette: LengthPaddedVec<VarInt>,
-        data: Vec<u64>,
+        data: LengthPaddedVec<u64>,
     },
     /// Registry IDs are stored directly as entries in the Data Array.
     Direct {
         /// Should be 15 for blocks or 6 for biomes
         bits_per_entry: u8,
-        data: Vec<u64>,
+        data: LengthPaddedVec<u64>,
     },
 }
 
@@ -62,7 +62,7 @@ impl PaletteContainer {
                 Self::Indirect {
                     bits_per_entry: *bits_per_entry,
                     palette: LengthPaddedVec::new(global_palette),
-                    data: packed_data.clone(),
+                    data: LengthPaddedVec::new(packed_data.clone()),
                 }
             }
             Palette::Direct { internal_data } => {
@@ -72,7 +72,7 @@ impl PaletteContainer {
 
                 Self::Direct {
                     bits_per_entry: BITS_PER_ENTRY,
-                    data: pack_direct(global_data_iter, BITS_PER_ENTRY),
+                    data: LengthPaddedVec::new(pack_direct(global_data_iter, BITS_PER_ENTRY)),
                 }
             }
         }
@@ -103,21 +103,21 @@ impl EncodePacket for PaletteContainer {
             } => {
                 bits_per_entry.encode(writer, protocol_version)?;
                 palette.encode(writer, protocol_version)?;
-                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
-                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
+                if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5) {
+                    data.inner().encode(writer, protocol_version)?;
+                } else {
+                    data.encode(writer, protocol_version)?;
                 }
-                data.encode(writer, protocol_version)?;
             }
             PaletteContainer::Direct {
                 bits_per_entry,
                 data,
             } => {
                 bits_per_entry.encode(writer, protocol_version)?;
-                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
-                    VarInt::new(data.len() as i32).encode(writer, protocol_version)?;
-                }
-                for &long_value in data {
-                    long_value.encode(writer, protocol_version)?;
+                if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5) {
+                    data.inner().encode(writer, protocol_version)?;
+                } else {
+                    data.encode(writer, protocol_version)?;
                 }
             }
         }

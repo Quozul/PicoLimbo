@@ -25,7 +25,7 @@ use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
-use registries::{Registries, get_dimension_index, get_registries, get_void_biome_index};
+use registries::{Registries, get_dimension_index, get_plains_biome_index, get_registries};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -180,7 +180,7 @@ pub fn send_play_packets(
     }
     send_skin_packets(batch, client_state, server_state);
 
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
             // Send Game Event
             let packet = GameEventPacket::start_waiting_for_chunks(0.0);
@@ -188,15 +188,17 @@ pub fn send_play_packets(
         }
 
         // Send Chunk Data and Update Light
-        let biome_id = get_void_biome_index(protocol_version).ok_or_else(|| {
+        let biome_id = get_plains_biome_index(protocol_version).ok_or_else(|| {
             PacketHandlerError::InvalidState(format!(
-                "Cannot find void biome index for version {protocol_version}"
+                "Cannot find plains biome index for version {protocol_version}"
             ))
         })?;
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
-        let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
-        batch.queue(|| PacketRegistry::SetCenterChunk(packet));
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+            let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
+            batch.queue(|| PacketRegistry::SetCenterChunk(packet));
+        }
 
         let iter = CircularChunkPacketIterator::new(
             center_chunk,

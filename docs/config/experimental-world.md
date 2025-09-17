@@ -3,7 +3,7 @@
 PicoLimbo includes experimental world features that allow you to customize the spawn environment and load a custom structure using schematic files.
 
 > [!WARNING]
-> This feature is work in progress and **only works with Minecraft client version 1.19 and above** as of now. It may
+> This feature is work in progress and **only works with Minecraft client version 1.16 and above** as of now. It may
 > cause crashes or instability. While bug reports are welcome, expect issues and test thoroughly before production use.
 
 ![Limbo's loaded from a schematic file](/world.png)
