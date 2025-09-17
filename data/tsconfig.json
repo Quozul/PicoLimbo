@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-        "lib": ["ESNext", "DOM"],
-        "target": "ES2024",
-        "erasableSyntaxOnly": true,
-        "allowImportingTsExtensions": true
-    }
-}
