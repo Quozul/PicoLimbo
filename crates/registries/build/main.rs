@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut registries_arms = Vec::new();
     let mut dimensions_arms = Vec::new();
-    let mut void_biome_arms = Vec::new();
+    let mut plains_biome_arms = Vec::new();
 
     for &protocol_version in &canonical_versions {
         let registry_format = RegistryFormat::from_version(protocol_version);
@@ -228,10 +228,11 @@ fn main() -> anyhow::Result<()> {
 
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
             let void_biome_index = get_the_void_index(protocol_version, &data_location);
+            let plains_biome_index = get_the_void_index(protocol_version, &data_location);
             let arm = quote! {
-                ProtocolVersion::#version_ident => { Some(#void_biome_index) },
+                ProtocolVersion::#version_ident => { Some(#plains_biome_index) },
             };
-            void_biome_arms.push(arm);
+            plains_biome_arms.push(arm);
         }
     }
 
@@ -253,9 +254,9 @@ fn main() -> anyhow::Result<()> {
         }
 
         #[allow(clippy::match_same_arms)]
-        pub const fn get_pregenerated_void_biome_index(protocol_version: minecraft_protocol::prelude::ProtocolVersion) -> Option<usize> {
+        pub const fn get_pregenerated_plains_biome_index(protocol_version: minecraft_protocol::prelude::ProtocolVersion) -> Option<usize> {
                match protocol_version {
-                #(#void_biome_arms)*
+                #(#plains_biome_arms)*
                 _ => None,
             }
         }
