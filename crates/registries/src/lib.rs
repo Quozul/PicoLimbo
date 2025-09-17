@@ -42,9 +42,9 @@ pub fn get_dimension_index(protocol_version: ProtocolVersion, dimension: Dimensi
     None
 }
 
-pub fn get_void_biome_index(protocol_version: ProtocolVersion) -> Option<i32> {
+pub fn get_plains_biome_index(protocol_version: ProtocolVersion) -> Option<i32> {
     let data_version = protocol_version.data();
-    if let Some(value) = get_pregenerated_void_biome_index(data_version)
+    if let Some(value) = get_pregenerated_plains_biome_index(data_version)
         && let Ok(value) = i32::try_from(value)
     {
         return Some(value);
