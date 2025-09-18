@@ -169,10 +169,12 @@ async fn process_packet(
         let enable_compression = matches!(pending_packet, PacketRegistry::SetCompression(..));
         let raw_packet = pending_packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
-        if enable_compression {
-            let threshold = server_state.read().await.compression_threshold();
+        if enable_compression
+            && let Some(compression_settings) = server_state.read().await.compression_settings()
+        {
             let mut packet_stream = client_data.stream().await;
-            packet_stream.set_compression(threshold);
+            packet_stream
+                .set_compression(compression_settings.threshold, compression_settings.level);
         }
     }
 

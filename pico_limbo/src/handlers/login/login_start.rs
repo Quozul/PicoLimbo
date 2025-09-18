@@ -54,8 +54,9 @@ pub fn fire_login_success(
     let protocol_version = client_state.protocol_version();
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8)
-        && let Some(threshold) = server_state.compression_threshold()
+        && let Some(compression_settings) = server_state.compression_settings()
     {
+        let threshold = compression_settings.threshold;
         let packet = SetCompressionPacket::new(i32::try_from(threshold)?);
         batch.queue(|| PacketRegistry::SetCompression(packet));
     }

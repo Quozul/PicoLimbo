@@ -9,12 +9,18 @@ use std::num::TryFromIntError;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+#[derive(Clone)]
+struct CompressionSettings {
+    threshold: usize,
+    level: Compression,
+}
+
 pub struct PacketStream<Stream>
 where
     Stream: AsyncWrite + AsyncRead + Unpin,
 {
     stream: Stream,
-    compression_threshold: Option<usize>,
+    compression_settings: Option<CompressionSettings>,
 }
 
 impl<Stream> PacketStream<Stream>
@@ -25,7 +31,7 @@ where
     pub const fn new(stream: Stream) -> Self {
         Self {
             stream,
-            compression_threshold: None,
+            compression_settings: None,
         }
     }
 
@@ -34,13 +40,16 @@ where
     /// - `Some(threshold)`: Enables compression for packets with a payload size
     ///   greater than or equal to `threshold`.
     /// - `None`: Disables compression entirely.
-    pub const fn set_compression(&mut self, threshold: Option<usize>) {
-        self.compression_threshold = threshold;
+    pub fn set_compression(&mut self, threshold: usize, level: u32) {
+        self.compression_settings = Some(CompressionSettings {
+            threshold,
+            level: Compression::new(level.clamp(0, 9)),
+        });
     }
 
     /// Reads a single packet from the stream, handling decompression if enabled.
     pub async fn read_packet(&mut self) -> Result<RawPacket, PacketStreamError> {
-        match self.compression_threshold {
+        match self.compression_settings {
             None => self.read_uncompressed_packet().await,
             Some(_) => self.read_compressed_packet_format().await,
         }
@@ -48,10 +57,14 @@ where
 
     /// Writes a single packet to the stream, handling compression if enabled.
     pub async fn write_packet(&mut self, packet: RawPacket) -> Result<(), PacketStreamError> {
-        match self.compression_threshold {
+        match self.compression_settings() {
             None => self.write_uncompressed_packet(packet).await,
-            Some(threshold) => self.write_compressed_packet_format(packet, threshold).await,
+            Some(ref settings) => self.write_compressed_packet_format(packet, settings).await,
         }
+    }
+
+    fn compression_settings(&self) -> Option<CompressionSettings> {
+        self.compression_settings.clone()
     }
 
     /// Gets a mutable reference to the underlying stream.
@@ -116,21 +129,23 @@ where
     async fn write_compressed_packet_format(
         &mut self,
         packet: RawPacket,
-        threshold: usize,
+        compression_settings: &CompressionSettings,
     ) -> Result<(), PacketStreamError> {
         let uncompressed_payload = packet.bytes();
         let uncompressed_len = uncompressed_payload.len();
 
-        let (data_length_bytes, final_payload) = if uncompressed_len >= threshold {
-            // Compress the packet
-            let data_length = VarInt::new(i32::try_from(uncompressed_len)?).to_bytes();
-            let compressed_payload = compress_data(uncompressed_payload)?;
-            (data_length, compressed_payload)
-        } else {
-            // Don't compress, send with data length 0
-            let data_length = VarInt::new(0).to_bytes();
-            (data_length, uncompressed_payload.to_vec())
-        };
+        let (data_length_bytes, final_payload) =
+            if uncompressed_len >= compression_settings.threshold {
+                // Compress the packet
+                let data_length = VarInt::new(i32::try_from(uncompressed_len)?).to_bytes();
+                let compressed_payload =
+                    compress_data(uncompressed_payload, compression_settings.level)?;
+                (data_length, compressed_payload)
+            } else {
+                // Don't compress, send with data length 0
+                let data_length = VarInt::new(0).to_bytes();
+                (data_length, uncompressed_payload.to_vec())
+            };
 
         let packet_length = data_length_bytes.len() + final_payload.len();
         let packet_length_bytes = VarInt::new(i32::try_from(packet_length)?).to_bytes();
@@ -203,8 +218,8 @@ pub enum PacketStreamError {
     TryFromInt(#[from] TryFromIntError),
 }
 
-fn compress_data(data: &[u8]) -> io::Result<Vec<u8>> {
-    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+fn compress_data(data: &[u8], compression_level: Compression) -> io::Result<Vec<u8>> {
+    let mut encoder = ZlibEncoder::new(Vec::new(), compression_level);
     encoder.write_all(data)?;
     encoder.finish()
 }
