@@ -8,6 +8,7 @@ Snapshots and pre-releases are not supported.
 
 | Game Version  | Protocol version | Supported          |
 |---------------|------------------|--------------------|
+| 1.21.9        | 773              | :white_check_mark: |
 | 1.21.7-1.21.8 | 772              | :white_check_mark: |
 | 1.21.6        | 771              | :white_check_mark: |
 | 1.21.5        | 770              | :white_check_mark: |

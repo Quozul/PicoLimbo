@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for 1.21.9
 - Player teleportation system when falling below world boundaries with configurable minimum Y position and teleport message
 - Time configuration for all versions with lock time for 1.21.5+ clients
 - Tab list header/footer (1.8+)

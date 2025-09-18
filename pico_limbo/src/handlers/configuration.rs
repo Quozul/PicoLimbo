@@ -149,7 +149,7 @@ pub fn send_play_packets(
     let (x, y, z) = server_state.spawn_position();
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         // Send Set Default Spawn Position
-        let packet = SetDefaultSpawnPositionPacket::new(x, y, z);
+        let packet = SetDefaultSpawnPositionPacket::new(dimension, x, y, z);
         batch.queue(|| PacketRegistry::SetDefaultSpawnPosition(packet));
     }
 
