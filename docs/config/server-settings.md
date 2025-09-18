@@ -71,10 +71,10 @@ hardcore = true
 ```
 :::
 
-## Fetch Player Skins
+## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  
-If set to false, the server will still send the skins if the limbo server is running behind a proxy in online mode.
+If set to false, the server **will still send the skins** if the limbo server is running behind a proxy in online mode.
 
 :::code-group
 ```toml [server.toml]
@@ -84,29 +84,3 @@ fetch_player_skins = true
 
 > [!WARNING]
 > If you expect a large amount of player to connect to your limbo server instance, your server's IP may get black listed from Mojang API.
-
-## Compression Threshold
-
-How big should a packet be to be compressed. Only available for 1.8+ clients.
-
-:::code-group
-```toml [server.toml]
-compression_threshold = 256
-```
-:::
-
-Compress all the packets by setting a value of `0`.
-
-:::code-group
-```toml [server.toml]
-compression_threshold = 0
-```
-:::
-
-You can disable the compression by setting a negative value.
-
-:::code-group
-```toml [server.toml]
-compression_threshold = -1
-```
-:::

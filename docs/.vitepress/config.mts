@@ -35,13 +35,14 @@ export default defineConfig({
 				text: "Configuration",
 				items: [
 					{ text: "Introduction", link: "/config/introduction.html" },
-					{ text: "Server Settings", link: "/config/server-settings.html" },
-                    { text: "World Configuration", link: "/config/world.html" },
+					{ text: "Boss Bar", link: "/config/boss-bar.html" },
+					{ text: "Compression", link: "/config/compression.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
+					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
+					{ text: "Server Settings", link: "/config/server-settings.html" },
 					{ text: "Tab List", link: "/config/tab-list.html" },
-                    { text: "Boss Bar", link: "/config/boss-bar.html" },
-					{ text: "Experimental World Features", link: "/config/experimental-world.html" },
+					{ text: "World", link: "/config/world.html" },
 					{
 						text: "Default Configuration",
 						link: "/config/default-configuration.html",
