@@ -31,7 +31,9 @@ impl EntityMetadata {
     fn get_index(&self, protocol_version: ProtocolVersion) -> u8 {
         match self {
             Self::SkinParts(_) => {
-                if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+                if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_9) {
+                    16
+                } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
                     17
                 } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_15) {
                     16
@@ -45,7 +47,7 @@ impl EntityMetadata {
             }
             Self::End => {
                 if protocol_version.is_after_inclusive(ProtocolVersion::V1_9) {
-                    0xff
+                    255
                 } else {
                     127
                 }
