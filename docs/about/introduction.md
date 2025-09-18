@@ -9,8 +9,9 @@ all Minecraft versions from 1.7.2 through the [latest supported version](./suppo
 ## What is a Limbo Server?
 
 A **limbo server** is a minimal, often void-world server environment used to temporarily hold players instead of
-disconnecting them. It serves as a "waiting room" for players during:
+disconnecting them. Some example use cases includes:
 
+- Authentication server
 - Server restarts or maintenance
 - AFK (Away From Keyboard) management
 - Lobby overflow situations
@@ -18,13 +19,6 @@ disconnecting them. It serves as a "waiting room" for players during:
 
 Unlike traditional servers, limbo servers are designed to be **resource-efficient**, maintaining player connections
 without consuming significant system resources.
-
-## Why Choose PicoLimbo?
-
-- **Performance**: Leverages Rust's async runtime for maximum efficiency
-- **Compatibility**: Supports all Minecraft versions from 1.7.2 through
-  the [latest supported version](./supported-versions) natively
-- **Flexibility**: Highly configurable with a simple TOML configuration file
 
 ## What PicoLimbo Will Not Do
 
@@ -39,12 +33,6 @@ without consuming significant system resources.
 
 ## Why PicoLimbo Over Other Alternatives?
 
-While there are other limbo server solutions available, PicoLimbo stands out with:
-
-- **True multi-version support** (no need for compatibility layers)
-- **Exceptional performance** with 0% CPU usage when idle
-- **Modern proxy integration** with Velocity and BungeeCord
-- **Rust-based reliability** and memory safety
-- **Active development** with regular updates
-
-Join our [Discord community](https://discord.gg/M2a9dxJPRy) for support and discussions!
+* Compare supported features in our [comparison table](./comparison).
+* PicoLimbo is also extremely lightweight, as shown in [the benchmarks](./benchmarks).
+* Every feature can be customized via the [configuration file](/config/introduction).

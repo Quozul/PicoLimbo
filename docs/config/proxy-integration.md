@@ -1,11 +1,13 @@
 # Proxy Integration
 
+Representing the `[forwarding]` section in `server.toml`.
+
 PicoLimbo is compatible with popular Minecraft proxies, such as Velocity and BungeeCord, to manage player connections and routing.
 
 > [!TIP]
 > Velocity is recommended for most server networks. Velocity is modern and more secure compared to BungeeCord/BungeeGuard.
 
-## Velocity Modern Forwarding
+## Velocity Modern Forwarding <Badge type="warning" text="1.13+" />
 
 Velocity Modern Forwarding is a method of forwarding player connections using the Velocity proxy. To enable Velocity Modern Forwarding, set the following configuration options:
 
