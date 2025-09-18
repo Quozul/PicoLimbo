@@ -1,10 +1,11 @@
-# World Configuration
+# Schematic Loading <Badge type="warning" text="1.16+" />
 
 PicoLimbo includes experimental world features that allow you to customize the spawn environment and load a custom structure using schematic files.
 
 > [!WARNING]
 > This feature is work in progress and **only works with Minecraft client version 1.16 and above** as of now. It may
 > cause crashes or instability. While bug reports are welcome, expect issues and test thoroughly before production use.
+> Work on getting it to work for older version is still in progress.
 
 ![Limbo's loaded from a schematic file](/world.png)
 > Loading of Loohp's Limbo [spawn.schem](https://github.com/LOOHP/Limbo/blob/master/spawn.schem) file inside PicoLimbo.
@@ -55,52 +56,5 @@ Configure how many chunks are sent to clients. Defaults to 2. The view distance 
 ```toml [server.toml] {2}
 [world.experimental]
 view_distance = 2
-```
-:::
-
-## Lock Time
-
-Set to `false` to prevent the client from ticking the time. This only works with Minecraft client version 1.21.5 and above.
-
-:::code-group
-```toml [server.toml] {2}
-[world.experimental]
-lock_time = false
-```
-:::
-
-## World Boundaries
-
-Control player movement by setting a minimum Y coordinate. When players fall below this level, they'll be teleported back to spawn and receive a configurable message.
-
-### Minimum Y Position
-
-Set the lowest Y coordinate players can reach before being teleported back to spawn. Defaults to -64 (Minecraft's default world bottom).
-
-:::code-group
-```toml [server.toml] {2-3}
-[world.boundaries]
-enabled = true
-min_y_pos = -64
-```
-:::
-
-### Minimum Y Message
-
-Customize the message players receive when they fall below the minimum Y position and are teleported back to spawn. Supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
-
-:::code-group
-```toml [server.toml] {2}
-[world.boundaries]
-teleport_message = "<red>You have reached the bottom of the world.</red>"
-```
-:::
-
-The message can be disabled by setting an empty string:
-
-:::code-group
-```toml [server.toml] {2}
-[world.boundaries]
-teleport_message = ""
 ```
 :::

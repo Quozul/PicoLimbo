@@ -12,7 +12,7 @@ hero:
       link: https://github.com/Quozul/PicoLimbo/releases/latest
     - theme: alt
       text: Documentation
-      link: /about/introduction/
+      link: /about/introduction.html
     - theme: alt
       text: Join Discord
       link: https://discord.gg/M2a9dxJPRy
@@ -31,7 +31,7 @@ features:
   - icon: 🔀
     title: Built-in Proxy Support
     details: "Integrates with all major Minecraft proxies: Velocity, BungeeCord and BungeeGuard authentication."
-    link: /config/proxy-integration
+    link: /config/proxy-integration.html
     linkText: Read the documentation
   - icon: 👤
     title: Skin Support
@@ -39,7 +39,7 @@ features:
   - icon: ⚙️
     title: Highly Configurable
     details: "Customize your server using a simple TOML configuration file."
-    link: /config/introduction/
+    link: /config/introduction.html
     linkText: Read the documentation
   - icon: 🌍
     title: Schematic World (Experimental)

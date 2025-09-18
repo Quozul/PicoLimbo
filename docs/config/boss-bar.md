@@ -1,40 +1,39 @@
-# Boss Bar Settings
+# Boss Bar <Badge type="warning" text="1.9+" />
 
 Representing the `[boss_bar]` section in `server.toml`.
 
-> ![NOTE]
-> The boss bar will only show to clients after 1.9 (included).
+## Enabled
 
-## Boss Bar Title
-
-The title text displayed at the top of the player list.
-The title supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
+When setting `enabled` to `true` you must ensure all the properties are defined as well.
 
 :::code-group
 ```toml [server.toml] {2}
 [boss_bar]
+enabled = true
+color = "blue"
+division = 0
+health = 1.0
 title = "<blue><bold>Welcome to PicoLimbo!</bold></blue>"
 ```
 :::
 
-## Boss Bar Health
-
-The health of the boss bar, represented as a float between `0.0` (empty) and `1.0` (full).
+You can disable the tab list feature completely by setting `enabled` to `false`. In this case, you don't have to define the properties.
 
 :::code-group
 ```toml [server.toml] {2}
 [boss_bar]
-health = 1.0
+enabled = false
 ```
 :::
 
-## Boss Bar Color
+## Color
 
 The color of the boss bar.
 
 :::code-group
-```toml [server.toml] {2}
+```toml [server.toml] {3}
 [boss_bar]
+enabled = true
 color = "blue"
 ```
 :::
@@ -50,13 +49,14 @@ white
 yellow
 ```
 
-## Boss Bar Divisions
+## Division
 
 The number of divisions in the boss bar, affecting its visual segmentation.
 
 :::code-group
-```toml [server.toml] {2}
+```toml [server.toml] {3}
 [boss_bar]
+enabled = true
 division = 0
 ```
 :::
@@ -69,3 +69,28 @@ Possible values:
 12  - 12 segments
 20  - 20 segments
 ```
+
+## Health
+
+The health of the boss bar, represented as a float between `0.0` (empty) and `1.0` (full).
+
+:::code-group
+```toml [server.toml] {3}
+[boss_bar]
+enabled = true
+health = 1.0
+```
+:::
+
+## Title
+
+The title text displayed at the top of the player list.
+The title supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
+
+:::code-group
+```toml [server.toml] {3}
+[boss_bar]
+enabled = true
+title = "<blue><bold>Welcome to PicoLimbo!</bold></blue>"
+```
+:::

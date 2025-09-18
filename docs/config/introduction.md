@@ -2,14 +2,21 @@
 
 Welcome to the PicoLimbo configuration documentation. This guide will help you customize your server to meet your specific needs.
 
+## Version Support
+
+Some features display a badge with a version number, such as <Badge type="warning" text="1.13+" />. This indicates the minimum client version required by the feature.
+
+If no badge is present, the feature is supported across all versions.
+
 ## Configuration Overview
 
 PicoLimbo uses a simple TOML configuration file to manage all server settings. The configuration is organized into several sections:
 
-- [Server Settings](./server-settings) - Core server configuration
-- [Server List Settings](./server-list) - Customize your server's appearance in the Minecraft client
-- [Forwarding Proxy Settings](./proxy-integration) - Configure proxy integration
-- [Tab List](./tab-list) - Configure the tab list
 - [Boss Bar](./boss-bar) - Customize the boss bar
-- [World Settings](./world) - Configure the world
-- [Experimental World Settings](./experimental-world) - Experimental features for world customization
+- [Compression](./compression) - Configure the compression
+- [Proxy Integration](./proxy-integration) - Configure proxy integration
+- [Schematic Loading](./schematic-loading) - Experimental features for world customization
+- [Server List](./server-list) - Customize your server's appearance in the Minecraft client
+- [Server Settings](./server-settings) - Core server configuration
+- [Tab List](./tab-list) - Configure the tab list
+- [World](./world) - Configure the world
