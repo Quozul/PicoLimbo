@@ -1,3 +1,4 @@
+pub mod block_pos;
 pub mod chunk_context;
 pub mod chunk_data;
 pub mod chunk_section;
