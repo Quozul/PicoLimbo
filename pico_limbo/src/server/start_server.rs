@@ -100,7 +100,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.world.spawn_position)
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
-        .enable_compression(cfg.compression_threshold)?
+        .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins);
 
     server_state_builder.build()

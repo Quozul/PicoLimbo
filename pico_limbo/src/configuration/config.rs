@@ -1,4 +1,5 @@
 use crate::configuration::boss_bar::BossBarConfig;
+use crate::configuration::compression::CompressionConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -48,7 +49,7 @@ pub struct Config {
     /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
 
-    pub compression_threshold: i32,
+    pub compression: CompressionConfig,
 
     pub tab_list: TabListConfig,
 
@@ -70,7 +71,7 @@ impl Default for Config {
             tab_list: TabListConfig::default(),
             fetch_player_skins: false,
             boss_bar: BossBarConfig::default(),
-            compression_threshold: -1,
+            compression: CompressionConfig::default(),
         }
     }
 }

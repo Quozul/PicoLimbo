@@ -16,6 +16,12 @@ use std::time::Duration;
 use thiserror::Error;
 use tracing::debug;
 
+#[derive(Clone)]
+pub struct CompressionSettings {
+    pub threshold: usize,
+    pub level: u32,
+}
+
 #[derive(PartialEq, Eq, Default)]
 pub enum ForwardingMode {
     #[default]
@@ -74,7 +80,7 @@ pub struct ServerState {
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
-    compression_threshold: Option<usize>,
+    compression_settings: Option<CompressionSettings>,
 }
 
 impl ServerState {
@@ -182,8 +188,8 @@ impl ServerState {
         self.fav_icon.clone()
     }
 
-    pub const fn compression_threshold(&self) -> Option<usize> {
-        self.compression_threshold
+    pub const fn compression_settings(&self) -> Option<&CompressionSettings> {
+        self.compression_settings.as_ref()
     }
 
     pub fn increment(&self) {
@@ -216,7 +222,7 @@ pub struct ServerStateBuilder {
     fetch_player_skins: bool,
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
-    compression_threshold: Option<usize>,
+    compression_settings: Option<CompressionSettings>,
 }
 
 #[derive(Debug, Error)]
@@ -384,10 +390,13 @@ impl ServerStateBuilder {
 
     pub fn enable_compression(
         &mut self,
-        compression_threshold: i32,
+        threshold: i32,
+        level: u32,
     ) -> Result<&mut Self, ServerStateBuilderError> {
-        self.compression_threshold = if compression_threshold >= 0 {
-            Some(usize::try_from(compression_threshold)?)
+        self.compression_settings = if threshold >= 0 {
+            let threshold = usize::try_from(threshold)?;
+            let level = level.clamp(0, 9);
+            Some(CompressionSettings { threshold, level })
         } else {
             None
         };
@@ -442,7 +451,7 @@ impl ServerStateBuilder {
             fetch_player_skins: self.fetch_player_skins,
             boss_bar: self.boss_bar,
             fav_icon: self.fav_icon,
-            compression_threshold: self.compression_threshold,
+            compression_settings: self.compression_settings,
         })
     }
 }
