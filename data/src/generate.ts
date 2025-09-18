@@ -28,6 +28,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
+    "1.21.9-pre1",
     "1.21.7",
     "1.21.6",
     "1.21.5",

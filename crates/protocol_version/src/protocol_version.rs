@@ -5,6 +5,8 @@ use std::cmp::PartialEq;
 #[repr(i32)]
 pub enum ProtocolVersion {
     #[default]
+    #[pvn(data = V1_21_6)]
+    V1_21_9 = 773,
     #[pvn(reports = V1_21_6, data = V1_21_6)]
     V1_21_7 = 772,
     V1_21_6 = 771,
