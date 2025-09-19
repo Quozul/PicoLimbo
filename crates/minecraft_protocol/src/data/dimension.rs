@@ -16,14 +16,8 @@ impl Dimension {
     pub const ALL_DIMENSIONS: &'static [Dimension] =
         &[Dimension::Overworld, Dimension::Nether, Dimension::End];
 
-    /// Old i8 dimension ID (pre-1.9 client)
     pub const fn legacy_i8(self) -> i8 {
         self as i8
-    }
-
-    /// Old i32 dimension ID (1.9+ but not VarInt)
-    pub const fn legacy_i32(self) -> i32 {
-        self.legacy_i8() as i32
     }
 
     /// 1.20.5 dimension_type registry index
@@ -93,13 +87,6 @@ mod tests {
         assert_eq!(Dimension::Overworld.legacy_i8(), 0);
         assert_eq!(Dimension::Nether.legacy_i8(), -1);
         assert_eq!(Dimension::End.legacy_i8(), 1);
-    }
-
-    #[test]
-    fn test_legacy_i32() {
-        assert_eq!(Dimension::Overworld.legacy_i32(), 0);
-        assert_eq!(Dimension::Nether.legacy_i32(), -1);
-        assert_eq!(Dimension::End.legacy_i32(), 1);
     }
 
     #[test]

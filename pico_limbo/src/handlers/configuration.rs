@@ -45,7 +45,7 @@ fn build_login_packet(
     spawn_dimension: Dimension,
 ) -> Result<LoginPacket, PacketHandlerError> {
     if protocol_version.between_inclusive(ProtocolVersion::V1_7_2, ProtocolVersion::V1_15_2) {
-        Ok(LoginPacket::with_dimension(spawn_dimension))
+        Ok(LoginPacket::with_dimension_pre_v1_16(spawn_dimension))
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
         // We only need the registries here from 1.16 up to 1.20 included
         match get_registries(protocol_version, spawn_dimension) {
@@ -64,7 +64,7 @@ fn build_login_packet(
         }
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_20_2, ProtocolVersion::V1_20_3)
     {
-        Ok(LoginPacket::with_dimension(spawn_dimension))
+        Ok(LoginPacket::with_dimension_post_v1_20_2(spawn_dimension))
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         get_dimension_index(protocol_version, spawn_dimension).map_or_else(
             || {
@@ -134,9 +134,12 @@ pub fn send_play_packets(
     };
 
     let packet = build_login_packet(protocol_version, dimension)?
-        .set_game_mode(game_mode.value())
-        .set_view_distance(view_distance)
-        .set_hardcore(protocol_version, server_state.is_hardcore());
+        .set_game_mode(
+            protocol_version,
+            game_mode.value(),
+            server_state.is_hardcore(),
+        )
+        .set_view_distance(view_distance);
     batch.queue(|| PacketRegistry::Login(Box::new(packet)));
 
     let (x, y, z) = server_state.spawn_position();
