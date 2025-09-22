@@ -13,7 +13,7 @@ impl GameProfile {
     pub fn new(username: &str, uuid: Uuid, textures: Option<Property>) -> Self {
         let username = username
             .get(..16)
-            .map_or(username.to_string(), std::string::ToString::to_string);
+            .map_or_else(|| username.to_string(), std::string::ToString::to_string);
         Self {
             username,
             uuid,

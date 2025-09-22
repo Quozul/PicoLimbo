@@ -102,10 +102,10 @@ impl ClientState {
     }
 
     pub fn get_username(&self) -> String {
-        self.game_profile()
-            .map_or(Self::ANONYMOUS.to_owned(), |profile| {
-                profile.username().to_owned()
-            })
+        self.game_profile().map_or_else(
+            || Self::ANONYMOUS.to_owned(),
+            |profile| profile.username().to_owned(),
+        )
     }
 
     pub fn get_unique_id(&self) -> Uuid {
