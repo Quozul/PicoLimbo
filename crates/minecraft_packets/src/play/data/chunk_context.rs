@@ -1,4 +1,4 @@
-use blocks_report::ReportIdMapping;
+use blocks_report::BlocksReportId;
 use minecraft_protocol::prelude::{Coordinates, Dimension};
 use pico_structures::prelude::World;
 use std::sync::Arc;
@@ -13,5 +13,5 @@ pub struct VoidChunkContext {
 pub struct WorldContext {
     pub world: Arc<World>,
     pub paste_origin: Coordinates,
-    pub report_id_mapping: Arc<ReportIdMapping>,
+    pub report_id_mapping: Arc<Vec<BlocksReportId>>,
 }
