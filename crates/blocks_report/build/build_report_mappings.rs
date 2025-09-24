@@ -1,9 +1,15 @@
 use crate::blocks_report_loader::BlocksReport;
 use crate::internal_mapping::sort_internal_properties;
 use blocks_report_data::internal_mapping::{InternalId, InternalMapping, InternalProperties};
-use blocks_report_data::report_mapping::{BlocksReportId, ReportMapping};
+use blocks_report_data::report_mapping::{BlocksReportId, ReportIdMapping};
 use minecraft_protocol::prelude::LengthPaddedVec;
+use protocol_version::protocol_version::ProtocolVersion;
 use std::collections::HashMap;
+
+pub struct ReportMapping {
+    pub protocol_version: ProtocolVersion,
+    pub mapping: ReportIdMapping,
+}
 
 pub fn build_report_mappings(
     blocks_reports: &[BlocksReport],

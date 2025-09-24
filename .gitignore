@@ -4,3 +4,4 @@
 /docs/.vitepress/dist
 /target
 node_modules/
+*.zst

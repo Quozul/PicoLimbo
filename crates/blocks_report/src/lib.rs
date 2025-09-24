@@ -26,13 +26,13 @@ pub fn load_internal_mapping() -> Result<InternalMapping, BinaryReaderError> {
 
 pub fn get_block_report_id_mapping(
     protocol_version: ProtocolVersion,
-) -> Result<ReportIdMapping, BlockReportIdMappingError> {
-    get_blocks_reports(protocol_version)
+) -> Result<Vec<BlocksReportId>, BlockReportIdMappingError> {
+    Ok(get_blocks_reports(protocol_version)?.into_inner())
 }
 
 pub fn get_block_id(
-    report_mapping: &ReportIdMapping,
+    report_mapping: &[BlocksReportId],
     internal_id: InternalId,
 ) -> Option<BlocksReportId> {
-    report_mapping.inner().get(internal_id as usize).copied()
+    report_mapping.get(internal_id as usize).copied()
 }

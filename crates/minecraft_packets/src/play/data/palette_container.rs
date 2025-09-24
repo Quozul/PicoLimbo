@@ -1,4 +1,4 @@
-use blocks_report::{BlocksReportId, InternalId, ReportIdMapping, get_block_id};
+use blocks_report::{BlocksReportId, InternalId, get_block_id};
 use minecraft_protocol::prelude::*;
 use pico_structures::prelude::{Palette, pack_direct};
 
@@ -37,7 +37,7 @@ impl PaletteContainer {
         }
     }
 
-    pub fn from_palette(palette: &Palette, report_id_mapping: &ReportIdMapping) -> Self {
+    pub fn from_palette(palette: &Palette, report_id_mapping: &[BlocksReportId]) -> Self {
         const AIR_ID: BlocksReportId = 0;
 
         let map_id = |internal_id: &InternalId| -> i32 {

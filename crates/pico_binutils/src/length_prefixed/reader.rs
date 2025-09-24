@@ -1,5 +1,6 @@
 use crate::binary_reader::ReadBytes;
 use crate::prelude::{BinaryReader, BinaryReaderError, Prefixed};
+use std::io::Read;
 use tracing::warn;
 
 pub trait ReadLengthPrefix: Sized + ReadBytes {
@@ -13,20 +14,18 @@ where
     #[inline]
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryReaderError> {
         let length = L::read_to_usize(reader)?;
-        let mut string_bytes = Vec::with_capacity(length);
-        for _ in 0..length {
-            string_bytes.push(reader.read()?);
-        }
-        Ok(Prefixed::new(
-            String::from_utf8(string_bytes).unwrap_or_else(|_| {
+        let mut bytes = vec![0u8; length];
+        reader.0.read_exact(&mut bytes)?;
+        Ok(Prefixed::new(String::from_utf8(bytes).unwrap_or_else(
+            |_| {
                 warn!(
                     "Invalid string of length {} ended at index {}",
                     length,
                     reader.position()
                 );
                 create_repeated_string(length, '�')
-            }),
-        ))
+            },
+        )))
     }
 }
 
