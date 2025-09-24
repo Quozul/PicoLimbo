@@ -3,16 +3,19 @@ use crate::palette::Palette;
 use crate::prelude::Schematic;
 use blocks_report::InternalId;
 use minecraft_protocol::prelude::Coordinates;
-use std::collections::HashMap;
 use std::mem;
 use thiserror::Error;
+
+const UNSEEN_ID_INDEX: u32 = u32::MAX;
+
+const LOOKUP_TABLE_SIZE: usize = InternalId::MAX as usize + 1;
 
 /// A helper struct to hold reusable buffers for palette generation.
 /// This avoids re-allocating the HashMap and palette Vec for every chunk.
 /// The main block data is now handled on the stack.
 pub struct ChunkProcessor {
     palette: Vec<InternalId>,
-    id_to_palette_index: HashMap<InternalId, u32>,
+    id_to_palette_index: Vec<u32>,
 }
 
 #[derive(Debug, Error)]
@@ -27,17 +30,17 @@ impl ChunkProcessor {
     pub fn new() -> Self {
         Self {
             palette: Vec::with_capacity(Self::MAX_PALETTED_SIZE),
-            id_to_palette_index: HashMap::with_capacity(Self::MAX_PALETTED_SIZE),
+            id_to_palette_index: vec![UNSEEN_ID_INDEX; LOOKUP_TABLE_SIZE],
         }
     }
 
-    /// Resets the internal buffers to be ready for the next chunk.
     fn prepare_for_next_chunk(&mut self) {
         self.palette.clear();
-        self.id_to_palette_index.clear();
+        for &id in &self.palette {
+            self.id_to_palette_index[id as usize] = UNSEEN_ID_INDEX;
+        }
     }
 
-    /// Processes a 16x16x16 section using a stack-allocated array for block data.
     pub fn process_section(
         &mut self,
         schematic: &Schematic,
@@ -72,13 +75,13 @@ impl ChunkProcessor {
                         first_id = Some(internal_id);
                     }
 
-                    self.id_to_palette_index
-                        .entry(internal_id)
-                        .or_insert_with(|| {
-                            let index = self.palette.len() as u32;
-                            self.palette.push(internal_id);
-                            index
-                        });
+                    let palette_index_slot = &mut self.id_to_palette_index[internal_id as usize];
+
+                    if *palette_index_slot == UNSEEN_ID_INDEX {
+                        let new_index = self.palette.len() as u32;
+                        self.palette.push(internal_id);
+                        *palette_index_slot = new_index;
+                    }
                 }
             }
         }
@@ -96,7 +99,9 @@ impl ChunkProcessor {
         if bits_per_entry <= 8 {
             let bits_per_entry = bits_per_entry.clamp(4, 8) as u8;
 
-            let paletted_data = block_ids.iter().map(|id| self.id_to_palette_index[id]);
+            let paletted_data = block_ids
+                .iter()
+                .map(|&id| self.id_to_palette_index[id as usize]);
             let packed_data = pack_direct(paletted_data, bits_per_entry);
 
             Ok(Palette::paletted(
