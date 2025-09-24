@@ -118,7 +118,7 @@ where
             return Err(PacketLengthParseError::PacketTooLarge.into());
         }
 
-        let packet_length_bytes = VarInt::new(i32::try_from(packet_length)?).to_bytes();
+        let packet_length_bytes = VarInt::new(i32::try_from(packet_length)?).to_bytes()?;
         self.stream.write_all(&packet_length_bytes).await?;
         self.stream.write_all(packet.bytes()).await?;
         self.stream.flush().await?;
@@ -137,18 +137,18 @@ where
         let (data_length_bytes, final_payload) =
             if uncompressed_len >= compression_settings.threshold {
                 // Compress the packet
-                let data_length = VarInt::new(i32::try_from(uncompressed_len)?).to_bytes();
+                let data_length = VarInt::new(i32::try_from(uncompressed_len)?).to_bytes()?;
                 let compressed_payload =
                     compress_data(uncompressed_payload, compression_settings.level)?;
                 (data_length, compressed_payload)
             } else {
                 // Don't compress, send with data length 0
-                let data_length = VarInt::new(0).to_bytes();
+                let data_length = VarInt::new(0).to_bytes()?;
                 (data_length, uncompressed_payload.to_vec())
             };
 
         let packet_length = data_length_bytes.len() + final_payload.len();
-        let packet_length_bytes = VarInt::new(i32::try_from(packet_length)?).to_bytes();
+        let packet_length_bytes = VarInt::new(i32::try_from(packet_length)?).to_bytes()?;
 
         self.stream.write_all(&packet_length_bytes).await?;
         self.stream.write_all(&data_length_bytes).await?;
