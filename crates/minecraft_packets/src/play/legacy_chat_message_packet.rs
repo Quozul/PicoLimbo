@@ -19,10 +19,18 @@ pub struct LegacyChatMessagePacket {
 }
 
 impl LegacyChatMessagePacket {
-    pub fn component(component: &Component) -> Self {
+    pub fn system(component: &Component) -> Self {
         Self {
             content: component.to_json(),
             position: 1,
+            sender: UuidAsString::default(),
+        }
+    }
+
+    pub fn game_info(component: &Component) -> Self {
+        Self {
+            content: component.to_legacy(),
+            position: 2,
             sender: UuidAsString::default(),
         }
     }

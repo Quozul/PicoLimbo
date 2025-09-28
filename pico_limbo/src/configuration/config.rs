@@ -4,6 +4,7 @@ use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
 use crate::configuration::tab_list::TabListConfig;
+use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::WorldConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -42,6 +43,8 @@ pub struct Config {
     /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
 
+    pub action_bar: String,
+
     /// Sets the default game mode for players
     /// Valid values are: "survival", "creative", "adventure" or "spectator"
     pub default_game_mode: GameModeConfig,
@@ -56,6 +59,8 @@ pub struct Config {
     pub fetch_player_skins: bool,
 
     pub boss_bar: BossBarConfig,
+
+    pub title: TitleConfig,
 }
 
 impl Default for Config {
@@ -64,6 +69,7 @@ impl Default for Config {
             bind: "0.0.0.0:25565".into(),
             server_list: ServerListConfig::default(),
             welcome_message: "Welcome to PicoLimbo!".into(),
+            action_bar: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
             default_game_mode: GameModeConfig::default(),
             world: WorldConfig::default(),
@@ -72,6 +78,7 @@ impl Default for Config {
             fetch_player_skins: false,
             boss_bar: BossBarConfig::default(),
             compression: CompressionConfig::default(),
+            title: TitleConfig::default(),
         }
     }
 }

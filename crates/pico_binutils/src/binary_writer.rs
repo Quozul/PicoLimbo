@@ -15,6 +15,8 @@ pub enum BinaryWriterError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     TryFromInt(#[from] TryFromIntError),
+    #[error("This operation is unsupported")]
+    UnsupportedOperation,
 }
 
 impl BinaryWriter {
