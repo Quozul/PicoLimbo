@@ -30,7 +30,7 @@
   "variables": [
     {
       "name": "Version",
-      "description": "Specifies the Git tag of the release to install (e.g., `v1.4.0+mc1.21.8`). When set to `latest` (or left unset), the installer selects the newest stable release.",
+      "description": "Specifies the Git tag of the release to install (e.g., `v1.6.0+mc1.21.9`). When set to `latest` (or left unset), the installer selects the newest stable release.",
       "env_variable": "VERSION",
       "default_value": "latest",
       "user_viewable": true,
