@@ -9,6 +9,7 @@ If it is not generated, you can copy the following code block in your configurat
 bind = "0.0.0.0:25565"
 # Welcome message sent to players after spawning
 welcome_message = "Welcome to PicoLimbo!"
+action_bar = "Welcome to PicoLimbo!"
 # Sets the game mode for new players
 # Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
@@ -79,5 +80,13 @@ color = "blue"
 # Boss bar style
 # Allowed values: 0, 6, 10, 12 or 20, representing the number of segments
 division = 0
+
+[title]
+enabled = true
+title = "<bold>Welcome!</bold>"
+subtitle = "Enjoy your stay"
+fade_in = 10
+stay = 70
+fade_out = 20
 ```
 :::

@@ -58,9 +58,17 @@ pub struct BossBar {
     pub division: BossBarDivision,
 }
 
+pub enum TitleType {
+    Title(Component),
+    Subtitle(Component),
+    Both {
+        title: Component,
+        subtitle: Component,
+    },
+}
+
 pub struct Title {
-    pub content: Component,
-    pub sub_content: Component,
+    pub content: TitleType,
     pub fade_in: i32,
     pub stay: i32,
     pub fade_out: i32,
@@ -448,18 +456,29 @@ impl ServerStateBuilder {
     pub fn title(
         &mut self,
         title: &str,
-        sub_title: &str,
+        subtitle: &str,
         fade_in: i32,
         stay: i32,
         fade_out: i32,
     ) -> Result<&mut Self, ServerStateBuilderError> {
-        self.title = Some(Title {
-            content: parse_mini_message(title)?,
-            sub_content: parse_mini_message(sub_title)?,
-            fade_in,
-            stay,
-            fade_out,
-        });
+        let title_type = match (
+            optional_mini_message(title)?,
+            optional_mini_message(subtitle)?,
+        ) {
+            (Some(title), Some(subtitle)) => Some(TitleType::Both { title, subtitle }),
+            (Some(title), None) => Some(TitleType::Title(title)),
+            (None, Some(subtitle)) => Some(TitleType::Subtitle(subtitle)),
+            (None, None) => None,
+        };
+
+        if let Some(title_type) = title_type {
+            self.title = Some(Title {
+                content: title_type,
+                fade_in,
+                stay,
+                fade_out,
+            });
+        }
         Ok(self)
     }
 

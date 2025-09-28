@@ -86,7 +86,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     if let TitleConfig::Enabled(title) = cfg.title {
         server_state_builder.title(
             &title.title,
-            &title.sub_title,
+            &title.subtitle,
             title.fade_in,
             title.stay,
             title.fade_out,

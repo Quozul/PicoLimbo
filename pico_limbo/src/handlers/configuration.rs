@@ -5,7 +5,7 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::{ServerState, TabList, Title};
+use crate::server_state::{ServerState, TabList, Title, TitleType};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
@@ -251,8 +251,7 @@ fn send_title_text_packets(
     protocol_version: ProtocolVersion,
 ) {
     if let Some(Title {
-        content: title,
-        sub_content: sub_title,
+        content,
         fade_in,
         stay,
         fade_out,
@@ -261,17 +260,43 @@ fn send_title_text_packets(
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
             let animation_packet = SetTitlesAnimationPacket::new(*fade_in, *stay, *fade_out);
             batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
-            let title_packet = SetTitleTextPacket::new(title);
-            batch.queue(|| PacketRegistry::SetTitleText(title_packet));
-            let subtitle_packet = SetTitleTextPacket::new(sub_title);
-            batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+
+            match content {
+                TitleType::Title(title) => {
+                    let title_packet = SetTitleTextPacket::new(title);
+                    batch.queue(|| PacketRegistry::SetTitleText(title_packet));
+                }
+                TitleType::Subtitle(subtitle) => {
+                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+                }
+                TitleType::Both { title, subtitle } => {
+                    let title_packet = SetTitleTextPacket::new(title);
+                    batch.queue(|| PacketRegistry::SetTitleText(title_packet));
+                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+                }
+            }
         } else {
             let animation_packet = LegacySetTitlePacket::set_animation(*fade_in, *stay, *fade_out);
             batch.queue(|| PacketRegistry::LegacySetTitle(animation_packet));
-            let title_packet = LegacySetTitlePacket::set_title(title);
-            batch.queue(|| PacketRegistry::LegacySetTitle(title_packet));
-            let subtitle_packet = LegacySetTitlePacket::set_subtitle(sub_title);
-            batch.queue(|| PacketRegistry::LegacySetTitle(subtitle_packet));
+
+            match content {
+                TitleType::Title(title) => {
+                    let title_packet = LegacySetTitlePacket::set_title(title);
+                    batch.queue(|| PacketRegistry::LegacySetTitle(title_packet));
+                }
+                TitleType::Subtitle(subtitle) => {
+                    let subtitle_packet = LegacySetTitlePacket::set_subtitle(subtitle);
+                    batch.queue(|| PacketRegistry::LegacySetTitle(subtitle_packet));
+                }
+                TitleType::Both { title, subtitle } => {
+                    let title_packet = LegacySetTitlePacket::set_title(title);
+                    batch.queue(|| PacketRegistry::LegacySetTitle(title_packet));
+                    let subtitle_packet = LegacySetTitlePacket::set_subtitle(subtitle);
+                    batch.queue(|| PacketRegistry::LegacySetTitle(subtitle_packet));
+                }
+            }
         }
     }
 }

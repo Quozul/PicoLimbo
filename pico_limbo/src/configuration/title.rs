@@ -14,7 +14,7 @@ pub struct EnabledTitleConfig {
     #[serde(deserialize_with = "require_true")]
     enabled: bool,
     pub title: String,
-    pub sub_title: String,
+    pub subtitle: String,
     pub fade_in: i32,
     pub stay: i32,
     pub fade_out: i32,
@@ -31,7 +31,7 @@ impl Default for TitleConfig {
         Self::Enabled(EnabledTitleConfig {
             enabled: false,
             title: "<bold>Welcome!</bold>".to_string(),
-            sub_title: "Enjoy your stay".to_string(),
+            subtitle: "Enjoy your stay".to_string(),
             fade_in: 10,
             stay: 70,
             fade_out: 20,
