@@ -11,7 +11,7 @@ When setting `enabled` to `true` you must define all title properties.
 [title]
 enabled = true
 title = "<bold>Welcome!</bold>"
-sub_title = "Enjoy your stay"
+subtitle = "Enjoy your stay"
 fade_in = 10
 stay = 70
 fade_out = 20
@@ -47,7 +47,7 @@ The subtitle text displayed below the main title. Supports [MiniMessage formatti
 ```toml [server.toml] {3}
 [title]
 enabled = true
-sub_title = "Enjoy your stay"
+subtitle = "Enjoy your stay"
 ```
 :::
 
