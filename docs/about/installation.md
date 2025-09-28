@@ -9,7 +9,7 @@ You can find the egg file in the GitHub repository: [egg-pico-limbo.json](https:
 The egg supports additional installation configuration through the following environment variable:
 
 - **VERSION**
-  Specifies the Git tag of the release to install (e.g., `v1.4.0+mc1.21.8`).
+  Specifies the Git tag of the release to install (e.g., `v1.6.0+mc1.21.9`).
     - Default: `latest`
     - When set to `latest` (or left unset), the installer selects the newest stable release.
 
