@@ -58,6 +58,14 @@ pub struct BossBar {
     pub division: BossBarDivision,
 }
 
+pub struct Title {
+    pub content: Component,
+    pub sub_content: Component,
+    pub fade_in: i32,
+    pub stay: i32,
+    pub fade_out: i32,
+}
+
 #[derive(Default)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ServerState {
@@ -81,6 +89,8 @@ pub struct ServerState {
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
     compression_settings: Option<CompressionSettings>,
+    title: Option<Title>,
+    action_bar: Option<Component>,
 }
 
 impl ServerState {
@@ -192,6 +202,14 @@ impl ServerState {
         self.compression_settings.as_ref()
     }
 
+    pub const fn title(&self) -> Option<&Title> {
+        self.title.as_ref()
+    }
+
+    pub const fn action_bar(&self) -> Option<&Component> {
+        self.action_bar.as_ref()
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -223,6 +241,8 @@ pub struct ServerStateBuilder {
     boss_bar: Option<BossBar>,
     fav_icon: Option<String>,
     compression_settings: Option<CompressionSettings>,
+    title: Option<Title>,
+    action_bar: Option<Component>,
 }
 
 #[derive(Debug, Error)]
@@ -303,6 +323,14 @@ impl ServerStateBuilder {
     {
         self.welcome_message = message.into();
         self
+    }
+
+    pub fn action_bar<S>(&mut self, message: S) -> Result<&mut Self, ServerStateBuilderError>
+    where
+        S: AsRef<str>,
+    {
+        self.action_bar = optional_mini_message(message.as_ref())?;
+        Ok(self)
     }
 
     pub const fn show_online_player_count(&mut self, show: bool) -> &mut Self {
@@ -417,6 +445,24 @@ impl ServerStateBuilder {
         Ok(self)
     }
 
+    pub fn title(
+        &mut self,
+        title: &str,
+        sub_title: &str,
+        fade_in: i32,
+        stay: i32,
+        fade_out: i32,
+    ) -> Result<&mut Self, ServerStateBuilderError> {
+        self.title = Some(Title {
+            content: parse_mini_message(title)?,
+            sub_content: parse_mini_message(sub_title)?,
+            fade_in,
+            stay,
+            fade_out,
+        });
+        Ok(self)
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
         let world = if self.schematic_file_path.is_empty() {
@@ -439,6 +485,7 @@ impl ServerStateBuilder {
             lock_time: self.lock_time,
             max_players: self.max_players,
             welcome_message: optional_mini_message(&self.welcome_message)?,
+            action_bar: self.action_bar,
             connected_clients: Arc::new(AtomicU32::new(0)),
             show_online_player_count: self.show_online_player_count,
             game_mode: self.game_mode,
@@ -452,6 +499,7 @@ impl ServerStateBuilder {
             boss_bar: self.boss_bar,
             fav_icon: self.fav_icon,
             compression_settings: self.compression_settings,
+            title: self.title,
         })
     }
 }

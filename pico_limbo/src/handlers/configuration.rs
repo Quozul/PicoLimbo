@@ -5,19 +5,23 @@ use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::{ServerState, TabList};
+use crate::server_state::{ServerState, TabList, Title};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
+use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
+use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
+use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
@@ -176,12 +180,14 @@ pub fn send_play_packets(
     batch.queue(|| PacketRegistry::UpdateTime(packet));
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
+        send_action_bar_packet(batch, server_state, protocol_version);
+        send_skin_packets(batch, client_state, server_state);
         send_tab_list_packets(batch, server_state);
+        send_title_text_packets(batch, server_state, protocol_version);
     }
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_9) {
         send_boss_bar_packets(batch, server_state);
     }
-    send_skin_packets(batch, client_state, server_state);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
@@ -236,6 +242,56 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
             boss_bar.division,
         );
         batch.queue(|| PacketRegistry::BossBar(packet));
+    }
+}
+
+fn send_title_text_packets(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion,
+) {
+    if let Some(Title {
+        content: title,
+        sub_content: sub_title,
+        fade_in,
+        stay,
+        fade_out,
+    }) = server_state.title()
+    {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+            let animation_packet = SetTitlesAnimationPacket::new(*fade_in, *stay, *fade_out);
+            batch.queue(|| PacketRegistry::SetTitlesAnimation(animation_packet));
+            let title_packet = SetTitleTextPacket::new(title);
+            batch.queue(|| PacketRegistry::SetTitleText(title_packet));
+            let subtitle_packet = SetTitleTextPacket::new(sub_title);
+            batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
+        } else {
+            let animation_packet = LegacySetTitlePacket::set_animation(*fade_in, *stay, *fade_out);
+            batch.queue(|| PacketRegistry::LegacySetTitle(animation_packet));
+            let title_packet = LegacySetTitlePacket::set_title(title);
+            batch.queue(|| PacketRegistry::LegacySetTitle(title_packet));
+            let subtitle_packet = LegacySetTitlePacket::set_subtitle(sub_title);
+            batch.queue(|| PacketRegistry::LegacySetTitle(subtitle_packet));
+        }
+    }
+}
+
+fn send_action_bar_packet(
+    batch: &mut Batch<PacketRegistry>,
+    server_state: &ServerState,
+    protocol_version: ProtocolVersion,
+) {
+    if let Some(action_bar) = server_state.action_bar() {
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_17) {
+            let packet = SetActionBarTextPacket::new(action_bar);
+            batch.queue(|| PacketRegistry::SetActionBarText(packet));
+        } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_11) {
+            let packet = LegacySetTitlePacket::action_bar(action_bar);
+            batch.queue(|| PacketRegistry::LegacySetTitle(packet));
+        } else {
+            let packet = LegacyChatMessagePacket::game_info(action_bar);
+            batch.queue(|| PacketRegistry::LegacyChatMessage(packet));
+        }
     }
 }
 
@@ -302,7 +358,7 @@ pub fn send_message(
         let packet = SystemChatMessagePacket::component(component);
         batch.queue(|| PacketRegistry::SystemChatMessage(packet));
     } else {
-        let packet = LegacyChatMessagePacket::component(component);
+        let packet = LegacyChatMessagePacket::system(component);
         batch.queue(|| PacketRegistry::LegacyChatMessage(packet));
     }
 }

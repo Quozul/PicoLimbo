@@ -73,6 +73,9 @@
       },
       "minecraft:level_chunk_with_light": {
         "protocol_id": 33
+      },
+      "minecraft:legacy_set_title": {
+        "protocol_id": 79
       }
     },
     "serverbound": {

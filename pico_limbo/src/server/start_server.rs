@@ -2,6 +2,7 @@ use crate::configuration::TaggedForwarding;
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::configuration::tab_list::TabListConfig;
+use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuilderError};
@@ -82,6 +83,16 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.boss_bar(boss_bar)?;
     }
 
+    if let TitleConfig::Enabled(title) = cfg.title {
+        server_state_builder.title(
+            &title.title,
+            &title.sub_title,
+            title.fade_in,
+            title.stay,
+            title.fade_out,
+        )?;
+    }
+
     let server_icon = cfg.server_list.server_icon;
     if std::fs::exists(&server_icon)? {
         server_state_builder.fav_icon(server_icon)?;
@@ -93,6 +104,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .lock_time(cfg.world.experimental.lock_time)
         .description_text(&cfg.server_list.message_of_the_day)
         .welcome_message(&cfg.welcome_message)
+        .action_bar(&cfg.action_bar)?
         .max_players(cfg.server_list.max_players)
         .show_online_player_count(cfg.server_list.show_online_player_count)
         .game_mode(cfg.default_game_mode.into())

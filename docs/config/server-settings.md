@@ -39,6 +39,33 @@ welcome_message = ""
 ```
 :::
 
+## Action Bar <Badge type="warning" text="1.8+" />
+
+Action bar message is displayed to players after joining above the hotbar.
+Supports [MiniMessage formatting](/customization/message-formatting.html) for colors and styling.
+Please note that for versions prior to 1.11, the action bar message will be sent using legacy color codes.
+
+:::code-group
+```toml [server.toml]
+action_bar = "<green>Welcome to <bold>PicoLimbo</bold>!</green>"
+```
+:::
+
+You can also use legacy color codes for backward compatibility:
+
+:::code-group
+```toml [server.toml]
+action_bar = "§aWelcome to PicoLimbo!"
+```
+:::
+
+Action bar message can be disabled by setting an empty string:
+
+:::code-group
+```toml [server.toml]
+action_bar = ""
+```
+:::
 
 ## Default Gamemode
 

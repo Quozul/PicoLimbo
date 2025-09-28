@@ -19,4 +19,5 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Server List](./server-list) - Customize your server's appearance in the Minecraft client
 - [Server Settings](./server-settings) - Core server configuration
 - [Tab List](./tab-list) - Configure the tab list
+- [Title](./title) - Configure titles
 - [World](./world) - Configure the world
