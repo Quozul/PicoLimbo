@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable server icon
 - Network compression options
 - MiniMessage formatting support for MOTD and welcome messages
+- Title and subtitle (1.8+)
+- Action bar message (1.8+)
 
 ### Changed
 
