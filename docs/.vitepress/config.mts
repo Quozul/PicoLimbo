@@ -43,6 +43,7 @@ export default defineConfig({
 					{ text: "Server List", link: "/config/server-list.html" },
 					{ text: "Server Settings", link: "/config/server-settings.html" },
 					{ text: "Tab List", link: "/config/tab-list.html" },
+					{ text: "Title", link: "/config/title.html" },
 					{ text: "World", link: "/config/world.html" },
 					{
 						text: "Default Configuration",
