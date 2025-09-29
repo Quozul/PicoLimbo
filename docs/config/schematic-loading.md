@@ -10,7 +10,7 @@ PicoLimbo includes experimental world features that allow you to customize the s
 ![Limbo's loaded from a schematic file](/world.png)
 > Loading of Loohp's Limbo [spawn.schem](https://github.com/LOOHP/Limbo/blob/master/spawn.schem) file inside PicoLimbo.
 
-## Schematic Loading
+## Schematic File
 
 Load `.schem` files to customize the spawn location. PicoLimbo implements version 2 of
 [SpongePowered's schematic specification](https://github.com/SpongePowered/Schematic-Specification).

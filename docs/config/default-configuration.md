@@ -9,28 +9,22 @@ If it is not generated, you can copy the following code block in your configurat
 bind = "0.0.0.0:25565"
 # Welcome message sent to players after spawning
 welcome_message = "Welcome to PicoLimbo!"
-action_bar = "Welcome to PicoLimbo!"
 # Sets the game mode for new players
 # Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
 # If set to true, will spawn the player in hardcode mode
 hardcore = false
+action_bar = "Welcome to PicoLimbo!"
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
-# Enable compression
-compression_threshold = -1
+
+[compression]
+threshold = -1
+level = 6
 
 [forwarding]
 # Disable forwarding
 method = "NONE"
-
-[tab_list]
-# Enable tab list customization
-enabled = true
-# The header text displayed at the top of the player list
-header = "<bold>Welcome to PicoLimbo</bold>"
-# The footer text displayed at the bottom of the player list
-footer = "<green>Enjoy your stay!</green>"
 
 [server_list]
 # Maximum count shown in your server list, does not affect the player limit
@@ -39,6 +33,15 @@ max_players = 20
 message_of_the_day = "A Minecraft Server"
 # Show actual online player count in your server list?
 show_online_player_count = true
+server_icon = "server-icon.png"
+
+[tab_list]
+# Enable tab list customization
+enabled = true
+# The header text displayed at the top of the player list
+header = "<bold>Welcome to PicoLimbo</bold>"
+# The footer text displayed at the bottom of the player list
+footer = "<green>Enjoy your stay!</green>"
 
 [world]
 # Custom spawn position as [x, y, z] coordinates
