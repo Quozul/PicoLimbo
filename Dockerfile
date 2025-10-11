@@ -19,9 +19,15 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release --target $TARGET --bin $BINARY_NAME && \
     cp target/$TARGET/release/$BINARY_NAME /usr/local/bin/pico_limbo
 
+FROM alpine AS build-env
+
+WORKDIR /usr/src/app
+
+RUN touch /usr/src/app/.keep
+
 FROM gcr.io/distroless/static:latest
 
-COPY --from=builder --chown=nonroot:nonroot /usr/src/app /usr/src/app
+COPY --from=build-env --chown=nonroot:nonroot /usr/src/app /usr/src/app
 
 WORKDIR /usr/src/app
 
