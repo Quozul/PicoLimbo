@@ -154,7 +154,8 @@ pub fn send_play_packets(
     }
 
     // Send Synchronize Player Position
-    let packet = SynchronizePlayerPositionPacket::new(x, y, z);
+    let (yaw, pitch) = server_state.spawn_rotation();
+    let packet = SynchronizePlayerPositionPacket::new(x, y, z, yaw, pitch);
     batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
     client_state.set_feet_position(y);
 
