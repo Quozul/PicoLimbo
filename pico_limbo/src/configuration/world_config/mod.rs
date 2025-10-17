@@ -16,6 +16,9 @@ pub struct WorldConfig {
     /// Position to spawn the players at
     pub spawn_position: (f64, f64, f64),
 
+    /// Rotation to spawn the players at
+    pub spawn_rotation: (f32, f32),
+
     /// Name of the dimension to spawn the player in.
     /// Supported: "overworld", "nether" or "end"
     pub dimension: SpawnDimensionConfig,
@@ -35,6 +38,7 @@ impl Default for WorldConfig {
     fn default() -> Self {
         Self {
             spawn_position: (0.0, 320.0, 0.0),
+            spawn_rotation: (0.0, 0.0),
             dimension: SpawnDimensionConfig::default(),
             time: TimeConfig::default(),
             experimental: ExperimentalWorldConfig::default(),

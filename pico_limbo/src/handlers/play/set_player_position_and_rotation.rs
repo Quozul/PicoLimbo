@@ -42,7 +42,8 @@ pub fn teleport_player_to_spawn(
 
             if previous_position >= f64::from(*min_y) && difference <= FALL_SPEED {
                 let (x, y, z) = server_state.spawn_position();
-                let packet = SynchronizePlayerPositionPacket::new(x, y, z);
+                let (yaw, pitch) = server_state.spawn_rotation();
+                let packet = SynchronizePlayerPositionPacket::new(x, y, z, yaw, pitch);
                 batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
 
                 if let Some(content) = teleport_message {

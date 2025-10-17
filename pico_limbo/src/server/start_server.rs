@@ -110,6 +110,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .game_mode(cfg.default_game_mode.into())
         .hardcore(cfg.hardcore)
         .spawn_position(cfg.world.spawn_position)
+        .spawn_rotation(cfg.world.spawn_rotation)
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?

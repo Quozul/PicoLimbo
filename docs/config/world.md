@@ -31,6 +31,17 @@ spawn_position = [0.5, 320.0, 0.5]
 ```
 :::
 
+## Spawn Rotation
+
+Customize where players look at spawn using `[yaw, pitch]` coordinates. Supports floating point numbers.
+
+:::code-group
+```toml [server.toml] {2}
+[world]
+spawn_rotation = [90.0, 90.0]
+```
+:::
+
 ## World Boundaries
 
 Control player movement by setting a minimum Y coordinate. When players fall below this level, they'll be teleported back to spawn and receive a configurable message.

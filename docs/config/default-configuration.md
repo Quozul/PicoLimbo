@@ -4,6 +4,7 @@ The default configuration file will be automatically generated the first time yo
 If it is not generated, you can copy the following code block in your configuration file or in `server.toml` next to PicoLimbo's executable.
 
 :::code-group
+
 ```toml [server.toml]
 # Server bind address and port
 bind = "0.0.0.0:25565"
@@ -46,6 +47,8 @@ footer = "<green>Enjoy your stay!</green>"
 [world]
 # Custom spawn position as [x, y, z] coordinates
 spawn_position = [0.0, 320.0, 0.0]
+# Custom spawn rotation as [yaw, pitch] coordinates
+spawn_rotation = [0.0, 0.0]
 # Default spawn dimension
 # Allowed values: "overworld", "nether", or "end"
 dimension = "end"
@@ -92,4 +95,5 @@ fade_in = 10
 stay = 70
 fade_out = 20
 ```
+
 :::

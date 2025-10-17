@@ -34,7 +34,7 @@ pub struct SynchronizePlayerPositionPacket {
 }
 
 impl SynchronizePlayerPositionPacket {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Self {
         Self {
             v_1_21_2_teleport_id: VarInt::default(),
             x,
@@ -44,8 +44,8 @@ impl SynchronizePlayerPositionPacket {
             velocity_x: 0.0,
             velocity_y: 0.0,
             velocity_z: 0.0,
-            yaw: 0.0,
-            pitch: 0.0,
+            yaw,
+            pitch,
             v_1_21_2_flags: 0x00,
             flags: 0,
             teleport_id: VarInt::default(),
