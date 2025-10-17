@@ -89,6 +89,7 @@ pub struct ServerState {
     game_mode: GameMode,
     hardcore: bool,
     spawn_position: (f64, f64, f64),
+    spawn_rotation: (f32, f32),
     view_distance: i32,
     world: Option<Arc<World>>,
     boundaries: Option<Boundaries>,
@@ -170,6 +171,10 @@ impl ServerState {
         self.spawn_position
     }
 
+    pub const fn spawn_rotation(&self) -> (f32, f32) {
+        self.spawn_rotation
+    }
+
     pub const fn view_distance(&self) -> i32 {
         self.view_distance
     }
@@ -241,6 +246,7 @@ pub struct ServerStateBuilder {
     game_mode: GameMode,
     hardcore: bool,
     spawn_position: (f64, f64, f64),
+    spawn_rotation: (f32, f32),
     view_distance: i32,
     schematic_file_path: String,
     boundaries: Option<Boundaries>,
@@ -358,6 +364,11 @@ impl ServerStateBuilder {
 
     pub const fn spawn_position(&mut self, position: (f64, f64, f64)) -> &mut Self {
         self.spawn_position = position;
+        self
+    }
+
+    pub const fn spawn_rotation(&mut self, rotation: (f32, f32)) -> &mut Self {
+        self.spawn_rotation = rotation;
         self
     }
 
@@ -510,6 +521,7 @@ impl ServerStateBuilder {
             game_mode: self.game_mode,
             hardcore: self.hardcore,
             spawn_position: self.spawn_position,
+            spawn_rotation: self.spawn_rotation,
             view_distance: self.view_distance,
             world,
             boundaries: self.boundaries,
