@@ -152,6 +152,21 @@ impl LoginPacket {
         }
         self
     }
+
+    pub fn set_reduced_debug_info(mut self, reduced_debug_info: bool) -> Self {
+        match &mut self.data {
+            LoginPacketData::PreV1_16(value) => {
+                value.v1_8_reduced_debug_info = reduced_debug_info;
+            }
+            LoginPacketData::PostV1_16(value) => {
+                value.reduced_debug_info = reduced_debug_info;
+            }
+            LoginPacketData::PostV1_20_2(value) => {
+                value.reduced_debug_info = reduced_debug_info;
+            }
+        }
+        self
+    }
 }
 
 #[cfg(test)]

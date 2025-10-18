@@ -98,6 +98,16 @@ hardcore = true
 ```
 :::
 
+## Reduced Debug Info <Badge type="warning" text="1.8+" />
+
+Whether the debug screen shows all or reduced information; and whether the effects of F3+B (entity hitboxes) and F3+G (chunk boundaries) are shown.
+
+:::code-group
+```toml [server.toml]
+reduced_debug_info = true
+```
+:::
+
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  

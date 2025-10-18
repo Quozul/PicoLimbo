@@ -58,6 +58,8 @@ pub struct Config {
 
     pub fetch_player_skins: bool,
 
+    pub reduced_debug_info: bool,
+
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
@@ -76,6 +78,7 @@ impl Default for Config {
             hardcore: false,
             tab_list: TabListConfig::default(),
             fetch_player_skins: false,
+            reduced_debug_info: false,
             boss_bar: BossBarConfig::default(),
             compression: CompressionConfig::default(),
             title: TitleConfig::default(),

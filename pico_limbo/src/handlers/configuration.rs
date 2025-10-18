@@ -125,6 +125,7 @@ pub fn send_play_packets(
     let protocol_version = client_state.protocol_version();
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
+    let reduced_debug_info = server_state.reduced_debug_info();
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -143,7 +144,8 @@ pub fn send_play_packets(
             game_mode.value(),
             server_state.is_hardcore(),
         )
-        .set_view_distance(view_distance);
+        .set_view_distance(view_distance)
+        .set_reduced_debug_info(reduced_debug_info);
     batch.queue(|| PacketRegistry::Login(Box::new(packet)));
 
     let (x, y, z) = server_state.spawn_position();

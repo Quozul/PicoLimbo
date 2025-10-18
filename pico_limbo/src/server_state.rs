@@ -100,6 +100,7 @@ pub struct ServerState {
     compression_settings: Option<CompressionSettings>,
     title: Option<Title>,
     action_bar: Option<Component>,
+    reduced_debug_info: bool,
 }
 
 impl ServerState {
@@ -157,6 +158,10 @@ impl ServerState {
 
     pub const fn spawn_dimension(&self) -> Dimension {
         self.spawn_dimension
+    }
+
+    pub const fn reduced_debug_info(&self) -> bool {
+        self.reduced_debug_info
     }
 
     pub const fn game_mode(&self) -> GameMode {
@@ -257,6 +262,7 @@ pub struct ServerStateBuilder {
     compression_settings: Option<CompressionSettings>,
     title: Option<Title>,
     action_bar: Option<Component>,
+    reduced_debug_info: bool,
 }
 
 #[derive(Debug, Error)]
@@ -354,6 +360,11 @@ impl ServerStateBuilder {
 
     pub const fn game_mode(&mut self, game_mode: GameMode) -> &mut Self {
         self.game_mode = game_mode;
+        self
+    }
+
+    pub const fn reduced_debug_info(&mut self, reduced_debug_info: bool) -> &mut Self {
+        self.reduced_debug_info = reduced_debug_info;
         self
     }
 
@@ -531,6 +542,7 @@ impl ServerStateBuilder {
             fav_icon: self.fav_icon,
             compression_settings: self.compression_settings,
             title: self.title,
+            reduced_debug_info: self.reduced_debug_info,
         })
     }
 }
