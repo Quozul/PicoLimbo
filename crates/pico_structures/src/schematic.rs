@@ -25,7 +25,7 @@ pub enum SchematicError {
     AirNotFound,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct Schematic {
     /// A flat vector storing all block state IDs, indexed by `y * length * width + z * width + x`.
     block_data: Vec<InternalId>,
@@ -35,7 +35,7 @@ pub struct Schematic {
     block_entities: Vec<BlockEntityData>,
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct BlockEntityData {
     /// Position within the schematic
     pub position: Coordinates,

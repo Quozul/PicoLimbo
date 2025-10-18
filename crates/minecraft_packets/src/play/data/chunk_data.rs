@@ -128,15 +128,16 @@ impl ChunkData {
                 // Determine block entity type from the Id tag
                 if let Some(id_tag) = entity_data.nbt.find_tag("Id")
                     && let Some(id_str) = id_tag.get_string()
-                        && let Some(protocol_id) = lookup.get_type_id(&id_str) {
-                            block_entities_list.push(BlockEntity::new(
-                                world_x,
-                                world_y,
-                                world_z,
-                                VarInt::new(protocol_id),
-                                entity_data.nbt.clone(), // TODO: performance cost
-                            ));
-                        }
+                    && let Some(protocol_id) = lookup.get_type_id(&id_str)
+                {
+                    block_entities_list.push(BlockEntity::new(
+                        world_x,
+                        world_y,
+                        world_z,
+                        VarInt::new(protocol_id),
+                        entity_data.nbt.clone(), // TODO: performance cost
+                    ));
+                }
             }
         }
 
