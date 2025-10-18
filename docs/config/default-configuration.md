@@ -18,6 +18,7 @@ hardcore = false
 action_bar = "Welcome to PicoLimbo!"
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
+reduced_debug_info = false
 
 [compression]
 threshold = -1
