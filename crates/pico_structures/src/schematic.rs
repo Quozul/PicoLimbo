@@ -25,12 +25,22 @@ pub enum SchematicError {
     AirNotFound,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Schematic {
     /// A flat vector storing all block state IDs, indexed by `y * length * width + z * width + x`.
     block_data: Vec<InternalId>,
     dimensions: Coordinates,
     internal_air_id: InternalId,
+    /// Block entities with their positions and NBT data
+    block_entities: Vec<BlockEntityData>,
+}
+
+#[derive(Clone)]
+pub struct BlockEntityData {
+    /// Position within the schematic
+    pub position: Coordinates,
+    /// The full NBT data for this block entity
+    pub nbt: Nbt,
 }
 
 impl Schematic {
@@ -51,11 +61,13 @@ impl Schematic {
             dimensions,
             internal_air_id,
         )?;
+        let block_entities = Self::parse_block_entities(&nbt)?;
 
         Ok(Self {
             block_data,
             dimensions,
             internal_air_id,
+            block_entities,
         })
     }
 
@@ -154,6 +166,42 @@ impl Schematic {
         Ok(block_data)
     }
 
+    fn parse_block_entities(nbt: &Nbt) -> Result<Vec<BlockEntityData>, SchematicError> {
+        // Skip if no block entities are present
+        let Some(block_entities_tag) = nbt.find_tag("BlockEntities") else {
+            return Ok(Vec::new());
+        };
+
+        let Some(block_entities_list) = block_entities_tag.get_nbt_vec() else {
+            warn!("BlockEntities tag exists but is not a list. Skipping block entities.");
+            return Ok(Vec::new());
+        };
+
+        let mut block_entities = Vec::new();
+
+        for entity_nbt in block_entities_list {
+            // Extract position from the Pos tag
+            let position = if let Some(pos_tag) = entity_nbt.find_tag("Pos") {
+                if let Some(pos_array) = pos_tag.get_int_array() {
+                    Coordinates::new(pos_array[0], pos_array[1], pos_array[2])
+                } else {
+                    warn!("Block entity Pos tag is not an int array. Skipping.");
+                    continue;
+                }
+            } else {
+                warn!("Block entity missing Pos tag. Skipping.");
+                continue;
+            };
+
+            block_entities.push(BlockEntityData {
+                position,
+                nbt: entity_nbt.clone(),
+            });
+        }
+
+        Ok(block_entities)
+    }
+
     /// Helper function to safely get a required NBT tag and extract its value.
     fn get_tag_as<T>(
         nbt: &Nbt,
@@ -205,5 +253,9 @@ impl Schematic {
 
     pub fn get_dimensions(&self) -> Coordinates {
         self.dimensions
+    }
+
+    pub fn get_block_entities(&self) -> &[BlockEntityData] {
+        &self.block_entities
     }
 }

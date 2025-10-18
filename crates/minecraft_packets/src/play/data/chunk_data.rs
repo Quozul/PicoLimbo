@@ -1,6 +1,7 @@
 use crate::play::data::chunk_context::{VoidChunkContext, WorldContext};
 use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
+use blocks_report::get_block_entity_lookup;
 use minecraft_protocol::prelude::*;
 
 #[derive(PacketOut)]
@@ -82,6 +83,10 @@ impl ChunkData {
             data.push(section);
         }
 
+        // Process block entities for this chunk
+        let block_entities_list =
+            Self::collect_chunk_block_entities(&chunk_context, schematic_context);
+
         Self {
             height_maps: root_tag,
             v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
@@ -94,8 +99,50 @@ impl ChunkData {
             ]),
             biomes: vec![chunk_context.biome_index; 1024],
             data: EncodeAsBytes::new(data),
-            block_entities: LengthPaddedVec::default(),
+            block_entities: LengthPaddedVec::new(block_entities_list),
         }
+    }
+
+    fn collect_chunk_block_entities(
+        chunk_context: &VoidChunkContext,
+        schematic_context: &WorldContext,
+    ) -> Vec<BlockEntity> {
+        let mut block_entities_list = Vec::new();
+
+        // Get the schematic from the world
+        let schematic = &schematic_context.world.get_schematic();
+        let lookup = get_block_entity_lookup(ProtocolVersion::V1_21_9);
+
+        // Iterate through all block entities in the schematic
+        for entity_data in schematic.get_block_entities() {
+            // Convert schematic-relative position to world position
+            let world_x: i32 = entity_data.position.x() + schematic_context.paste_origin.x();
+            let world_y: i32 = entity_data.position.y() + schematic_context.paste_origin.y();
+            let world_z: i32 = entity_data.position.z() + schematic_context.paste_origin.z();
+
+            // Check if this block entity belongs to the current chunk
+            let entity_chunk_x = world_x >> 4; // Divide by 16
+            let entity_chunk_z = world_z >> 4;
+
+            if entity_chunk_x == chunk_context.chunk_x && entity_chunk_z == chunk_context.chunk_z {
+                // Determine block entity type from the Id tag
+                if let Some(id_tag) = entity_data.nbt.find_tag("Id") {
+                    if let Some(id_str) = id_tag.get_string() {
+                        if let Some(protocol_id) = lookup.get_type_id(&id_str) {
+                            block_entities_list.push(BlockEntity::new(
+                                world_x,
+                                world_y,
+                                world_z,
+                                VarInt::new(protocol_id),
+                                entity_data.nbt.clone(), // TODO: performance cost
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        block_entities_list
     }
 }
 
@@ -113,5 +160,36 @@ struct HeightMap {
 
 #[derive(PacketOut)]
 pub struct BlockEntity {
-    // TODO: Implement BlockEntity
+    /// Packed XZ coordinates within the chunk section (X: 4 bits, Z: 4 bits)
+    /// Calculated as: ((x & 15) << 4) | (z & 15)
+    packed_xz: u8,
+    /// Y coordinate within the chunk section (0-15 for normal sections)
+    y: i16,
+    /// Type of block entity (VarInt registry ID)
+    block_entity_type: VarInt,
+    /// NBT data for the block entity
+    data: Nbt,
+}
+
+impl BlockEntity {
+    /// Creates a new BlockEntity from world coordinates and NBT data
+    pub fn new(
+        world_x: i32,
+        world_y: i32,
+        world_z: i32,
+        block_entity_type: VarInt,
+        data: Nbt,
+    ) -> Self {
+        // Pack X and Z coordinates (each only needs 4 bits since chunk is 16x16)
+        let chunk_x = (world_x & 15) as u8;
+        let chunk_z = (world_z & 15) as u8;
+        let packed_xz = (chunk_x << 4) | chunk_z;
+
+        Self {
+            packed_xz,
+            y: world_y as i16,
+            block_entity_type,
+            data,
+        }
+    }
 }

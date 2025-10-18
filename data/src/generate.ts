@@ -147,7 +147,7 @@ async function cleanReportsDirectory(path: string): Promise<void> {
     // Only keep the packets.json file
     const dir = await opendir(path);
     for await (const dirent of dir) {
-        if (dirent.name !== "packets.json" && dirent.name !== "blocks.json") {
+        if (dirent.name !== "packets.json" && dirent.name !== "blocks.json" && dirent.name !== "registries.json") {
             const direntPath = join(path, dirent.name);
             await rm(direntPath, { recursive: true, force: true });
         }

@@ -9,6 +9,7 @@ use thiserror::Error;
 pub struct World {
     world_sections: Vec<Palette>,
     size_in_chunks: Coordinates,
+    schematic: Schematic,
 }
 
 #[derive(Debug, Error)]
@@ -40,6 +41,7 @@ impl World {
         Ok(Self {
             world_sections: world_sections?,
             size_in_chunks,
+            schematic: schematic.clone(),
         })
     }
 
@@ -59,5 +61,9 @@ impl World {
             + (chunk_coords.x() * self.size_in_chunks.y() * self.size_in_chunks.z());
 
         self.world_sections.get(index as usize)
+    }
+
+    pub fn get_schematic(&self) -> &Schematic {
+        &self.schematic
     }
 }
