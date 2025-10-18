@@ -9,6 +9,7 @@ use thiserror::Error;
 pub struct World {
     world_sections: Vec<Palette>,
     size_in_chunks: Coordinates,
+    schematic: Schematic,
 }
 
 #[derive(Debug, Error)]
@@ -18,7 +19,7 @@ pub enum WorldLoadingError {
 }
 
 impl World {
-    pub fn from_schematic(schematic: &Schematic) -> Result<Self, WorldLoadingError> {
+    pub fn from_schematic(schematic: Schematic) -> Result<Self, WorldLoadingError> {
         let dimensions = schematic.get_dimensions();
         let size_in_chunks = (dimensions + 15) / 16;
         let chunk_count = size_in_chunks.x() * size_in_chunks.y() * size_in_chunks.z();
@@ -33,13 +34,14 @@ impl World {
                 let section_position = Coordinates::new(chunk_x, chunk_y, chunk_z);
 
                 let mut processor = ChunkProcessor::new();
-                processor.process_section(schematic, section_position)
+                processor.process_section(&schematic, section_position)
             })
             .collect();
 
         Ok(Self {
             world_sections: world_sections?,
             size_in_chunks,
+            schematic,
         })
     }
 
@@ -59,5 +61,9 @@ impl World {
             + (chunk_coords.x() * self.size_in_chunks.y() * self.size_in_chunks.z());
 
         self.world_sections.get(index as usize)
+    }
+
+    pub fn get_schematic(&self) -> &Schematic {
+        &self.schematic
     }
 }
