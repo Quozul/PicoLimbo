@@ -126,9 +126,9 @@ impl ChunkData {
 
             if entity_chunk_x == chunk_context.chunk_x && entity_chunk_z == chunk_context.chunk_z {
                 // Determine block entity type from the Id tag
-                if let Some(id_tag) = entity_data.nbt.find_tag("Id") {
-                    if let Some(id_str) = id_tag.get_string() {
-                        if let Some(protocol_id) = lookup.get_type_id(&id_str) {
+                if let Some(id_tag) = entity_data.nbt.find_tag("Id")
+                    && let Some(id_str) = id_tag.get_string()
+                        && let Some(protocol_id) = lookup.get_type_id(&id_str) {
                             block_entities_list.push(BlockEntity::new(
                                 world_x,
                                 world_y,
@@ -137,8 +137,6 @@ impl ChunkData {
                                 entity_data.nbt.clone(), // TODO: performance cost
                             ));
                         }
-                    }
-                }
             }
         }
 
