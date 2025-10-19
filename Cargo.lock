@@ -991,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "pico_limbo"
-version = "1.7.0-beta.1+mc1.21.10"
+version = "1.7.0+mc1.21.10"
 dependencies = [
  "base64",
  "blocks_report",
