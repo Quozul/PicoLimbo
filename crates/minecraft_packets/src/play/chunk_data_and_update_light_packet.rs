@@ -56,6 +56,7 @@ impl ChunkDataAndUpdateLightPacket {
     pub fn from_structure(
         chunk_context: VoidChunkContext,
         schematic_context: &WorldContext,
+        protocol_version: ProtocolVersion,
     ) -> Self {
         let all_sections_bit_mask = 0b1111_1111_1111_1111i32;
         Self {
@@ -65,7 +66,11 @@ impl ChunkDataAndUpdateLightPacket {
             primary_bit_mask: VarInt::new(all_sections_bit_mask),
             full_chunk: true,
             ignore_old_data: false,
-            chunk_data: ChunkData::from_schematic(chunk_context, schematic_context),
+            chunk_data: ChunkData::from_schematic(
+                chunk_context,
+                schematic_context,
+                protocol_version,
+            ),
             trust_edges: true,
             v1_18_light_data: LightData::new_with_level(15),
         }

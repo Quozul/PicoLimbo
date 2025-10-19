@@ -56,6 +56,7 @@ impl ChunkData {
     pub fn from_schematic(
         chunk_context: VoidChunkContext,
         schematic_context: &WorldContext,
+        protocol_version: ProtocolVersion,
     ) -> Self {
         let long_array_tag = Nbt::LongArray {
             name: Some("MOTION_BLOCKING".to_string()),
@@ -85,7 +86,7 @@ impl ChunkData {
 
         // Process block entities for this chunk
         let block_entities_list =
-            Self::collect_chunk_block_entities(&chunk_context, schematic_context);
+            Self::collect_chunk_block_entities(&chunk_context, schematic_context, protocol_version);
 
         Self {
             height_maps: root_tag,
@@ -106,12 +107,13 @@ impl ChunkData {
     fn collect_chunk_block_entities(
         chunk_context: &VoidChunkContext,
         schematic_context: &WorldContext,
+        protocol_version: ProtocolVersion,
     ) -> Vec<BlockEntity> {
         let mut block_entities_list = Vec::new();
 
         // Get the schematic from the world
         let schematic = &schematic_context.world.get_schematic();
-        let lookup = get_block_entity_lookup(ProtocolVersion::V1_21_9);
+        let lookup = get_block_entity_lookup(ProtocolVersion::V1_21_9); // TODO
 
         // Iterate through all block entities in the schematic
         for entity_data in schematic.get_block_entities() {
@@ -130,18 +132,115 @@ impl ChunkData {
                     && let Some(id_str) = id_tag.get_string()
                     && let Some(protocol_id) = lookup.get_type_id(&id_str)
                 {
+                    let edited_data = if id_str == "minecraft:sign" {
+                        Self::fix_sign_nbt(entity_data.nbt.clone(), protocol_version) // TODO: cost performance
+                    } else {
+                        entity_data.nbt.clone()
+                    };
+
                     block_entities_list.push(BlockEntity::new(
                         world_x,
                         world_y,
                         world_z,
                         VarInt::new(protocol_id),
-                        entity_data.nbt.clone(), // TODO: performance cost
+                        edited_data,
                     ));
                 }
             }
         }
 
         block_entities_list
+    }
+
+    /// Modifies NBT in signs to fix differences between protocol versions
+    ///
+    /// For schematics created in 1.21.4 and below, signs show up with double quotation marks
+    /// surrounding each text line in recent versions. For schematics created in 1.21.5 and
+    /// above, signs show up with no text in older versions.
+    fn fix_sign_nbt(sign_data: Nbt, protocol_version: ProtocolVersion) -> Nbt {
+        match sign_data {
+            Nbt::Compound { name, value } => {
+                let new_value = value
+                    .into_iter()
+                    .map(|tag| match tag {
+                        // Only modify front_text and back_text
+                        Nbt::Compound {
+                            name: text_name,
+                            value: text_value,
+                        } if matches!(
+                            text_name.as_deref(),
+                            Some("front_text") | Some("back_text")
+                        ) =>
+                        {
+                            let new_text = text_value
+                                .into_iter()
+                                .map(|inner| match inner {
+                                    // Find 'messages' NBT list
+                                    Nbt::List {
+                                        name: msg_name,
+                                        value: messages,
+                                        ..
+                                    } if msg_name.as_deref() == Some("messages") => {
+                                        let edited_messages = messages
+                                            .into_iter()
+                                            .map(|msg| {
+                                                let text = msg.get_string().unwrap_or_default();
+
+                                                let processed_text = if protocol_version
+                                                    .is_before_inclusive(ProtocolVersion::V1_21_4)
+                                                {
+                                                    // For 1.21.4 and below, add quotes if not present
+                                                    if text.starts_with('"') && text.ends_with('"')
+                                                    {
+                                                        text.to_string()
+                                                    } else {
+                                                        format!("\"{}\"", text)
+                                                    }
+                                                } else {
+                                                    // For 1.21.5 and above, remove quotes if present
+                                                    text.strip_prefix('"')
+                                                        .and_then(|s| s.strip_suffix('"'))
+                                                        .map(String::from)
+                                                        .unwrap_or_else(|| text.to_string())
+                                                };
+
+                                                // Create a new NBT string with processed value
+                                                Nbt::String {
+                                                    name: msg.get_name(),
+                                                    value: processed_text,
+                                                }
+                                            })
+                                            .collect();
+
+                                        // Rebuild x2
+                                        Nbt::List {
+                                            name: msg_name.clone(),
+                                            value: edited_messages,
+                                            tag_type: 8,
+                                        }
+                                    }
+                                    other => other,
+                                })
+                                .collect();
+
+                            // Rebuild x3
+                            Nbt::Compound {
+                                name: text_name.clone(),
+                                value: new_text,
+                            }
+                        }
+                        other => other,
+                    })
+                    .collect();
+
+                // Rebuild x4
+                Nbt::Compound {
+                    name: name.clone(),
+                    value: new_value,
+                }
+            }
+            other => other,
+        }
     }
 }
 
