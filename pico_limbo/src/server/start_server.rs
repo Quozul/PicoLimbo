@@ -115,7 +115,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .schematic(cfg.world.experimental.schematic_file)
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins)
-        .reduced_debug_info(cfg.reduced_debug_info);
+        .reduced_debug_info(cfg.reduced_debug_info)
+        .set_player_listed(cfg.player_listed);
 
     server_state_builder.build()
 }
