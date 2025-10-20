@@ -108,6 +108,16 @@ reduced_debug_info = true
 ```
 :::
 
+## Player Listed
+
+Whether the player should be listed on the player list.
+
+:::code-group
+```toml [server.toml]
+player_listed = true
+```
+:::
+
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  

@@ -27,6 +27,7 @@ pub enum ConfigError {
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Config {
     /// Server listening address and port.
     ///
@@ -60,6 +61,8 @@ pub struct Config {
 
     pub reduced_debug_info: bool,
 
+    pub player_listed: bool,
+
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
@@ -82,6 +85,7 @@ impl Default for Config {
             boss_bar: BossBarConfig::default(),
             compression: CompressionConfig::default(),
             title: TitleConfig::default(),
+            player_listed: true,
         }
     }
 }

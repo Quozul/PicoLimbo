@@ -13,15 +13,15 @@ pub struct PlayerInfoUpdatePacket {
 }
 
 impl PlayerInfoUpdatePacket {
-    pub fn skin(name: String, uuid: Uuid, property: Property) -> Self {
-        Self::new(name, uuid, vec![property])
+    pub fn skin(name: String, uuid: Uuid, property: Property, listed: bool) -> Self {
+        Self::new(name, uuid, vec![property], listed)
     }
 
-    pub fn skinless(name: String, uuid: Uuid) -> Self {
-        Self::new(name, uuid, Vec::new())
+    pub fn skinless(name: String, uuid: Uuid, listed: bool) -> Self {
+        Self::new(name, uuid, Vec::new(), listed)
     }
 
-    fn new(name: String, uuid: Uuid, properties: Vec<Property>) -> Self {
+    fn new(name: String, uuid: Uuid, properties: Vec<Property>, listed: bool) -> Self {
         let properties = LengthPaddedVec::new(properties);
         let add_player_action = AddPlayer {
             name,
@@ -34,7 +34,7 @@ impl PlayerInfoUpdatePacket {
 
         let actions = vec![
             PlayerActions::AddPlayer(add_player_action.clone()),
-            PlayerActions::UpdateListed { listed: true },
+            PlayerActions::UpdateListed { listed },
         ];
 
         let mut mask = 0;
