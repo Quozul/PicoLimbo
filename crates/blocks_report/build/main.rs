@@ -68,8 +68,11 @@ fn main() -> anyhow::Result<()> {
 
     // 6. Generate block entity lookup code
     let mut entity_arms = Vec::new();
+    let mut entity_version_idents = Vec::new();
+
     for report in block_entity_reports {
         let version_ident = Ident::new(&report.protocol_version.to_string(), Span::call_site());
+        entity_version_idents.push(version_ident.clone());
 
         // Create the map literal
         let entries: Vec<_> = report
@@ -110,12 +113,14 @@ fn main() -> anyhow::Result<()> {
         pub fn get_block_entity_lookup(protocol_version: minecraft_protocol::prelude::ProtocolVersion) -> BlockEntityTypeLookup {
             use minecraft_protocol::prelude::ProtocolVersion;
 
-            match protocol_version {
+            // Find closest version that has data to the requested version
+            let available = [#(ProtocolVersion::#entity_version_idents),*];
+            let closest = available.iter().rev().find(|&&v| v <= protocol_version).copied()
+                .unwrap_or(ProtocolVersion::latest());
+
+            match closest {
                 #(#entity_arms)*
-                _ => {
-                    // Fallback to latest if version not found
-                    BlockEntityTypeLookup { type_map: HashMap::new() }
-                }
+                _ => BlockEntityTypeLookup { type_map: HashMap::new() }
             }
         }
     };

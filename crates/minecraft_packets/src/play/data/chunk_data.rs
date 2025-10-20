@@ -113,7 +113,7 @@ impl ChunkData {
 
         // Get the schematic from the world
         let schematic = &schematic_context.world.get_schematic();
-        let lookup = get_block_entity_lookup(ProtocolVersion::V1_21_9); // TODO
+        let lookup = get_block_entity_lookup(protocol_version);
 
         // Iterate through all block entities in the schematic
         for entity_data in schematic.get_block_entities() {
@@ -133,7 +133,7 @@ impl ChunkData {
                     && let Some(protocol_id) = lookup.get_type_id(&id_str)
                 {
                     let edited_data = if id_str == "minecraft:sign" {
-                        Self::fix_sign_nbt(entity_data.nbt.clone(), protocol_version) // TODO: cost performance
+                        Self::fix_sign_nbt(entity_data.nbt.clone(), protocol_version)
                     } else {
                         entity_data.nbt.clone()
                     };
