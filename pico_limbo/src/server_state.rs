@@ -101,6 +101,7 @@ pub struct ServerState {
     title: Option<Title>,
     action_bar: Option<Component>,
     reduced_debug_info: bool,
+    is_player_listed: bool,
 }
 
 impl ServerState {
@@ -228,6 +229,10 @@ impl ServerState {
         self.action_bar.as_ref()
     }
 
+    pub const fn is_player_listed(&self) -> bool {
+        self.is_player_listed
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -263,6 +268,7 @@ pub struct ServerStateBuilder {
     title: Option<Title>,
     action_bar: Option<Component>,
     reduced_debug_info: bool,
+    is_player_listed: bool,
 }
 
 #[derive(Debug, Error)]
@@ -365,6 +371,11 @@ impl ServerStateBuilder {
 
     pub const fn reduced_debug_info(&mut self, reduced_debug_info: bool) -> &mut Self {
         self.reduced_debug_info = reduced_debug_info;
+        self
+    }
+
+    pub const fn set_player_listed(&mut self, is_player_listed: bool) -> &mut Self {
+        self.is_player_listed = is_player_listed;
         self
     }
 
@@ -543,6 +554,7 @@ impl ServerStateBuilder {
             compression_settings: self.compression_settings,
             title: self.title,
             reduced_debug_info: self.reduced_debug_info,
+            is_player_listed: self.is_player_listed,
         })
     }
 }

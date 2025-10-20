@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Option to hide the player from the tab list
 - Support for block entities
 
 ## [1.7.0+mc1.21.10] - 2025-10-19

@@ -329,6 +329,7 @@ fn send_skin_packets(
     server_state: &ServerState,
 ) {
     let fetch_player_skins = server_state.fetch_player_skins();
+    let is_player_listed = server_state.is_player_listed();
     let unique_id = client_state.get_unique_id();
     let protocol_version = client_state.protocol_version();
 
@@ -356,9 +357,9 @@ fn send_skin_packets(
             };
 
             let packet = if let Some(textures) = textures {
-                PlayerInfoUpdatePacket::skin(username, unique_id, textures)
+                PlayerInfoUpdatePacket::skin(username, unique_id, textures, is_player_listed)
             } else {
-                PlayerInfoUpdatePacket::skinless(username, unique_id)
+                PlayerInfoUpdatePacket::skinless(username, unique_id, is_player_listed)
             };
             PacketRegistry::PlayerInfoUpdate(packet)
         });
