@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct Coordinates {
     x: i32,
     y: i32,

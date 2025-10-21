@@ -8,6 +8,6 @@ mod world;
 pub mod prelude {
     pub use crate::pack_direct::pack_direct;
     pub use crate::palette::Palette;
-    pub use crate::schematic::{Schematic, SchematicError};
+    pub use crate::schematic::{IntermediateBlockEntityData, Schematic, SchematicError};
     pub use crate::world::{World, WorldLoadingError};
 }

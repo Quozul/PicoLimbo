@@ -1,8 +1,9 @@
 use crate::play::data::chunk_context::{VoidChunkContext, WorldContext};
 use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
-use blocks_report::get_block_entity_lookup;
+use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::IntermediateBlockEntityData;
 
 #[derive(PacketOut)]
 pub struct ChunkData {
@@ -84,9 +85,15 @@ impl ChunkData {
             data.push(section);
         }
 
+        let block_entity_lookup = get_block_entity_lookup(protocol_version);
+
         // Process block entities for this chunk
-        let block_entities_list =
-            Self::collect_chunk_block_entities(&chunk_context, schematic_context, protocol_version);
+        let block_entities_list = Self::collect_chunk_block_entities(
+            &chunk_context,
+            schematic_context,
+            &block_entity_lookup,
+            protocol_version,
+        );
 
         Self {
             height_maps: root_tag,
@@ -107,139 +114,133 @@ impl ChunkData {
     fn collect_chunk_block_entities(
         chunk_context: &VoidChunkContext,
         schematic_context: &WorldContext,
+        block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
     ) -> Vec<BlockEntity> {
         let mut block_entities_list = Vec::new();
 
-        // Get the schematic from the world
-        let schematic = &schematic_context.world.get_schematic();
-        let lookup = get_block_entity_lookup(protocol_version);
+        // Get pre-computed block entities for this chunk
+        let Some(entities) = schematic_context
+            .world
+            .get_chunk_block_entities(chunk_context.chunk_x, chunk_context.chunk_z)
+        else {
+            return block_entities_list;
+        };
 
-        // Iterate through all block entities in the schematic
-        for entity_data in schematic.get_block_entities() {
+        // Iterate through all block entities
+        for entity_data in entities {
             // Convert schematic-relative position to world position
-            let world_x: i32 = entity_data.position.x() + schematic_context.paste_origin.x();
-            let world_y: i32 = entity_data.position.y() + schematic_context.paste_origin.y();
-            let world_z: i32 = entity_data.position.z() + schematic_context.paste_origin.z();
+            let world_x = entity_data.world_x + schematic_context.paste_origin.x();
+            let world_y = entity_data.world_y + schematic_context.paste_origin.y();
+            let world_z = entity_data.world_z + schematic_context.paste_origin.z();
 
-            // Check if this block entity belongs to the current chunk
-            let entity_chunk_x = world_x >> 4; // Divide by 16
-            let entity_chunk_z = world_z >> 4;
+            // Look up protocol ID
+            let Some(protocol_id) = block_entity_lookup.get_type_id(&entity_data.block_entity_type)
+            else {
+                continue;
+            };
 
-            if entity_chunk_x == chunk_context.chunk_x && entity_chunk_z == chunk_context.chunk_z {
-                // Determine block entity type from the Id tag
-                if let Some(id_tag) = entity_data.nbt.find_tag("Id")
-                    && let Some(id_str) = id_tag.get_string()
-                    && let Some(protocol_id) = lookup.get_type_id(&id_str)
-                {
-                    let edited_data = if id_str == "minecraft:sign" {
-                        Self::fix_sign_nbt(entity_data.nbt.clone(), protocol_version)
-                    } else {
-                        entity_data.nbt.clone()
-                    };
+            // Convert intermediate format to protocol-specific NBT
+            let nbt = Self::intermediate_to_nbt(&entity_data.nbt, protocol_version);
 
-                    block_entities_list.push(BlockEntity::new(
-                        world_x,
-                        world_y,
-                        world_z,
-                        VarInt::new(protocol_id),
-                        edited_data,
-                    ));
-                }
-            }
+            block_entities_list.push(BlockEntity::new(
+                world_x,
+                world_y,
+                world_z,
+                VarInt::new(protocol_id),
+                nbt,
+            ));
         }
 
         block_entities_list
     }
 
-    /// Modifies NBT in signs to fix differences between protocol versions
-    ///
-    /// For schematics created in 1.21.4 and below, signs show up with double quotation marks
-    /// surrounding each text line in recent versions. For schematics created in 1.21.5 and
-    /// above, signs show up with no text in older versions.
-    fn fix_sign_nbt(sign_data: Nbt, protocol_version: ProtocolVersion) -> Nbt {
-        match sign_data {
-            Nbt::Compound { name, value } => {
-                let new_value = value
-                    .into_iter()
-                    .map(|tag| match tag {
-                        // Only modify front_text and back_text
-                        Nbt::Compound {
-                            name: text_name,
-                            value: text_value,
-                        } if matches!(
-                            text_name.as_deref(),
-                            Some("front_text") | Some("back_text")
-                        ) =>
-                        {
-                            let new_text = text_value
-                                .into_iter()
-                                .map(|inner| match inner {
-                                    // Find 'messages' NBT list
-                                    Nbt::List {
-                                        name: msg_name,
-                                        value: messages,
-                                        ..
-                                    } if msg_name.as_deref() == Some("messages") => {
-                                        let edited_messages = messages
-                                            .into_iter()
-                                            .map(|msg| {
-                                                let text = msg.get_string().unwrap_or_default();
-
-                                                let processed_text = if protocol_version
-                                                    .is_before_inclusive(ProtocolVersion::V1_21_4)
-                                                {
-                                                    // For 1.21.4 and below, add quotes if not present
-                                                    if text.starts_with('"') && text.ends_with('"')
-                                                    {
-                                                        text.to_string()
-                                                    } else {
-                                                        format!("\"{}\"", text)
-                                                    }
-                                                } else {
-                                                    // For 1.21.5 and above, remove quotes if present
-                                                    text.strip_prefix('"')
-                                                        .and_then(|s| s.strip_suffix('"'))
-                                                        .map(String::from)
-                                                        .unwrap_or_else(|| text.to_string())
-                                                };
-
-                                                // Create a new NBT string with processed value
-                                                Nbt::String {
-                                                    name: msg.get_name(),
-                                                    value: processed_text,
-                                                }
-                                            })
-                                            .collect();
-
-                                        // Rebuild x2
-                                        Nbt::List {
-                                            name: msg_name.clone(),
-                                            value: edited_messages,
-                                            tag_type: 8,
-                                        }
-                                    }
-                                    other => other,
-                                })
-                                .collect();
-
-                            // Rebuild x3
-                            Nbt::Compound {
-                                name: text_name.clone(),
-                                value: new_text,
+    fn intermediate_to_nbt(
+        data: &IntermediateBlockEntityData,
+        protocol_version: ProtocolVersion,
+    ) -> Nbt {
+        match data {
+            IntermediateBlockEntityData::Sign {
+                front_messages,
+                back_messages,
+                front_color,
+                back_color,
+                front_glowing,
+                back_glowing,
+                is_waxed,
+            } => {
+                // Format messages based on protocol version
+                let format_messages = |messages: &[String; 4]| {
+                    messages
+                        .iter()
+                        .map(|msg| {
+                            let text =
+                                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
+                                    // Add quotes for 1.21.4 and below
+                                    format!("\"{}\"", msg)
+                                } else {
+                                    // No quotes for 1.21.5+
+                                    msg.clone()
+                                };
+                            Nbt::String {
+                                name: None,
+                                value: text,
                             }
-                        }
-                        other => other,
-                    })
-                    .collect();
+                        })
+                        .collect()
+                };
 
-                // Rebuild x4
+                let front_text = Nbt::Compound {
+                    name: Some("front_text".to_string()),
+                    value: vec![
+                        Nbt::String {
+                            name: Some("color".to_string()),
+                            value: front_color.clone(),
+                        },
+                        Nbt::Byte {
+                            name: Some("has_glowing_text".to_string()),
+                            value: if *front_glowing { 1 } else { 0 },
+                        },
+                        Nbt::List {
+                            name: Some("messages".to_string()),
+                            value: format_messages(front_messages),
+                            tag_type: 8,
+                        },
+                    ],
+                };
+
+                let back_text = Nbt::Compound {
+                    name: Some("back_text".to_string()),
+                    value: vec![
+                        Nbt::String {
+                            name: Some("color".to_string()),
+                            value: back_color.clone(),
+                        },
+                        Nbt::Byte {
+                            name: Some("has_glowing_text".to_string()),
+                            value: if *back_glowing { 1 } else { 0 },
+                        },
+                        Nbt::List {
+                            name: Some("messages".to_string()),
+                            value: format_messages(back_messages),
+                            tag_type: 8,
+                        },
+                    ],
+                };
+
                 Nbt::Compound {
-                    name: name.clone(),
-                    value: new_value,
+                    name: None,
+                    value: vec![
+                        front_text,
+                        back_text,
+                        Nbt::Byte {
+                            name: Some("is_waxed".to_string()),
+                            value: if *is_waxed { 1 } else { 0 },
+                        },
+                    ],
                 }
             }
-            other => other,
+            IntermediateBlockEntityData::Generic { nbt } => nbt.clone(),
         }
     }
 }
