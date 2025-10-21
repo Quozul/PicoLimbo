@@ -244,7 +244,7 @@ impl Schematic {
         entity_nbt: &Nbt,
     ) -> IntermediateBlockEntityData {
         match block_entity_type {
-            "minecraft:sign" => {
+            "minecraft:sign" | "minecraft:hanging_sign" => {
                 let (front_messages, front_color, front_glowing) =
                     Self::extract_sign_text(entity_nbt, "front_text");
                 let (back_messages, back_color, back_glowing) =
