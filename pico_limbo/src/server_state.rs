@@ -514,7 +514,7 @@ impl ServerStateBuilder {
                 let schematic_file_path = PathBuf::from(self.schematic_file_path);
                 Schematic::load_schematic_file(&schematic_file_path, &internal_mapping)
             })?;
-            let world = time_operation("Loading world", || World::from_schematic(schematic))?;
+            let world = time_operation("Loading world", || World::from_schematic(&schematic))?;
             Some(Arc::new(world))
         };
 

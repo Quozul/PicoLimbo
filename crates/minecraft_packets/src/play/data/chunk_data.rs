@@ -3,7 +3,8 @@ use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
-use pico_structures::prelude::IntermediateBlockEntityData;
+use pico_structures::prelude::{InternalBlockEntityData, SignFace};
+use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct ChunkData {
@@ -156,92 +157,56 @@ impl ChunkData {
     }
 
     fn intermediate_to_nbt(
-        data: &IntermediateBlockEntityData,
+        data: &InternalBlockEntityData,
         protocol_version: ProtocolVersion,
     ) -> Nbt {
         match data {
-            IntermediateBlockEntityData::Sign {
-                front_messages,
-                back_messages,
-                front_color,
-                back_color,
-                front_glowing,
-                back_glowing,
-                is_waxed,
-            } => {
-                // Format messages based on protocol version
-                let format_messages = |messages: &[String; 4]| {
-                    messages
-                        .iter()
-                        .map(|msg| {
-                            let text =
-                                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
-                                    // Add quotes for 1.21.4 and below
-                                    format!("\"{}\"", msg)
-                                } else {
-                                    // No quotes for 1.21.5+
-                                    msg.clone()
-                                };
-                            Nbt::String {
-                                name: None,
-                                value: text,
-                            }
-                        })
-                        .collect()
-                };
-
-                let front_text = Nbt::Compound {
-                    name: Some("front_text".to_string()),
-                    value: vec![
-                        Nbt::String {
-                            name: Some("color".to_string()),
-                            value: front_color.clone(),
-                        },
-                        Nbt::Byte {
-                            name: Some("has_glowing_text".to_string()),
-                            value: if *front_glowing { 1 } else { 0 },
-                        },
-                        Nbt::List {
-                            name: Some("messages".to_string()),
-                            value: format_messages(front_messages),
-                            tag_type: 8,
-                        },
-                    ],
-                };
-
-                let back_text = Nbt::Compound {
-                    name: Some("back_text".to_string()),
-                    value: vec![
-                        Nbt::String {
-                            name: Some("color".to_string()),
-                            value: back_color.clone(),
-                        },
-                        Nbt::Byte {
-                            name: Some("has_glowing_text".to_string()),
-                            value: if *back_glowing { 1 } else { 0 },
-                        },
-                        Nbt::List {
-                            name: Some("messages".to_string()),
-                            value: format_messages(back_messages),
-                            tag_type: 8,
-                        },
-                    ],
-                };
+            InternalBlockEntityData::Sign { sign_block_entity } => {
+                let front_text = format_sign_text(
+                    protocol_version,
+                    "front_text",
+                    &sign_block_entity.front_face,
+                );
+                let back_text =
+                    format_sign_text(protocol_version, "back_text", &sign_block_entity.back_face);
 
                 Nbt::Compound {
                     name: None,
                     value: vec![
                         front_text,
                         back_text,
-                        Nbt::Byte {
-                            name: Some("is_waxed".to_string()),
-                            value: if *is_waxed { 1 } else { 0 },
-                        },
+                        Nbt::bool("is_waxed", sign_block_entity.is_waxed),
                     ],
                 }
             }
-            IntermediateBlockEntityData::Generic { nbt } => nbt.clone(),
+            InternalBlockEntityData::Generic { nbt } => nbt.clone(),
         }
+    }
+}
+
+fn format_sign_text(
+    protocol_version: ProtocolVersion,
+    face_name: impl ToString,
+    sign_face: &SignFace,
+) -> Nbt {
+    Nbt::compound(
+        face_name,
+        vec![
+            Nbt::String {
+                name: Some("color".to_string()),
+                value: sign_face.color.clone(),
+            },
+            Nbt::bool("has_glowing_text", sign_face.is_glowing),
+            format_messages(protocol_version, &sign_face.messages),
+        ],
+    )
+}
+
+fn format_messages(protocol_version: ProtocolVersion, messages: &[Component; 4]) -> Nbt {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5) {
+        Nbt::compound_list("messages", messages.clone().map(|c| c.to_nbt()).to_vec())
+    } else {
+        Nbt::string_list("messages", messages.clone().map(|c| c.to_json()).to_vec())
     }
 }
 

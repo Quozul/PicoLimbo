@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::chunk_processor::{ChunkProcessor, ChunkProcessorError};
 use crate::palette::Palette;
-use crate::prelude::Schematic;
-use crate::schematic::IntermediateBlockEntityData;
+use crate::prelude::{InternalBlockEntityData, Schematic};
 use minecraft_protocol::prelude::Coordinates;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::IntoParallelIterator;
@@ -22,7 +21,7 @@ pub struct PrecomputedBlockEntity {
     pub world_y: i32,
     pub world_z: i32,
     pub block_entity_type: String,
-    pub nbt: IntermediateBlockEntityData,
+    pub nbt: InternalBlockEntityData,
 }
 
 #[derive(Debug, Error)]
@@ -32,7 +31,7 @@ pub enum WorldLoadingError {
 }
 
 impl World {
-    pub fn from_schematic(schematic: Schematic) -> Result<Self, WorldLoadingError> {
+    pub fn from_schematic(schematic: &Schematic) -> Result<Self, WorldLoadingError> {
         let dimensions = schematic.get_dimensions();
         let size_in_chunks = (dimensions + 15) / 16;
         let chunk_count = size_in_chunks.x() * size_in_chunks.y() * size_in_chunks.z();
@@ -47,7 +46,7 @@ impl World {
                 let section_position = Coordinates::new(chunk_x, chunk_y, chunk_z);
 
                 let mut processor = ChunkProcessor::new();
-                processor.process_section(&schematic, section_position)
+                processor.process_section(schematic, section_position)
             })
             .collect();
 

@@ -44,6 +44,30 @@ impl Component {
         }
     }
 
+    pub fn from_nbt(nbt: &Nbt) -> Self {
+        let mut component = Component::default();
+        if let Some(text) = nbt.find_tag("text").and_then(|n| n.get_string()) {
+            component.text = text;
+        }
+        component.color = nbt.find_tag("color").and_then(|n| n.get_string());
+        if let Some(bold) = nbt.find_tag("bold").and_then(|n| n.get_bool()) {
+            component.bold = bold;
+        }
+        if let Some(italic) = nbt.find_tag("italic").and_then(|n| n.get_bool()) {
+            component.italic = italic;
+        }
+        if let Some(underlined) = nbt.find_tag("underlined").and_then(|n| n.get_bool()) {
+            component.underlined = underlined;
+        }
+        if let Some(strikethrough) = nbt.find_tag("strikethrough").and_then(|n| n.get_bool()) {
+            component.strikethrough = strikethrough;
+        }
+        if let Some(obfuscated) = nbt.find_tag("obfuscated").and_then(|n| n.get_bool()) {
+            component.obfuscated = obfuscated;
+        }
+        component
+    }
+
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self).unwrap_or_default()
     }

@@ -1036,6 +1036,7 @@ dependencies = [
  "minecraft_protocol",
  "pico_binutils",
  "pico_nbt",
+ "pico_text_component",
  "rayon",
  "thiserror",
  "tracing",

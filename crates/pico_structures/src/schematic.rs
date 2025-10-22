@@ -1,8 +1,12 @@
 use crate::decompress::decompress_gz_file;
+use crate::internal_block_entity::{
+    BlockEntityData, InternalBlockEntityData, SignBlockEntity, SignFace,
+};
 use blocks_report::{BlockStateLookup, InternalId, InternalMapping};
 use minecraft_protocol::prelude::{Coordinates, VarInt};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
 use pico_nbt::prelude::{Nbt, NbtDecodeError};
+use pico_text_component::prelude::Component;
 use std::path::Path;
 use thiserror::Error;
 use tracing::warn;
@@ -33,33 +37,6 @@ pub struct Schematic {
     internal_air_id: InternalId,
     /// Block entities with their positions and NBT data
     block_entities: Vec<BlockEntityData>,
-}
-
-pub struct BlockEntityData {
-    /// Position within the schematic
-    pub position: Coordinates,
-    /// (e.g., "minecraft:sign")
-    pub block_entity_type: String,
-    /// The full NBT data for this block entity
-    pub nbt: IntermediateBlockEntityData,
-}
-
-/// Intermediate representation of block entity data.
-/// This format sits between the raw schematic NBT and the protocol-specific format.
-#[derive(Clone)]
-pub enum IntermediateBlockEntityData {
-    Sign {
-        front_messages: [String; 4],
-        back_messages: [String; 4],
-        front_color: String,
-        back_color: String,
-        front_glowing: bool,
-        back_glowing: bool,
-        is_waxed: bool,
-    },
-    Generic {
-        nbt: Nbt,
-    },
 }
 
 impl Schematic {
@@ -242,23 +219,19 @@ impl Schematic {
     fn clean_block_entity_nbt(
         block_entity_type: &str,
         entity_nbt: &Nbt,
-    ) -> IntermediateBlockEntityData {
+    ) -> InternalBlockEntityData {
         match block_entity_type {
             "minecraft:sign" | "minecraft:hanging_sign" => {
-                let (front_messages, front_color, front_glowing) =
-                    Self::extract_sign_text(entity_nbt, "front_text");
-                let (back_messages, back_color, back_glowing) =
-                    Self::extract_sign_text(entity_nbt, "back_text");
+                let front_face = Self::extract_sign_face(entity_nbt, "front_text");
+                let back_face = Self::extract_sign_face(entity_nbt, "back_text");
                 let is_waxed = matches!(entity_nbt.find_tag("is_waxed"), Some(Nbt::Byte { value, .. }) if *value != 0);
-
-                IntermediateBlockEntityData::Sign {
-                    front_messages,
-                    back_messages,
-                    front_color,
-                    back_color,
-                    front_glowing,
-                    back_glowing,
+                let sign_block_entity = SignBlockEntity {
+                    front_face,
+                    back_face,
                     is_waxed,
+                };
+                InternalBlockEntityData::Sign {
+                    sign_block_entity: Box::new(sign_block_entity),
                 }
             }
             _ => {
@@ -282,37 +255,40 @@ impl Schematic {
                     }
                     _ => entity_nbt.clone(),
                 };
-                IntermediateBlockEntityData::Generic { nbt: cleaned }
+                InternalBlockEntityData::Generic { nbt: cleaned }
             }
         }
     }
 
-    fn extract_sign_text(nbt: &Nbt, text_side: &str) -> ([String; 4], String, bool) {
-        let mut messages = [String::new(), String::new(), String::new(), String::new()];
+    fn extract_sign_face(nbt: &Nbt, text_side: &str) -> SignFace {
+        let mut messages = [
+            Component::default(),
+            Component::default(),
+            Component::default(),
+            Component::default(),
+        ];
         let mut color = "black".to_string();
-        let mut glowing = false;
+        let mut is_glowing = false;
 
         if let Some(text_tag) = nbt.find_tag(text_side) {
             if let Some(c) = text_tag.find_tag("color").and_then(|t| t.get_string()) {
                 color = c;
             }
             if let Some(Nbt::Byte { value, .. }) = text_tag.find_tag("has_glowing_text") {
-                glowing = *value != 0;
+                is_glowing = *value != 0;
             }
             if let Some(msg_list) = text_tag.find_tag("messages").and_then(|t| t.get_nbt_vec()) {
                 for (i, msg) in msg_list.iter().take(4).enumerate() {
-                    if let Some(text) = msg.get_string() {
-                        messages[i] = text
-                            .strip_prefix('"')
-                            .and_then(|s| s.strip_suffix('"'))
-                            .map(String::from)
-                            .unwrap_or(text);
-                    }
+                    messages[i] = Component::from_nbt(msg);
                 }
             }
         }
 
-        (messages, color, glowing)
+        SignFace {
+            messages,
+            color,
+            is_glowing,
+        }
     }
 
     /// Helper function to safely get a required NBT tag and extract its value.
