@@ -1,8 +1,8 @@
 use minecraft_protocol::prelude::{BinaryWriter, BinaryWriterError, EncodePacket, ProtocolVersion};
 use pico_nbt::prelude::Nbt;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, PartialEq, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
 pub struct Component {
     #[serde(default)]
     pub text: String,

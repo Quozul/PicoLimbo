@@ -162,24 +162,51 @@ impl ChunkData {
     ) -> Nbt {
         match data {
             InternalBlockEntityData::Sign { sign_block_entity } => {
-                let front_text = format_sign_text(
-                    protocol_version,
-                    "front_text",
-                    &sign_block_entity.front_face,
-                );
-                let back_text =
-                    format_sign_text(protocol_version, "back_text", &sign_block_entity.back_face);
+                if protocol_version.is_before_inclusive(ProtocolVersion::V1_20) {
+                    Self::format_sign_legacy(&sign_block_entity.front_face)
+                } else {
+                    let front_text = format_sign_text(
+                        protocol_version,
+                        "front_text",
+                        &sign_block_entity.front_face,
+                    );
+                    let back_text = format_sign_text(
+                        protocol_version,
+                        "back_text",
+                        &sign_block_entity.back_face,
+                    );
 
-                Nbt::Compound {
-                    name: None,
-                    value: vec![
-                        front_text,
-                        back_text,
-                        Nbt::bool("is_waxed", sign_block_entity.is_waxed),
-                    ],
+                    Nbt::Compound {
+                        name: None,
+                        value: vec![
+                            front_text,
+                            back_text,
+                            Nbt::bool("is_waxed", sign_block_entity.is_waxed),
+                        ],
+                    }
                 }
             }
             InternalBlockEntityData::Generic { nbt } => nbt.clone(),
+        }
+    }
+
+    /// Format sign data for 1.19 and earlier
+    fn format_sign_legacy(sign_face: &SignFace) -> Nbt {
+        let text1 = sign_face.messages[0].to_json();
+        let text2 = sign_face.messages[1].to_json();
+        let text3 = sign_face.messages[2].to_json();
+        let text4 = sign_face.messages[3].to_json();
+
+        Nbt::Compound {
+            name: None,
+            value: vec![
+                Nbt::string("Text1", text1),
+                Nbt::string("Text2", text2),
+                Nbt::string("Text3", text3),
+                Nbt::string("Text4", text4),
+                Nbt::string("Color", sign_face.color.clone()),
+                Nbt::bool("GlowingText", sign_face.is_glowing),
+            ],
         }
     }
 }

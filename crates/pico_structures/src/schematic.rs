@@ -222,8 +222,30 @@ impl Schematic {
     ) -> InternalBlockEntityData {
         match block_entity_type {
             "minecraft:sign" | "minecraft:hanging_sign" => {
-                let front_face = Self::extract_sign_face(entity_nbt, "front_text");
-                let back_face = Self::extract_sign_face(entity_nbt, "back_text");
+                // Check if this is a legacy format sign (1.19 and earlier)
+                let is_legacy = entity_nbt.find_tag("Text1").is_some();
+
+                let (front_face, back_face) = if is_legacy {
+                    let front_face = Self::extract_sign_face_legacy(entity_nbt);
+                    // Back face didn't exist in 1.19 - create empty one
+                    let back_face = SignFace {
+                        messages: [
+                            Component::default(),
+                            Component::default(),
+                            Component::default(),
+                            Component::default(),
+                        ],
+                        color: "black".to_string(),
+                        is_glowing: false,
+                    };
+                    (front_face, back_face)
+                } else {
+                    // Modern format (1.20+)
+                    let front_face = Self::extract_sign_face(entity_nbt, "front_text");
+                    let back_face = Self::extract_sign_face(entity_nbt, "back_text");
+                    (front_face, back_face)
+                };
+
                 let is_waxed = matches!(entity_nbt.find_tag("is_waxed"), Some(Nbt::Byte { value, .. }) if *value != 0);
                 let sign_block_entity = SignBlockEntity {
                     front_face,
@@ -260,6 +282,46 @@ impl Schematic {
         }
     }
 
+    /// Extract sign face from legacy format (1.19 and earlier)
+    fn extract_sign_face_legacy(nbt: &Nbt) -> SignFace {
+        let mut messages = [
+            Component::default(),
+            Component::default(),
+            Component::default(),
+            Component::default(),
+        ];
+        let mut color = "black".to_string();
+        let mut is_glowing = false;
+
+        // Extract color
+        if let Some(c) = nbt.find_tag("Color").and_then(|t| t.get_string()) {
+            color = c;
+        }
+
+        // Extract glowing text
+        if let Some(Nbt::Byte { value, .. }) = nbt.find_tag("GlowingText") {
+            is_glowing = *value != 0;
+        }
+
+        // Extract text lines
+        let text_tags = ["Text1", "Text2", "Text3", "Text4"];
+        for (i, tag_name) in text_tags.iter().enumerate() {
+            if let Some(text_nbt) = nbt.find_tag(tag_name) {
+                if let Some(text_str) = text_nbt.get_string() {
+                    // Parse JSON text component
+                    messages[i] = serde_json::from_str(&text_str)
+                        .unwrap_or_else(|_| Component::new(&text_str));
+                }
+            }
+        }
+
+        SignFace {
+            messages,
+            color,
+            is_glowing,
+        }
+    }
+
     fn extract_sign_face(nbt: &Nbt, text_side: &str) -> SignFace {
         let mut messages = [
             Component::default(),
@@ -279,7 +341,17 @@ impl Schematic {
             }
             if let Some(msg_list) = text_tag.find_tag("messages").and_then(|t| t.get_nbt_vec()) {
                 for (i, msg) in msg_list.iter().take(4).enumerate() {
-                    messages[i] = Component::from_nbt(msg);
+                    messages[i] = match msg {
+                        Nbt::String { value, .. } => {
+                            let text = value
+                                .strip_prefix('"')
+                                .and_then(|s| s.strip_suffix('"'))
+                                .unwrap_or(value);
+
+                            Component::new(text)
+                        }
+                        _ => Component::from_nbt(msg),
+                    };
                 }
             }
         }
