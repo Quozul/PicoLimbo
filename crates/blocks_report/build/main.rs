@@ -1,7 +1,9 @@
+pub mod block_entity_loader;
 pub mod blocks_report_loader;
 pub mod build_report_mappings;
 pub mod internal_mapping;
 
+use crate::block_entity_loader::load_block_entity_data;
 use crate::blocks_report_loader::{BlocksReport, load_block_data};
 use crate::build_report_mappings::build_report_mappings;
 use crate::internal_mapping::build_internal_id_mapping;
@@ -60,6 +62,71 @@ fn main() -> anyhow::Result<()> {
 
     let dest_path = out_path.join("get_blocks_reports.rs");
     fs::write(&dest_path, generated_code.to_string())?;
+
+    // 5. Load block entity type data
+    let block_entity_reports = load_block_entity_data()?;
+
+    // 6. Generate block entity lookup code
+    let mut entity_arms = Vec::new();
+    let mut entity_version_idents = Vec::new();
+
+    for report in block_entity_reports {
+        let version_ident = Ident::new(&report.protocol_version.to_string(), Span::call_site());
+        entity_version_idents.push(version_ident.clone());
+
+        // Create the map literal
+        let entries: Vec<_> = report
+            .type_map
+            .iter()
+            .map(|(name, id)| {
+                quote! {
+                    map.insert(#name.to_string(), #id);
+                }
+            })
+            .collect();
+
+        let arm = quote! {
+            ProtocolVersion::#version_ident => {
+                let mut map = std::collections::HashMap::new();
+                #(#entries)*
+                BlockEntityTypeLookup { type_map: map }
+            },
+        };
+
+        entity_arms.push(arm);
+    }
+
+    let entity_lookup_code = quote! {
+        use std::collections::HashMap;
+
+        pub struct BlockEntityTypeLookup {
+            type_map: HashMap<String, i32>,
+        }
+
+        impl BlockEntityTypeLookup {
+            pub fn get_type_id(&self, block_entity_name: &str) -> Option<i32> {
+                self.type_map.get(block_entity_name).copied()
+            }
+        }
+
+        #[allow(clippy::match_same_arms)]
+        pub fn get_block_entity_lookup(protocol_version: minecraft_protocol::prelude::ProtocolVersion) -> BlockEntityTypeLookup {
+            use minecraft_protocol::prelude::ProtocolVersion;
+
+            // Find closest version that has data to the requested version
+            let available = [#(ProtocolVersion::#entity_version_idents),*];
+            let closest = available.iter().rev().find(|&&v| v <= protocol_version).copied()
+                .unwrap_or(ProtocolVersion::latest());
+
+            match closest {
+                #(#entity_arms)*
+                _ => BlockEntityTypeLookup { type_map: HashMap::new() }
+            }
+        }
+    };
+
+    let entity_dest_path = out_path.join("block_entity_lookup.rs");
+    fs::write(&entity_dest_path, entity_lookup_code.to_string())?;
 
     Ok(())
 }

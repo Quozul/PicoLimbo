@@ -42,7 +42,6 @@ schematic_file = ""
 ### Known Limitations
 
 Here's a list of what does not work when loading a schematic:
-- **Block entities**: Chests, signs, banners, player heads, and other tile entities
 - **Entities**: Armor stands, item frames, mobs, and other entities
 - **Light engine**: The world will always be fully lit
 - **Movement mechanics**: Ladder climbing or elytra does not work

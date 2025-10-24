@@ -101,6 +101,7 @@ pub struct CircularChunkPacketIterator {
     dimension: Dimension,
     schematic_context: Option<WorldContext>,
     spiral_iterator: SpiralIterator,
+    protocol_version: ProtocolVersion,
 }
 
 impl CircularChunkPacketIterator {
@@ -129,6 +130,7 @@ impl CircularChunkPacketIterator {
             dimension,
             schematic_context,
             spiral_iterator: SpiralIterator::new(center_x, center_z, view_distance),
+            protocol_version,
         }
     }
 }
@@ -147,7 +149,11 @@ impl Iterator for CircularChunkPacketIterator {
         };
 
         let packet = match &self.schematic_context {
-            Some(context) => ChunkDataAndUpdateLightPacket::from_structure(chunk_context, context),
+            Some(context) => ChunkDataAndUpdateLightPacket::from_structure(
+                chunk_context,
+                context,
+                self.protocol_version,
+            ),
             None => ChunkDataAndUpdateLightPacket::void(chunk_context),
         };
 

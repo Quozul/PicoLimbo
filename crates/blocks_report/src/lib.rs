@@ -8,6 +8,7 @@ pub use blocks_report_data::{
 };
 
 include!(concat!(env!("OUT_DIR"), "/get_blocks_reports.rs"));
+include!(concat!(env!("OUT_DIR"), "/block_entity_lookup.rs"));
 
 static INTERNAL_MAPPING_DATA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/internal_mapping"));
 

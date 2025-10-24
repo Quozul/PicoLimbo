@@ -57,6 +57,7 @@ pub enum Nbt {
 }
 
 impl Nbt {
+    const STRING_TAG_TYPE: u8 = 8;
     const COMPOUND_TAG_TYPE: u8 = 10;
 
     pub fn nameless_compound(value: Vec<Nbt>) -> Nbt {
@@ -78,10 +79,31 @@ impl Nbt {
         }
     }
 
+    pub fn string_list(name: impl ToString, value: Vec<String>) -> Nbt {
+        Self::List {
+            name: Some(name.to_string()),
+            value: value
+                .iter()
+                .map(|s| Self::String {
+                    name: None,
+                    value: s.clone(),
+                })
+                .collect(),
+            tag_type: Self::STRING_TAG_TYPE,
+        }
+    }
+
     pub fn string(name: impl ToString, value: impl ToString) -> Nbt {
         Self::String {
             name: Some(name.to_string()),
             value: value.to_string(),
+        }
+    }
+
+    pub fn bool(name: impl ToString, value: bool) -> Nbt {
+        Self::Byte {
+            name: Some(name.to_string()),
+            value: if value { 1 } else { 0 },
         }
     }
 
@@ -159,6 +181,13 @@ impl Nbt {
         }
     }
 
+    pub fn get_bool(&self) -> Option<bool> {
+        match self {
+            Nbt::Byte { value, .. } => Some(*value == 1),
+            _ => None,
+        }
+    }
+
     pub fn set_name(&self, name: String) -> Nbt {
         match self {
             Nbt::Compound { value, .. } => Nbt::Compound {
@@ -179,7 +208,7 @@ impl Nbt {
             Nbt::Float { .. } => 5,
             Nbt::Double { .. } => 6,
             Nbt::ByteArray { .. } => 7,
-            Nbt::String { .. } => 8,
+            Nbt::String { .. } => Self::STRING_TAG_TYPE,
             Nbt::List { .. } => 9,
             Nbt::Compound { .. } => Self::COMPOUND_TAG_TYPE,
             Nbt::IntArray { .. } => 11,
