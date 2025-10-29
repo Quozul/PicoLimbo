@@ -306,12 +306,12 @@ impl Schematic {
         // Extract text lines
         let text_tags = ["Text1", "Text2", "Text3", "Text4"];
         for (i, tag_name) in text_tags.iter().enumerate() {
-            if let Some(text_nbt) = nbt.find_tag(tag_name) {
-                if let Some(text_str) = text_nbt.get_string() {
-                    // Parse JSON text component
-                    messages[i] = serde_json::from_str(&text_str)
-                        .unwrap_or_else(|_| Component::new(&text_str));
-                }
+            if let Some(text_nbt) = nbt.find_tag(tag_name)
+                && let Some(text_str) = text_nbt.get_string()
+            {
+                // Parse JSON text component
+                messages[i] =
+                    serde_json::from_str(&text_str).unwrap_or_else(|_| Component::new(&text_str));
             }
         }
 
