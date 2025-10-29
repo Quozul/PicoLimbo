@@ -66,17 +66,25 @@ impl PaletteContainer {
                 }
             }
             Palette::Direct { internal_data } => {
-                const BITS_PER_ENTRY: u8 = 15;
+                let largest_block_id = report_id_mapping.iter().fold(
+                    &0,
+                    |acc, id: &BlocksReportId| if id > acc { id } else { acc },
+                );
+                let bits_per_entry = bits_needed(*largest_block_id) as u8;
 
                 let global_data_iter = internal_data.iter().map(|id| map_id(id) as u32);
 
                 Self::Direct {
-                    bits_per_entry: BITS_PER_ENTRY,
-                    data: LengthPaddedVec::new(pack_direct(global_data_iter, BITS_PER_ENTRY)),
+                    bits_per_entry,
+                    data: LengthPaddedVec::new(pack_direct(global_data_iter, bits_per_entry)),
                 }
             }
         }
     }
+}
+
+pub const fn bits_needed(n: BlocksReportId) -> u32 {
+    if n == 0 { 1 } else { 64 - n.leading_zeros() }
 }
 
 impl EncodePacket for PaletteContainer {

@@ -12,3 +12,6 @@ flate2 = { workspace = true }
 rayon = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+
+[lints]
+clippy = { unwrap_used = "deny", expect_used = "deny" }

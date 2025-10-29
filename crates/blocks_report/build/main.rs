@@ -1,10 +1,10 @@
 pub mod blocks_report_loader;
 pub mod build_report_mappings;
-pub mod internal_mapping;
 
-use crate::blocks_report_loader::{BlocksReport, load_block_data};
+use crate::blocks_report_loader::load_block_data;
 use crate::build_report_mappings::build_report_mappings;
-use crate::internal_mapping::build_internal_id_mapping;
+use blocks_report_data::block_state::BlocksReport;
+use blocks_report_data::internal_mapping::build_internal_id_mapping;
 use minecraft_protocol::prelude::{BinaryWriter, EncodePacket};
 use proc_macro2::{Ident, Span};
 use protocol_version::protocol_version::ProtocolVersion;
@@ -48,7 +48,6 @@ fn main() -> anyhow::Result<()> {
     }
 
     let generated_code = quote! {
-
         #[allow(clippy::match_same_arms)]
         pub fn get_blocks_reports(protocol_version: minecraft_protocol::prelude::ProtocolVersion) -> Result<ReportIdMapping, BlockReportIdMappingError> {
             match protocol_version {

@@ -8,8 +8,6 @@ use thiserror::Error;
 
 const UNSEEN_ID_INDEX: u32 = u32::MAX;
 
-const LOOKUP_TABLE_SIZE: usize = InternalId::MAX as usize + 1;
-
 /// A helper struct to hold reusable buffers for palette generation.
 /// This avoids re-allocating the HashMap and palette Vec for every chunk.
 /// The main block data is now handled on the stack.
@@ -27,17 +25,10 @@ pub enum ChunkProcessorError {
 impl ChunkProcessor {
     const MAX_PALETTED_SIZE: usize = 256;
 
-    pub fn new() -> Self {
+    pub fn new(largest_internal_id: InternalId) -> Self {
         Self {
             palette: Vec::with_capacity(Self::MAX_PALETTED_SIZE),
-            id_to_palette_index: vec![UNSEEN_ID_INDEX; LOOKUP_TABLE_SIZE],
-        }
-    }
-
-    fn prepare_for_next_chunk(&mut self) {
-        self.palette.clear();
-        for &id in &self.palette {
-            self.id_to_palette_index[id as usize] = UNSEEN_ID_INDEX;
+            id_to_palette_index: vec![UNSEEN_ID_INDEX; largest_internal_id as usize],
         }
     }
 
@@ -48,8 +39,6 @@ impl ChunkProcessor {
     ) -> Result<Palette, ChunkProcessorError> {
         const SECTION_VOLUME: usize = 4096;
         const SECTION_SIZE: i32 = 16;
-
-        self.prepare_for_next_chunk();
 
         let mut block_ids: [InternalId; SECTION_VOLUME] = [0; SECTION_VOLUME];
 

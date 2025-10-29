@@ -2,4 +2,4 @@ use minecraft_protocol::prelude::LengthPaddedVec;
 
 pub type ReportIdMapping = LengthPaddedVec<BlocksReportId>;
 
-pub type BlocksReportId = u16;
+pub type BlocksReportId = u32;

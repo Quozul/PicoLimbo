@@ -1,8 +1,8 @@
-use blocks_report_data::block_state::BlocksReport;
-use blocks_report_data::internal_mapping::{
+use crate::block_state::BlocksReport;
+use crate::internal_mapping::{
     InternalId, InternalMapping, InternalProperties, sort_internal_properties,
 };
-use blocks_report_data::report_mapping::{BlocksReportId, ReportIdMapping};
+use crate::report_mapping::{BlocksReportId, ReportIdMapping};
 use minecraft_protocol::prelude::LengthPaddedVec;
 use protocol_version::protocol_version::ProtocolVersion;
 use std::collections::HashMap;
