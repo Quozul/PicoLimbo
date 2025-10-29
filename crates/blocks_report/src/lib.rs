@@ -2,8 +2,10 @@ use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, DecodePacket,
 use thiserror::Error;
 
 pub use blocks_report_data::{
+    block_state::BlocksReport,
     block_state_builder::BlockStateLookup,
-    internal_mapping::{InternalId, InternalMapping},
+    build_report_mappings::build_report_mappings,
+    internal_mapping::{InternalId, InternalMapping, build_internal_id_mapping},
     report_mapping::{BlocksReportId, ReportIdMapping},
 };
 

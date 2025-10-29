@@ -167,6 +167,8 @@ version = "0.1.0"
 dependencies = [
  "minecraft_protocol",
  "protocol_version",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
