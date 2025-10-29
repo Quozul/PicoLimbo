@@ -2,6 +2,7 @@ use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::compression::CompressionConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
+use crate::configuration::overrides::Overrides;
 use crate::configuration::server_list::ServerListConfig;
 use crate::configuration::tab_list::TabListConfig;
 use crate::configuration::title::TitleConfig;
@@ -66,6 +67,8 @@ pub struct Config {
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
+
+    pub overrides: Option<Overrides>,
 }
 
 impl Default for Config {
@@ -86,6 +89,7 @@ impl Default for Config {
             compression: CompressionConfig::default(),
             title: TitleConfig::default(),
             player_listed: true,
+            overrides: None,
         }
     }
 }

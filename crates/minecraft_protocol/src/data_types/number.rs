@@ -27,7 +27,7 @@ macro_rules! impl_deserialize_packet_data {
     };
 }
 
-impl_deserialize_packet_data!(f32, f64, i32, u64, i64, i16, i8, u16, u8);
+impl_deserialize_packet_data!(f32, f64, u32, i32, u64, i64, i16, i8, u16, u8);
 
 #[cfg(test)]
 mod tests {

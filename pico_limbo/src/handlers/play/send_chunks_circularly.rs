@@ -1,5 +1,5 @@
 use crate::server::packet_registry::PacketRegistry;
-use blocks_report::get_block_report_id_mapping;
+use blocks_report::{ReportIdMapping, get_block_report_id_mapping};
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion};
@@ -112,12 +112,14 @@ impl CircularChunkPacketIterator {
         biome_index: i32,
         dimension: Dimension,
         protocol_version: ProtocolVersion,
+        custom_blocks_report: Option<ReportIdMapping>,
     ) -> Self {
         let (center_x, center_z) = center_chunk;
         let paste_origin = Coordinates::new_uniform(0);
 
-        let schematic_context: Option<WorldContext> = get_block_report_id_mapping(protocol_version)
-            .map_or(None, |report_id_mapping| {
+        let schematic_context: Option<WorldContext> = custom_blocks_report
+            .or_else(|| get_block_report_id_mapping(protocol_version).ok())
+            .and_then(|report_id_mapping| {
                 world.map(|world_arc| WorldContext {
                     paste_origin,
                     world: world_arc,

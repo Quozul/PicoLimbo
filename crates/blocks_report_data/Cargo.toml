@@ -6,4 +6,10 @@ edition = "2024"
 [dependencies]
 protocol_version = { path = "../protocol_version" }
 minecraft_protocol = { path = "../minecraft_protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+clippy = { unwrap_used = "deny", expect_used = "deny" }

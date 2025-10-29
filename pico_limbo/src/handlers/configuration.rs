@@ -219,6 +219,7 @@ pub fn send_play_packets(
             biome_id,
             dimension,
             protocol_version,
+            server_state.custom_blocks_report(),
         );
         batch.chain_iter(iter);
     }

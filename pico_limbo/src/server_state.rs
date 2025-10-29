@@ -1,20 +1,20 @@
 use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::server::game_mode::GameMode;
+use crate::world::world_loader::{LoadWorldError, LoadWorldResult, try_load_world};
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
+use blocks_report::ReportIdMapping;
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
-use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
+use pico_structures::prelude::{World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
 use std::fs::File;
 use std::io::Read;
 use std::num::TryFromIntError;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::Duration;
 use thiserror::Error;
-use tracing::debug;
 
 #[derive(Clone)]
 pub struct CompressionSettings {
@@ -102,6 +102,7 @@ pub struct ServerState {
     action_bar: Option<Component>,
     reduced_debug_info: bool,
     is_player_listed: bool,
+    custom_blocks_report: Option<ReportIdMapping>,
 }
 
 impl ServerState {
@@ -189,6 +190,10 @@ impl ServerState {
         self.world.clone()
     }
 
+    pub fn custom_blocks_report(&self) -> Option<ReportIdMapping> {
+        self.custom_blocks_report.clone()
+    }
+
     pub const fn time_world_ticks(&self) -> i64 {
         self.time_world
     }
@@ -269,12 +274,13 @@ pub struct ServerStateBuilder {
     action_bar: Option<Component>,
     reduced_debug_info: bool,
     is_player_listed: bool,
+    blocks_override: Option<String>,
 }
 
 #[derive(Debug, Error)]
 pub enum ServerStateBuilderError {
     #[error(transparent)]
-    SchematicLoadingFailed(#[from] SchematicError),
+    LoadWorld(#[from] LoadWorldError),
     #[error(transparent)]
     BinaryReader(#[from] BinaryReaderError),
     #[error(transparent)]
@@ -399,8 +405,13 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn schematic(&mut self, schematic_file_path: String) -> &mut Self {
+    pub fn schematic(
+        &mut self,
+        schematic_file_path: String,
+        blocks_override: Option<String>,
+    ) -> &mut Self {
         self.schematic_file_path = schematic_file_path;
+        self.blocks_override = blocks_override.and_then(optional_string);
         self
     }
 
@@ -517,17 +528,13 @@ impl ServerStateBuilder {
 
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
-        let world = if self.schematic_file_path.is_empty() {
-            None
-        } else {
-            let schematic = time_operation("Loading schematic", || {
-                let internal_mapping = blocks_report::load_internal_mapping()?;
-                let schematic_file_path = PathBuf::from(self.schematic_file_path);
-                Schematic::load_schematic_file(&schematic_file_path, &internal_mapping)
-            })?;
-            let world = time_operation("Loading world", || World::from_schematic(&schematic))?;
-            Some(Arc::new(world))
-        };
+        let path = self
+            .blocks_override
+            .map(|blocks_override| Path::new(&blocks_override.as_str()).to_path_buf());
+        let LoadWorldResult {
+            world,
+            custom_mapping,
+        } = try_load_world(&self.schematic_file_path, path.as_deref())?;
 
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
@@ -555,6 +562,7 @@ impl ServerStateBuilder {
             title: self.title,
             reduced_debug_info: self.reduced_debug_info,
             is_player_listed: self.is_player_listed,
+            custom_blocks_report: custom_mapping,
         })
     }
 }
@@ -568,24 +576,10 @@ fn optional_mini_message(content: &str) -> Result<Option<Component>, MiniMessage
     Ok(component)
 }
 
-fn format_duration(duration: Duration) -> String {
-    let total_secs = duration.as_secs_f64();
-
-    if total_secs >= 1.0 {
-        format!("{total_secs:.1}s")
+fn optional_string(string: String) -> Option<String> {
+    if string.is_empty() {
+        None
     } else {
-        format!("{}ms", duration.as_millis())
+        Some(string)
     }
-}
-
-fn time_operation<T, F>(operation_name: &str, operation: F) -> T
-where
-    F: FnOnce() -> T,
-{
-    debug!("{operation_name}...");
-    let start = std::time::Instant::now();
-    let result = operation();
-    let elapsed = start.elapsed();
-    debug!("Time elapsed: {}", format_duration(elapsed));
-    result
 }

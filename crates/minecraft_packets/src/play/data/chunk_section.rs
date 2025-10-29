@@ -30,8 +30,7 @@ impl ChunkSection {
         biome_id: i32,
     ) -> ChunkSection {
         if let Some(palette) = context.world.get_section(&section_position) {
-            let block_states =
-                PaletteContainer::from_palette(palette, context.report_id_mapping.as_ref());
+            let block_states = PaletteContainer::from_palette(palette, &context.report_id_mapping);
             let biomes = PaletteContainer::single_valued(biome_id);
 
             ChunkSection {

@@ -112,7 +112,10 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .spawn_position(cfg.world.spawn_position)
         .spawn_rotation(cfg.world.spawn_rotation)
         .view_distance(cfg.world.experimental.view_distance)
-        .schematic(cfg.world.experimental.schematic_file)
+        .schematic(
+            cfg.world.experimental.schematic_file,
+            cfg.overrides.and_then(|o| o.blocks_report),
+        )
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)

@@ -38,6 +38,7 @@ export default defineConfig({
 					{ text: "Introduction", link: "/config/introduction.html" },
 					{ text: "Boss Bar", link: "/config/boss-bar.html" },
 					{ text: "Compression", link: "/config/compression.html" },
+					{ text: "Overrides", link: "/config/overrides.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
 					{ text: "Server List", link: "/config/server-list.html" },

@@ -2,6 +2,7 @@ use crate::chunk_processor::{ChunkProcessor, ChunkProcessorError};
 use crate::internal_block_entity::BlockEntity;
 use crate::palette::Palette;
 use crate::prelude::Schematic;
+use blocks_report::InternalId;
 use minecraft_protocol::prelude::Coordinates;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::IntoParallelIterator;
@@ -20,7 +21,10 @@ pub enum WorldLoadingError {
 }
 
 impl World {
-    pub fn from_schematic(schematic: &Schematic) -> Result<Self, WorldLoadingError> {
+    pub fn from_schematic(
+        schematic: &Schematic,
+        largest_internal_id: InternalId,
+    ) -> Result<Self, WorldLoadingError> {
         let dimensions = schematic.get_dimensions();
         let size_in_chunks = (dimensions + 15) / 16;
         let chunk_count = size_in_chunks.x() * size_in_chunks.y() * size_in_chunks.z();
@@ -34,7 +38,7 @@ impl World {
 
                 let section_position = Coordinates::new(chunk_x, chunk_y, chunk_z);
 
-                let mut processor = ChunkProcessor::new();
+                let mut processor = ChunkProcessor::new(largest_internal_id);
                 processor.process_section(schematic, section_position)
             })
             .collect();

@@ -1,10 +1,12 @@
-use crate::blocks_report_loader::BlocksReport;
-use crate::internal_mapping::sort_internal_properties;
-use blocks_report_data::internal_mapping::{InternalId, InternalMapping, InternalProperties};
-use blocks_report_data::report_mapping::{BlocksReportId, ReportIdMapping};
+use crate::block_state::BlocksReport;
+use crate::internal_mapping::{
+    InternalId, InternalMapping, InternalProperties, sort_internal_properties,
+};
+use crate::report_mapping::{BlocksReportId, ReportIdMapping};
 use minecraft_protocol::prelude::LengthPaddedVec;
 use protocol_version::protocol_version::ProtocolVersion;
 use std::collections::HashMap;
+use tracing::warn;
 
 pub struct ReportMapping {
     pub protocol_version: ProtocolVersion,
@@ -38,19 +40,33 @@ pub fn build_report_mappings(
                 let original_id = state.id;
                 let properties = sort_internal_properties(state);
                 let lookup_key = (name.clone(), properties);
-                let internal_id = state_lookup_map.get(&lookup_key).expect(
-                    "State from report not found in canonical mapping. This should not happen.",
-                );
+                if let Some(internal_id) = state_lookup_map.get(&lookup_key) {
+                    report_vec[*internal_id as usize] = original_id;
+                } else {
+                    warn!("State from report not found in canonical mapping for '{name}'");
+                }
+            }
+        }
 
-                report_vec[*internal_id as usize] = original_id;
+        let mut largest_block_id = 0;
+        for id in &report_vec {
+            if *id > largest_block_id {
+                largest_block_id = *id;
             }
         }
 
         all_mappings.push(ReportMapping {
             protocol_version: report.protocol_version,
-            mapping: LengthPaddedVec::new(report_vec),
+            mapping: ReportIdMapping {
+                ids: LengthPaddedVec::new(report_vec),
+                bits_per_entry: bits_needed(largest_block_id) as u8,
+            },
         });
     }
 
     all_mappings
+}
+
+pub const fn bits_needed(n: BlocksReportId) -> u32 {
+    if n == 0 { 1 } else { 64 - n.leading_zeros() }
 }

@@ -1,4 +1,4 @@
-use blocks_report::{BlocksReportId, InternalId, get_block_id};
+use blocks_report::{BlocksReportId, InternalId, ReportIdMapping, get_block_id};
 use minecraft_protocol::prelude::*;
 use pico_structures::prelude::{Palette, pack_direct};
 
@@ -37,11 +37,11 @@ impl PaletteContainer {
         }
     }
 
-    pub fn from_palette(palette: &Palette, report_id_mapping: &[BlocksReportId]) -> Self {
+    pub fn from_palette(palette: &Palette, report_id_mapping: &ReportIdMapping) -> Self {
         const AIR_ID: BlocksReportId = 0;
 
         let map_id = |internal_id: &InternalId| -> i32 {
-            get_block_id(report_id_mapping, *internal_id).unwrap_or(AIR_ID) as i32
+            get_block_id(report_id_mapping.ids.inner(), *internal_id).unwrap_or(AIR_ID) as i32
         };
 
         match palette {
@@ -66,13 +66,12 @@ impl PaletteContainer {
                 }
             }
             Palette::Direct { internal_data } => {
-                const BITS_PER_ENTRY: u8 = 15;
-
+                let bits_per_entry = report_id_mapping.bits_per_entry;
                 let global_data_iter = internal_data.iter().map(|id| map_id(id) as u32);
 
                 Self::Direct {
-                    bits_per_entry: BITS_PER_ENTRY,
-                    data: LengthPaddedVec::new(pack_direct(global_data_iter, BITS_PER_ENTRY)),
+                    bits_per_entry,
+                    data: LengthPaddedVec::new(pack_direct(global_data_iter, bits_per_entry)),
                 }
             }
         }
