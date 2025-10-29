@@ -23,6 +23,13 @@ pub struct ChunkData {
     biomes: Vec<i32>,
 
     data: EncodeAsBytes<Vec<ChunkSection>>,
+
+    // 1.17 and below
+    #[pvn(..757)]
+    block_entities_legacy: LengthPaddedVec<Nbt>,
+
+    // 1.18+
+    #[pvn(757..)]
     block_entities: LengthPaddedVec<BlockEntity>,
 }
 
@@ -51,6 +58,7 @@ impl ChunkData {
                 ChunkSection::void(context.biome_index);
                 section_count as usize
             ]),
+            block_entities_legacy: LengthPaddedVec::default(),
             block_entities: LengthPaddedVec::default(),
         }
     }
@@ -89,7 +97,7 @@ impl ChunkData {
         let block_entity_lookup = get_block_entity_lookup(protocol_version);
 
         // Process block entities for this chunk
-        let block_entities_list = Self::collect_chunk_block_entities(
+        let (block_entities_legacy, block_entities) = Self::collect_chunk_block_entities(
             &chunk_context,
             schematic_context,
             &block_entity_lookup,
@@ -108,7 +116,8 @@ impl ChunkData {
             ]),
             biomes: vec![chunk_context.biome_index; 1024],
             data: EncodeAsBytes::new(data),
-            block_entities: LengthPaddedVec::new(block_entities_list),
+            block_entities_legacy: LengthPaddedVec::new(block_entities_legacy),
+            block_entities: LengthPaddedVec::new(block_entities),
         }
     }
 
@@ -117,16 +126,19 @@ impl ChunkData {
         schematic_context: &WorldContext,
         block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
-    ) -> Vec<BlockEntity> {
-        let mut block_entities_list = Vec::new();
+    ) -> (Vec<Nbt>, Vec<BlockEntity>) {
+        let mut block_entities_legacy = Vec::new();
+        let mut block_entities = Vec::new();
 
         // Get pre-computed block entities for this chunk
         let Some(entities) = schematic_context
             .world
             .get_chunk_block_entities(chunk_context.chunk_x, chunk_context.chunk_z)
         else {
-            return block_entities_list;
+            return (block_entities_legacy, block_entities);
         };
+
+        let is_legacy: bool = protocol_version.is_before_inclusive(ProtocolVersion::V1_17_1);
 
         // Iterate through all block entities
         for entity_data in entities {
@@ -144,16 +156,36 @@ impl ChunkData {
             // Convert intermediate format to protocol-specific NBT
             let nbt = Self::intermediate_to_nbt(&entity_data.nbt, protocol_version);
 
-            block_entities_list.push(BlockEntity::new(
-                world_x,
-                world_y,
-                world_z,
-                VarInt::new(protocol_id),
-                nbt,
-            ));
+            if is_legacy {
+                // 1.17 and below
+                let mut nbt_fields = vec![
+                    Nbt::string("id", entity_data.block_entity_type.clone()),
+                    Nbt::int("x", world_x),
+                    Nbt::int("y", world_y),
+                    Nbt::int("z", world_z),
+                ];
+
+                if let Nbt::Compound { value, .. } = nbt {
+                    nbt_fields.extend(value);
+                }
+
+                block_entities_legacy.push(Nbt::Compound {
+                    name: None,
+                    value: nbt_fields,
+                });
+            } else {
+                // 1.18+
+                block_entities.push(BlockEntity::new(
+                    world_x,
+                    world_y,
+                    world_z,
+                    VarInt::new(protocol_id),
+                    nbt,
+                ));
+            }
         }
 
-        block_entities_list
+        (block_entities_legacy, block_entities)
     }
 
     fn intermediate_to_nbt(
