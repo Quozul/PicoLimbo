@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for block entities
 
+## [1.7.0+mc1.21.10] - 2025-10-19
+
+### Added
+
+- Add spawn rotation configuration
+- Add reduced debug info configuration
+- Support for 1.21.10
+
+### Fixed
+
+- Reduced Docker image size
+- Fixed wrong skin parts ID sent in entity metadata packets for version 1.12 to 1.14.4
+
 ## [1.6.0+mc1.21.9] - 2025-09-30
 
 ### Added

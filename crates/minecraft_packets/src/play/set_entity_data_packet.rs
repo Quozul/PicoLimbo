@@ -37,6 +37,10 @@ impl EntityMetadata {
                     17
                 } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_15) {
                     16
+                } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_14) {
+                    15
+                } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_12) {
+                    13
                 } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_9) {
                     15
                 } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
