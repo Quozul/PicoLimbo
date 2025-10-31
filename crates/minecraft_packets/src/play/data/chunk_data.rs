@@ -3,8 +3,6 @@ use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
-use pico_structures::prelude::{InternalBlockEntityData, SignFace};
-use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct ChunkData {
@@ -30,7 +28,7 @@ pub struct ChunkData {
 
     // 1.18+
     #[pvn(757..)]
-    v1_18_block_entities: LengthPaddedVec<BlockEntity>,
+    v1_18_block_entities: LengthPaddedVec<ChunkBlockEntity>,
 }
 
 impl ChunkData {
@@ -126,7 +124,7 @@ impl ChunkData {
         schematic_context: &WorldContext,
         block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
-    ) -> (Vec<Nbt>, Vec<BlockEntity>) {
+    ) -> (Vec<Nbt>, Vec<ChunkBlockEntity>) {
         let mut block_entities = Vec::new();
         let mut v1_18_block_entities = Vec::new();
 
@@ -140,34 +138,30 @@ impl ChunkData {
 
         // Iterate through all block entities
         for entity_data in entities {
-            // Convert schematic-relative position to world position
-            let world_x = entity_data.world_x + schematic_context.paste_origin.x();
-            let world_y = entity_data.world_y + schematic_context.paste_origin.y();
-            let world_z = entity_data.world_z + schematic_context.paste_origin.z();
-
-            // Look up protocol ID
-            let Some(protocol_id) = block_entity_lookup.get_type_id(&entity_data.block_entity_type)
+            let Some(protocol_id) =
+                block_entity_lookup.get_type_id(&entity_data.get_block_entity_type().to_string())
             else {
                 continue;
             };
 
-            // Convert intermediate format to protocol-specific NBT
-            let nbt = Self::intermediate_to_nbt(&entity_data.nbt, protocol_version);
+            let nbt = entity_data.to_nbt(protocol_version);
+
+            let coordinates = entity_data.get_position() + schematic_context.paste_origin;
 
             if protocol_version.is_after_inclusive(ProtocolVersion::V1_18) {
-                v1_18_block_entities.push(BlockEntity::new(
-                    world_x,
-                    world_y,
-                    world_z,
+                v1_18_block_entities.push(ChunkBlockEntity::new(
+                    coordinates.x(),
+                    coordinates.y(),
+                    coordinates.z(),
                     VarInt::new(protocol_id),
                     nbt,
                 ));
             } else {
                 let mut nbt_fields = vec![
                     Nbt::string("id", entity_data.block_entity_type.clone()),
-                    Nbt::int("x", world_x),
-                    Nbt::int("y", world_y),
-                    Nbt::int("z", world_z),
+                    Nbt::int("x", coordinates.x()),
+                    Nbt::int("y", coordinates.y()),
+                    Nbt::int("z", coordinates.z()),
                 ];
 
                 if let Nbt::Compound { value, .. } = nbt {
@@ -179,86 +173,6 @@ impl ChunkData {
         }
 
         (block_entities, v1_18_block_entities)
-    }
-
-    fn intermediate_to_nbt(
-        data: &InternalBlockEntityData,
-        protocol_version: ProtocolVersion,
-    ) -> Nbt {
-        match data {
-            InternalBlockEntityData::Sign { sign_block_entity } => {
-                if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
-                    let front_text = format_sign_text(
-                        protocol_version,
-                        "front_text",
-                        &sign_block_entity.front_face,
-                    );
-                    let back_text = format_sign_text(
-                        protocol_version,
-                        "back_text",
-                        &sign_block_entity.back_face,
-                    );
-
-                    Nbt::Compound {
-                        name: None,
-                        value: vec![
-                            front_text,
-                            back_text,
-                            Nbt::bool("is_waxed", sign_block_entity.is_waxed),
-                        ],
-                    }
-                } else {
-                    Self::format_sign_legacy(&sign_block_entity.front_face)
-                }
-            }
-            InternalBlockEntityData::Generic { nbt } => nbt.clone(),
-        }
-    }
-
-    /// Format sign data for 1.19 and earlier
-    fn format_sign_legacy(sign_face: &SignFace) -> Nbt {
-        let text1 = sign_face.messages[0].to_json();
-        let text2 = sign_face.messages[1].to_json();
-        let text3 = sign_face.messages[2].to_json();
-        let text4 = sign_face.messages[3].to_json();
-
-        Nbt::Compound {
-            name: None,
-            value: vec![
-                Nbt::string("Text1", text1),
-                Nbt::string("Text2", text2),
-                Nbt::string("Text3", text3),
-                Nbt::string("Text4", text4),
-                Nbt::string("Color", sign_face.color.clone()),
-                Nbt::bool("GlowingText", sign_face.is_glowing),
-            ],
-        }
-    }
-}
-
-fn format_sign_text(
-    protocol_version: ProtocolVersion,
-    face_name: impl ToString,
-    sign_face: &SignFace,
-) -> Nbt {
-    Nbt::compound(
-        face_name,
-        vec![
-            Nbt::String {
-                name: Some("color".to_string()),
-                value: sign_face.color.clone(),
-            },
-            Nbt::bool("has_glowing_text", sign_face.is_glowing),
-            format_messages(protocol_version, &sign_face.messages),
-        ],
-    )
-}
-
-fn format_messages(protocol_version: ProtocolVersion, messages: &[Component; 4]) -> Nbt {
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5) {
-        Nbt::compound_list("messages", messages.clone().map(|c| c.to_nbt()).to_vec())
-    } else {
-        Nbt::string_list("messages", messages.clone().map(|c| c.to_json()).to_vec())
     }
 }
 
@@ -275,7 +189,7 @@ struct HeightMap {
 }
 
 #[derive(PacketOut)]
-pub struct BlockEntity {
+pub struct ChunkBlockEntity {
     /// Packed XZ coordinates within the chunk section (X: 4 bits, Z: 4 bits)
     /// Calculated as: ((x & 15) << 4) | (z & 15)
     packed_xz: u8,
@@ -287,7 +201,7 @@ pub struct BlockEntity {
     data: Nbt,
 }
 
-impl BlockEntity {
+impl ChunkBlockEntity {
     /// Creates a new BlockEntity from world coordinates and NBT data
     pub fn new(
         world_x: i32,
