@@ -1,4 +1,5 @@
 use crate::decompress::decompress_gz_file;
+use crate::internal_block_entity::BlockEntity;
 use blocks_report::{BlockStateLookup, InternalId, InternalMapping};
 use minecraft_protocol::prelude::{Coordinates, VarInt};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
@@ -31,6 +32,7 @@ pub struct Schematic {
     block_data: Vec<InternalId>,
     dimensions: Coordinates,
     internal_air_id: InternalId,
+    block_entities: Vec<BlockEntity>,
 }
 
 impl Schematic {
@@ -51,11 +53,13 @@ impl Schematic {
             dimensions,
             internal_air_id,
         )?;
+        let block_entities = Self::parse_block_entities(&nbt)?;
 
         Ok(Self {
             block_data,
             dimensions,
             internal_air_id,
+            block_entities,
         })
     }
 
@@ -154,6 +158,24 @@ impl Schematic {
         Ok(block_data)
     }
 
+    fn parse_block_entities(nbt: &Nbt) -> Result<Vec<BlockEntity>, SchematicError> {
+        let Some(block_entities_tag) = nbt.find_tag("BlockEntities") else {
+            return Ok(Vec::new());
+        };
+
+        let Some(block_entities_list) = block_entities_tag.get_nbt_vec() else {
+            warn!("BlockEntities tag exists but is not a list. Skipping block entities.");
+            return Ok(Vec::new());
+        };
+
+        let block_entities = block_entities_list
+            .iter()
+            .filter_map(BlockEntity::from_nbt)
+            .collect::<Vec<BlockEntity>>();
+
+        Ok(block_entities)
+    }
+
     /// Helper function to safely get a required NBT tag and extract its value.
     fn get_tag_as<T>(
         nbt: &Nbt,
@@ -205,5 +227,9 @@ impl Schematic {
 
     pub fn get_dimensions(&self) -> Coordinates {
         self.dimensions
+    }
+
+    pub fn get_block_entities(&self) -> &[BlockEntity] {
+        &self.block_entities
     }
 }
