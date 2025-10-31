@@ -5,7 +5,7 @@ use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
 use blocks_report::ReportIdMapping;
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
-use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
+use minecraft_protocol::prelude::{BinaryReaderError, Dimension, Nbt};
 use pico_structures::prelude::{World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
 use std::fs::File;
@@ -15,6 +15,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use thiserror::Error;
+use tracing::warn;
 
 #[derive(Clone)]
 pub struct CompressionSettings {
@@ -103,6 +104,7 @@ pub struct ServerState {
     reduced_debug_info: bool,
     is_player_listed: bool,
     custom_blocks_report: Option<ReportIdMapping>,
+    registries_override: Option<Nbt>,
 }
 
 impl ServerState {
@@ -234,6 +236,10 @@ impl ServerState {
         self.action_bar.as_ref()
     }
 
+    pub const fn registries_override(&self) -> Option<&Nbt> {
+        self.registries_override.as_ref()
+    }
+
     pub const fn is_player_listed(&self) -> bool {
         self.is_player_listed
     }
@@ -275,6 +281,7 @@ pub struct ServerStateBuilder {
     reduced_debug_info: bool,
     is_player_listed: bool,
     blocks_override: Option<String>,
+    registries_override: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -415,6 +422,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn registries_override(&mut self, registries_override: String) -> &mut Self {
+        self.registries_override = optional_string(registries_override);
+        self
+    }
+
     pub fn tab_list<S>(
         &mut self,
         header: S,
@@ -535,6 +547,15 @@ impl ServerStateBuilder {
             world,
             custom_mapping,
         } = try_load_world(&self.schematic_file_path, path.as_deref())?;
+        let registries_nbt = self.registries_override.and_then(|path| {
+            match Nbt::from_file(Path::new(path.as_str())) {
+                Ok(nbt) => Some(nbt),
+                Err(err) => {
+                    warn!("Failed to load nbt from file: {}", err);
+                    None
+                }
+            }
+        });
 
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
@@ -563,6 +584,7 @@ impl ServerStateBuilder {
             reduced_debug_info: self.reduced_debug_info,
             is_player_listed: self.is_player_listed,
             custom_blocks_report: custom_mapping,
+            registries_override: registries_nbt,
         })
     }
 }

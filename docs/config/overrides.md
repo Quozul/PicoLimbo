@@ -40,3 +40,31 @@ blocks_report = ""
 :::
 
 By setting the value to an empty string, PicoLimbo will not use any custom blocks report and will rely on the default one.
+
+## Registries Report Override
+
+Similar to the blocks report, you can also override the registries report by specifying the path to your custom registries report JSON file using the `registries_report` key.
+
+:::code-group
+```toml [server.toml] {3}  
+[overrides]
+blocks_report = "/path/to/blocks.json"
+registries_report = "/path/to/registries.json"
+```  
+:::
+
+Replace `/path/to/registries.json` with the actual path to your custom registries report JSON file.
+
+### Disabling Registries Report Override
+
+If you want to disable the registries report override and use the default registries report, you can either omit the `registries_report` key or set its value to an empty string:
+
+:::code-group
+```toml [server.toml] {3}  
+[overrides]
+blocks_report = "/path/to/blocks.json"
+registries_report = ""
+```  
+:::
+
+By omitting the `registries_report` key or setting it to an empty string, PicoLimbo will not use any custom registries report and will rely on the default one.

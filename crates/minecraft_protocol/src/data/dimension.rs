@@ -24,8 +24,8 @@ impl Dimension {
     ///   0: overworld, 1: overworld_caves, 2: the_end, 3: the_nether
     pub fn type_index_1_20_5(self) -> VarInt {
         let idx = match self {
-            Dimension::Overworld => 0,
-            Dimension::Nether => 3,
+            Dimension::Overworld => 4,
+            Dimension::Nether => 0,
             Dimension::End => 2,
         };
         VarInt::new(idx)
@@ -42,12 +42,12 @@ impl Dimension {
 
     #[inline]
     pub const fn height(self) -> i32 {
-        256
+        384
     }
 
     #[inline]
     pub const fn min_y(self) -> i32 {
-        0
+        -64
     }
 }
 

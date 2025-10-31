@@ -98,6 +98,10 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.fav_icon(server_icon)?;
     }
 
+    if let Some(ref overrides) = cfg.overrides {
+        server_state_builder.registries_override(overrides.registry_override.clone());
+    }
+
     server_state_builder
         .dimension(cfg.world.dimension.into())
         .time_world(cfg.world.time.into())
@@ -114,7 +118,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(
             cfg.world.experimental.schematic_file,
-            cfg.overrides.and_then(|o| o.blocks_report),
+            cfg.overrides.map(|o| o.blocks_report),
         )
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins)

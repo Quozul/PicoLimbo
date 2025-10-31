@@ -9,8 +9,10 @@ use minecraft_packets::configuration::data::registry_entry::RegistryEntry;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
-use minecraft_protocol::prelude::{ProtocolVersion, State};
+use minecraft_protocol::prelude::{Identifier, NbtFeatures, ProtocolVersion, State};
 use registries::{Registries, get_registries};
+use std::str::FromStr;
+use tracing::debug;
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
@@ -49,28 +51,79 @@ fn send_configuration_packets(
     }
 
     // Send Registry Data
-    match get_registries(protocol_version, server_state.spawn_dimension()) {
-        Registries::V1_20_5 { registries } => {
-            for registries in registries.registries.into_inner() {
-                let entries = registries.entries.into_inner();
-                let mut registry_entries = Vec::with_capacity(entries.len());
+    if let Some(registries_override) = server_state.registries_override() {
+        let registries = registries_override.get_nbt_vec().unwrap();
 
-                for entry in entries {
-                    let bytes = entry.nbt_bytes.into_inner();
-                    let entry = RegistryEntry::new(entry.entry_id.clone(), bytes);
+        for registry in registries {
+            let registry_id = registry.get_name().unwrap();
+            let registry_id = Identifier::from_str(&registry_id).unwrap();
+            let entries = registry.find_tag("value").unwrap().get_nbt_vec().unwrap();
+            let mut registry_entries = Vec::with_capacity(entries.len());
+
+            for entry in entries {
+                let entry_id = entry.find_tag("name").unwrap().get_string().unwrap();
+                let entry_id = Identifier::from_str(&entry_id).unwrap();
+                let bytes = entry.find_tag("element").and_then(|element| {
+                    let features = NbtFeatures::builder().nameless().build();
+                    element.to_bytes(features).ok()
+                });
+                if let Some(bytes) = bytes {
+                    let entry = RegistryEntry::new(entry_id.clone(), bytes);
                     registry_entries.push(entry);
                 }
+            }
 
-                let packet = RegistryDataPacket::registry(registries.registry_id, registry_entries);
-                batch.queue(|| PacketRegistry::RegistryData(packet));
+            if !registry_entries.is_empty() {
+                const AVAILABLE_REGISTRIES: [&str; 15] = [
+                    "minecraft:banner_pattern",
+                    "minecraft:chat_type",
+                    "minecraft:damage_type",
+                    "minecraft:dimension_type",
+                    "minecraft:painting_variant",
+                    "minecraft:trim_material",
+                    "minecraft:trim_pattern",
+                    "minecraft:wolf_variant",
+                    "minecraft:worldgen/biome",
+                    // Added in 1.21.5
+                    "minecraft:cat_variant",
+                    "minecraft:chicken_variant",
+                    "minecraft:cow_variant",
+                    "minecraft:frog_variant",
+                    "minecraft:pig_variant",
+                    "minecraft:wolf_sound_variant",
+                ];
+                if AVAILABLE_REGISTRIES.contains(&registry_id.to_string().as_str()) {
+                    debug!("Queuing registry {registry_id:?}");
+                    let packet = RegistryDataPacket::registry(registry_id, registry_entries);
+                    batch.queue(|| PacketRegistry::RegistryData(packet));
+                }
             }
         }
-        Registries::V1_20_2 { registry_codec } => {
-            let packet = RegistryDataPacket::codec(registry_codec);
-            batch.queue(|| PacketRegistry::RegistryData(packet));
-        }
-        _ => {
-            unreachable!()
+    } else {
+        match get_registries(protocol_version, server_state.spawn_dimension()) {
+            Registries::V1_20_5 { registries } => {
+                for registries in registries.registries.into_inner() {
+                    let entries = registries.entries.into_inner();
+                    let mut registry_entries = Vec::with_capacity(entries.len());
+
+                    for entry in entries {
+                        let bytes = entry.nbt_bytes.into_inner();
+                        let entry = RegistryEntry::new(entry.entry_id.clone(), bytes);
+                        registry_entries.push(entry);
+                    }
+
+                    let packet =
+                        RegistryDataPacket::registry(registries.registry_id, registry_entries);
+                    batch.queue(|| PacketRegistry::RegistryData(packet));
+                }
+            }
+            Registries::V1_20_2 { registry_codec } => {
+                let packet = RegistryDataPacket::codec(registry_codec);
+                batch.queue(|| PacketRegistry::RegistryData(packet));
+            }
+            _ => {
+                unreachable!()
+            }
         }
     }
 
