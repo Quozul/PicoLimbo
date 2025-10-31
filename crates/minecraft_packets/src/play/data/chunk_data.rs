@@ -26,11 +26,11 @@ pub struct ChunkData {
 
     // 1.17 and below
     #[pvn(..757)]
-    block_entities_legacy: LengthPaddedVec<Nbt>,
+    block_entities: LengthPaddedVec<Nbt>,
 
     // 1.18+
     #[pvn(757..)]
-    block_entities: LengthPaddedVec<BlockEntity>,
+    v1_18_block_entities: LengthPaddedVec<BlockEntity>,
 }
 
 impl ChunkData {
@@ -58,8 +58,8 @@ impl ChunkData {
                 ChunkSection::void(context.biome_index);
                 section_count as usize
             ]),
-            block_entities_legacy: LengthPaddedVec::default(),
             block_entities: LengthPaddedVec::default(),
+            v1_18_block_entities: LengthPaddedVec::default(),
         }
     }
 
@@ -116,8 +116,8 @@ impl ChunkData {
             ]),
             biomes: vec![chunk_context.biome_index; 1024],
             data: EncodeAsBytes::new(data),
-            block_entities_legacy: LengthPaddedVec::new(block_entities_legacy),
-            block_entities: LengthPaddedVec::new(block_entities),
+            block_entities: LengthPaddedVec::new(block_entities_legacy),
+            v1_18_block_entities: LengthPaddedVec::new(block_entities),
         }
     }
 
@@ -127,18 +127,16 @@ impl ChunkData {
         block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
     ) -> (Vec<Nbt>, Vec<BlockEntity>) {
-        let mut block_entities_legacy = Vec::new();
         let mut block_entities = Vec::new();
+        let mut v1_18_block_entities = Vec::new();
 
         // Get pre-computed block entities for this chunk
         let Some(entities) = schematic_context
             .world
             .get_chunk_block_entities(chunk_context.chunk_x, chunk_context.chunk_z)
         else {
-            return (block_entities_legacy, block_entities);
+            return (block_entities, v1_18_block_entities);
         };
-
-        let is_legacy: bool = protocol_version.is_before_inclusive(ProtocolVersion::V1_17_1);
 
         // Iterate through all block entities
         for entity_data in entities {
@@ -156,8 +154,15 @@ impl ChunkData {
             // Convert intermediate format to protocol-specific NBT
             let nbt = Self::intermediate_to_nbt(&entity_data.nbt, protocol_version);
 
-            if is_legacy {
-                // 1.17 and below
+            if protocol_version.is_after_inclusive(ProtocolVersion::V1_18) {
+                v1_18_block_entities.push(BlockEntity::new(
+                    world_x,
+                    world_y,
+                    world_z,
+                    VarInt::new(protocol_id),
+                    nbt,
+                ));
+            } else {
                 let mut nbt_fields = vec![
                     Nbt::string("id", entity_data.block_entity_type.clone()),
                     Nbt::int("x", world_x),
@@ -169,23 +174,11 @@ impl ChunkData {
                     nbt_fields.extend(value);
                 }
 
-                block_entities_legacy.push(Nbt::Compound {
-                    name: None,
-                    value: nbt_fields,
-                });
-            } else {
-                // 1.18+
-                block_entities.push(BlockEntity::new(
-                    world_x,
-                    world_y,
-                    world_z,
-                    VarInt::new(protocol_id),
-                    nbt,
-                ));
+                block_entities.push(Nbt::nameless_compound(nbt_fields));
             }
         }
 
-        (block_entities_legacy, block_entities)
+        (block_entities, v1_18_block_entities)
     }
 
     fn intermediate_to_nbt(
@@ -194,9 +187,7 @@ impl ChunkData {
     ) -> Nbt {
         match data {
             InternalBlockEntityData::Sign { sign_block_entity } => {
-                if protocol_version.is_before_inclusive(ProtocolVersion::V1_20) {
-                    Self::format_sign_legacy(&sign_block_entity.front_face)
-                } else {
+                if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
                     let front_text = format_sign_text(
                         protocol_version,
                         "front_text",
@@ -216,6 +207,8 @@ impl ChunkData {
                             Nbt::bool("is_waxed", sign_block_entity.is_waxed),
                         ],
                     }
+                } else {
+                    Self::format_sign_legacy(&sign_block_entity.front_face)
                 }
             }
             InternalBlockEntityData::Generic { nbt } => nbt.clone(),

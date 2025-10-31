@@ -35,7 +35,6 @@ pub struct Schematic {
     block_data: Vec<InternalId>,
     dimensions: Coordinates,
     internal_air_id: InternalId,
-    /// Block entities with their positions and NBT data
     block_entities: Vec<BlockEntityData>,
 }
 

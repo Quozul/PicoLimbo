@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::chunk_processor::{ChunkProcessor, ChunkProcessorError};
 use crate::palette::Palette;
 use crate::prelude::{InternalBlockEntityData, Schematic};
@@ -11,8 +9,7 @@ use thiserror::Error;
 pub struct World {
     world_sections: Vec<Palette>,
     size_in_chunks: Coordinates,
-    // Store block entities organized by chunk (chunk_x, chunk_z) for fast lookup
-    block_entities_by_chunk: HashMap<(i32, i32), Vec<PrecomputedBlockEntity>>,
+    block_entities_by_chunk: Vec<Vec<PrecomputedBlockEntity>>,
 }
 
 #[derive(Clone)]
@@ -50,29 +47,29 @@ impl World {
             })
             .collect();
 
-        // Pre-compute block entities organized by chunk
-        let mut block_entities_by_chunk: HashMap<(i32, i32), Vec<PrecomputedBlockEntity>> =
-            HashMap::new();
+        let chunk_column_count = (size_in_chunks.x() * size_in_chunks.z()) as usize;
+        let mut block_entities_by_chunk: Vec<Vec<PrecomputedBlockEntity>> =
+            vec![Vec::new(); chunk_column_count];
 
         for entity_data in schematic.get_block_entities() {
             let world_x = entity_data.position.x();
             let world_y = entity_data.position.y();
             let world_z = entity_data.position.z();
 
-            // Calculate which chunk this entity belongs to
             let chunk_x = world_x / 16;
             let chunk_z = world_z / 16;
 
-            block_entities_by_chunk
-                .entry((chunk_x, chunk_z))
-                .or_default()
-                .push(PrecomputedBlockEntity {
+            let index = (chunk_z + chunk_x * size_in_chunks.z()) as usize;
+
+            if let Some(chunk_entities) = block_entities_by_chunk.get_mut(index) {
+                chunk_entities.push(PrecomputedBlockEntity {
                     world_x,
                     world_y,
                     world_z,
                     block_entity_type: entity_data.block_entity_type.clone(),
                     nbt: entity_data.nbt.clone(),
                 });
+            }
         }
 
         Ok(Self {
@@ -105,8 +102,18 @@ impl World {
         chunk_x: i32,
         chunk_z: i32,
     ) -> Option<&[PrecomputedBlockEntity]> {
+        if chunk_x < 0
+            || chunk_x >= self.size_in_chunks.x()
+            || chunk_z < 0
+            || chunk_z >= self.size_in_chunks.z()
+        {
+            return None;
+        }
+
+        let index = (chunk_z + chunk_x * self.size_in_chunks.z()) as usize;
+
         self.block_entities_by_chunk
-            .get(&(chunk_x, chunk_z))
+            .get(index)
             .map(|v| v.as_slice())
     }
 }
