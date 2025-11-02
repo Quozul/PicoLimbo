@@ -1,5 +1,9 @@
-use minecraft_protocol::prelude::LengthPaddedVec;
+use minecraft_protocol::prelude::*;
 
-pub type ReportIdMapping = LengthPaddedVec<BlocksReportId>;
+#[derive(PacketIn, PacketOut, Clone)]
+pub struct ReportIdMapping {
+    pub bits_per_entry: u8,
+    pub ids: LengthPaddedVec<BlocksReportId>,
+}
 
-pub type BlocksReportId = u16;
+pub type BlocksReportId = u32;

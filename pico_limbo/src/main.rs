@@ -6,6 +6,7 @@ mod handlers;
 mod kick_messages;
 mod server;
 mod server_state;
+mod world;
 
 use crate::cli::Cli;
 use clap::Parser;

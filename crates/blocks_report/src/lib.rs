@@ -2,8 +2,10 @@ use minecraft_protocol::prelude::{BinaryReader, BinaryReaderError, DecodePacket,
 use thiserror::Error;
 
 pub use blocks_report_data::{
+    block_state::BlocksReport,
     block_state_builder::BlockStateLookup,
-    internal_mapping::{InternalId, InternalMapping},
+    build_report_mappings::build_report_mappings,
+    internal_mapping::{InternalId, InternalMapping, build_internal_id_mapping},
     report_mapping::{BlocksReportId, ReportIdMapping},
 };
 
@@ -27,8 +29,8 @@ pub fn load_internal_mapping() -> Result<InternalMapping, BinaryReaderError> {
 
 pub fn get_block_report_id_mapping(
     protocol_version: ProtocolVersion,
-) -> Result<Vec<BlocksReportId>, BlockReportIdMappingError> {
-    Ok(get_blocks_reports(protocol_version)?.into_inner())
+) -> Result<ReportIdMapping, BlockReportIdMappingError> {
+    get_blocks_reports(protocol_version)
 }
 
 pub fn get_block_id(
