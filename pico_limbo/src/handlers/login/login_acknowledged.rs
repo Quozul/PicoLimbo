@@ -73,31 +73,9 @@ fn send_configuration_packets(
                 }
             }
 
-            if !registry_entries.is_empty() {
-                const AVAILABLE_REGISTRIES: [&str; 15] = [
-                    "minecraft:banner_pattern",
-                    "minecraft:chat_type",
-                    "minecraft:damage_type",
-                    "minecraft:dimension_type",
-                    "minecraft:painting_variant",
-                    "minecraft:trim_material",
-                    "minecraft:trim_pattern",
-                    "minecraft:wolf_variant",
-                    "minecraft:worldgen/biome",
-                    // Added in 1.21.5
-                    "minecraft:cat_variant",
-                    "minecraft:chicken_variant",
-                    "minecraft:cow_variant",
-                    "minecraft:frog_variant",
-                    "minecraft:pig_variant",
-                    "minecraft:wolf_sound_variant",
-                ];
-                if AVAILABLE_REGISTRIES.contains(&registry_id.to_string().as_str()) {
-                    debug!("Queuing registry {registry_id:?}");
-                    let packet = RegistryDataPacket::registry(registry_id, registry_entries);
-                    batch.queue(|| PacketRegistry::RegistryData(packet));
-                }
-            }
+            debug!("Queuing registry {registry_id:?}");
+            let packet = RegistryDataPacket::registry(registry_id, registry_entries);
+            batch.queue(|| PacketRegistry::RegistryData(packet));
         }
     } else {
         match get_registries(protocol_version, server_state.spawn_dimension()) {
