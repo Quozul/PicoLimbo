@@ -18,6 +18,8 @@ action_bar = "Welcome to PicoLimbo!"
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
 reduced_debug_info = false
+player_listed = true
+reply_to_status = true
 
 [compression]
 threshold = -1

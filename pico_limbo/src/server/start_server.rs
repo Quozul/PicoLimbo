@@ -116,7 +116,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)
-        .set_player_listed(cfg.player_listed);
+        .set_player_listed(cfg.player_listed)
+        .set_reply_to_status(cfg.reply_to_status);
 
     server_state_builder.build()
 }
