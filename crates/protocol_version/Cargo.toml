@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 protocol_version_macro = { path = "../protocol_version_macro" }
+thiserror = { workspace = true }

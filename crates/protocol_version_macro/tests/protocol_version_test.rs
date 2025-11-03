@@ -17,7 +17,7 @@ mod tests {
         let given_number = 800; // Larger than the supported pvn
 
         // When
-        let result: ProtocolVersion = given_number.into();
+        let result = ProtocolVersion::from(given_number);
 
         // Then
         assert_eq!(result, expected_version_number);
@@ -30,7 +30,7 @@ mod tests {
         let given_number = 750; // Smaller than the supported pvn
 
         // When
-        let result: ProtocolVersion = given_number.into();
+        let result = ProtocolVersion::from(given_number);
 
         // Then
         assert_eq!(result, expected_version_number);

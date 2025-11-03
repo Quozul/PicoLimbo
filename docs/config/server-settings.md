@@ -128,6 +128,16 @@ reply_to_status = true
 ```
 :::
 
+## Allow Unsupported Versions
+
+If set to true, PicoLimbo will attempt to use the latest protocol version for unsupported versions. Useful for snapshots.
+
+:::code-group
+```toml [server.toml]
+allow_unsupported_versions = false
+```
+:::
+
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  

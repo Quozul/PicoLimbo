@@ -20,6 +20,7 @@ fetch_player_skins = false
 reduced_debug_info = false
 player_listed = true
 reply_to_status = true
+allow_unsupported_versions = false
 
 [compression]
 threshold = -1

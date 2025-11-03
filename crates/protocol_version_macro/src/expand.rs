@@ -64,7 +64,7 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
     let from_i32_arms = parsed_variants.iter().map(|v| {
         let variant_ident = v.ident;
         let discriminant_expr = v.discriminant_expr;
-        quote! { #discriminant_expr => #enum_ident::#variant_ident }
+        quote! { #discriminant_expr => Ok(#enum_ident::#variant_ident) }
     });
 
     let humanize_arms = parsed_variants.iter().map(|v| {
@@ -104,13 +104,17 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl From<i32> for #enum_ident {
-            fn from(value: i32) -> Self {
+        #[derive(thiserror::Error, Debug)]
+        #[error("Unsupported protocol version {0}")]
+        pub struct InvalidProtocolVersion(i32);
+
+        impl TryFrom<i32> for #enum_ident {
+            type Error = InvalidProtocolVersion;
+
+            fn try_from(value: i32) -> Result<Self, Self::Error> {
                 match value {
                     #(#from_i32_arms),*,
-                    v if v > #max_value => #enum_ident::#max_variant_ident,
-                    v if v < #min_value => #enum_ident::#min_variant_ident,
-                    _ => Self::default(),
+                    _ => Err(InvalidProtocolVersion(value)),
                 }
             }
         }
@@ -127,6 +131,18 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
 
         impl #enum_ident {
             pub const ALL_VERSION: &'static [ProtocolVersion] = &[#(#all_versions_arms),*];
+
+            pub fn from(value: i32) -> Self {
+                Self::try_from(value).unwrap_or_else(|_| {
+                    if value > #max_value {
+                        #enum_ident::#max_variant_ident
+                    } else if value < #min_value {
+                        #enum_ident::#min_variant_ident
+                    } else {
+                        Self::default()
+                    }
+                })
+            }
 
             /// Returns the protocol version number by casting the enum to an i32.
             pub fn version_number(&self) -> i32 {

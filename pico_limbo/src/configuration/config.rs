@@ -65,6 +65,8 @@ pub struct Config {
 
     pub reply_to_status: bool,
 
+    pub allow_unsupported_versions: bool,
+
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
@@ -89,6 +91,7 @@ impl Default for Config {
             title: TitleConfig::default(),
             player_listed: true,
             reply_to_status: true,
+            allow_unsupported_versions: false,
         }
     }
 }
