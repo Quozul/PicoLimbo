@@ -18,7 +18,8 @@ impl PacketHandler for HandshakePacket {
         server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         let batch = Batch::new();
-        client_state.set_protocol_version(self.get_protocol());
+        client_state
+            .set_protocol_version(self.get_protocol(server_state.allow_unsupported_versions()));
 
         self.get_next_state().map_or_else(
             |_| Err(PacketHandlerError::invalid_state("Unsupported next state.")),
@@ -59,6 +60,11 @@ fn begin_login(
     server_state: &ServerState,
     hostname: &str,
 ) -> Result<(), PacketHandlerError> {
+    if client_state.protocol_version().is_unsupported() {
+        return Err(PacketHandlerError::invalid_state(
+            "Unsupported protocol version.",
+        ));
+    }
     let forwarding_result = check_bungee_cord(server_state, hostname);
     match forwarding_result {
         LegacyForwardingResult::Invalid => {
@@ -85,7 +91,7 @@ struct UnknownStateError(i32);
 
 trait GetStateProtocol {
     fn get_next_state(&self) -> Result<State, UnknownStateError>;
-    fn get_protocol(&self) -> ProtocolVersion;
+    fn get_protocol(&self, allow_unsupported_versions: bool) -> ProtocolVersion;
 }
 
 impl GetStateProtocol for HandshakePacket {
@@ -99,11 +105,16 @@ impl GetStateProtocol for HandshakePacket {
         }
     }
 
-    fn get_protocol(&self) -> ProtocolVersion {
+    fn get_protocol(&self, allow_unsupported_versions: bool) -> ProtocolVersion {
         if self.protocol.inner() == -1 {
             ProtocolVersion::Any
         } else {
-            ProtocolVersion::from(self.protocol.inner())
+            let pvn = self.protocol.inner();
+            if allow_unsupported_versions {
+                ProtocolVersion::from(pvn)
+            } else {
+                ProtocolVersion::try_from(pvn).unwrap_or(ProtocolVersion::Unsupported)
+            }
         }
     }
 }

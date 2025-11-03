@@ -94,6 +94,10 @@ pub enum ProtocolVersion {
 
     /// A special value to represent any protocol version.
     Any = -1,
+
+    /// A special value to represent an unknown protocol version.
+    #[pvn(reports = Any)]
+    Unsupported = -2,
 }
 
 impl ProtocolVersion {
@@ -126,6 +130,11 @@ impl ProtocolVersion {
     pub fn is_any(&self) -> bool {
         *self == Self::Any
     }
+
+    #[inline]
+    pub fn is_unsupported(&self) -> bool {
+        *self == Self::Unsupported
+    }
 }
 
 #[cfg(test)]
@@ -152,5 +161,13 @@ mod tests {
 
         assert_eq!(v1_7_6.reports(), v1_7_2);
         assert_eq!(v1_7_2.reports(), v1_7_2);
+    }
+
+    #[test]
+    fn oldest() {
+        let oldest = ProtocolVersion::oldest();
+        let v1_7_2 = ProtocolVersion::V1_7_2;
+
+        assert_eq!(oldest, v1_7_2);
     }
 }

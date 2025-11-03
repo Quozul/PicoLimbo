@@ -16,17 +16,18 @@ impl PacketHandler for StatusRequestPacket {
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         let mut batch = Batch::new();
         let client_protocol_version = client_state.protocol_version();
-        let (version_string, version_number) = if client_protocol_version.is_any() {
-            let oldest = ProtocolVersion::oldest();
-            let latest = ProtocolVersion::latest();
-            let version_string = format!("{oldest}-{latest}");
-            (version_string, -1)
-        } else {
-            (
-                client_protocol_version.humanize().to_string(),
-                client_protocol_version.version_number(),
-            )
-        };
+        let (version_string, version_number) =
+            if client_protocol_version.is_any() || client_protocol_version.is_unsupported() {
+                let oldest = ProtocolVersion::oldest().humanize();
+                let latest = ProtocolVersion::latest().humanize();
+                let version_string = format!("PicoLimbo {oldest}-{latest}");
+                (version_string, -1)
+            } else {
+                (
+                    client_protocol_version.humanize().to_string(),
+                    client_protocol_version.version_number(),
+                )
+            };
 
         let status_response = StatusResponse::new(
             version_string,
@@ -60,6 +61,7 @@ mod tests {
     fn server() -> ServerState {
         let mut server_state_builder = ServerState::builder();
         server_state_builder.set_reply_to_status(true);
+        server_state_builder.set_allow_unsupported_versions(true);
         server_state_builder.build().unwrap()
     }
 
@@ -137,7 +139,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_should_respond_with_oldest_known_version_if_smaller() {
-        let test_values = [0, -2, i32::MIN];
+        let test_values = [0, -3, i32::MIN];
         let server_state = server();
 
         for &expected_protocol in &test_values {
