@@ -63,8 +63,6 @@ pub struct Config {
 
     pub player_listed: bool,
 
-    pub reply_to_status: bool,
-
     pub allow_unsupported_versions: bool,
 
     pub boss_bar: BossBarConfig,
@@ -90,7 +88,6 @@ impl Default for Config {
             compression: CompressionConfig::default(),
             title: TitleConfig::default(),
             player_listed: true,
-            reply_to_status: true,
             allow_unsupported_versions: false,
         }
     }

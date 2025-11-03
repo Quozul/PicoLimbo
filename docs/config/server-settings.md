@@ -118,16 +118,6 @@ player_listed = true
 ```
 :::
 
-## Reply to Status
-
-Whether the server replies to status requests.
-
-:::code-group
-```toml [server.toml]
-reply_to_status = true
-```
-:::
-
 ## Allow Unsupported Versions
 
 If set to true, PicoLimbo will attempt to use the latest protocol version for unsupported versions. Useful for snapshots.

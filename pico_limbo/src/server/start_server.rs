@@ -117,7 +117,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)
         .set_player_listed(cfg.player_listed)
-        .set_reply_to_status(cfg.reply_to_status)
+        .set_reply_to_status(cfg.server_list.reply_to_status)
         .set_allow_unsupported_versions(cfg.allow_unsupported_versions);
 
     server_state_builder.build()

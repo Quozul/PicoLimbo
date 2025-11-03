@@ -5,6 +5,8 @@ use std::path::PathBuf;
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 pub struct ServerListConfig {
+    pub reply_to_status: bool,
+
     /// Maximum amount of player displayed in the server list.
     pub max_players: u32,
 
@@ -20,6 +22,7 @@ pub struct ServerListConfig {
 impl Default for ServerListConfig {
     fn default() -> Self {
         Self {
+            reply_to_status: true,
             max_players: 20,
             message_of_the_day: "A Minecraft Server".into(),
             show_online_player_count: true,

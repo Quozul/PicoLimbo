@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Option to hide the player from the tab list
 - Support for block entities
 - Option to block unsupported versions from joining
+- Option to not send the status response
 
 ### Fixed
 

@@ -68,3 +68,14 @@ To disable the server icon entirely:
 server_icon = ""
 ```
 :::
+
+## Reply to Status
+
+Whether the server replies to status requests.
+
+:::code-group
+```toml [server.toml] {2}
+[server_list]
+reply_to_status = true
+```
+:::
