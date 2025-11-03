@@ -4,7 +4,7 @@ mod registries_indexes;
 use crate::get_all_registries::{
     encode, get_v1_16_2_registry_codec, get_v1_16_registry_codec, get_v1_20_5_registries,
 };
-use crate::registries_indexes::{get_dimension_type_index, get_the_void_index};
+use crate::registries_indexes::{get_dimension_type_index, get_plains_index};
 use minecraft_protocol::prelude::{Dimension, Nbt, ProtocolVersion};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
@@ -78,29 +78,15 @@ fn main() -> anyhow::Result<()> {
                     },
                 }
             }
-            RegistryFormat::V1_20_2 => {
+            RegistryFormat::V1_20_2 | RegistryFormat::V1_19 => {
                 let file_name = format!("registry_codec_{}.bin", protocol_version);
                 let nbt = get_v1_16_2_registry_codec(protocol_version, &data_location);
                 let bytes = encode(&nbt, protocol_version);
                 write_bytes_to_out_dir(&out_dir, &file_name, &bytes)?;
-
                 let file_path_str = out_dir.join(file_name).to_str().unwrap().to_string();
 
                 quote! {
                     ProtocolVersion::#version_ident => Registries::V1_20_2 {
-                        registry_codec: include_bytes!(#file_path_str)
-                    },
-                }
-            }
-            RegistryFormat::V1_19 => {
-                let file_name = format!("registry_codec_{}.bin", protocol_version);
-                let nbt = get_v1_16_2_registry_codec(protocol_version, &data_location);
-                let bytes = encode(&nbt, protocol_version);
-                write_bytes_to_out_dir(&out_dir, &file_name, &bytes)?;
-                let file_path_str = out_dir.join(file_name).to_str().unwrap().to_string();
-
-                quote! {
-                    ProtocolVersion::#version_ident => Registries::V1_19 {
                         registry_codec: include_bytes!(#file_path_str)
                     },
                 }
@@ -227,7 +213,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
-            let plains_biome_index = get_the_void_index(protocol_version, &data_location);
+            let plains_biome_index = get_plains_index(protocol_version, &data_location);
             let arm = quote! {
                 ProtocolVersion::#version_ident => { Some(#plains_biome_index) },
             };

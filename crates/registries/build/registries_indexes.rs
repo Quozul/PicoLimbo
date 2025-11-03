@@ -34,7 +34,7 @@ fn get_entry_index(
 }
 
 // Only for V1_20_3 and above
-pub fn get_the_void_index(protocol_version: ProtocolVersion, data_location: &Path) -> usize {
+pub fn get_plains_index(protocol_version: ProtocolVersion, data_location: &Path) -> usize {
     get_entry_index(
         protocol_version,
         data_location,
