@@ -102,6 +102,8 @@ pub struct ServerState {
     action_bar: Option<Component>,
     reduced_debug_info: bool,
     is_player_listed: bool,
+    reply_to_status: bool,
+    accepts_transfers: bool,
 }
 
 impl ServerState {
@@ -233,6 +235,14 @@ impl ServerState {
         self.is_player_listed
     }
 
+    pub const fn reply_to_status(&self) -> bool {
+        self.reply_to_status
+    }
+
+    pub const fn accepts_transfers(&self) -> bool {
+        self.accepts_transfers
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -269,6 +279,7 @@ pub struct ServerStateBuilder {
     action_bar: Option<Component>,
     reduced_debug_info: bool,
     is_player_listed: bool,
+    reply_to_status: bool,
 }
 
 #[derive(Debug, Error)]
@@ -376,6 +387,11 @@ impl ServerStateBuilder {
 
     pub const fn set_player_listed(&mut self, is_player_listed: bool) -> &mut Self {
         self.is_player_listed = is_player_listed;
+        self
+    }
+
+    pub const fn set_reply_to_status(&mut self, reply_to_status: bool) -> &mut Self {
+        self.reply_to_status = reply_to_status;
         self
     }
 
@@ -555,6 +571,8 @@ impl ServerStateBuilder {
             title: self.title,
             reduced_debug_info: self.reduced_debug_info,
             is_player_listed: self.is_player_listed,
+            reply_to_status: self.reply_to_status,
+            accepts_transfers: false,
         })
     }
 }

@@ -25,26 +25,57 @@ impl PacketHandler for HandshakePacket {
             |next_state| {
                 client_state.set_state(next_state);
 
-                let forwarding_result = check_bungee_cord(server_state, &self.hostname);
-                match forwarding_result {
-                    LegacyForwardingResult::Invalid => {
-                        client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
-                        Err(PacketHandlerError::invalid_state(
-                            PROXY_REQUIRED_KICK_MESSAGE,
-                        ))
+                match next_state {
+                    State::Status => {
+                        if server_state.reply_to_status() {
+                            Ok(batch)
+                        } else {
+                            Err(PacketHandlerError::invalid_state(
+                                "Ignoring status request.",
+                            ))
+                        }
                     }
-                    LegacyForwardingResult::Anonymous {
-                        player_uuid,
-                        textures,
-                    } => {
-                        let game_profile = GameProfile::anonymous(player_uuid, textures);
-                        client_state.set_game_profile(game_profile);
+                    State::Login => {
+                        begin_login(client_state, server_state, &self.hostname)?;
                         Ok(batch)
                     }
-                    LegacyForwardingResult::NoForwarding => Ok(batch),
+                    State::Transfer => {
+                        if server_state.accepts_transfers() {
+                            begin_login(client_state, server_state, &self.hostname)?;
+                            Ok(batch)
+                        } else {
+                            Err(PacketHandlerError::invalid_state("Transfers disabled."))
+                        }
+                    }
+                    _ => Err(PacketHandlerError::invalid_state("Invalid intention.")),
                 }
             },
         )
+    }
+}
+
+fn begin_login(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+    hostname: &str,
+) -> Result<(), PacketHandlerError> {
+    let forwarding_result = check_bungee_cord(server_state, hostname);
+    match forwarding_result {
+        LegacyForwardingResult::Invalid => {
+            client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
+            Err(PacketHandlerError::invalid_state(
+                PROXY_REQUIRED_KICK_MESSAGE,
+            ))
+        }
+        LegacyForwardingResult::Anonymous {
+            player_uuid,
+            textures,
+        } => {
+            let game_profile = GameProfile::anonymous(player_uuid, textures);
+            client_state.set_game_profile(game_profile);
+            Ok(())
+        }
+        LegacyForwardingResult::NoForwarding => Ok(()),
     }
 }
 
@@ -83,12 +114,15 @@ mod tests {
     use minecraft_protocol::prelude::VarInt;
 
     fn server_state() -> ServerState {
-        ServerState::builder().build().unwrap()
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.build().unwrap()
     }
 
     fn bungee_cord() -> ServerState {
         let mut server_state_builder = ServerState::builder();
         server_state_builder.enable_legacy_forwarding();
+        server_state_builder.set_reply_to_status(true);
         server_state_builder.build().unwrap()
     }
 
@@ -210,5 +244,25 @@ mod tests {
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
         assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+    }
+
+    #[test]
+    fn test_handshake_handler_update_state_to_status_when_bungee_cord_is_enabled() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(578),
+            hostname: String::new(),
+            next_state: VarInt::new(1),
+            port: 25565,
+        };
+
+        // When
+        handshake_packet
+            .handle(&mut client_state, &bungee_cord())
+            .unwrap();
+
+        // Then
+        assert_eq!(client_state.state(), State::Status);
     }
 }

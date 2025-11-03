@@ -57,11 +57,17 @@ mod tests {
         client_state
     }
 
+    fn server() -> ServerState {
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.build().unwrap()
+    }
+
     #[tokio::test]
     async fn test_should_respond_with_same_protocol_version_if_valid() {
         // Given
         let expected_protocol = 578;
-        let server_state = ServerState::default();
+        let server_state = server();
         let mut client_state = client(&server_state, expected_protocol);
         let status_request_packet = StatusRequestPacket::default();
 
@@ -85,7 +91,7 @@ mod tests {
     async fn test_should_respond_with_any_version() {
         // Given
         let expected_protocol = -1;
-        let server_state = ServerState::default();
+        let server_state = server();
         let mut client_state = client(&server_state, expected_protocol);
         let status_request_packet = StatusRequestPacket::default();
 
@@ -109,7 +115,7 @@ mod tests {
     async fn test_should_respond_with_latest_known_version_if_larger() {
         // Given
         let expected_protocol = i32::MAX;
-        let server_state = ServerState::default();
+        let server_state = server();
         let mut client_state = client(&server_state, expected_protocol);
         let status_request_packet = StatusRequestPacket::default();
 
@@ -132,10 +138,10 @@ mod tests {
     #[tokio::test]
     async fn test_should_respond_with_oldest_known_version_if_smaller() {
         let test_values = [0, -2, i32::MIN];
+        let server_state = server();
 
         for &expected_protocol in &test_values {
             // Given
-            let server_state = ServerState::default();
             let mut client_state = client(&server_state, expected_protocol);
             let status_request_packet = StatusRequestPacket::default();
 

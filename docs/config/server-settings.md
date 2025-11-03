@@ -118,6 +118,16 @@ player_listed = true
 ```
 :::
 
+## Reply to Status
+
+Whether the server replies to status requests.
+
+:::code-group
+```toml [server.toml]
+reply_to_status = true
+```
+:::
+
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  
