@@ -57,6 +57,12 @@ export default defineConfig({
 					{ text: "Message Formatting", link: "/customization/message-formatting.html" },
 				],
 			},
+			{
+				text: "Tutorials",
+				items: [
+					{ text: "Fallback Server", link: "/tutorials/fallback-server.html" },
+				],
+			},
 		],
 		socialLinks: [
 			{ icon: "github", link: "https://github.com/Quozul/PicoLimbo" },
