@@ -69,6 +69,16 @@ impl Schematic {
     }
 
     fn validate_version(nbt: &Nbt) -> Result<(), SchematicError> {
+        // This handles version 3
+        let schematic_version = nbt
+            .find_tag("Schematic")
+            .and_then(|nbt| nbt.find_tag("Version"))
+            .and_then(|nbt| nbt.get_int());
+        if let Some(version) = schematic_version {
+            return Err(SchematicError::UnsupportedVersion(version));
+        }
+
+        // This handles version 1 and 2
         let version = Self::get_tag_as(nbt, "Version", |t| t.get_int())?;
         if version != 2 {
             return Err(SchematicError::UnsupportedVersion(version));
