@@ -60,6 +60,7 @@ export default defineConfig({
 			{
 				text: "Tutorials",
 				items: [
+					{ text: "Convert Schematics", link: "/tutorials/schematic-conversion.html" },
 					{ text: "Fallback Server", link: "/tutorials/fallback-server.html" },
 				],
 			},
