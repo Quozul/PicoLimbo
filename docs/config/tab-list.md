@@ -69,3 +69,14 @@ enabled = true
 footer = ""
 ```
 :::
+
+## Player Listed
+
+Whether the player should be listed on the player list.
+
+:::code-group
+```toml [server.toml] {2}
+[tab_list]
+player_listed = true
+```
+:::

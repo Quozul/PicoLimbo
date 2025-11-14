@@ -2,8 +2,15 @@ use crate::configuration::require_boolean::{require_false, require_true};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+pub struct TabListConfig {
+    #[serde(flatten)]
+    pub mode: TabListMode,
+    pub player_listed: bool,
+}
+
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum TabListConfig {
+pub enum TabListMode {
     Enabled(EnabledTabListConfig),
     Disabled(DisabledTabListConfig),
 }
@@ -25,10 +32,13 @@ pub struct DisabledTabListConfig {
 
 impl Default for TabListConfig {
     fn default() -> Self {
-        Self::Enabled(EnabledTabListConfig {
-            enabled: true,
-            header: "<bold>Welcome to PicoLimbo</bold>".to_string(),
-            footer: "<green>Enjoy your stay!</green>".to_string(),
-        })
+        Self {
+            mode: TabListMode::Enabled(EnabledTabListConfig {
+                enabled: true,
+                header: "<bold>Welcome to PicoLimbo</bold>".to_string(),
+                footer: "<green>Enjoy your stay!</green>".to_string(),
+            }),
+            player_listed: true,
+        }
     }
 }
