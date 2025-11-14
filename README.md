@@ -22,7 +22,7 @@
 
 ## Community & Support
 
-If you have any questions or suggestions, join the [Discord server](https://discord.gg/M2a9dxJPRy)!
+If you have any questions, suggestions or simply want to stay updated, please join the [Discord server](https://discord.gg/M2a9dxJPRy)!
 
 ## Introduction
 

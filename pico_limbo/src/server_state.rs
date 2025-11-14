@@ -434,17 +434,14 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn tab_list<S>(
+    pub fn tab_list(
         &mut self,
-        header: S,
-        footer: S,
-    ) -> Result<&mut Self, ServerStateBuilderError>
-    where
-        S: AsRef<str>,
-    {
+        header: &str,
+        footer: &str,
+    ) -> Result<&mut Self, ServerStateBuilderError> {
         self.tab_list = Some(TabList {
-            header: parse_mini_message(header.as_ref())?,
-            footer: parse_mini_message(footer.as_ref())?,
+            header: parse_mini_message(header)?,
+            footer: parse_mini_message(footer)?,
         });
 
         Ok(self)

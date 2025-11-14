@@ -1,7 +1,7 @@
 use crate::configuration::TaggedForwarding;
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
-use crate::configuration::tab_list::TabListConfig;
+use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::server::network::Server;
@@ -75,8 +75,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         server_state_builder.boundaries(boundaries.min_y, boundaries.teleport_message)?;
     }
 
-    if let TabListConfig::Enabled(tab_list) = cfg.tab_list {
-        server_state_builder.tab_list(tab_list.header, tab_list.footer)?;
+    if let TabListMode::Enabled(ref tab_list) = cfg.tab_list.mode {
+        server_state_builder.tab_list(&tab_list.header, &tab_list.footer)?;
     }
 
     if let BossBarConfig::Enabled(boss_bar) = cfg.boss_bar {
@@ -116,7 +116,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)
-        .set_player_listed(cfg.player_listed)
+        .set_player_listed(cfg.tab_list.player_listed)
         .set_reply_to_status(cfg.server_list.reply_to_status)
         .set_allow_unsupported_versions(cfg.allow_unsupported_versions);
 

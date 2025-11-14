@@ -108,16 +108,6 @@ reduced_debug_info = true
 ```
 :::
 
-## Player Listed
-
-Whether the player should be listed on the player list.
-
-:::code-group
-```toml [server.toml]
-player_listed = true
-```
-:::
-
 ## Allow Unsupported Versions
 
 If set to true, PicoLimbo will attempt to use the latest protocol version for unsupported versions. Useful for snapshots.
