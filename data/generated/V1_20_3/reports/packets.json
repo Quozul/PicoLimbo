@@ -129,6 +129,12 @@
       },
       "minecraft:move_player_pos": {
         "protocol_id": 23
+      },
+      "minecraft:chat": {
+        "protocol_id": 5
+      },
+      "minecraft:chat_command": {
+        "protocol_id": 4
       }
     }
   },

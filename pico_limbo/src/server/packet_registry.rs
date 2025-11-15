@@ -18,6 +18,8 @@ use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
+use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
+use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
@@ -207,6 +209,12 @@ pub enum PacketRegistry {
     )]
     SetPlayerPositionAndRotation(SetPlayerPositionAndRotationPacket),
 
+    #[protocol_id(state = "play", bound = "serverbound", name = "minecraft:chat_command")]
+    ChatCommand(ChatCommandPacket),
+
+    #[protocol_id(state = "play", bound = "serverbound", name = "minecraft:chat")]
+    ChatMessage(ChatMessagePacket),
+
     #[protocol_id(
         state = "play",
         bound = "clientbound",
@@ -332,6 +340,8 @@ impl PacketHandler for PacketRegistry {
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPositionAndRotation(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPosition(packet) => packet.handle(client_state, server_state),
+            Self::ChatCommand(packet) => packet.handle(client_state, server_state),
+            Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }

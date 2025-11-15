@@ -1,9 +1,6 @@
-use crate::prelude::{EncodePacket, LengthPaddedVec};
-use macros::PacketOut;
-use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
-use protocol_version::protocol_version::ProtocolVersion;
+use crate::prelude::*;
 
-#[derive(Default, Clone, PacketOut)]
+#[derive(Default, Clone, PacketOut, PacketIn)]
 pub struct BitSet {
     data: LengthPaddedVec<i64>,
 }

@@ -1,4 +1,4 @@
-use crate::handlers::play::set_player_position_and_rotation::teleport_player_to_spawn;
+use crate::handlers::play::set_player_position_and_rotation::teleport_player_to_spawn_out_of_bounds;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -12,7 +12,7 @@ impl PacketHandler for SetPlayerPositionPacket {
         client_state: &mut ClientState,
         server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
-        Ok(teleport_player_to_spawn(
+        Ok(teleport_player_to_spawn_out_of_bounds(
             client_state,
             server_state,
             self.feet_y,
