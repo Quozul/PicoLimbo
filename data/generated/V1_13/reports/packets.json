@@ -81,6 +81,9 @@
       },
       "minecraft:move_player_pos": {
         "protocol_id": 16
+      },
+      "minecraft:chat": {
+        "protocol_id": 2
       }
     }
   },

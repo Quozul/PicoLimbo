@@ -162,7 +162,7 @@ pub fn send_play_packets(
     client_state.set_feet_position(y);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
-        let packet = CommandsPacket::empty();
+        let packet = CommandsPacket::spawn_command();
         batch.queue(|| PacketRegistry::Commands(packet));
     }
 

@@ -15,7 +15,7 @@ impl PacketHandler for SetPlayerPositionAndRotationPacket {
         client_state: &mut ClientState,
         server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
-        Ok(teleport_player_to_spawn(
+        Ok(teleport_player_to_spawn_out_of_bounds(
             client_state,
             server_state,
             self.feet_y,
@@ -23,7 +23,7 @@ impl PacketHandler for SetPlayerPositionAndRotationPacket {
     }
 }
 
-pub fn teleport_player_to_spawn(
+pub fn teleport_player_to_spawn_out_of_bounds(
     client_state: &mut ClientState,
     server_state: &ServerState,
     feet_y: f64,
@@ -41,10 +41,8 @@ pub fn teleport_player_to_spawn(
             let difference = (previous_position - feet_y).abs();
 
             if previous_position >= f64::from(*min_y) && difference <= FALL_SPEED {
-                let (x, y, z) = server_state.spawn_position();
-                let (yaw, pitch) = server_state.spawn_rotation();
-                let packet = SynchronizePlayerPositionPacket::new(x, y, z, yaw, pitch);
-                batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
+                let y = server_state.spawn_position().1;
+                teleport_player_to_spawn(client_state, server_state, &mut batch);
 
                 if let Some(content) = teleport_message {
                     send_message(&mut batch, content, client_state.protocol_version());
@@ -55,6 +53,19 @@ pub fn teleport_player_to_spawn(
         }
     }
     batch
+}
+
+pub fn teleport_player_to_spawn(
+    client_state: &mut ClientState,
+    server_state: &ServerState,
+    batch: &mut Batch<PacketRegistry>,
+) {
+    let (x, y, z) = server_state.spawn_position();
+    let (yaw, pitch) = server_state.spawn_rotation();
+    let packet = SynchronizePlayerPositionPacket::new(x, y, z, yaw, pitch);
+    batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
+
+    client_state.set_feet_position(y);
 }
 
 #[cfg(test)]
@@ -89,7 +100,7 @@ mod tests {
         let server_state = server_state_with_min_y(0, Some("Direct teleport test".to_string()));
 
         // When
-        let batch = teleport_player_to_spawn(&mut client_state, &server_state, -1.0);
+        let batch = teleport_player_to_spawn_out_of_bounds(&mut client_state, &server_state, -1.0);
         let mut batch = batch.into_stream();
 
         // Then
@@ -111,7 +122,7 @@ mod tests {
         let server_state = server_state_with_min_y(0, None);
 
         // When
-        let batch = teleport_player_to_spawn(&mut client_state, &server_state, -1.0);
+        let batch = teleport_player_to_spawn_out_of_bounds(&mut client_state, &server_state, -1.0);
         let mut batch = batch.into_stream();
 
         // Then
@@ -129,7 +140,7 @@ mod tests {
         let server_state = server_state_with_min_y(0, None);
 
         // When
-        let batch = teleport_player_to_spawn(&mut client_state, &server_state, 10.0);
+        let batch = teleport_player_to_spawn_out_of_bounds(&mut client_state, &server_state, 10.0);
         let mut batch = batch.into_stream();
 
         // Then
@@ -145,11 +156,14 @@ mod tests {
         let server_state = server_state_with_min_y(0, None);
 
         // When
-        let mut stream1 =
-            teleport_player_to_spawn(&mut client_state, &server_state, STARTING_POSITION)
-                .into_stream();
+        let mut stream1 = teleport_player_to_spawn_out_of_bounds(
+            &mut client_state,
+            &server_state,
+            STARTING_POSITION,
+        )
+        .into_stream();
 
-        let mut stream2 = teleport_player_to_spawn(
+        let mut stream2 = teleport_player_to_spawn_out_of_bounds(
             &mut client_state,
             &server_state,
             STARTING_POSITION - FALL_SPEED,
@@ -157,7 +171,7 @@ mod tests {
         .into_stream();
 
         let subsequent_streams = (2..=10).map(|i| {
-            teleport_player_to_spawn(
+            teleport_player_to_spawn_out_of_bounds(
                 &mut client_state,
                 &server_state,
                 FALL_SPEED.mul_add(-f64::from(i), STARTING_POSITION),
