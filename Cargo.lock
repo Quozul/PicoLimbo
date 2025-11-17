@@ -1278,6 +1278,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "registries_test"
+version = "0.1.0"
+dependencies = [
+ "minecraft_protocol",
+ "protocol_version",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "reqwest"
 version = "0.12.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"

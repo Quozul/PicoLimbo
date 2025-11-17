@@ -1,0 +1,13 @@
+[package]
+name = "registries_test"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../protocol_version" }
+minecraft_protocol = { path = "../minecraft_protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
