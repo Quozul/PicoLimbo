@@ -6,6 +6,10 @@ No, PicoLimbo is not compatible with traditional Java-based plugins designed for
 
 While adding support for plugins is theoretically possible, this is not currently a planned feature. PicoLimbo is designed to be a lightweight limbo server with minimal resource usage, and plugin support would significantly increase complexity.
 
+## Does PicoLimbo support modded clients?
+
+No, PicoLimbo does not support modded clients. There is an ongoing effort to provide minimal support for Fabric mods, but don't expect anything more.
+
 ## Can I use ViaVersion with PicoLimbo?
 
 PicoLimbo already supports all Minecraft versions natively, so there is no need to use ViaVersion for protocol compatibility.
