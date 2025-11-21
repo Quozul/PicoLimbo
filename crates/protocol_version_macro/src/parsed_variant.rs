@@ -7,7 +7,7 @@ pub struct ParsedVariant<'a> {
     pub discriminant_expr: &'a Expr,
     pub discriminant_value: i32,
     pub humanized_string: LitStr,
-    pub reports: Ident,
+    pub packets: Ident,
     pub data: Ident,
 }
 
@@ -20,8 +20,8 @@ impl<'a> ParsedVariant<'a> {
 
         let pvn_attribute = Self::parse_pvn_attribute(variant)?;
 
-        let reports = pvn_attribute
-            .reports
+        let packets = pvn_attribute
+            .packets
             .unwrap_or_else(|| variant.ident.clone());
 
         let data = pvn_attribute.data.unwrap_or_else(|| variant.ident.clone());
@@ -31,7 +31,7 @@ impl<'a> ParsedVariant<'a> {
             discriminant_expr,
             discriminant_value,
             humanized_string,
-            reports,
+            packets,
             data,
         })
     }
@@ -100,7 +100,7 @@ impl<'a> ParsedVariant<'a> {
             attr.parse_args::<PvnAttribute>()
         } else {
             Ok(PvnAttribute {
-                reports: None,
+                packets: None,
                 data: None,
             })
         }

@@ -3,29 +3,29 @@ use syn::{Error, Ident, Result, Token};
 
 /// Parses the `#[pvn(reports = "...", data = "...")]` attribute.
 pub struct PvnAttribute {
-    pub reports: Option<Ident>,
+    pub packets: Option<Ident>,
     pub data: Option<Ident>,
 }
 
 impl Parse for PvnAttribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mut reports: Option<Ident> = None;
+        let mut packets: Option<Ident> = None;
         let mut data: Option<Ident> = None;
 
         if input.is_empty() {
-            return Ok(PvnAttribute { reports, data });
+            return Ok(PvnAttribute { packets, data });
         }
 
         let mut parse_kv = |input: ParseStream| -> Result<()> {
             let ident: Ident = input.parse()?;
             input.parse::<Token![=]>()?;
 
-            if ident == "reports" {
-                if reports.is_some() {
-                    return Err(Error::new(ident.span(), "duplicate `reports` field"));
+            if ident == "packets" {
+                if packets.is_some() {
+                    return Err(Error::new(ident.span(), "duplicate `packets` field"));
                 }
                 let value: Ident = input.parse()?;
-                reports = Some(value);
+                packets = Some(value);
             } else if ident == "data" {
                 if data.is_some() {
                     return Err(Error::new(ident.span(), "duplicate `data` field"));
@@ -35,7 +35,7 @@ impl Parse for PvnAttribute {
             } else {
                 return Err(Error::new(
                     ident.span(),
-                    "expected either `reports` or `data`",
+                    "expected either `packets` or `data`",
                 ));
             }
             Ok(())
@@ -47,6 +47,6 @@ impl Parse for PvnAttribute {
             parse_kv(input)?;
         }
 
-        Ok(PvnAttribute { reports, data })
+        Ok(PvnAttribute { packets, data })
     }
 }
