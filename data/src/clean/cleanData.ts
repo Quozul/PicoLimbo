@@ -66,13 +66,9 @@ export async function cleanDataDirectory(
 }
 
 const REGISTRIES_TO_SEND = [
-    "banner_pattern",
-    "chat_type",
     "damage_type",
     "dimension_type",
     "painting_variant",
-    "trim_material",
-    "trim_pattern",
     "wolf_variant",
     "worldgen/biome",
     // The following registries were added in 1.21.5
@@ -82,4 +78,6 @@ const REGISTRIES_TO_SEND = [
     "frog_variant",
     "pig_variant",
     "wolf_sound_variant",
+    // The following registries were added in 1.21.11
+    "zombie_nautilus_variant",
 ];
