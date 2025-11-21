@@ -58,8 +58,8 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
         pub enum PacketRegistryDecodeError {
             #[error("Decode error: Packet id is missing from the payload")]
             MissingPacketId,
-            #[error("Decode error: The version {0} is unknown")]
-            UnknownVersion(i32),
+            #[error("Decode error: Unknown version version={1} packet_id={0}")]
+            UnknownVersion(u8, i32),
             #[error("Decode error: Packet not found version={0} state={1} packet_id={2}")]
             NoCorrespondingPacket(i32, State, u8),
             #[error("Failed to read packet")]
@@ -238,7 +238,7 @@ fn generate_decode_impl(
             #version_number => {
                 match (state, packet_id) {
                     #(#state_arms)*
-                    _ => return Err(PacketRegistryDecodeError::NoCorrespondingPacket(reports_version, state, packet_id)),
+                    _ => return Err(PacketRegistryDecodeError::NoCorrespondingPacket(packets_version, state, packet_id)),
                 }
             }
         }
@@ -252,11 +252,11 @@ fn generate_decode_impl(
         ) -> Result<Self, PacketRegistryDecodeError> {
             match raw_packet.packet_id() {
                 Some(packet_id) => {
-                    let reports_version = protocol_version.reports().version_number();
+                    let packets_version = protocol_version.packets().version_number();
                     let mut payload = BinaryReader::new(raw_packet.data());
-                    match reports_version {
+                    match packets_version {
                         #(#report_arms)*
-                        _ => return Err(PacketRegistryDecodeError::UnknownVersion(reports_version)),
+                        _ => return Err(PacketRegistryDecodeError::UnknownVersion(packet_id, packets_version)),
                     }
                 }
                 None => {
@@ -302,7 +302,7 @@ fn generate_encode_impl(
                 #enum_ident::#variant_ident(packet) => {
                     packet.encode(&mut packet_writer, protocol_version)?;
                     let packet_bytes = packet_writer.into_inner();
-                    let packet_id: u8 = match reports_version {
+                    let packet_id: u8 = match packets_version {
                         #(#report_arms)*
                         _ => return Err(PacketRegistryEncodeError::UnsupportedPacket(protocol_version, String::from(#packet_name))),
                     };
@@ -313,7 +313,7 @@ fn generate_encode_impl(
 
     quote! {
         pub fn encode_packet(self, protocol_version: ProtocolVersion) -> Result<RawPacket, PacketRegistryEncodeError> {
-            let reports_version = protocol_version.reports().version_number();
+            let packets_version = protocol_version.packets().version_number();
             let mut packet_writer = BinaryWriter::new();
             let raw_packet = match self {
                 #(#variant_arms)*

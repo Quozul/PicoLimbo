@@ -7,7 +7,7 @@ pub enum ProtocolVersion {
     #[pvn(data = V1_21_6)]
     #[default]
     V1_21_9 = 773,
-    #[pvn(reports = V1_21_6, data = V1_21_6)]
+    #[pvn(packets = V1_21_6, data = V1_21_6)]
     V1_21_7 = 772,
     V1_21_6 = 771,
     V1_21_5 = 770,
@@ -29,66 +29,66 @@ pub enum ProtocolVersion {
     V1_19_1 = 760,
     V1_19 = 759,
 
-    #[pvn(reports = V1_18)]
+    #[pvn(packets = V1_18)]
     V1_18_2 = 758,
     V1_18 = 757,
 
-    #[pvn(reports = V1_17, data = V1_17)]
+    #[pvn(packets = V1_17, data = V1_17)]
     V1_17_1 = 756,
     V1_17 = 755,
 
-    #[pvn(reports = V1_16_2, data = V1_16_2)]
+    #[pvn(packets = V1_16_2, data = V1_16_2)]
     V1_16_4 = 754,
-    #[pvn(reports = V1_16_2, data = V1_16_2)]
+    #[pvn(packets = V1_16_2, data = V1_16_2)]
     V1_16_3 = 753,
     V1_16_2 = 751,
-    #[pvn(reports = V1_16, data = V1_16)]
+    #[pvn(packets = V1_16, data = V1_16)]
     V1_16_1 = 736,
     V1_16 = 735,
 
-    #[pvn(reports = V1_15)]
+    #[pvn(packets = V1_15)]
     V1_15_2 = 578,
-    #[pvn(reports = V1_15)]
+    #[pvn(packets = V1_15)]
     V1_15_1 = 575,
     V1_15 = 573,
 
-    #[pvn(reports = V1_14)]
+    #[pvn(packets = V1_14)]
     V1_14_4 = 498,
-    #[pvn(reports = V1_14)]
+    #[pvn(packets = V1_14)]
     V1_14_3 = 490,
-    #[pvn(reports = V1_14)]
+    #[pvn(packets = V1_14)]
     V1_14_2 = 485,
-    #[pvn(reports = V1_14)]
+    #[pvn(packets = V1_14)]
     V1_14_1 = 480,
     V1_14 = 477,
 
-    #[pvn(reports = V1_13)]
+    #[pvn(packets = V1_13)]
     V1_13_2 = 404,
-    #[pvn(reports = V1_13)]
+    #[pvn(packets = V1_13)]
     V1_13_1 = 401,
     V1_13 = 393,
 
-    #[pvn(reports = V1_12_1)]
+    #[pvn(packets = V1_12_1)]
     V1_12_2 = 340,
     V1_12_1 = 338,
     V1_12 = 335,
 
-    #[pvn(reports = V1_11)]
+    #[pvn(packets = V1_11)]
     V1_11_1 = 316,
     V1_11 = 315,
 
     V1_10 = 210,
 
     V1_9_3 = 110,
-    #[pvn(reports = V1_9)]
+    #[pvn(packets = V1_9)]
     V1_9_2 = 109,
-    #[pvn(reports = V1_9)]
+    #[pvn(packets = V1_9)]
     V1_9_1 = 108,
     V1_9 = 107,
 
     V1_8 = 47,
 
-    #[pvn(reports = V1_7_2)]
+    #[pvn(packets = V1_7_2)]
     V1_7_6 = 5,
     V1_7_2 = 4,
 
@@ -96,7 +96,7 @@ pub enum ProtocolVersion {
     Any = -1,
 
     /// A special value to represent an unknown protocol version.
-    #[pvn(reports = Any)]
+    #[pvn(packets = Any)]
     Unsupported = -2,
 }
 
@@ -159,8 +159,8 @@ mod tests {
         let v1_7_6 = ProtocolVersion::V1_7_6;
         let v1_7_2 = ProtocolVersion::V1_7_2;
 
-        assert_eq!(v1_7_6.reports(), v1_7_2);
-        assert_eq!(v1_7_2.reports(), v1_7_2);
+        assert_eq!(v1_7_6.packets(), v1_7_2);
+        assert_eq!(v1_7_2.packets(), v1_7_2);
     }
 
     #[test]
