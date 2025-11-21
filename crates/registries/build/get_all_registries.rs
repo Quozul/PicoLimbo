@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use walkdir::WalkDir;
 
-const AVAILABLE_REGISTRIES: [&str; 15] = [
+const AVAILABLE_REGISTRIES: [&str; 16] = [
     "minecraft:banner_pattern",
     "minecraft:chat_type",
     "minecraft:damage_type",
@@ -20,16 +20,18 @@ const AVAILABLE_REGISTRIES: [&str; 15] = [
     "minecraft:trim_pattern",
     "minecraft:wolf_variant",
     "minecraft:worldgen/biome",
-    // Added in 1.21.5
+    // The following were added in 1.21.5
     "minecraft:cat_variant",
     "minecraft:chicken_variant",
     "minecraft:cow_variant",
     "minecraft:frog_variant",
     "minecraft:pig_variant",
     "minecraft:wolf_sound_variant",
+    // The following were added in 1.21.11
+    "minecraft:zombie_nautilus_variant",
 ];
 
-const REGISTRIES_TO_SEND: [&str; 16] = [
+const REGISTRIES_TO_SEND: [&str; 17] = [
     "banner_pattern",
     "chat_type",
     "damage_type",
@@ -40,13 +42,14 @@ const REGISTRIES_TO_SEND: [&str; 16] = [
     "wolf_variant",
     "worldgen/biome",
     "worldgen\\biome",
-    // Added in 1.21.5
+    // The following were added in 1.21.5
     "cat_variant",
     "chicken_variant",
     "cow_variant",
     "frog_variant",
     "pig_variant",
     "wolf_sound_variant",
+    "zombie_nautilus_variant",
 ];
 
 pub fn get_version_directory(protocol_version: ProtocolVersion, data_location: &Path) -> PathBuf {
