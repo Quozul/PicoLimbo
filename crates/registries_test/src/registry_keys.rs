@@ -4,7 +4,7 @@ use minecraft_protocol::prelude::Identifier;
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum RegistryKeys {
     Root,
-    Biome,
+    BannerPattern,
     CatVariant,
     ChickenVariant,
     CowVariant,
@@ -15,13 +15,16 @@ pub enum RegistryKeys {
     PigVariant,
     WolfSoundVariant,
     WolfVariant,
+    Timeline,
+    ZombieNautilusVariant,
+    Biome,
 }
 
 impl RegistryKeys {
     pub fn id(&self) -> Identifier {
         match self {
             RegistryKeys::Root => Identifier::minecraft("root"),
-            RegistryKeys::Biome => Identifier::minecraft("worldgen/biome"),
+            RegistryKeys::BannerPattern => Identifier::minecraft("banner_pattern"),
             RegistryKeys::CatVariant => Identifier::minecraft("cat_variant"),
             RegistryKeys::ChickenVariant => Identifier::minecraft("chicken_variant"),
             RegistryKeys::CowVariant => Identifier::minecraft("cow_variant"),
@@ -32,6 +35,9 @@ impl RegistryKeys {
             RegistryKeys::PigVariant => Identifier::minecraft("pig_variant"),
             RegistryKeys::WolfSoundVariant => Identifier::minecraft("wolf_sound_variant"),
             RegistryKeys::WolfVariant => Identifier::minecraft("wolf_variant"),
+            RegistryKeys::Timeline => Identifier::minecraft("timeline"),
+            RegistryKeys::ZombieNautilusVariant => Identifier::minecraft("zombie_nautilus_variant"),
+            RegistryKeys::Biome => Identifier::minecraft("worldgen/biome"),
         }
     }
 
@@ -49,10 +55,15 @@ impl RegistryKeys {
                 | RegistryKeys::PigVariant
                 | RegistryKeys::WolfSoundVariant
                 | RegistryKeys::WolfVariant
+                | RegistryKeys::ZombieNautilusVariant
         )
     }
 
     pub fn is_root(&self) -> bool {
         matches!(self, RegistryKeys::Root)
+    }
+
+    pub fn get_tag_path(&self) -> String {
+        format!("tags/{}", self.id().thing)
     }
 }

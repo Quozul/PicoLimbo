@@ -11,3 +11,4 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 thiserror = { workspace = true }
+walkdir = { workspace = true }

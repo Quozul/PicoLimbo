@@ -11,6 +11,16 @@ pub struct DimensionType {
     min_y: i32,
 }
 
+impl DimensionType {
+    pub fn get_height(&self) -> i32 {
+        self.height
+    }
+
+    pub fn get_min_height(&self) -> i32 {
+        self.min_y
+    }
+}
+
 pub enum RegistryEntryValue {
     Biome,
     CatVariant,
@@ -23,6 +33,7 @@ pub enum RegistryEntryValue {
     PigVariant,
     WolfSoundVariant,
     WolfVariant,
+    ZombieNautilusVariant,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -38,6 +49,14 @@ impl RegistryKey {
 
     pub fn new(registry: Identifier, value: Identifier) -> Self {
         Self { registry, value }
+    }
+
+    pub fn get_registry(&self) -> &Identifier {
+        &self.registry
+    }
+
+    pub fn get_value(&self) -> &Identifier {
+        &self.value
     }
 }
 
@@ -59,6 +78,14 @@ impl RegistryEntry {
             RegistryEntryValue::DimensionType(ref dimension) => Ok(dimension),
             _ => Err(RegistryEntryError::NotOfType),
         }
+    }
+
+    pub fn get_protocol_id(&self) -> u32 {
+        self.protocol_id
+    }
+
+    pub fn get_registry_key(&self) -> &RegistryKey {
+        &self.registry_key
     }
 }
 

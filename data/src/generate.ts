@@ -28,7 +28,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
-    "1.21.11-pre1",
+    "1.21.11-pre2",
     "1.21.9",
     "1.21.7",
     "1.21.6",
@@ -93,7 +93,7 @@ const SUPPORTED_VERSIONS = [
         );
 
         // Cleanup
-        await cleanDataDirectory(dataDirectory);
+        /*await cleanDataDirectory(dataDirectory);
         const wolfVariant = join(dataDirectory, "minecraft", "wolf_variant");
         if (await fileExists(wolfVariant)) {
             await cleanWolfVariants(wolfVariant);
@@ -101,7 +101,7 @@ const SUPPORTED_VERSIONS = [
         const dimensionTypes = join(dataDirectory, "minecraft", "dimension_type");
         if (await fileExists(dimensionTypes)) {
             await cleanDimensionTypes(dimensionTypes);
-        }
+        }*/
         await cleanReportsDirectory(reportsDirectory);
         await rm(generatedDirectory, { recursive: true, force: true });
     }

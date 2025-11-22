@@ -3,12 +3,14 @@ use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RegistriesReport {
     #[serde(flatten)]
     pub registries: HashMap<String, Registry>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Registry {
     #[serde(default)]
     pub default: Option<String>,
@@ -17,6 +19,7 @@ pub struct Registry {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Entry {
     pub protocol_id: u32,
 }

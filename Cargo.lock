@@ -1288,6 +1288,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "walkdir",
 ]
 
 [[package]]
