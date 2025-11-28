@@ -20,6 +20,7 @@ members = [
     "crates/protocol_version_macro",
     "crates/registries",
     "crates/registries_data",
+    "crates/registries_test",
     "pico_limbo",
 ]
 

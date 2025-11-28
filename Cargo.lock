@@ -990,6 +990,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico_identifier"
+version = "0.1.0"
+source = "git+https://github.com/Quozul/PicoIdentifier.git#85e4e5c808635263ed1a979d497044dcf6e1f412"
+dependencies = [
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "pico_limbo"
 version = "1.9.0-beta.1+mc1.21.11"
 dependencies = [
@@ -1275,6 +1284,21 @@ name = "registries_data"
 version = "0.1.0"
 dependencies = [
  "minecraft_protocol",
+]
+
+[[package]]
+name = "registries_test"
+version = "0.1.0"
+dependencies = [
+ "pico_identifier",
+ "pico_nbt",
+ "protocol_version",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
 ]
 
 [[package]]
