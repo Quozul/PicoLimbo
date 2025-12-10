@@ -8,6 +8,213 @@ use std::path::Path;
 use thiserror::Error;
 use tracing::warn;
 
+/// Blocks that allow sky light to pass through (fully or partially transparent)
+const TRANSPARENT_BLOCK_PATTERNS: &[&str] = &[
+    "air",
+    "cave_air",
+    "void_air",
+    "glass",
+    "leaves",
+    "ice",
+    "water",
+    "lava",
+    "barrier",
+    "light",
+    "structure_void",
+    "torch",
+    "lantern",
+    "chain",
+    "iron_bars",
+    "glass_pane",
+    "fence",
+    "wall",
+    "slab",
+    "stairs",
+    "carpet",
+    "pressure_plate",
+    "button",
+    "lever",
+    "sign",
+    "banner",
+    // Flowers and plants
+    "flower",
+    "sapling",
+    "grass",
+    "fern",
+    "dead_bush",
+    "seagrass",
+    "kelp",
+    "bamboo",
+    "sugar_cane",
+    "vine",
+    "lily_pad",
+    "mushroom",
+    "wheat",
+    "carrots",
+    "potatoes",
+    "beetroots",
+    "melon_stem",
+    "pumpkin_stem",
+    "cocoa",
+    "nether_wart",
+    "sweet_berry",
+    "chorus_flower",
+    "chorus_plant",
+    "scaffolding",
+    "cobweb",
+    "rail",
+    "redstone",
+    "repeater",
+    "comparator",
+    "tripwire",
+    "string",
+    "ladder",
+    "snow",
+    "fire",
+    "soul_fire",
+    "campfire",
+    "candle",
+    "sea_pickle",
+    "turtle_egg",
+    "frogspawn",
+    "hanging_sign",
+    "pointed_dripstone",
+    "amethyst_cluster",
+    "small_amethyst_bud",
+    "medium_amethyst_bud",
+    "large_amethyst_bud",
+    "lightning_rod",
+    "end_rod",
+    "glow_lichen",
+    "sculk_vein",
+    "mangrove_roots",
+    "azalea",
+    "spore_blossom",
+    "big_dripleaf",
+    "small_dripleaf",
+    "moss_carpet",
+    "pink_petals",
+    "pitcher_plant",
+    "pitcher_crop",
+    "torchflower",
+    "torchflower_crop",
+    "decorated_pot",
+    "head",
+    "skull",
+    "door",
+    "trapdoor",
+    "gate",
+    // Additional flowers and plants
+    "dandelion",
+    "poppy",
+    "orchid",
+    "allium",
+    "tulip",
+    "oxeye",
+    "cornflower",
+    "lily",
+    "wither_rose",
+    "sunflower",
+    "lilac",
+    "rose_bush",
+    "peony",
+    "tall_grass",
+    "large_fern",
+    "tall_seagrass",
+    "pearlescent_froglight",
+    "verdant_froglight",
+    "ochre_froglight",
+    "mangrove_propagule",
+    "hanging_roots",
+    "cave_vines",
+    "twisting_vines",
+    "weeping_vines",
+    "crimson_roots",
+    "warped_roots",
+    "nether_sprouts",
+    "crop",
+    "stem",
+    "attached",
+    "plant",
+    "bush",
+    "sprouts",
+    "roots",
+    "vines",
+    // More specific flower names
+    "azure_bluet",
+    "blue_orchid",
+    "red_tulip",
+    "orange_tulip",
+    "white_tulip",
+    "pink_tulip",
+    "oxeye_daisy",
+    "lily_of_the_valley",
+    "wither",
+    "rose",
+    "daisy",
+    "bluet",
+    // Pots and decorations
+    "potted",
+    "pot",
+    "flower_pot",
+];
+
+/// Blocks that emit light and their light levels
+const LIGHT_EMITTING_BLOCKS: &[(&str, u8)] = &[
+    ("lantern", 15),
+    ("soul_lantern", 10),
+    ("campfire", 15),
+    ("soul_campfire", 10),
+    ("torch", 14),
+    ("wall_torch", 14),
+    ("soul_torch", 10),
+    ("soul_wall_torch", 10),
+    ("glowstone", 15),
+    ("shroomlight", 15),
+    ("sea_lantern", 15),
+    ("jack_o_lantern", 15),
+    ("redstone_lamp", 15), // When lit
+    ("beacon", 15),
+    ("end_rod", 14),
+    ("fire", 15),
+    ("soul_fire", 10),
+    ("lava", 15),
+    ("magma_block", 3),
+    ("crying_obsidian", 10),
+    ("respawn_anchor", 15), // When fully charged
+    ("glow_lichen", 7),
+    ("candle", 3),          // 1 candle
+    ("candle_cake", 3),
+    ("sea_pickle", 6),      // Underwater
+    ("redstone_ore", 9),    // When touched
+    ("deepslate_redstone_ore", 9),
+    ("sculk_catalyst", 6),
+    ("ochre_froglight", 15),
+    ("verdant_froglight", 15),
+    ("pearlescent_froglight", 15),
+    ("amethyst_cluster", 5),
+    ("large_amethyst_bud", 4),
+    ("medium_amethyst_bud", 2),
+    ("small_amethyst_bud", 1),
+    ("brewing_stand", 1),
+    ("brown_mushroom", 1),
+    ("dragon_egg", 1),
+    ("end_portal_frame", 1),
+    ("enchanting_table", 7),
+    ("ender_chest", 7),
+    ("furnace", 13),        // When lit
+    ("blast_furnace", 13),
+    ("smoker", 13),
+    ("light", 15),          // Light block
+];
+
+struct PaletteData {
+    schematic_id_to_internal_id: Vec<InternalId>,
+    internal_air_id: InternalId,
+    transparent_block_ids: Vec<bool>,
+    light_emitting_blocks: Vec<u8>,
+}
+
 #[derive(Error, Debug)]
 pub enum SchematicError {
     #[error("Error decompressing or reading file: {0}")]
@@ -33,6 +240,10 @@ pub struct Schematic {
     dimensions: Coordinates,
     internal_air_id: InternalId,
     block_entities: Vec<BlockEntity>,
+    /// Lookup table for transparent blocks (indexed by InternalId)
+    transparent_block_ids: Vec<bool>,
+    /// Lookup table for light levels emitted by blocks (indexed by InternalId)
+    light_emitting_blocks: Vec<u8>,
 }
 
 impl Schematic {
@@ -45,21 +256,22 @@ impl Schematic {
 
         Self::validate_version(&nbt)?;
         let dimensions = Self::extract_dimensions(&nbt)?;
-        let (schematic_id_to_internal_id, internal_air_id) =
-            Self::get_schematic_id_to_internal_id(&nbt, internal_mapping)?;
+        let palette_data = Self::get_schematic_id_to_internal_id(&nbt, internal_mapping)?;
         let block_data = Self::parse_block_data(
             &nbt,
-            schematic_id_to_internal_id,
+            palette_data.schematic_id_to_internal_id,
             dimensions,
-            internal_air_id,
+            palette_data.internal_air_id,
         )?;
         let block_entities = Self::parse_block_entities(&nbt)?;
 
         Ok(Self {
             block_data,
             dimensions,
-            internal_air_id,
+            internal_air_id: palette_data.internal_air_id,
             block_entities,
+            transparent_block_ids: palette_data.transparent_block_ids,
+            light_emitting_blocks: palette_data.light_emitting_blocks,
         })
     }
 
@@ -96,7 +308,7 @@ impl Schematic {
     fn get_schematic_id_to_internal_id(
         nbt: &Nbt,
         internal_mapping: &InternalMapping,
-    ) -> Result<(Vec<InternalId>, InternalId), SchematicError> {
+    ) -> Result<PaletteData, SchematicError> {
         let max_schematic_id = Self::get_tag_as(nbt, "PaletteMax", |t| t.get_int())?;
         let block_state_lookup = BlockStateLookup::new(internal_mapping);
 
@@ -108,14 +320,39 @@ impl Schematic {
         let mut schematic_id_to_internal_id: Vec<InternalId> =
             vec![internal_air_id; (max_schematic_id + 1) as usize];
 
+        const MAX_INTERNAL_ID: usize = u16::MAX as usize + 1;
+        let mut transparent_block_ids: Vec<bool> = vec![false; MAX_INTERNAL_ID];
+        let mut light_emitting_blocks: Vec<u8> = vec![0; MAX_INTERNAL_ID];
+        transparent_block_ids[internal_air_id as usize] = true;
+
         let palette_nbt = Self::get_tag_as(nbt, "Palette", |t| t.get_nbt_vec())?;
 
         for block_tag in palette_nbt {
             if let Some(schematic_palette_id) = block_tag.get_int() {
-                let internal_id = block_tag
-                    .get_name()
-                    .and_then(|name| block_state_lookup.parse_state_string(&name).ok())
+                let block_name = block_tag.get_name();
+                let internal_id = block_name
+                    .as_ref()
+                    .and_then(|name| block_state_lookup.parse_state_string(name).ok())
                     .unwrap_or(internal_air_id);
+
+                if let Some(name) = &block_name {
+                    let name_lower = name.to_lowercase();
+                    let id_index = internal_id as usize;
+
+                    for pattern in TRANSPARENT_BLOCK_PATTERNS {
+                        if name_lower.contains(pattern) {
+                            transparent_block_ids[id_index] = true;
+                            break;
+                        }
+                    }
+
+                    for (pattern, light_level) in LIGHT_EMITTING_BLOCKS {
+                        if name_lower.contains(pattern) {
+                            light_emitting_blocks[id_index] = *light_level;
+                            break;
+                        }
+                    }
+                }
 
                 if let Some(entry) =
                     schematic_id_to_internal_id.get_mut(schematic_palette_id as usize)
@@ -130,7 +367,12 @@ impl Schematic {
             }
         }
 
-        Ok((schematic_id_to_internal_id, internal_air_id))
+        Ok(PaletteData {
+            schematic_id_to_internal_id,
+            internal_air_id,
+            transparent_block_ids,
+            light_emitting_blocks,
+        })
     }
 
     fn parse_block_data(
@@ -241,5 +483,34 @@ impl Schematic {
 
     pub fn get_block_entities(&self) -> &[BlockEntity] {
         &self.block_entities
+    }
+
+    pub fn get_air_id(&self) -> InternalId {
+        self.internal_air_id
+    }
+
+    /// Checks if the block at the given position is air
+    pub fn is_air(&self, position: Coordinates) -> bool {
+        self.get_block_state_id(position) == self.internal_air_id
+    }
+
+    /// Checks if the block at the given position is transparent to sky light.
+    /// This includes air, glass, leaves, and other transparent blocks.
+    pub fn is_transparent(&self, position: Coordinates) -> bool {
+        let block_id = self.get_block_state_id(position);
+        self.transparent_block_ids
+            .get(block_id as usize)
+            .copied()
+            .unwrap_or(false)
+    }
+
+    /// Gets the light level emitted by the block at the given position.
+    /// Returns 0 if the block doesn't emit light.
+    pub fn get_emitted_light(&self, position: Coordinates) -> u8 {
+        let block_id = self.get_block_state_id(position);
+        self.light_emitting_blocks
+            .get(block_id as usize)
+            .copied()
+            .unwrap_or(0)
     }
 }
