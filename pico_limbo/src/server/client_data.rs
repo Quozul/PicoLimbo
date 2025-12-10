@@ -74,7 +74,7 @@ impl ClientData {
                 let period = Duration::from_secs(2);
                 self.interval().await.set_interval_at(start, period).await;
             } else {
-                let period = Duration::from_secs(20);
+                let period = Duration::from_secs(15);
                 self.interval().await.set_interval(period).await;
             }
             self.client().await.set_keep_alive_enabled();
