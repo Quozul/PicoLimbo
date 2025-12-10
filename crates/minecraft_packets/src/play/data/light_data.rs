@@ -1,4 +1,5 @@
 use minecraft_protocol::prelude::*;
+use pico_structures::prelude::LightSection;
 
 #[derive(PacketOut, Default)]
 pub struct LightData {
@@ -17,37 +18,73 @@ pub struct Light {
     block_light_array: LengthPaddedVec<i8>,
 }
 
-impl LightData {
-    pub fn new_with_level(light_level: u8) -> Self {
-        const NUM_SECTIONS_IN_WORLD: u32 = 24;
-        let light_level = light_level.clamp(0, 15);
+impl Light {
+    pub fn new(data: Vec<i8>) -> Self {
+        Self {
+            block_light_array: LengthPaddedVec::new(data),
+        }
+    }
+}
 
-        if light_level == 0 {
-            return Self::default();
+impl LightData {
+    pub fn from_light_data(
+        sky_light_sections: &[LightSection],
+        block_light_sections: &[LightSection],
+        dimension: Dimension,
+    ) -> Self {
+        let world_section_count = dimension.height() / 16;
+        let total_light_sections = (world_section_count + 2) as u32;
+
+        let all_sections_mask_val = (1u64 << total_light_sections) - 1;
+        let all_sections_mask = BitSet::new(vec![all_sections_mask_val as i64]);
+
+        let mut sky_light_arrays = Vec::with_capacity(total_light_sections as usize);
+        sky_light_arrays.push(Light::new(vec![0xFFu8 as i8; 2048]));
+        for section in sky_light_sections {
+            sky_light_arrays.push(Light::new(section.clone()));
+        }
+        sky_light_arrays.push(Light::new(vec![0xFFu8 as i8; 2048]));
+        while sky_light_arrays.len() < total_light_sections as usize {
+            sky_light_arrays.push(Light::new(vec![0xFFu8 as i8; 2048]));
         }
 
-        let world_sections_mask_val = ((1u64 << NUM_SECTIONS_IN_WORLD) - 1) << 1;
-
-        let world_sections_mask = BitSet::new(vec![world_sections_mask_val as i64]);
-
-        let packed_byte = ((light_level << 4) | light_level) as i8;
-
-        let light_section_array = Light {
-            block_light_array: LengthPaddedVec::new(vec![packed_byte; 2048]),
-        };
-
-        let all_light_arrays =
-            LengthPaddedVec::new(vec![light_section_array; NUM_SECTIONS_IN_WORLD as usize]);
+        let mut block_light_arrays = Vec::with_capacity(total_light_sections as usize);
+        block_light_arrays.push(Light::new(vec![0i8; 2048]));
+        for section in block_light_sections {
+            block_light_arrays.push(Light::new(section.clone()));
+        }
+        block_light_arrays.push(Light::new(vec![0i8; 2048]));
+        while block_light_arrays.len() < total_light_sections as usize {
+            block_light_arrays.push(Light::new(vec![0i8; 2048]));
+        }
 
         Self {
-            sky_light_mask: world_sections_mask.clone(),
-            block_light_mask: world_sections_mask,
-
+            sky_light_mask: all_sections_mask.clone(),
+            block_light_mask: all_sections_mask.clone(),
             empty_sky_light_mask: BitSet::default(),
             empty_block_light_mask: BitSet::default(),
+            sky_light_arrays: LengthPaddedVec::new(sky_light_arrays),
+            block_light_arrays: LengthPaddedVec::new(block_light_arrays),
+        }
+    }
 
-            sky_light_arrays: all_light_arrays.clone(),
-            block_light_arrays: all_light_arrays,
+    pub fn new_void(dimension: Dimension) -> Self {
+        let world_section_count = dimension.height() / 16;
+        let total_light_sections = (world_section_count + 2) as u32;
+
+        let all_sections_mask_val = (1u64 << total_light_sections) - 1;
+        let all_sections_mask = BitSet::new(vec![all_sections_mask_val as i64]);
+
+        let full_sky_light = Light::new(vec![0xFFu8 as i8; 2048]);
+        let no_block_light = Light::new(vec![0i8; 2048]);
+
+        Self {
+            sky_light_mask: all_sections_mask.clone(),
+            block_light_mask: all_sections_mask.clone(),
+            empty_sky_light_mask: BitSet::default(),
+            empty_block_light_mask: BitSet::default(),
+            sky_light_arrays: LengthPaddedVec::new(vec![full_sky_light; total_light_sections as usize]),
+            block_light_arrays: LengthPaddedVec::new(vec![no_block_light; total_light_sections as usize]),
         }
     }
 }
