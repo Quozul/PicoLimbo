@@ -50,7 +50,7 @@ impl Default for PostV1_20_2Data {
             death_location: Optional::None,
             portal_cooldown: VarInt::default(),
             v1_21_2_sea_level: VarInt::new(63),
-            v1_20_5_enforces_secure_chat: false,
+            v1_20_5_enforces_secure_chat: true,
             dimension_name: overworld.clone(),
             dimension_type: overworld,
             hashed_seed: 0,
