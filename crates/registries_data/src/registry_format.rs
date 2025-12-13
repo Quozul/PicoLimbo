@@ -1,11 +1,19 @@
 use minecraft_protocol::prelude::ProtocolVersion;
 
 pub enum RegistryFormat {
+    /// For all versions after 1.20.5 included
     V1_20_5,
+    /// For all versions between 1.20.2 and 1.20.3 included
+    /// This format is actually the same as 1.19, however, the registries are now sent
+    /// in the configuration state instead of the play state
     V1_20_2,
+    /// For all versions between 1.19 and 1.20 included
     V1_19,
+    /// For all versions between 1.16.2 and 1.18.2 included
     V1_16_2,
+    /// For all versions between 1.16 and 1.16.1 included
     V1_16,
+    /// For versions prior to 1.16 excluded
     None,
 }
 

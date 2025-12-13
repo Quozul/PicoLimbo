@@ -93,7 +93,7 @@ const SUPPORTED_VERSIONS = [
         );
 
         // Cleanup
-        await cleanDataDirectory(dataDirectory);
+        /*await cleanDataDirectory(dataDirectory);
         const wolfVariant = join(dataDirectory, "minecraft", "wolf_variant");
         if (await fileExists(wolfVariant)) {
             await cleanWolfVariants(wolfVariant);
@@ -101,7 +101,7 @@ const SUPPORTED_VERSIONS = [
         const dimensionTypes = join(dataDirectory, "minecraft", "dimension_type");
         if (await fileExists(dimensionTypes)) {
             await cleanDimensionTypes(dimensionTypes);
-        }
+        }*/
         await cleanReportsDirectory(reportsDirectory);
         await rm(generatedDirectory, { recursive: true, force: true });
     }
