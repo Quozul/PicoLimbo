@@ -1,0 +1,713 @@
+{
+  "others": {
+    "function": {
+      "elements": true,
+      "format": "mcfunction",
+      "stable": true,
+      "tags": true
+    },
+    "structure": {
+      "elements": true,
+      "format": "structure",
+      "stable": true,
+      "tags": false
+    }
+  },
+  "registries": {
+    "minecraft:activity": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:advancement": {
+      "elements": true,
+      "stable": true,
+      "tags": false
+    },
+    "minecraft:attribute": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:attribute_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:banner_pattern": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:block": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:block_entity_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:block_predicate_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:block_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:cat_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:chat_type": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:chicken_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:chunk_status": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:command_argument_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:consume_effect_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:cow_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:creative_mode_tab": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:custom_stat": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:damage_type": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:data_component_predicate_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:data_component_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:debug_subscription": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:decorated_pot_pattern": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:dialog": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:dialog_action_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:dialog_body_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:dialog_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:dimension": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:dimension_type": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:enchantment": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:enchantment_effect_component_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:enchantment_entity_effect_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:enchantment_level_based_value_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:enchantment_location_based_effect_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:enchantment_provider": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:enchantment_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:enchantment_value_effect_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:entity_sub_predicate_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:entity_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:environment_attribute": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:float_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:fluid": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:frog_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:game_event": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:game_rule": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:height_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:incoming_rpc_methods": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:input_control_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:instrument": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:int_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:item": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:item_modifier": {
+      "elements": true,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:jukebox_song": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:loot_condition_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_function_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_nbt_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_number_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_pool_entry_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_score_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:loot_table": {
+      "elements": true,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:map_decoration_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:memory_module_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:menu": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:mob_effect": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:number_format_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:outgoing_rpc_methods": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:painting_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:particle_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:permission_check_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:permission_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:pig_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:point_of_interest_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:pos_rule_test": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:position_source_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:potion": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:predicate": {
+      "elements": true,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:recipe": {
+      "elements": true,
+      "stable": true,
+      "tags": false
+    },
+    "minecraft:recipe_book_category": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:recipe_display": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:recipe_serializer": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:recipe_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:rule_block_entity_modifier": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:rule_test": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:sensor_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:slot_display": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:slot_source_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:sound_event": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:spawn_condition_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:stat_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:test_environment": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:test_environment_definition_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:test_function": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:test_instance": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:test_instance_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:ticket_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:timeline": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:trial_spawner": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:trigger_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:trim_material": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:trim_pattern": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:villager_profession": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:villager_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:wolf_sound_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:wolf_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/biome": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/biome_source": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/block_state_provider_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/carver": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/chunk_generator": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/configured_carver": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/configured_feature": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/density_function": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/density_function_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/feature": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/feature_size_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/flat_level_generator_preset": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/foliage_placer_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/material_condition": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/material_rule": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/multi_noise_biome_source_parameter_list": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/noise": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/noise_settings": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/placed_feature": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/placement_modifier_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/pool_alias_binding": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/processor_list": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/root_placer_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/structure": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_piece": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_placement": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_pool_element": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_processor": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_set": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/structure_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/template_pool": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:worldgen/tree_decorator_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/trunk_placer_type": {
+      "elements": false,
+      "stable": true,
+      "tags": true
+    },
+    "minecraft:worldgen/world_preset": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    },
+    "minecraft:zombie_nautilus_variant": {
+      "elements": true,
+      "stable": false,
+      "tags": true
+    }
+  }
+}
