@@ -1,0 +1,16 @@
+[package]
+name = "registries_test"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../protocol_version" }
+pico_nbt = { path = "../pico_nbt" }
+pico_identifier = { path = "../../pico_libraries/pico_identifier", features = ["serde"] }
+pico_nbt2 = { path = "../../pico_libraries/pico_nbt2" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+walkdir = { workspace = true }
