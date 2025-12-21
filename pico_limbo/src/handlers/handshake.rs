@@ -221,7 +221,7 @@ mod tests {
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
-            hostname: "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e".to_string(),
+            hostname: "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e".to_string(),
             next_state: VarInt::new(2),
             port: 25565,
         };

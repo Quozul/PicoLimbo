@@ -68,7 +68,7 @@ jobs:
         with:
           components: clippy
       - name: Run clippy
-        run: cargo +stable clippy -- -D warnings
+        run: cargo +stable clippy --all-targets --all-features -- -D warnings
 
   # Run cargo fmt --all -- --check
   format:

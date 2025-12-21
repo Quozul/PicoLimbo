@@ -16,7 +16,7 @@ pub fn check_bungee_cord(state: &ServerState, hostname: &str) -> LegacyForwardin
         return LegacyForwardingResult::NoForwarding;
     }
 
-    let parts: Vec<&str> = hostname.split('\0').collect();
+    let parts: Vec<&str> = hostname.split('\x00').collect();
     let unique_id = parts
         .get(2)
         .map(|unique_id_str| Uuid::from_str(unique_id_str));
@@ -107,7 +107,7 @@ mod tests {
     fn test_offline_bungee_cord_legacy_forwarding() {
         // Given
         let server_state = bungee_cord();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -131,7 +131,7 @@ mod tests {
     fn test_online_legacy_forwarding_with_properties() {
         // Given
         let server_state = bungee_cord();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"textures\",\"value\":\"the_skin_data\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"textures\",\"value\":\"the_skin_data\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -157,7 +157,7 @@ mod tests {
     fn test_online_legacy_forwarding_with_signed_properties() {
         // Given
         let server_state = bungee_cord();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"textures\",\"value\":\"the_skin_data\",\"signature\":\"the_skin_signature\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"textures\",\"value\":\"the_skin_data\",\"signature\":\"the_skin_signature\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -196,7 +196,7 @@ mod tests {
     fn test_offline_bungee_guard_forwarding() {
         // Given
         let server_state = bungee_guard();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -220,7 +220,7 @@ mod tests {
     fn test_invalid_bungee_guard_forwarding() {
         // Given
         let server_state = bungee_guard();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"bungeeguard-token\",\"value\":\"other_token\",\"signature\":\"\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"bungeeguard-token\",\"value\":\"other_token\",\"signature\":\"\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -233,7 +233,7 @@ mod tests {
     fn test_missing_bungee_guard_forwarding() {
         // Given
         let server_state = bungee_guard();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -246,7 +246,7 @@ mod tests {
     fn test_online_bungee_guard_forwarding_with_properties() {
         // Given
         let server_state = bungee_guard();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"textures\",\"value\":\"the_skin_data\"},{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"textures\",\"value\":\"the_skin_data\"},{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
@@ -272,7 +272,7 @@ mod tests {
     fn test_online_bungee_guard_forwarding_with_signed_properties() {
         // Given
         let server_state = bungee_guard();
-        let hostname = "localhost\0127.0.0.1\06856201a9c1f49978608371019daf15e\0[{\"name\":\"textures\",\"value\":\"the_skin_data\",\"signature\":\"the_skin_signature\"},{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
+        let hostname = "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e\x00[{\"name\":\"textures\",\"value\":\"the_skin_data\",\"signature\":\"the_skin_signature\"},{\"name\":\"bungeeguard-token\",\"value\":\"the_token\",\"signature\":\"\"}]";
 
         // When
         let validation = check_bungee_cord(&server_state, hostname);
