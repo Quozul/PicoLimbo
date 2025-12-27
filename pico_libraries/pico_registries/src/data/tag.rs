@@ -6,3 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct Tag {
     values: Vec<Identifier>,
 }
+
+impl Tag {
+    pub fn get_values(&self) -> &[Identifier] {
+        &self.values
+    }
+}

@@ -100,6 +100,22 @@ impl<W: Write> Write for Encoder<W> {
     }
 }
 
+impl<W: Write> Encoder<W> {
+    /// Finishes the encoding process and returns the underlying writer.
+    ///
+    /// For compressed encoders, this writes the compression footer.
+    ///
+    /// # Errors
+    /// Returns an I/O error if finishing the compression fails.
+    pub fn finish(self) -> Result<W> {
+        match self {
+            Self::None(w) => Ok(w),
+            Self::Gzip(w) => Ok(w.finish()?),
+            Self::Zlib(w) => Ok(w.finish()?),
+        }
+    }
+}
+
 /// Creates a compressing writer based on the compression type.
 ///
 /// # Errors

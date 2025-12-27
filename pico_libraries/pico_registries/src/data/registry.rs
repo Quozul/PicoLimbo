@@ -6,6 +6,7 @@ use crate::registry_keys::RegistryKeys;
 use pico_identifier::Identifier;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::fs::DirEntry;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -29,6 +30,28 @@ impl Registry {
         Self { entries, key, tags }
     }
 
+    #[must_use]
+    pub fn get_entries(&self) -> Vec<&RegistryEntry> {
+        let mut entries = self.entries.values().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| entry.get_protocol_id());
+        entries
+    }
+
+    #[must_use]
+    pub const fn get_registry_key(&self) -> &RegistryKey {
+        &self.key
+    }
+
+    #[must_use]
+    pub fn get_tag_identifiers(&self) -> Vec<&Identifier> {
+        self.tags.keys().collect()
+    }
+
+    #[must_use]
+    pub fn get_tag(&self, identifier: &Identifier) -> Option<&Tag> {
+        self.tags.get(identifier)
+    }
+
     fn load_entries(
         registry_keys: &RegistryKeys,
         resource_path: &Path,
@@ -37,11 +60,17 @@ impl Registry {
         let sub_path = format!("{}/{}", id.namespace, id.thing);
         let path = resource_path.join(sub_path);
         let read_dir = std::fs::read_dir(path).expect("failed to read directory");
+
+        let mut entries: Vec<_> = read_dir
+            .map(|dir_entry| dir_entry.expect("failed to read directory entry"))
+            .collect();
+
+        entries.sort_by_key(DirEntry::file_name);
+
         let mut protocol_id = 0;
-        // TODO: Ensure the entries are sorted alphabetically
-        read_dir
+        entries
+            .into_iter()
             .map(|dir_entry| {
-                let dir_entry = dir_entry.expect("failed to read directory entry");
                 let path = dir_entry.path();
                 let json_str =
                     std::fs::read_to_string(&path).expect("failed to read registries.json");
@@ -73,7 +102,6 @@ impl Registry {
             })
             .collect()
     }
-
     fn load_tags(registry_keys: &RegistryKeys, resource_path: &Path) -> HashMap<Identifier, Tag> {
         let tag_group_path = resource_path
             .join(registry_keys.id().namespace)

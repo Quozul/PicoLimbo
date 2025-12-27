@@ -7,7 +7,8 @@ pub struct VoidChunkContext {
     pub chunk_x: i32,
     pub chunk_z: i32,
     pub biome_index: i32,
-    pub dimension: Dimension,
+    pub dimension_height: i32,
+    pub dimension_min_y: i32,
 }
 
 pub struct WorldContext {

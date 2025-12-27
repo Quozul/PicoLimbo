@@ -8,12 +8,14 @@ pub struct RegistryManager {
 }
 
 impl RegistryManager {
+    #[must_use]
     pub const fn builder() -> RegistryManagerBuilder {
         RegistryManagerBuilder::new()
     }
 
-    pub fn get_optional(&self, registry_ref: RegistryKeys) -> Option<&Registry> {
-        self.registries.get(&registry_ref)
+    #[must_use]
+    pub fn get_optional(&self, registry_ref: &RegistryKeys) -> Option<&Registry> {
+        self.registries.get(registry_ref)
     }
 }
 
@@ -22,6 +24,23 @@ pub struct RegistryManagerBuilder {
 }
 
 impl RegistryManagerBuilder {
+    pub const DEFAULT_REGISTRIES: &[RegistryKeys] = &[
+        RegistryKeys::Biome,
+        RegistryKeys::CatVariant,
+        RegistryKeys::ChickenVariant,
+        RegistryKeys::CowVariant,
+        RegistryKeys::DamageType,
+        RegistryKeys::DimensionType,
+        RegistryKeys::FrogVariant,
+        RegistryKeys::PaintingVariant,
+        RegistryKeys::PigVariant,
+        RegistryKeys::Timeline,
+        RegistryKeys::WolfSoundVariant,
+        RegistryKeys::WolfVariant,
+        RegistryKeys::ZombieNautilusVariant,
+    ];
+
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             registry_keys: Vec::new(),
@@ -29,18 +48,21 @@ impl RegistryManagerBuilder {
     }
 
     /// Register a single registry key
+    #[must_use]
     pub fn register(mut self, key: RegistryKeys) -> Self {
         self.registry_keys.push(key);
         self
     }
 
     /// Register multiple registry keys at once
+    #[must_use]
     pub fn register_all(mut self, keys: &[RegistryKeys]) -> Self {
         self.registry_keys.extend_from_slice(keys);
         self
     }
 
     /// Build the `RegistryManager` by loading all registered registries from the resource path
+    #[must_use]
     pub fn load_from_resource_path(self, resource_path: &Path) -> RegistryManager {
         let data_path = resource_path.join("data");
         let registries = self
@@ -55,22 +77,9 @@ impl RegistryManagerBuilder {
     }
 
     /// Register the default set of registry keys
+    #[must_use]
     pub fn with_defaults(self) -> Self {
-        self.register_all(&[
-            RegistryKeys::Biome,
-            RegistryKeys::CatVariant,
-            RegistryKeys::ChickenVariant,
-            RegistryKeys::CowVariant,
-            RegistryKeys::DamageType,
-            RegistryKeys::DimensionType,
-            RegistryKeys::FrogVariant,
-            RegistryKeys::PaintingVariant,
-            RegistryKeys::PigVariant,
-            RegistryKeys::Timeline,
-            RegistryKeys::WolfSoundVariant,
-            RegistryKeys::WolfVariant,
-            RegistryKeys::ZombieNautilusVariant,
-        ])
+        self.register_all(Self::DEFAULT_REGISTRIES)
     }
 }
 

@@ -39,6 +39,17 @@ pub fn from_slice(bytes: &[u8]) -> crate::Result<(String, Value)> {
     from_reader(io::Cursor::new(bytes))
 }
 
+/// Deserializes NBT data from a byte slice with options.
+///
+/// # Errors
+/// Returns an error if the data is malformed.
+pub fn from_slice_with_options(
+    bytes: &[u8],
+    options: NbtOptions,
+) -> crate::Result<(String, Value)> {
+    from_reader_with_options(io::Cursor::new(bytes), options)
+}
+
 /// Deserializes NBT data from a file.
 ///
 /// This function automatically detects compression (Gzip or Zlib) and decodes it.

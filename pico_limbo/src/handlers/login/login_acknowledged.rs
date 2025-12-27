@@ -1,3 +1,5 @@
+use crate::identifier_utils::to_protocol_identifier;
+use crate::registries_utils::load_registry_manager;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -8,21 +10,25 @@ use minecraft_packets::configuration::configuration_client_bound_plugin_message_
 use minecraft_packets::configuration::data::registry_entry::RegistryEntry;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
+use minecraft_packets::configuration::update_tags_packet::{
+    RegistryTag, TaggedRegistry, UpdateTagsPacket,
+};
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
-use minecraft_protocol::prelude::{ProtocolVersion, State};
-use registries::{Registries, get_registries};
+use minecraft_protocol::prelude::{ProtocolVersion, State, VarInt};
+use pico_nbt2::{CompressionType, NbtOptions};
+use pico_registries::{Registry, RegistryKeys, RegistryManagerBuilder};
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
         &self,
         client_state: &mut ClientState,
-        server_state: &ServerState,
+        _server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
             client_state.set_state(State::Configuration);
-            send_configuration_packets(&mut batch, protocol_version, server_state);
+            send_configuration_packets(&mut batch, protocol_version);
             Ok(batch)
         } else {
             Err(PacketHandlerError::invalid_state(
@@ -36,7 +42,6 @@ impl PacketHandler for LoginAcknowledgedPacket {
 fn send_configuration_packets(
     batch: &mut Batch<PacketRegistry>,
     protocol_version: ProtocolVersion,
-    server_state: &ServerState,
 ) {
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
@@ -48,35 +53,105 @@ fn send_configuration_packets(
         batch.queue(|| PacketRegistry::ClientBoundKnownPacks(packet));
     }
 
+    // Send tags
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+        // For now, only the Timeline tags are required
+        let tag_registries = &[RegistryKeys::Timeline];
+        let registry_manager = load_registry_manager(protocol_version, tag_registries);
+
+        let tagged_registries = tag_registries
+            .iter()
+            .map(|registry_keys| {
+                let registry = registry_manager
+                    .get_optional(registry_keys)
+                    .expect("Registry not found");
+
+                let tags = registry.get_tag_identifiers();
+                let registry_identifier = registry.get_registry_key().get_value();
+
+                TaggedRegistry::new(
+                    to_protocol_identifier(registry_identifier),
+                    tags.iter()
+                        .map(|tag_name| {
+                            RegistryTag::new(
+                                to_protocol_identifier(&tag_name.normalize()),
+                                evaluate_tags(registry, tag_name),
+                            )
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+
+        let packet = UpdateTagsPacket::new(tagged_registries);
+        batch.queue(|| PacketRegistry::UpdateTags(packet));
+    }
+
     // Send Registry Data
-    match get_registries(protocol_version, server_state.spawn_dimension()) {
-        Registries::V1_20_5 { registries } => {
-            for registries in registries.registries.into_inner() {
-                let entries = registries.entries.into_inner();
-                let mut registry_entries = Vec::with_capacity(entries.len());
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+        let registries = RegistryManagerBuilder::DEFAULT_REGISTRIES;
+        let registry_manager = load_registry_manager(protocol_version, registries);
 
-                for entry in entries {
-                    let bytes = entry.nbt_bytes.into_inner();
-                    let entry = RegistryEntry::new(entry.entry_id.clone(), bytes);
-                    registry_entries.push(entry);
-                }
+        for registry_keys in registries {
+            let registry = registry_manager
+                .get_optional(registry_keys)
+                .expect("Registry not found");
+            let entries = registry.get_entries();
+            let mut registry_entries = Vec::with_capacity(entries.len());
 
-                let packet = RegistryDataPacket::registry(registries.registry_id, registry_entries);
-                batch.queue(|| PacketRegistry::RegistryData(packet));
+            for entry in entries {
+                let bytes = entry
+                    .get_raw_value()
+                    .to_byte(
+                        CompressionType::None,
+                        NbtOptions::new().nameless_root(true).dynamic_lists(true),
+                        None,
+                    )
+                    .expect("Failed to serialize registry entry");
+                let entry_id = entry.get_registry_key().get_value();
+                let entry = RegistryEntry::new(to_protocol_identifier(entry_id), bytes);
+                registry_entries.push(entry);
             }
-        }
-        Registries::V1_20_2 { registry_codec } => {
-            let packet = RegistryDataPacket::codec(registry_codec);
+
+            let registry_id = registry.get_registry_key().get_value();
+            let packet =
+                RegistryDataPacket::registry(to_protocol_identifier(registry_id), registry_entries);
             batch.queue(|| PacketRegistry::RegistryData(packet));
         }
-        _ => {
-            unreachable!()
-        }
+    } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2) {
+        // TODO: Implement registries using new crate
+        unimplemented!();
+    } else {
+        // Registries are sent in the Join Game packet for versions prior to 1.20.2 since configuration state does not exist
+        unreachable!();
     }
 
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
     batch.queue(|| PacketRegistry::FinishConfiguration(packet));
+}
+
+// This function is called recursively
+fn evaluate_tags(registry: &Registry, tag_name: &pico_registries::Identifier) -> Vec<VarInt> {
+    registry
+        .get_tag(tag_name)
+        .expect("Failed to get tag")
+        .get_values()
+        .iter()
+        .flat_map(|identifier| {
+            if identifier.is_tag() {
+                // If it is a tag, we should expend all the values from that tag into the current tag
+                evaluate_tags(registry, &identifier.normalize())
+            } else {
+                // If it is not a tag, then we should get the protocol ID of the actual value from the registry
+                registry
+                    .get_optional(identifier)
+                    .into_iter()
+                    .map(|entry| VarInt::from(entry.get_protocol_id()))
+                    .collect()
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -133,11 +208,10 @@ mod tests {
     #[tokio::test]
     async fn test_configuration_packets_v1_20_2() {
         // Given
-        let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
-        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_2, &server_state);
+        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_2);
         let mut batch = batch.into_stream();
 
         // Then
@@ -159,11 +233,10 @@ mod tests {
     #[tokio::test]
     async fn test_configuration_packets_v1_20_5() {
         // Given
-        let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
-        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_5, &server_state);
+        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_5);
         let mut batch = batch.into_stream();
 
         // Then

@@ -3,7 +3,9 @@ mod cli;
 mod configuration;
 mod forwarding;
 mod handlers;
+mod identifier_utils;
 mod kick_messages;
+mod registries_utils;
 mod server;
 mod server_state;
 

@@ -48,4 +48,8 @@ impl RegistryEntry {
     pub const fn get_registry_key(&self) -> &RegistryKey {
         &self.registry_key
     }
+
+    pub const fn get_raw_value(&self) -> &Value {
+        &self.raw_value
+    }
 }
