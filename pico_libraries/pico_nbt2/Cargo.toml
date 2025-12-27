@@ -12,13 +12,6 @@ serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
-[profile.release]
-overflow-checks = true
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
-
 [dev-dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 anyhow = "1.0.100"

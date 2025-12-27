@@ -55,3 +55,49 @@ fn test_compression_gzip_manual() {
     assert_eq!(name, "compressed");
     assert_eq!(v, v2);
 }
+
+#[test]
+fn test_value_to_byte() {
+    use pico_nbt2::NbtOptions;
+
+    let v = Value::Int(42);
+
+    // No compression
+    let bytes = v
+        .to_byte(CompressionType::None, NbtOptions::new(), Some("test"))
+        .unwrap();
+    let (name, v2) = from_slice(&bytes).unwrap();
+    assert_eq!(name, "test");
+    assert_eq!(v, v2);
+
+    // Gzip
+    let bytes = v
+        .to_byte(CompressionType::Gzip, NbtOptions::new(), Some("test"))
+        .unwrap();
+    let reader = pico_nbt2::decode(Cursor::new(&bytes)).unwrap();
+    let (name, v2) = pico_nbt2::from_reader(reader).unwrap();
+    assert_eq!(name, "test");
+    assert_eq!(v, v2);
+
+    // Zlib
+    let bytes = v
+        .to_byte(CompressionType::Zlib, NbtOptions::new(), Some("test"))
+        .unwrap();
+    let reader = pico_nbt2::decode(Cursor::new(&bytes)).unwrap();
+    let (name, v2) = pico_nbt2::from_reader(reader).unwrap();
+    assert_eq!(name, "test");
+    assert_eq!(v, v2);
+
+    // Nameless root
+    let bytes = v
+        .to_byte(
+            CompressionType::None,
+            NbtOptions::new().nameless_root(true),
+            None,
+        )
+        .unwrap();
+    let (name, v2) =
+        pico_nbt2::from_slice_with_options(&bytes, NbtOptions::new().nameless_root(true)).unwrap();
+    assert_eq!(name, "");
+    assert_eq!(v, v2);
+}

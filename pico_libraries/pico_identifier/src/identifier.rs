@@ -96,6 +96,20 @@ impl Identifier {
     {
         Self::new("minecraft", thing)
     }
+
+    #[must_use]
+    pub fn is_tag(&self) -> bool {
+        self.namespace.starts_with('#')
+    }
+
+    #[must_use]
+    pub fn normalize(&self) -> Self {
+        if self.is_tag() {
+            Self::new_unchecked(&self.namespace[1..], &self.thing)
+        } else {
+            self.clone()
+        }
+    }
 }
 
 impl TryFrom<&str> for Identifier {

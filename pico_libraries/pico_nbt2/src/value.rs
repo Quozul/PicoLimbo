@@ -1,6 +1,5 @@
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-// use std::borrow::Cow;
 
 /// Represents an NBT value.
 ///
@@ -17,8 +16,8 @@ pub enum Value {
     #[serde(with = "serde_bytes")]
     ByteArray(Vec<u8>),
     String(String),
-    List(Vec<Value>),
-    Compound(IndexMap<String, Value>),
+    List(Vec<Self>),
+    Compound(IndexMap<String, Self>),
     IntArray(Vec<i32>),
     LongArray(Vec<i64>),
 }
@@ -149,6 +148,26 @@ impl Value {
         } else {
             None
         }
+    }
+
+    /// Serializes the value to a byte vector.
+    ///
+    /// # Arguments
+    /// * `compression` - NBT compression type
+    /// * `options` - NBT options
+    /// * `root_name` - Optional name for the root tag
+    ///
+    /// # Errors
+    /// Returns an error if serialization fails.
+    pub fn to_byte(
+        &self,
+        compression: crate::io::CompressionType,
+        options: crate::NbtOptions,
+        root_name: Option<&str>,
+    ) -> crate::error::Result<Vec<u8>> {
+        let mut writer = crate::io::encode(Vec::new(), compression)?;
+        crate::ser::to_writer_value_with_options(&mut writer, self, root_name, options)?;
+        writer.finish()
     }
 }
 

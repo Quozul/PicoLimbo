@@ -18,8 +18,6 @@ members = [
     "crates/pico_text_component",
     "crates/protocol_version",
     "crates/protocol_version_macro",
-    "crates/registries",
-    "crates/registries_data",
     "pico_libraries/pico_registries",
     "pico_libraries/pico_identifier",
     "pico_libraries/pico_nbt2",

@@ -2,7 +2,6 @@ use crate::data::registry_entry_value::{DimensionType, RegistryEntryValue};
 use crate::data::registry_key::RegistryKey;
 use pico_nbt2::Value;
 use serde::Serialize;
-use thiserror::Error;
 
 #[derive(Debug, Serialize)]
 pub struct RegistryEntry {
@@ -11,12 +10,6 @@ pub struct RegistryEntry {
     raw_value: Value,
     registry_key: RegistryKey,
     protocol_id: u32,
-}
-
-#[derive(Debug, Error)]
-pub enum RegistryEntryError {
-    #[error("this registry entry is not of the expected type")]
-    NotOfType,
 }
 
 impl RegistryEntry {
@@ -34,10 +27,10 @@ impl RegistryEntry {
         }
     }
 
-    pub const fn get_dimension(&self) -> Result<&DimensionType, RegistryEntryError> {
+    pub const fn get_dimension(&self) -> crate::Result<&DimensionType> {
         match self.value {
             RegistryEntryValue::DimensionType(ref dimension) => Ok(dimension),
-            _ => Err(RegistryEntryError::NotOfType),
+            RegistryEntryValue::Other => Err(crate::Error::NotOfType),
         }
     }
 
@@ -47,5 +40,9 @@ impl RegistryEntry {
 
     pub const fn get_registry_key(&self) -> &RegistryKey {
         &self.registry_key
+    }
+
+    pub const fn get_raw_value(&self) -> &Value {
+        &self.raw_value
     }
 }

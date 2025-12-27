@@ -10,9 +10,9 @@ pub struct PostV1_16Data {
     pub game_mode: u8,
     pub previous_game_mode: i8,
     pub dimension_names: LengthPaddedVec<Identifier>,
-    pub registry_codec_bytes: Omitted<&'static [u8]>,
+    pub registry_codec_bytes: Omitted<Vec<u8>>,
     #[pvn(751..759)]
-    pub v1_16_2_dimension_codec_bytes: Omitted<&'static [u8]>,
+    pub v1_16_2_dimension_codec_bytes: Omitted<Vec<u8>>,
     #[pvn(759..)]
     pub v1_19_dimension_type: Identifier,
     #[pvn(..751)]

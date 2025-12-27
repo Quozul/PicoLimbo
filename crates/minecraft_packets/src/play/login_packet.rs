@@ -34,8 +34,8 @@ impl LoginPacket {
     /// This is the constructor for version 1.16.2 up to 1.18.2 included
     pub fn with_dimension_codec(
         dimension: Dimension,
-        registry_codec_bytes: &'static [u8],
-        dimension_codec_bytes: &'static [u8],
+        registry_codec_bytes: Vec<u8>,
+        dimension_codec_bytes: Vec<u8>,
     ) -> Self {
         let iden = dimension.identifier();
         Self {
@@ -52,7 +52,7 @@ impl LoginPacket {
     }
 
     /// This is the constructor for 1.16, 1.16.1 and 1.19 up to 1.20 included
-    pub fn with_registry_codec(dimension: Dimension, registry_codec_bytes: &'static [u8]) -> Self {
+    pub fn with_registry_codec(dimension: Dimension, registry_codec_bytes: Vec<u8>) -> Self {
         let iden = dimension.identifier();
         Self {
             entity_id: 0,
@@ -541,8 +541,8 @@ mod tests {
             LoginPacket {
                 entity_id: 0,
                 data: LoginPacketData::PostV1_16(PostV1_16Data {
-                    registry_codec_bytes: Omitted::Some(NBT_BYTES),
-                    v1_16_2_dimension_codec_bytes: Omitted::Some(NBT_BYTES),
+                    registry_codec_bytes: Omitted::Some(NBT_BYTES.to_vec()),
+                    v1_16_2_dimension_codec_bytes: Omitted::Some(NBT_BYTES.to_vec()),
                     ..PostV1_16Data::default()
                 }),
             }

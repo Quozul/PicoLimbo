@@ -1,3 +1,4 @@
+use crate::identifier_utils::to_protocol_identifier;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -8,21 +9,26 @@ use minecraft_packets::configuration::configuration_client_bound_plugin_message_
 use minecraft_packets::configuration::data::registry_entry::RegistryEntry;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
+use minecraft_packets::configuration::update_tags_packet::{
+    RegistryTag, TaggedRegistry, UpdateTagsPacket,
+};
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
-use minecraft_protocol::prelude::{ProtocolVersion, State};
-use registries::{Registries, get_registries};
+use minecraft_protocol::prelude::{ProtocolVersion, State, VarInt};
+use pico_registries::utils::registry_codec::get_registry_codec_v1_16;
+use pico_registries::utils::registry_data_v1_20_5::get_registry_data_v1_20_5;
+use pico_registries::utils::tagged_registries::get_tagged_registries;
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
         &self,
         client_state: &mut ClientState,
-        server_state: &ServerState,
+        _server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
             client_state.set_state(State::Configuration);
-            send_configuration_packets(&mut batch, protocol_version, server_state);
+            send_configuration_packets(&mut batch, protocol_version)?;
             Ok(batch)
         } else {
             Err(PacketHandlerError::invalid_state(
@@ -36,8 +42,7 @@ impl PacketHandler for LoginAcknowledgedPacket {
 fn send_configuration_packets(
     batch: &mut Batch<PacketRegistry>,
     protocol_version: ProtocolVersion,
-    server_state: &ServerState,
-) {
+) -> Result<(), PacketHandlerError> {
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     batch.queue(|| PacketRegistry::ConfigurationClientBoundPluginMessage(packet));
@@ -48,35 +53,71 @@ fn send_configuration_packets(
         batch.queue(|| PacketRegistry::ClientBoundKnownPacks(packet));
     }
 
+    // Send tags
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_11) {
+        // Since 1.21.11, only the Timeline tags are required
+        // All tags are sent in a single packet
+        // TODO: `wolf_variant` tags should probably be sent too
+        let tagged_registries = get_tagged_registries(protocol_version)?
+            .iter()
+            .map(|tagged_registry| {
+                TaggedRegistry::new(
+                    to_protocol_identifier(&tagged_registry.registry_id),
+                    tagged_registry
+                        .tags
+                        .iter()
+                        .map(|registry_tag| {
+                            RegistryTag::new(
+                                to_protocol_identifier(&registry_tag.identifier),
+                                registry_tag.ids.iter().map(VarInt::from).collect(),
+                            )
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+
+        let packet = UpdateTagsPacket::new(tagged_registries);
+        batch.queue(|| PacketRegistry::UpdateTags(packet));
+    }
+
     // Send Registry Data
-    match get_registries(protocol_version, server_state.spawn_dimension()) {
-        Registries::V1_20_5 { registries } => {
-            for registries in registries.registries.into_inner() {
-                let entries = registries.entries.into_inner();
-                let mut registry_entries = Vec::with_capacity(entries.len());
-
-                for entry in entries {
-                    let bytes = entry.nbt_bytes.into_inner();
-                    let entry = RegistryEntry::new(entry.entry_id.clone(), bytes);
-                    registry_entries.push(entry);
-                }
-
-                let packet = RegistryDataPacket::registry(registries.registry_id, registry_entries);
-                batch.queue(|| PacketRegistry::RegistryData(packet));
-            }
-        }
-        Registries::V1_20_2 { registry_codec } => {
-            let packet = RegistryDataPacket::codec(registry_codec);
-            batch.queue(|| PacketRegistry::RegistryData(packet));
-        }
-        _ => {
-            unreachable!()
-        }
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+        // Since 1.20.5, each registry is sent in its own packet
+        batch.chain_iter(
+            get_registry_data_v1_20_5(protocol_version)?
+                .into_iter()
+                .map(|(registry_id, registry_entries)| {
+                    let packet = RegistryDataPacket::registry(
+                        to_protocol_identifier(&registry_id),
+                        registry_entries
+                            .iter()
+                            .map(|entry| {
+                                RegistryEntry::new(
+                                    to_protocol_identifier(&entry.entry_id),
+                                    entry.nbt_bytes.clone(),
+                                )
+                            })
+                            .collect(),
+                    );
+                    PacketRegistry::RegistryData(packet)
+                }),
+        );
+    } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2) {
+        // Since 1.19, all registries are sent as a single NBT tag
+        // Since 1.20.2, all registries are sent in their own packet during the configuration state, still as a single NBT tag
+        let registry_codec = get_registry_codec_v1_16(protocol_version)?;
+        let packet = RegistryDataPacket::codec(registry_codec);
+        batch.queue(|| PacketRegistry::RegistryData(packet));
+    } else {
+        // Registries are sent in the Join Game packet for versions prior to 1.20.2 since configuration state does not exist
+        unreachable!();
     }
 
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
     batch.queue(|| PacketRegistry::FinishConfiguration(packet));
+    Ok(())
 }
 
 #[cfg(test)]
@@ -133,11 +174,10 @@ mod tests {
     #[tokio::test]
     async fn test_configuration_packets_v1_20_2() {
         // Given
-        let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
-        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_2, &server_state);
+        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_2).unwrap();
         let mut batch = batch.into_stream();
 
         // Then
@@ -159,11 +199,10 @@ mod tests {
     #[tokio::test]
     async fn test_configuration_packets_v1_20_5() {
         // Given
-        let server_state = server_state();
         let mut batch = Batch::new();
 
         // When
-        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_5, &server_state);
+        send_configuration_packets(&mut batch, ProtocolVersion::V1_20_5).unwrap();
         let mut batch = batch.into_stream();
 
         // Then

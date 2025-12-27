@@ -965,10 +965,11 @@ dependencies = [
  "minecraft_packets",
  "minecraft_protocol",
  "net",
+ "pico_nbt2",
+ "pico_registries",
  "pico_structures",
  "pico_text_component",
  "rand",
- "registries",
  "reqwest",
  "serde",
  "serde_json",
@@ -1016,7 +1017,6 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tracing",
- "tracing-subscriber",
  "walkdir",
 ]
 
@@ -1249,26 +1249,6 @@ name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
-
-[[package]]
-name = "registries"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "minecraft_protocol",
- "proc-macro2",
- "quote",
- "registries_data",
- "serde_json",
- "walkdir",
-]
-
-[[package]]
-name = "registries_data"
-version = "0.1.0"
-dependencies = [
- "minecraft_protocol",
-]
 
 [[package]]
 name = "reqwest"

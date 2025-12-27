@@ -31,3 +31,15 @@ pub trait PacketHandler {
         server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError>;
 }
+
+impl From<pico_registries::Error> for PacketHandlerError {
+    fn from(error: pico_registries::Error) -> Self {
+        Self::Custom(error.to_string())
+    }
+}
+
+impl From<pico_nbt2::Error> for PacketHandlerError {
+    fn from(error: pico_nbt2::Error) -> Self {
+        Self::Custom(error.to_string())
+    }
+}

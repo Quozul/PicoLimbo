@@ -190,7 +190,8 @@ mod tests {
             chunk_x: 0,
             chunk_z: 0,
             biome_index,
-            dimension: Dimension::Overworld,
+            dimension_height: 256,
+            dimension_min_y: 0,
         };
         ChunkDataAndUpdateLightPacket::void(chunk_context)
     }
