@@ -63,6 +63,8 @@ pub struct Config {
 
     pub allow_unsupported_versions: bool,
 
+    pub allow_flight: bool,
+
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
@@ -86,6 +88,7 @@ impl Default for Config {
             compression: CompressionConfig::default(),
             title: TitleConfig::default(),
             allow_unsupported_versions: false,
+            allow_flight: false,
         }
     }
 }

@@ -58,6 +58,9 @@
       },
       "minecraft:player_info_update": {
         "protocol_id": 56
+      },
+      "minecraft:player_abilities": {
+        "protocol_id": 57
       }
     },
     "serverbound": {
@@ -69,6 +72,9 @@
       },
       "minecraft:chat": {
         "protocol_id": 1
+      },
+      "minecraft:player_abilities": {
+        "protocol_id": 19
       }
     }
   },

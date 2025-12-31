@@ -9,12 +9,13 @@ use crate::server_state::{ServerState, TabList, Title, TitleType};
 use minecraft_packets::configuration::acknowledge_finish_configuration_packet::AcknowledgeConfigurationPacket;
 use minecraft_packets::login::Property;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
+use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
+use minecraft_packets::play::client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
-use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
@@ -147,6 +148,18 @@ pub fn send_play_packets(
         .set_view_distance(view_distance)
         .set_reduced_debug_info(reduced_debug_info);
     batch.queue(|| PacketRegistry::Login(Box::new(packet)));
+
+    let is_flying = game_mode == GameMode::Spectator;
+    let allow_flying = server_state.allow_flight() || is_flying;
+    let packet = ClientBoundPlayerAbilitiesPacket::builder()
+        .allow_flying(allow_flying)
+        .creative(game_mode == GameMode::Creative)
+        .flying(is_flying)
+        .flying_speed(client_state.get_flying_speed())
+        .build();
+    batch.queue(|| PacketRegistry::ClientBoundPlayerAbilities(packet));
+    client_state.set_is_flight_allowed(allow_flying);
+    client_state.set_is_flying(is_flying);
 
     let (x, y, z) = server_state.spawn_position();
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
@@ -433,6 +446,10 @@ mod tests {
         ));
         assert!(matches!(
             batch.next().await.unwrap(),
+            PacketRegistry::ClientBoundPlayerAbilities(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
@@ -485,6 +502,10 @@ mod tests {
         assert!(matches!(
             batch.next().await.unwrap(),
             PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
+            PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
             batch.next().await.unwrap(),
@@ -543,6 +564,10 @@ mod tests {
         ));
         assert!(matches!(
             batch.next().await.unwrap(),
+            PacketRegistry::ClientBoundPlayerAbilities(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
@@ -583,6 +608,10 @@ mod tests {
         assert!(matches!(
             batch.next().await.unwrap(),
             PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
+            PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
             batch.next().await.unwrap(),

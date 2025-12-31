@@ -118,6 +118,16 @@ allow_unsupported_versions = false
 ```
 :::
 
+## Allow Flight
+
+Whether players can use flight on the server.
+
+:::code-group
+```toml [server.toml]
+allow_flight = false
+```
+:::
+
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  

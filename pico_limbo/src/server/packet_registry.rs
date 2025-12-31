@@ -22,14 +22,16 @@ use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
+use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
+use minecraft_packets::play::client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
-use minecraft_packets::play::play_client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
+use minecraft_packets::play::server_bound_player_abilities_packet::ServerBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
@@ -322,6 +324,20 @@ pub enum PacketRegistry {
         name = "minecraft:set_action_bar_text"
     )]
     SetActionBarText(SetActionBarTextPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:player_abilities"
+    )]
+    ClientBoundPlayerAbilities(ClientBoundPlayerAbilitiesPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "serverbound",
+        name = "minecraft:player_abilities"
+    )]
+    ServerBoundPlayerAbilities(ServerBoundPlayerAbilitiesPacket),
 }
 
 impl PacketHandler for PacketRegistry {
@@ -342,6 +358,7 @@ impl PacketHandler for PacketRegistry {
             Self::SetPlayerPosition(packet) => packet.handle(client_state, server_state),
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
+            Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }

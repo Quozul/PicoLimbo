@@ -20,6 +20,9 @@ impl Default for ClientState {
             game_profile: None,
             keep_alive_enabled: KeepAliveStatus::Disabled,
             feet_y: 0.0,
+            is_flight_allowed: false,
+            is_flying: false,
+            flying_speed: 0.05,
         }
     }
 }
@@ -32,6 +35,9 @@ pub struct ClientState {
     game_profile: Option<GameProfile>,
     keep_alive_enabled: KeepAliveStatus,
     feet_y: f64,
+    is_flight_allowed: bool,
+    is_flying: bool,
+    flying_speed: f32,
 }
 
 impl ClientState {
@@ -144,5 +150,31 @@ impl ClientState {
 
     pub const fn set_feet_position(&mut self, feet_y: f64) {
         self.feet_y = feet_y;
+    }
+
+    // Movement
+
+    pub const fn is_flight_allowed(&self) -> bool {
+        self.is_flight_allowed
+    }
+
+    pub const fn set_is_flight_allowed(&mut self, allow_flight: bool) {
+        self.is_flight_allowed = allow_flight;
+    }
+
+    pub const fn is_flying(&self) -> bool {
+        self.is_flying
+    }
+
+    pub const fn set_is_flying(&mut self, is_flying: bool) {
+        self.is_flying = is_flying;
+    }
+
+    pub const fn get_flying_speed(&self) -> f32 {
+        self.flying_speed
+    }
+
+    pub const fn set_flying_speed(&mut self, flying_speed: f32) {
+        self.flying_speed = flying_speed;
     }
 }

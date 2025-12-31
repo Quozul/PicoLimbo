@@ -28,6 +28,10 @@ impl<L, T> Prefixed<L, T> {
     pub fn inner(&self) -> &T {
         &self.0
     }
+
+    pub fn inner_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
 }
 
 /// Arrays in NBT format are prefixed with their length as an Integer

@@ -88,6 +88,9 @@
       },
       "minecraft:set_action_bar_text": {
         "protocol_id": 65
+      },
+      "minecraft:player_abilities": {
+        "protocol_id": 50
       }
     },
     "serverbound": {
@@ -99,6 +102,9 @@
       },
       "minecraft:chat": {
         "protocol_id": 3
+      },
+      "minecraft:player_abilities": {
+        "protocol_id": 25
       }
     }
   },
