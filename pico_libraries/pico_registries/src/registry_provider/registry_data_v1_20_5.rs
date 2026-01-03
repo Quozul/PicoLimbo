@@ -1,4 +1,4 @@
-use crate::utils::shared::{get_registry_keys, load_registry_manager};
+use crate::registry_provider::shared::{get_registry_keys, load_registry_manager};
 use pico_identifier::Identifier;
 use pico_nbt2::{CompressionType, NbtOptions};
 use protocol_version::protocol_version::ProtocolVersion;
@@ -18,9 +18,6 @@ impl RegistryDataEntry {
     }
 }
 
-/// Since 1.20.5, each registry is sent in its own packet
-///
-/// # Errors
 pub fn get_registry_data_v1_20_5(
     protocol_version: ProtocolVersion,
 ) -> crate::Result<Vec<(Identifier, Vec<RegistryDataEntry>)>> {

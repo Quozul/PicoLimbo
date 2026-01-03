@@ -41,8 +41,14 @@ pub enum Error {
     #[error("this registry entry is not of the expected type")]
     NotOfType,
 
+    #[error("data path not found")]
+    DataPathNotFound,
+
     #[error("Custom error: {0}")]
     Message(String),
+
+    #[error("Obfuscated error")]
+    Obf,
 }
 
 impl Error {

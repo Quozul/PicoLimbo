@@ -1,0 +1,34 @@
+[package]
+name = "pico_precomputed_registries"
+version = "0.1.0"
+edition = "2024"
+build = "build/main.rs"
+
+[dependencies]
+pico_registries = { path = "../pico_registries" }
+protocol_version = { path = "../../crates/protocol_version" }
+phf = { workspace = true }
+
+[build-dependencies]
+protocol_version = { path = "../../crates/protocol_version" }
+pico_registries = { path = "../pico_registries" }
+phf = { workspace = true }
+phf_codegen = { workspace = true }
+anyhow = { workspace = true }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Panics and unwraps
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+unreachable = "deny"
+unimplemented = "deny"
+todo = "warn"

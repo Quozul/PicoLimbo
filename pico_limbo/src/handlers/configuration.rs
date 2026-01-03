@@ -29,11 +29,9 @@ use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
+use pico_precomputed_registries::PrecomputedRegistries;
 use pico_registries::Identifier;
-use pico_registries::utils::biome::get_biome_protocol_id;
-use pico_registries::utils::dimension_codec::get_dimension_codec_v1_16_2;
-use pico_registries::utils::dimension_info::get_dimension_info;
-use pico_registries::utils::registry_codec::get_registry_codec_v1_16;
+use pico_registries::registry_provider::RegistryProvider;
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use std::num::TryFromIntError;
@@ -54,20 +52,21 @@ fn build_login_packet(
     protocol_version: ProtocolVersion,
     spawn_dimension: Dimension,
 ) -> Result<LoginPacket, PacketHandlerError> {
+    let registry_provider = PrecomputedRegistries;
     if protocol_version.between_inclusive(ProtocolVersion::V1_7_2, ProtocolVersion::V1_15_2) {
         Ok(LoginPacket::with_dimension_pre_v1_16(spawn_dimension))
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_16_1)
         || protocol_version.between_inclusive(ProtocolVersion::V1_19, ProtocolVersion::V1_20)
     {
-        let registry_codec = get_registry_codec_v1_16(protocol_version)?;
+        let registry_codec = registry_provider.get_registry_codec_v1_16(protocol_version)?;
         Ok(LoginPacket::with_registry_codec(
             spawn_dimension,
             registry_codec,
         ))
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2)
     {
-        let registry_codec = get_registry_codec_v1_16(protocol_version)?;
-        let dimension_codec = get_dimension_codec_v1_16_2(
+        let registry_codec = registry_provider.get_registry_codec_v1_16(protocol_version)?;
+        let dimension_codec = registry_provider.get_dimension_codec_v1_16_2(
             protocol_version,
             &to_registries_dimension(spawn_dimension),
         )?;
@@ -80,7 +79,7 @@ fn build_login_packet(
     {
         Ok(LoginPacket::with_dimension_post_v1_20_2(spawn_dimension))
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
-        let dimension_type = get_dimension_info(
+        let dimension_type = registry_provider.get_dimension_info(
             protocol_version,
             &to_registries_identifier(&spawn_dimension.identifier()),
         )?;
@@ -131,6 +130,7 @@ pub fn send_play_packets(
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
     let reduced_debug_info = server_state.reduced_debug_info();
+    let registry_provider = PrecomputedRegistries;
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -217,11 +217,12 @@ pub fn send_play_packets(
         }
 
         // Send Chunk Data and Update Light
-        let biome_id =
-            get_biome_protocol_id(protocol_version, &Identifier::vanilla_unchecked("plains"))
-                .unwrap_or(1); // Plains biome ID is 1 before 1.13
+        let biome_id = registry_provider
+            .get_biome_protocol_id(protocol_version, &Identifier::vanilla_unchecked("plains"))
+            .unwrap_or(1); // Plains biome ID is 1 before 1.13
         let dimension_identifier = to_registries_identifier(&dimension.identifier());
-        let dimension_info = get_dimension_info(protocol_version, &dimension_identifier)?;
+        let dimension_info =
+            registry_provider.get_dimension_info(protocol_version, &dimension_identifier)?;
 
         let center_chunk = world_position_to_chunk_position((x, z))?;
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {

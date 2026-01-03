@@ -1,5 +1,5 @@
 use crate::RegistryKeys;
-use crate::utils::shared::{
+use crate::registry_provider::shared::{
     encode_nameless_compound_to_bytes, get_dimension, load_registry_manager,
 };
 use pico_identifier::Identifier;
@@ -22,12 +22,6 @@ impl Dimension {
     }
 }
 
-/// Dimension codec is a thing from 1.16.2 up to 1.18.2
-///
-/// # Returns
-/// Serialized NBT of the dimension codec
-///
-/// # Errors
 pub fn get_dimension_codec_v1_16_2(
     protocol_version: ProtocolVersion,
     dimension: &Dimension,

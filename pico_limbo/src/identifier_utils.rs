@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::Dimension as ProtocolDimension;
-use pico_registries::utils::dimension_codec::Dimension as RegistryDimension;
+use pico_registries::registry_provider::Dimension as RegistryDimension;
 
 pub fn to_protocol_identifier(
     iden: &pico_registries::Identifier,

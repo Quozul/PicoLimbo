@@ -1,5 +1,5 @@
 use crate::data::registry_entry::RegistryEntry;
-use crate::utils::shared::load_registry_manager;
+use crate::registry_provider::shared::load_registry_manager;
 use crate::{Registry, RegistryKeys};
 use pico_identifier::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
@@ -15,9 +15,6 @@ pub struct RegistryTag {
     pub ids: Vec<u32>,
 }
 
-///
-///
-/// # Errors
 pub fn get_tagged_registries(
     protocol_version: ProtocolVersion,
 ) -> crate::Result<Vec<TaggedRegistry>> {

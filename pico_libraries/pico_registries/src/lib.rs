@@ -1,8 +1,8 @@
 mod data;
 mod error;
 mod registry_keys;
+pub mod registry_provider;
 mod reports;
-pub mod utils;
 
 pub use crate::data::registry::Registry;
 pub use crate::data::registry_manager::{RegistryManager, RegistryManagerBuilder};

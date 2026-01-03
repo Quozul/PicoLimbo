@@ -1,5 +1,5 @@
 use crate::RegistryKeys;
-use crate::utils::shared::{get_dimension, load_registry_manager};
+use crate::registry_provider::shared::{get_dimension, load_registry_manager};
 use pico_identifier::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
 
@@ -10,9 +10,6 @@ pub struct DimensionInfo {
     pub registry_key: Identifier,
 }
 
-///
-///
-/// # Errors
 pub fn get_dimension_info(
     protocol_version: ProtocolVersion,
     dimension_identifier: &Identifier,

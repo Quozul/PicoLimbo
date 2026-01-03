@@ -4,7 +4,30 @@ use pico_identifier::Identifier;
 use pico_nbt2::NbtOptions;
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
-use std::path::Path;
+use std::env;
+use std::path::{Path, PathBuf};
+
+fn find_data_path(sub_path: &str) -> Option<PathBuf> {
+    let start_dir = env::var_os("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .or_else(|| env::current_dir().ok())?;
+
+    let mut current = start_dir;
+
+    loop {
+        let candidate = current.join("data/generated").join(sub_path);
+
+        if candidate.exists() {
+            return Some(candidate);
+        }
+
+        if !current.pop() {
+            break;
+        }
+    }
+
+    Some(Path::new("data/generated").join(sub_path))
+}
 
 pub fn load_registry_manager(
     protocol_version: ProtocolVersion,
@@ -15,7 +38,8 @@ pub fn load_registry_manager(
         ProtocolVersion::V1_16,
         ProtocolVersion::latest(),
     )?;
-    let path = format!("data/generated/{}", protocol_version.data());
+    let path = find_data_path(&protocol_version.data().to_string())
+        .ok_or(crate::Error::DataPathNotFound)?;
     let resource_root = Path::new(&path);
     Ok(RegistryManager::builder()
         .register_all(registries)

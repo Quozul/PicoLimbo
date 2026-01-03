@@ -3,7 +3,7 @@ use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
-use pico_registries::utils::dimension_info::DimensionInfo;
+use pico_registries::registry_provider::DimensionInfo;
 use pico_structures::prelude::World;
 use std::sync::Arc;
 

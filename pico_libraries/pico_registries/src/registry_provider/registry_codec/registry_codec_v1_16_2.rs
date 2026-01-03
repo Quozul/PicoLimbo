@@ -1,4 +1,4 @@
-use crate::utils::shared::{
+use crate::registry_provider::shared::{
     encode_nameless_compound_to_bytes, get_registry_keys, load_registry_manager,
 };
 use pico_nbt2::{IndexMap, Value};

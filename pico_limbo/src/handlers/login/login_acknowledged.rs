@@ -14,9 +14,8 @@ use minecraft_packets::configuration::update_tags_packet::{
 };
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State, VarInt};
-use pico_registries::utils::registry_codec::get_registry_codec_v1_16;
-use pico_registries::utils::registry_data_v1_20_5::get_registry_data_v1_20_5;
-use pico_registries::utils::tagged_registries::get_tagged_registries;
+use pico_precomputed_registries::PrecomputedRegistries;
+use pico_registries::registry_provider::RegistryProvider;
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
@@ -43,6 +42,8 @@ fn send_configuration_packets(
     batch: &mut Batch<PacketRegistry>,
     protocol_version: ProtocolVersion,
 ) -> Result<(), PacketHandlerError> {
+    let registry_provider = PrecomputedRegistries;
+
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand("PicoLimbo");
     batch.queue(|| PacketRegistry::ConfigurationClientBoundPluginMessage(packet));
@@ -58,7 +59,8 @@ fn send_configuration_packets(
         // Since 1.21.11, only the Timeline tags are required
         // All tags are sent in a single packet
         // TODO: `wolf_variant` tags should probably be sent too
-        let tagged_registries = get_tagged_registries(protocol_version)?
+        let tagged_registries = registry_provider
+            .get_tagged_registries(protocol_version)?
             .iter()
             .map(|tagged_registry| {
                 TaggedRegistry::new(
@@ -85,7 +87,8 @@ fn send_configuration_packets(
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         // Since 1.20.5, each registry is sent in its own packet
         batch.chain_iter(
-            get_registry_data_v1_20_5(protocol_version)?
+            registry_provider
+                .get_registry_data_v1_20_5(protocol_version)?
                 .into_iter()
                 .map(|(registry_id, registry_entries)| {
                     let packet = RegistryDataPacket::registry(
@@ -106,7 +109,7 @@ fn send_configuration_packets(
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2) {
         // Since 1.19, all registries are sent as a single NBT tag
         // Since 1.20.2, all registries are sent in their own packet during the configuration state, still as a single NBT tag
-        let registry_codec = get_registry_codec_v1_16(protocol_version)?;
+        let registry_codec = registry_provider.get_registry_codec_v1_16(protocol_version)?;
         let packet = RegistryDataPacket::codec(registry_codec);
         batch.queue(|| PacketRegistry::RegistryData(packet));
     } else {
