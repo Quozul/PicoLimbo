@@ -80,4 +80,5 @@ const REGISTRIES_TO_SEND = [
     "wolf_sound_variant",
     // The following registries were added in 1.21.11
     "zombie_nautilus_variant",
+    "tags/timeline"
 ];
