@@ -30,9 +30,9 @@ impl LightData {
     pub fn from_light_data(
         sky_light_sections: &[LightSection],
         block_light_sections: &[LightSection],
-        dimension: Dimension,
+        dimension_height: i32,
     ) -> Self {
-        let world_section_count = dimension.height() / 16;
+        let world_section_count = dimension_height / 16;
         let total_light_sections = (world_section_count + 2) as u32;
 
         let all_sections_mask_val = (1u64 << total_light_sections) - 1;
@@ -68,8 +68,8 @@ impl LightData {
         }
     }
 
-    pub fn new_void(dimension: Dimension) -> Self {
-        let world_section_count = dimension.height() / 16;
+    pub fn new_void(dimension_height: i32) -> Self {
+        let world_section_count = dimension_height / 16;
         let total_light_sections = (world_section_count + 2) as u32;
 
         let all_sections_mask_val = (1u64 << total_light_sections) - 1;

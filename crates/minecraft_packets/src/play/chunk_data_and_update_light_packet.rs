@@ -40,7 +40,7 @@ pub struct ChunkDataAndUpdateLightPacket {
 
 impl ChunkDataAndUpdateLightPacket {
     pub fn void(context: VoidChunkContext) -> Self {
-        let dimension = context.dimension;
+        let dimension_height = context.dimension_height;
         Self {
             chunk_x: context.chunk_x,
             chunk_z: context.chunk_z,
@@ -50,7 +50,7 @@ impl ChunkDataAndUpdateLightPacket {
             ignore_old_data: false,
             chunk_data: ChunkData::void(context),
             trust_edges: true,
-            v1_18_light_data: LightData::new_void(dimension),
+            v1_18_light_data: LightData::new_void(dimension_height),
         }
     }
 
@@ -62,7 +62,6 @@ impl ChunkDataAndUpdateLightPacket {
         let all_sections_bit_mask = 0b1111_1111_1111_1111i32;
         let chunk_x = chunk_context.chunk_x;
         let chunk_z = chunk_context.chunk_z;
-        let dimension = chunk_context.dimension;
 
         let light_data = match (
             schematic_context
@@ -73,9 +72,9 @@ impl ChunkDataAndUpdateLightPacket {
                 .get_chunk_block_light(chunk_x, chunk_z),
         ) {
             (Some(sky_light), Some(block_light)) => {
-                LightData::from_light_data(sky_light, block_light, dimension)
+                LightData::from_light_data(sky_light, block_light, chunk_context.dimension_height)
             }
-            _ => LightData::new_void(dimension),
+            _ => LightData::new_void(chunk_context.dimension_height),
         };
 
         Self {
@@ -206,7 +205,8 @@ mod tests {
             chunk_x: 0,
             chunk_z: 0,
             biome_index,
-            dimension: Dimension::Overworld,
+            dimension_height: 256,
+            dimension_min_y: 0,
         };
         ChunkDataAndUpdateLightPacket::void(chunk_context)
     }
@@ -218,9 +218,9 @@ mod tests {
         for (version, mut expected_bytes) in snapshots {
             let protocol_version = ProtocolVersion::from(version);
             let light_data_bytes = {
-                let dimension = Dimension::Overworld;
+                let dimension_height = 256;
                 let mut writer = BinaryWriter::default();
-                LightData::new_void(dimension)
+                LightData::new_void(dimension_height)
                     .encode(&mut writer, protocol_version)
                     .unwrap();
                 writer.into_inner()
