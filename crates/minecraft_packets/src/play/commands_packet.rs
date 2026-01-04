@@ -203,7 +203,7 @@ impl ParserProperties {
 
     fn identifier(&self) -> Identifier {
         match self {
-            ParserProperties::Float { .. } => Identifier::new("brigadier", "float"),
+            ParserProperties::Float { .. } => Identifier::new_unchecked("brigadier", "float"),
         }
     }
 

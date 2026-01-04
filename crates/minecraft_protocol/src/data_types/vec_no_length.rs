@@ -1,6 +1,7 @@
 use crate::prelude::{DecodePacket, EncodePacket};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError};
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 impl<T: EncodePacket> EncodePacket for Vec<T> {
     fn encode(
@@ -9,6 +10,22 @@ impl<T: EncodePacket> EncodePacket for Vec<T> {
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
         for value in self {
+            value.encode(writer, protocol_version)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: EncodePacket> EncodePacket for Cow<'_, [T]>
+where
+    [T]: ToOwned,
+{
+    fn encode(
+        &self,
+        writer: &mut BinaryWriter,
+        protocol_version: ProtocolVersion,
+    ) -> Result<(), BinaryWriterError> {
+        for value in self.iter() {
             value.encode(writer, protocol_version)?;
         }
         Ok(())
