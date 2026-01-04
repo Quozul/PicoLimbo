@@ -3,6 +3,7 @@ use crate::registry_provider::shared::load_registry_manager;
 use crate::{Registry, RegistryKeys};
 use pico_identifier::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 pub struct TaggedRegistry {
     pub registry_id: Identifier,
@@ -12,7 +13,7 @@ pub struct TaggedRegistry {
 pub struct RegistryTag {
     pub identifier: Identifier,
     /// List of protocol IDs
-    pub ids: Vec<u32>,
+    pub ids: Cow<'static, [u32]>,
 }
 
 pub fn get_tagged_registries(
@@ -35,7 +36,7 @@ pub fn get_tagged_registries(
                     .flat_map(|tag_name| -> crate::Result<RegistryTag> {
                         Ok(RegistryTag {
                             identifier: tag_name.normalize(),
-                            ids: evaluate_tags(registry, tag_name)?,
+                            ids: Cow::Owned(evaluate_tags(registry, tag_name)?),
                         })
                     })
                     .collect(),

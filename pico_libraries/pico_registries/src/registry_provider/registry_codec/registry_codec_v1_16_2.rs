@@ -4,6 +4,7 @@ use crate::registry_provider::shared::{
 use pico_nbt2::{IndexMap, Value};
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
+use std::borrow::Cow;
 use std::num::TryFromIntError;
 
 #[derive(Serialize)]
@@ -22,7 +23,7 @@ struct RegistryCodecEntry {
 
 pub fn get_registry_codec_bytes_v1_16_2(
     protocol_version: ProtocolVersion,
-) -> crate::Result<Vec<u8>> {
+) -> crate::Result<Cow<'static, [u8]>> {
     crate::Error::incompatible_version(
         protocol_version,
         ProtocolVersion::V1_16_2,

@@ -5,6 +5,7 @@ use crate::registry_provider::shared::{
 use pico_nbt2::Value;
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
+use std::borrow::Cow;
 
 #[derive(Serialize)]
 struct RegistryCodecEntry {
@@ -19,7 +20,9 @@ struct RegistryCodec {
     dimension: Vec<RegistryCodecEntry>,
 }
 
-pub fn get_registry_codec_bytes_v1_16(protocol_version: ProtocolVersion) -> crate::Result<Vec<u8>> {
+pub fn get_registry_codec_bytes_v1_16(
+    protocol_version: ProtocolVersion,
+) -> crate::Result<Cow<'static, [u8]>> {
     crate::Error::incompatible_version(
         protocol_version,
         ProtocolVersion::V1_16,

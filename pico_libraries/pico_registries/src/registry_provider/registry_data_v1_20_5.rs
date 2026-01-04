@@ -2,15 +2,16 @@ use crate::registry_provider::shared::{get_registry_keys, load_registry_manager}
 use pico_identifier::Identifier;
 use pico_nbt2::{CompressionType, NbtOptions};
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 pub struct RegistryDataEntry {
     pub entry_id: Identifier,
-    pub nbt_bytes: Vec<u8>,
+    pub nbt_bytes: Cow<'static, [u8]>,
 }
 
 impl RegistryDataEntry {
     #[must_use]
-    pub const fn new(entry_id: Identifier, nbt_bytes: Vec<u8>) -> Self {
+    pub const fn new(entry_id: Identifier, nbt_bytes: Cow<'static, [u8]>) -> Self {
         Self {
             entry_id,
             nbt_bytes,
@@ -43,7 +44,7 @@ pub fn get_registry_data_v1_20_5(
                         None,
                     )?;
                     let entry_id = entry.get_registry_key().get_value().clone();
-                    Ok(RegistryDataEntry::new(entry_id, bytes))
+                    Ok(RegistryDataEntry::new(entry_id, Cow::Owned(bytes)))
                 })
                 .collect();
             let registry_id = registry.get_registry_key().get_value().clone();

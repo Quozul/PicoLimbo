@@ -4,6 +4,7 @@ use pico_identifier::Identifier;
 use pico_nbt2::NbtOptions;
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
+use std::borrow::Cow;
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -77,11 +78,11 @@ pub fn get_dimension<'a>(
 pub fn encode_nameless_compound_to_bytes<T: Serialize>(
     protocol_version: ProtocolVersion,
     value: &T,
-) -> pico_nbt2::Result<Vec<u8>> {
+) -> pico_nbt2::Result<Cow<'static, [u8]>> {
     let is_nameless = protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2);
     let options = NbtOptions::new().nameless_root(is_nameless);
     let name = if is_nameless { None } else { Some("") };
     let mut bytes = Vec::new();
     pico_nbt2::to_writer_with_options(&mut bytes, &value, name, options)?;
-    Ok(bytes)
+    Ok(Cow::Owned(bytes))
 }

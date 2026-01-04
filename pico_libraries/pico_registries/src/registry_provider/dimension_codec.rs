@@ -4,6 +4,7 @@ use crate::registry_provider::shared::{
 };
 use pico_identifier::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 pub enum Dimension {
     Overworld,
@@ -25,7 +26,7 @@ impl Dimension {
 pub fn get_dimension_codec_v1_16_2(
     protocol_version: ProtocolVersion,
     dimension: &Dimension,
-) -> crate::Result<Vec<u8>> {
+) -> crate::Result<Cow<'static, [u8]>> {
     crate::Error::incompatible_version(
         protocol_version,
         ProtocolVersion::V1_16_2,

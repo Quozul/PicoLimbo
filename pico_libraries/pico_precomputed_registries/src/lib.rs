@@ -5,6 +5,7 @@ use pico_registries::registry_provider::{Dimension, RegistryProvider};
 use pico_registries::registry_provider::{RegistryTag, TaggedRegistry};
 use pico_registries::{Error, Result};
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 #[allow(clippy::unreadable_literal)]
 mod precomputed {
@@ -31,7 +32,7 @@ impl RegistryProvider for PrecomputedRegistries {
         &self,
         protocol_version: ProtocolVersion,
         dimension: &Dimension,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<Cow<'static, [u8]>> {
         let key = format!("{protocol_version:?}");
         let codecs = precomputed::DIMENSION_CODECS.get(&key).ok_or(Error::Obf)?; // Incompatible version
 
@@ -41,14 +42,17 @@ impl RegistryProvider for PrecomputedRegistries {
             Dimension::TheEnd => codecs.end,
         };
 
-        Ok(slice.to_vec())
+        Ok(Cow::Borrowed(slice))
     }
 
-    fn get_registry_codec_v1_16(&self, protocol_version: ProtocolVersion) -> Result<Vec<u8>> {
+    fn get_registry_codec_v1_16(
+        &self,
+        protocol_version: ProtocolVersion,
+    ) -> Result<Cow<'static, [u8]>> {
         let key = format!("{protocol_version:?}");
         precomputed::REGISTRY_CODECS
             .get(&key)
-            .map(|s| s.to_vec())
+            .map(|s| Cow::Borrowed(*s))
             .ok_or(Error::Obf) // Incompatible version
     }
 
@@ -87,7 +91,7 @@ impl RegistryProvider for PrecomputedRegistries {
                     .iter()
                     .map(|e| RegistryDataEntry {
                         entry_id: Identifier::vanilla_unchecked(e.entry_id),
-                        nbt_bytes: e.nbt_bytes.to_vec(),
+                        nbt_bytes: Cow::Borrowed(e.nbt_bytes),
                     })
                     .collect();
                 (ident, entries_vec)
@@ -113,7 +117,7 @@ impl RegistryProvider for PrecomputedRegistries {
                     .iter()
                     .map(|t| RegistryTag {
                         identifier: Identifier::vanilla_unchecked(t.identifier),
-                        ids: t.ids.to_vec(),
+                        ids: Cow::Borrowed(t.ids),
                     })
                     .collect(),
             })

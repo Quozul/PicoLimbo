@@ -10,6 +10,7 @@ use crate::registry_provider::tagged_registries::get_tagged_registries;
 pub use crate::registry_provider::tagged_registries::{RegistryTag, TaggedRegistry};
 pub use pico_identifier::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
+use std::borrow::Cow;
 
 mod biome;
 mod dimension_codec;
@@ -39,7 +40,7 @@ pub trait RegistryProvider {
         &self,
         protocol_version: ProtocolVersion,
         dimension: &Dimension,
-    ) -> crate::Result<Vec<u8>>;
+    ) -> crate::Result<Cow<'static, [u8]>>;
 
     /// Since 1.16.0 up until 1.20.4 included, all registries are sent as a single NBT tag
     ///
@@ -48,8 +49,10 @@ pub trait RegistryProvider {
     ///
     /// # Errors
     /// Returns an error if this function was called for the wrong protocol version
-    fn get_registry_codec_v1_16(&self, protocol_version: ProtocolVersion)
-    -> crate::Result<Vec<u8>>;
+    fn get_registry_codec_v1_16(
+        &self,
+        protocol_version: ProtocolVersion,
+    ) -> crate::Result<Cow<'static, [u8]>>;
 
     ///
     ///
@@ -92,14 +95,14 @@ impl RegistryProvider for RuntimeRegistryProvider {
         &self,
         protocol_version: ProtocolVersion,
         dimension: &Dimension,
-    ) -> crate::Result<Vec<u8>> {
+    ) -> crate::Result<Cow<'static, [u8]>> {
         get_dimension_codec_v1_16_2(protocol_version, dimension)
     }
 
     fn get_registry_codec_v1_16(
         &self,
         protocol_version: ProtocolVersion,
-    ) -> crate::Result<Vec<u8>> {
+    ) -> crate::Result<Cow<'static, [u8]>> {
         get_registry_codec_v1_16(protocol_version)
     }
 
