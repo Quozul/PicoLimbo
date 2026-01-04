@@ -32,7 +32,7 @@ pub struct PostV1_20_2Data {
 
 impl Default for PostV1_20_2Data {
     fn default() -> Self {
-        let overworld = Identifier::minecraft("overworld");
+        let overworld = Identifier::vanilla_unchecked("overworld");
         Self {
             is_hardcore: false,
             dimension_names: LengthPaddedVec::new(vec![overworld.clone()]),
