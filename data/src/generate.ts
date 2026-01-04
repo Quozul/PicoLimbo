@@ -94,14 +94,6 @@ const SUPPORTED_VERSIONS = [
 
         // Cleanup
         await cleanDataDirectory(dataDirectory);
-        const wolfVariant = join(dataDirectory, "minecraft", "wolf_variant");
-        if (await fileExists(wolfVariant)) {
-            await cleanWolfVariants(wolfVariant);
-        }
-        const dimensionTypes = join(dataDirectory, "minecraft", "dimension_type");
-        if (await fileExists(dimensionTypes)) {
-            await cleanDimensionTypes(dimensionTypes);
-        }
         await cleanReportsDirectory(reportsDirectory);
         await rm(generatedDirectory, { recursive: true, force: true });
     }
@@ -132,34 +124,6 @@ async function copyDir(src: string, dest: string): Promise<void> {
             await mkdir(destDir, { recursive: true });
             await copyFile(srcPath, destPath);
         }
-    }
-}
-
-async function cleanWolfVariants(path: string): Promise<void> {
-    // Replace "#minecraft:is_" with "minecraft:" in wolf_variant
-    const wolfVariantDirectory = await opendir(path);
-    for await (const dirent of wolfVariantDirectory) {
-        const direntPath = join(path, dirent.name);
-        const fileContents = await readFile(direntPath, "utf8");
-        await writeFile(
-            direntPath,
-            fileContents.replace("#minecraft:is_", "minecraft:"),
-        );
-    }
-}
-
-async function cleanDimensionTypes(path: string): Promise<void> {
-    // Removes the "timelines" entry from the dimension types
-    const wolfVariantDirectory = await opendir(path);
-    for await (const dirent of wolfVariantDirectory) {
-        const direntPath = join(path, dirent.name);
-        const fileContents = await readFile(direntPath, "utf8");
-        const parsedContents = JSON.parse(fileContents);
-        delete parsedContents.timelines
-        await writeFile(
-            direntPath,
-            JSON.stringify(parsedContents, null, 2),
-        );
     }
 }
 
