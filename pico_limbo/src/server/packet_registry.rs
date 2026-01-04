@@ -8,6 +8,7 @@ use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBou
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
+use minecraft_packets::configuration::update_tags_packet::UpdateTagsPacket;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
@@ -172,6 +173,13 @@ pub enum PacketRegistry {
         name = "minecraft:registry_data"
     )]
     RegistryData(RegistryDataPacket),
+
+    #[protocol_id(
+        state = "configuration",
+        bound = "clientbound",
+        name = "minecraft:update_tags"
+    )]
+    UpdateTags(UpdateTagsPacket),
 
     #[protocol_id(
         state = "configuration",
