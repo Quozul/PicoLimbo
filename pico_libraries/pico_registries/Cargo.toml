@@ -1,0 +1,31 @@
+[package]
+name = "pico_registries"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../../crates/protocol_version" }
+pico_identifier = { path = "../pico_identifier", features = ["serde"] }
+pico_nbt2 = { path = "../pico_nbt2" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+walkdir = { workspace = true }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Panics and unwraps
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+unreachable = "deny"
+unimplemented = "deny"
+todo = "warn"

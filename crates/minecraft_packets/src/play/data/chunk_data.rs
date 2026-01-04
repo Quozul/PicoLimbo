@@ -42,7 +42,7 @@ impl ChunkData {
             value: vec![long_array_tag],
         };
 
-        let section_count = context.dimension.height() / ChunkSection::SECTION_SIZE;
+        let section_count = context.dimension_height / ChunkSection::SECTION_SIZE;
 
         Self {
             height_maps: root_tag,
@@ -77,9 +77,9 @@ impl ChunkData {
 
         let mut data = Vec::new();
         let negative_section_count =
-            chunk_context.dimension.min_y().abs() / ChunkSection::SECTION_SIZE;
+            chunk_context.dimension_min_y.abs() / ChunkSection::SECTION_SIZE;
         let positive_section_count =
-            chunk_context.dimension.height() / ChunkSection::SECTION_SIZE - negative_section_count;
+            chunk_context.dimension_height / ChunkSection::SECTION_SIZE - negative_section_count;
 
         for section_y in -negative_section_count..positive_section_count {
             let coordinates =

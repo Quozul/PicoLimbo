@@ -261,9 +261,9 @@ impl ParserProperties {
 
     fn identifier(&self) -> Identifier {
         match self {
-            ParserProperties::Float { .. } => Identifier::new("brigadier", "float"),
-            ParserProperties::Integer { .. } => Identifier::new("brigadier", "integer"),
-            ParserProperties::String { .. } => Identifier::new("brigadier", "string"),
+            ParserProperties::Float { .. } => Identifier::new_unchecked("brigadier", "float"),
+            ParserProperties::Integer { .. } => Identifier::new_unchecked("brigadier", "integer"),
+            ParserProperties::String { .. } => Identifier::new_unchecked("brigadier", "string"),
         }
     }
 

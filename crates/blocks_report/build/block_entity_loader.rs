@@ -47,7 +47,6 @@ pub fn load_block_entity_data() -> anyhow::Result<Vec<BlockEntityReport>> {
                     if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
                         let version_path = entry.path();
                         let registries_path = version_path.join("reports").join("registries.json");
-                        println!("cargo:rerun-if-changed={}", registries_path.display());
 
                         fs::read_to_string(&registries_path)
                             .ok()

@@ -20,7 +20,9 @@ minecraft_protocol = { path = "../crates/minecraft_protocol" }
 net = { path = "../crates/net" }
 pico_structures = { path = "../crates/pico_structures" }
 pico_text_component = { path = "../crates/pico_text_component" }
-registries = { path = "../crates/registries" }
+pico_registries = { path = "../pico_libraries/pico_registries" }
+pico_precomputed_registries = { path = "../pico_libraries/pico_precomputed_registries" }
+pico_nbt2 = { path = "../pico_libraries/pico_nbt2" }
 base64 = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }

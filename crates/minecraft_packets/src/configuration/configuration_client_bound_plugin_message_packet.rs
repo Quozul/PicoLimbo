@@ -9,7 +9,7 @@ pub struct ConfigurationClientBoundPluginMessagePacket {
 impl ConfigurationClientBoundPluginMessagePacket {
     pub fn brand(brand: impl ToString) -> Self {
         Self {
-            channel: Identifier::minecraft("brand"),
+            channel: Identifier::vanilla_unchecked("brand"),
             data: LengthPaddedVec::new(
                 brand
                     .to_string()

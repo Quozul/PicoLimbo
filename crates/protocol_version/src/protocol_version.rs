@@ -129,6 +129,11 @@ impl ProtocolVersion {
     }
 
     #[inline]
+    pub fn has_registries(&self) -> bool {
+        self.is_after_inclusive(ProtocolVersion::V1_16)
+    }
+
+    #[inline]
     pub fn is_any(&self) -> bool {
         *self == Self::Any
     }
