@@ -1,6 +1,7 @@
 pub mod boss_bar;
 mod compression;
 pub mod config;
+mod env_placeholders;
 mod forwarding;
 mod game_mode_config;
 mod require_boolean;
