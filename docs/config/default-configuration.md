@@ -9,43 +9,20 @@ If it is not generated, you can copy the following code block in your configurat
 bind = "0.0.0.0:25565"
 # Welcome message sent to players after spawning
 welcome_message = "Welcome to PicoLimbo!"
+action_bar = "Welcome to PicoLimbo!"
 # Sets the game mode for new players
 # Allowed values: "survival", "creative", "adventure", or "spectator"
 default_game_mode = "spectator"
 # If set to true, will spawn the player in hardcode mode
 hardcore = false
-action_bar = "Welcome to PicoLimbo!"
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
 reduced_debug_info = false
-reply_to_status = true
 allow_unsupported_versions = false
-
-[compression]
-threshold = -1
-level = 6
 
 [forwarding]
 # Disable forwarding
 method = "NONE"
-
-[server_list]
-# Maximum count shown in your server list, does not affect the player limit
-max_players = 20
-# MOTD displayed in server lists
-message_of_the_day = "A Minecraft Server"
-# Show actual online player count in your server list?
-show_online_player_count = true
-server_icon = "server-icon.png"
-
-[tab_list]
-# Enable tab list customization
-enabled = true
-# The header text displayed at the top of the player list
-header = "<bold>Welcome to PicoLimbo</bold>"
-# The footer text displayed at the bottom of the player list
-footer = "<green>Enjoy your stay!</green>"
-player_listed = true
 
 [world]
 # Custom spawn position as [x, y, z] coordinates
@@ -59,14 +36,6 @@ dimension = "end"
 # Allowed values: "day", "noon", "night", "midnight", or a specific time in ticks (0-24000)
 time = "day"
 
-[world.boundaries]
-# Enable world boundaries
-enabled = true
-# Minimum Y position, players below this will be teleported back to spawn
-min_y = -64
-# Message displayed when a player reaches the minimum Y position
-teleport_message = "You have reached the bottom of the world."
-
 [world.experimental]
 # Configure how many chunks are sent to clients
 view_distance = 2
@@ -76,22 +45,53 @@ schematic_file = ""
 # Lock the time in the world to `world.time` value
 lock_time = false
 
+[world.boundaries]
+# Enable world boundaries
+enabled = true
+# Minimum Y position, players below this will be teleported back to spawn
+min_y = -64
+# Message displayed when a player reaches the minimum Y position
+teleport_message = "<red>You have reached the bottom of the world.</red>"
+
+[server_list]
+reply_to_status = true
+# Maximum count shown in your server list, does not affect the player limit
+max_players = 20
+# MOTD displayed in server lists
+message_of_the_day = "A Minecraft Server"
+# Show actual online player count in your server list?
+show_online_player_count = true
+server_icon = "server-icon.png"
+
+[compression]
+threshold = -1
+level = 6
+
+[tab_list]
+# Enable tab list customization
+enabled = true
+# The header text displayed at the top of the player list
+header = "<bold>Welcome to PicoLimbo</bold>"
+# The footer text displayed at the bottom of the player list
+footer = "<green>Enjoy your stay!</green>"
+player_listed = true
+
 [boss_bar]
 # Enable boss bar display
-enabled = true
+enabled = false
 # Boss bar title displayed to players
-title = "<blue><bold>Welcome to PicoLimbo!</bold></blue>"
+title = "<bold>Welcome to PicoLimbo!</bold>"
 # Boss bar health (0.0 to 1.0, where 1.0 is full health)
-health = 1
+health = 1.0
 # Boss bar color
 # Allowed values: "blue", "green", "pink", "purple", "red", "white", or "yellow"
-color = "blue"
+color = "pink"
 # Boss bar style
 # Allowed values: 0, 6, 10, 12 or 20, representing the number of segments
 division = 0
 
 [title]
-enabled = true
+enabled = false
 title = "<bold>Welcome!</bold>"
 subtitle = "Enjoy your stay"
 fade_in = 10
