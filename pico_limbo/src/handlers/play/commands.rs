@@ -3,7 +3,7 @@ use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
-use crate::server_state::ServerState;
+use crate::server_state::{ServerCommand, ServerCommands, ServerState};
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
@@ -50,7 +50,7 @@ fn run_command(
         command
     );
 
-    if let Ok(parsed_command) = Command::parse(command) {
+    if let Ok(parsed_command) = Command::parse(server_state.server_commands(), command) {
         match parsed_command {
             Command::Spawn => {
                 teleport_player_to_spawn(client_state, server_state, batch);
@@ -97,19 +97,29 @@ enum Command {
 }
 
 impl Command {
-    pub fn parse(input: &str) -> Result<Self, ParseCommandError> {
+    pub fn parse(server_commands: &ServerCommands, input: &str) -> Result<Self, ParseCommandError> {
         let mut parts = input.split_whitespace();
         let cmd = parts.next().ok_or(ParseCommandError::Empty)?;
-        if cmd == "spawn" {
+        if Self::is_command(server_commands.spawn(), cmd) {
             Ok(Self::Spawn)
-        } else if cmd == "fly" {
+        } else if Self::is_command(server_commands.fly(), cmd) {
             Ok(Self::Fly)
-        } else if cmd == "flyspeed" {
-            let speed_str = parts.next().unwrap_or("0.5");
+        } else if Self::is_command(server_commands.fly_speed(), cmd) {
+            let speed_str = parts.next().unwrap_or("0.05");
             let speed = speed_str.parse::<f32>()?.clamp(0.0, 1.0);
             Ok(Self::FlySpeed(speed))
         } else {
             Err(ParseCommandError::Unknown)
+        }
+    }
+
+    fn is_command(server_command: ServerCommand, command: &str) -> bool {
+        if let ServerCommand::Enabled { alias } = server_command
+            && command == alias
+        {
+            true
+        } else {
+            false
         }
     }
 }

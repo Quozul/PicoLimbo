@@ -1,14 +1,5 @@
 use minecraft_protocol::prelude::*;
 
-/// This packet is sent since 1.13
-#[derive(PacketOut)]
-pub struct CommandsPacket {
-    /// An array of nodes.
-    nodes: LengthPaddedVec<Node>,
-    /// Index of the `root` node in the previous array.
-    root_index: VarInt,
-}
-
 const ROOT_NODE: i8 = NodeFlagsBuilder::new().node_type(NodeType::Root).build();
 
 const LITERAL_NODE: i8 = NodeFlagsBuilder::new()
@@ -21,32 +12,88 @@ const ARGUMENT_NODE: i8 = NodeFlagsBuilder::new()
     .executable(true)
     .build();
 
+/// This packet is sent since 1.13
+#[derive(PacketOut)]
+pub struct CommandsPacket {
+    /// An array of nodes.
+    nodes: LengthPaddedVec<Node>,
+    /// Index of the `root` node in the previous array.
+    root_index: VarInt,
+}
+
+pub enum CommandArgumentType {
+    Float { min: f32, max: f32 },
+}
+
+pub struct CommandArgument {
+    name: String,
+    argument_type: CommandArgumentType,
+}
+
+impl CommandArgument {
+    pub fn float(name: impl ToString, min: f32, max: f32) -> Self {
+        Self {
+            name: name.to_string(),
+            argument_type: CommandArgumentType::Float { min, max },
+        }
+    }
+}
+
+pub struct Command {
+    alias: String,
+    arguments: Vec<CommandArgument>,
+}
+
+impl Command {
+    pub fn new(alias: impl ToString, arguments: Vec<CommandArgument>) -> Self {
+        Self {
+            alias: alias.to_string(),
+            arguments,
+        }
+    }
+
+    pub fn no_arguments(alias: impl ToString) -> Self {
+        Self {
+            alias: alias.to_string(),
+            arguments: Vec::new(),
+        }
+    }
+}
+
 impl CommandsPacket {
-    pub fn spawn_command() -> Self {
-        let child_nodes = vec![
-            Node::literal("spawn"),
-            Node::literal("fly"),
-            Node::argument("fly speed", ParserProperties::float(0.0, 1.0)),
-            Node::literal("flyspeed").add_child(3),
-        ];
+    pub fn new(commands: Vec<Command>) -> Self {
+        let mut nodes = vec![Node::root(vec![])];
 
-        let root_children_indices: Vec<i32> = child_nodes
-            .iter()
-            .enumerate()
-            .filter_map(|(index, node)| {
-                if node.is_literal() {
-                    Some((index + 1) as i32)
-                } else {
-                    None
+        let mut root_children_indices = Vec::new();
+
+        for command in commands {
+            let mut current_node_index = nodes.len() as i32;
+            root_children_indices.push(current_node_index);
+
+            nodes.push(Node::literal(command.alias));
+
+            for argument in command.arguments {
+                let argument_node_index = nodes.len() as i32;
+
+                if let Some(previous_node) = nodes.get_mut(current_node_index as usize) {
+                    previous_node.add_child_index(argument_node_index);
                 }
-            })
-            .collect();
 
-        let root_node = Node::root(root_children_indices);
+                let properties = match argument.argument_type {
+                    CommandArgumentType::Float { min, max } => ParserProperties::float(min, max),
+                };
 
-        let mut nodes = Vec::with_capacity(1 + child_nodes.len());
-        nodes.push(root_node);
-        nodes.extend(child_nodes);
+                nodes.push(Node::argument(argument.name, properties));
+
+                current_node_index = argument_node_index;
+            }
+        }
+
+        if let Some(root) = nodes.get_mut(0) {
+            for index in root_children_indices {
+                root.add_child_index(index);
+            }
+        }
 
         Self {
             nodes: LengthPaddedVec::new(nodes),
@@ -100,13 +147,9 @@ impl Node {
         }
     }
 
-    fn add_child(mut self, child: i32) -> Self {
+    fn add_child_index(&mut self, child: i32) -> &mut Self {
         self.children.inner_mut().push(VarInt::new(child));
         self
-    }
-
-    fn is_literal(&self) -> bool {
-        (self.flags & NodeType::Literal as i8) != 0
     }
 }
 

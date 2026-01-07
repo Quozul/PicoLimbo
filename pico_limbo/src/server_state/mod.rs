@@ -1,4 +1,5 @@
 use crate::configuration::boss_bar::EnabledBossBarConfig;
+use crate::configuration::commands::CommandsConfig;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -6,6 +7,7 @@ use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
 use minecraft_protocol::prelude::{BinaryReaderError, Dimension};
 use pico_structures::prelude::{Schematic, SchematicError, World, WorldLoadingError};
 use pico_text_component::prelude::{Component, MiniMessageError, parse_mini_message};
+pub use server_commands::{ServerCommand, ServerCommands};
 use std::fs::File;
 use std::io::Read;
 use std::num::TryFromIntError;
@@ -15,6 +17,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 use thiserror::Error;
 use tracing::debug;
+
+mod server_commands;
 
 #[derive(Clone)]
 pub struct CompressionSettings {
@@ -106,6 +110,7 @@ pub struct ServerState {
     accepts_transfers: bool,
     allow_unsupported_versions: bool,
     allow_flight: bool,
+    server_commands: ServerCommands,
 }
 
 impl ServerState {
@@ -253,6 +258,10 @@ impl ServerState {
         self.accepts_transfers
     }
 
+    pub const fn server_commands(&self) -> &ServerCommands {
+        &self.server_commands
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -292,6 +301,7 @@ pub struct ServerStateBuilder {
     reply_to_status: bool,
     allow_unsupported_versions: bool,
     allow_flight: bool,
+    server_commands: ServerCommands,
 }
 
 #[derive(Debug, Error)]
@@ -553,6 +563,11 @@ impl ServerStateBuilder {
         Ok(self)
     }
 
+    pub fn server_commands(&mut self, commands_config: CommandsConfig) -> &mut Self {
+        self.server_commands = commands_config.into();
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
         let world = if self.schematic_file_path.is_empty() {
@@ -597,6 +612,7 @@ impl ServerStateBuilder {
             allow_unsupported_versions: self.allow_unsupported_versions,
             allow_flight: self.allow_flight,
             accepts_transfers: false,
+            server_commands: self.server_commands,
         })
     }
 }

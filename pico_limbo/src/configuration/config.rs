@@ -1,4 +1,5 @@
 use crate::configuration::boss_bar::BossBarConfig;
+use crate::configuration::commands::CommandsConfig;
 use crate::configuration::compression::CompressionConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
@@ -68,6 +69,8 @@ pub struct Config {
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
+
+    pub commands: CommandsConfig,
 }
 
 impl Default for Config {
@@ -89,6 +92,7 @@ impl Default for Config {
             title: TitleConfig::default(),
             allow_unsupported_versions: false,
             allow_flight: false,
+            commands: CommandsConfig::default(),
         }
     }
 }

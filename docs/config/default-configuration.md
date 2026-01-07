@@ -19,6 +19,7 @@ hardcore = false
 fetch_player_skins = false
 reduced_debug_info = false
 allow_unsupported_versions = false
+allow_flight = false
 
 [forwarding]
 # Disable forwarding
@@ -97,5 +98,10 @@ subtitle = "Enjoy your stay"
 fade_in = 10
 stay = 70
 fade_out = 20
+
+[commands]
+spawn = "spawn"
+fly = "fly"
+fly_speed = "flyspeed"
 ```
 :::

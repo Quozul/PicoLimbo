@@ -1,4 +1,5 @@
 pub mod boss_bar;
+pub mod commands;
 mod compression;
 pub mod config;
 mod forwarding;
