@@ -25,9 +25,6 @@ pub enum ConfigError {
 
     #[error("Missing environment variable: {0}")]
     MissingEnvVar(String),
-
-    #[error("Invalid environment placeholder at {line}:{char}")]
-    InvalidEnvPlaceholder { line: usize, char: usize },
 }
 
 /// Application configuration, serializable to/from TOML.
