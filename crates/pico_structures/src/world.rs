@@ -109,7 +109,8 @@ impl World {
 
         // Initialize light volumes in parallel by columns
         let sky_light_atomic: Vec<AtomicU8> = (0..volume_size).map(|_| AtomicU8::new(0)).collect();
-        let block_light_atomic: Vec<AtomicU8> = (0..volume_size).map(|_| AtomicU8::new(0)).collect();
+        let block_light_atomic: Vec<AtomicU8> =
+            (0..volume_size).map(|_| AtomicU8::new(0)).collect();
 
         let column_count = (world_width * world_length) as usize;
         (0..column_count).into_par_iter().for_each(|col_idx| {
@@ -133,18 +134,48 @@ impl World {
             }
         });
 
-        let mut sky_light_volume: Vec<u8> = sky_light_atomic.into_iter().map(|a| a.into_inner()).collect();
-        let mut block_light_volume: Vec<u8> = block_light_atomic.into_iter().map(|a| a.into_inner()).collect();
+        let mut sky_light_volume: Vec<u8> = sky_light_atomic
+            .into_iter()
+            .map(|a| a.into_inner())
+            .collect();
+        let mut block_light_volume: Vec<u8> = block_light_atomic
+            .into_iter()
+            .map(|a| a.into_inner())
+            .collect();
 
         // Propagate light using Starlight-style algorithm (propagate TO neighbors, track direction)
-        Self::propagate_light_starlight(&mut sky_light_volume, &transparent, world_width, world_length, total_height);
-        Self::propagate_light_starlight(&mut block_light_volume, &transparent, world_width, world_length, total_height);
+        Self::propagate_light_starlight(
+            &mut sky_light_volume,
+            &transparent,
+            world_width,
+            world_length,
+            total_height,
+        );
+        Self::propagate_light_starlight(
+            &mut block_light_volume,
+            &transparent,
+            world_width,
+            world_length,
+            total_height,
+        );
 
         let sky_light_by_chunk = Self::convert_to_chunk_sections(
-            &sky_light_volume, size_in_chunks, chunk_column_count, world_width, world_length, total_height, 15
+            &sky_light_volume,
+            size_in_chunks,
+            chunk_column_count,
+            world_width,
+            world_length,
+            total_height,
+            15,
         );
         let block_light_by_chunk = Self::convert_to_chunk_sections(
-            &block_light_volume, size_in_chunks, chunk_column_count, world_width, world_length, total_height, 0
+            &block_light_volume,
+            size_in_chunks,
+            chunk_column_count,
+            world_width,
+            world_length,
+            total_height,
+            0,
         );
 
         (sky_light_by_chunk, block_light_by_chunk)
@@ -171,7 +202,9 @@ impl World {
         let stride_x = 1i32;
         let stride_z = world_width;
         let stride_y = world_width * world_length;
-        let offsets: [i32; 6] = [-stride_x, stride_x, -stride_y, stride_y, -stride_z, stride_z];
+        let offsets: [i32; 6] = [
+            -stride_x, stride_x, -stride_y, stride_y, -stride_z, stride_z,
+        ];
 
         // For each direction, the bitset of directions to check (excludes opposite direction)
         // Direction 0 (-x) opposite is 1 (+x), so exclude bit 1
@@ -227,12 +260,12 @@ impl World {
 
                 // Bounds check
                 let in_bounds = match dir {
-                    0 => x > 0,                      // -x
-                    1 => x < world_width - 1,        // +x
-                    2 => y > 0,                      // -y
-                    3 => y < total_height - 1,       // +y
-                    4 => z > 0,                      // -z
-                    _ => z < world_length - 1,       // +z
+                    0 => x > 0,                // -x
+                    1 => x < world_width - 1,  // +x
+                    2 => y > 0,                // -y
+                    3 => y < total_height - 1, // +y
+                    4 => z > 0,                // -z
+                    _ => z < world_length - 1, // +z
                 };
 
                 if !in_bounds {
@@ -259,7 +292,7 @@ impl World {
                 if target_level > 1 {
                     let next_dirs = exclude_opposite[dir as usize];
                     queue.push(
-                        (n_idx as u64) | ((target_level as u64) << 32) | ((next_dirs as u64) << 36)
+                        (n_idx as u64) | ((target_level as u64) << 32) | ((next_dirs as u64) << 36),
                     );
                 }
             }
@@ -299,7 +332,13 @@ impl World {
                                     && world_z < world_length
                                     && world_y < total_height
                                 {
-                                    let idx = Self::get_light_index(world_x, world_y, world_z, world_width, world_length);
+                                    let idx = Self::get_light_index(
+                                        world_x,
+                                        world_y,
+                                        world_z,
+                                        world_width,
+                                        world_length,
+                                    );
                                     light_volume[idx]
                                 } else {
                                     default_light

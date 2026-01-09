@@ -83,8 +83,14 @@ impl LightData {
             block_light_mask: all_sections_mask.clone(),
             empty_sky_light_mask: BitSet::default(),
             empty_block_light_mask: BitSet::default(),
-            sky_light_arrays: LengthPaddedVec::new(vec![full_sky_light; total_light_sections as usize]),
-            block_light_arrays: LengthPaddedVec::new(vec![no_block_light; total_light_sections as usize]),
+            sky_light_arrays: LengthPaddedVec::new(vec![
+                full_sky_light;
+                total_light_sections as usize
+            ]),
+            block_light_arrays: LengthPaddedVec::new(vec![
+                no_block_light;
+                total_light_sections as usize
+            ]),
         }
     }
 }

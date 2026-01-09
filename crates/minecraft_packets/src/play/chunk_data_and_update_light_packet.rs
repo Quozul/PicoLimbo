@@ -65,8 +65,12 @@ impl ChunkDataAndUpdateLightPacket {
         let dimension = chunk_context.dimension;
 
         let light_data = match (
-            schematic_context.world.get_chunk_sky_light(chunk_x, chunk_z),
-            schematic_context.world.get_chunk_block_light(chunk_x, chunk_z),
+            schematic_context
+                .world
+                .get_chunk_sky_light(chunk_x, chunk_z),
+            schematic_context
+                .world
+                .get_chunk_block_light(chunk_x, chunk_z),
         ) {
             (Some(sky_light), Some(block_light)) => {
                 LightData::from_light_data(sky_light, block_light, dimension)

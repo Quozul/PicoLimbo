@@ -183,10 +183,10 @@ const LIGHT_EMITTING_BLOCKS: &[(&str, u8)] = &[
     ("crying_obsidian", 10),
     ("respawn_anchor", 15), // When fully charged
     ("glow_lichen", 7),
-    ("candle", 3),          // 1 candle
+    ("candle", 3), // 1 candle
     ("candle_cake", 3),
-    ("sea_pickle", 6),      // Underwater
-    ("redstone_ore", 9),    // When touched
+    ("sea_pickle", 6),   // Underwater
+    ("redstone_ore", 9), // When touched
     ("deepslate_redstone_ore", 9),
     ("sculk_catalyst", 6),
     ("ochre_froglight", 15),
@@ -202,10 +202,10 @@ const LIGHT_EMITTING_BLOCKS: &[(&str, u8)] = &[
     ("end_portal_frame", 1),
     ("enchanting_table", 7),
     ("ender_chest", 7),
-    ("furnace", 13),        // When lit
+    ("furnace", 13), // When lit
     ("blast_furnace", 13),
     ("smoker", 13),
-    ("light", 15),          // Light block
+    ("light", 15), // Light block
 ];
 
 struct PaletteData {
