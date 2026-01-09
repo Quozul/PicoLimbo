@@ -62,7 +62,7 @@ impl ChunkProcessor {
             for z in 0..SECTION_SIZE {
                 for x in 0..SECTION_SIZE {
                     let world_pos = section_origin + Coordinates::new(x, y, z);
-                    let internal_id = schematic.get_block_state_id(world_pos);
+                    let internal_id = schematic.get_block_state_id(world_pos).internal_id();
 
                     block_ids[block_index] = internal_id;
                     block_index += 1;

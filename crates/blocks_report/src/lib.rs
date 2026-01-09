@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub use blocks_report_data::{
     block_state_builder::BlockStateLookup,
-    internal_mapping::{InternalId, InternalMapping},
+    internal_mapping::{InternalId, InternalMapping, StateData},
     report_mapping::{BlocksReportId, ReportIdMapping},
 };
 

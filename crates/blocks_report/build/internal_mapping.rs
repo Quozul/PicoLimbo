@@ -1,6 +1,7 @@
 use crate::blocks_report_loader::{BlockState, BlocksReport};
+use crate::light::{get_emitted_light_level, is_transparent};
 use blocks_report_data::internal_mapping::{
-    InternalBlockMapping, InternalId, InternalMapping, InternalProperties, InternalState,
+    InternalBlockMapping, InternalId, InternalMapping, InternalProperties, InternalState, StateData,
 };
 use minecraft_protocol::prelude::LengthPaddedVec;
 use std::collections::{HashMap, HashSet};
@@ -36,8 +37,10 @@ pub fn build_internal_id_mapping(blocks_reports: &[BlocksReport]) -> InternalMap
     let mut grouped_states: HashMap<String, Vec<InternalState>> = HashMap::new();
 
     for ((name, properties), internal_id) in state_registry {
+        let is_transparent = is_transparent(&name);
+        let get_light_level = get_emitted_light_level(&name);
         grouped_states.entry(name).or_default().push(InternalState {
-            internal_id,
+            state_data: StateData::new(internal_id, is_transparent, get_light_level),
             properties,
         });
     }
@@ -45,6 +48,9 @@ pub fn build_internal_id_mapping(blocks_reports: &[BlocksReport]) -> InternalMap
     let mapping_set = grouped_states
         .into_iter()
         .map(|(name, mut states)| {
+            let is_transparent = is_transparent(&name);
+            let get_light_level = get_emitted_light_level(&name);
+
             let default_props = default_state_properties
                 .get(&name)
                 .expect("Default state properties not found for block");
@@ -52,15 +58,19 @@ pub fn build_internal_id_mapping(blocks_reports: &[BlocksReport]) -> InternalMap
             let default_internal_id = states
                 .iter()
                 .find(|s| &s.properties == default_props)
-                .map(|s| s.internal_id)
+                .map(|s| s.state_data.internal_id())
                 .expect("Could not find internal ID for the default state");
 
-            states.sort_by_key(|s| s.internal_id);
+            states.sort_by_key(|s| s.state_data.internal_id());
 
             InternalBlockMapping {
                 name,
                 states: LengthPaddedVec::new(states),
-                default_internal_id,
+                default_state_data: StateData::new(
+                    default_internal_id,
+                    is_transparent,
+                    get_light_level,
+                ),
             }
         })
         .collect::<HashSet<InternalBlockMapping>>();

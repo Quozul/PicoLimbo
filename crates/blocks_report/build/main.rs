@@ -2,6 +2,7 @@ pub mod block_entity_loader;
 pub mod blocks_report_loader;
 pub mod build_report_mappings;
 pub mod internal_mapping;
+mod light;
 
 use crate::block_entity_loader::load_block_entity_data;
 use crate::blocks_report_loader::{BlocksReport, load_block_data};
