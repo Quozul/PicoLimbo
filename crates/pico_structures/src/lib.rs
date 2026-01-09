@@ -12,5 +12,5 @@ pub mod prelude {
     pub use crate::pack_direct::pack_direct;
     pub use crate::palette::Palette;
     pub use crate::schematic::{Schematic, SchematicError};
-    pub use crate::world::{World, WorldLoadingError};
+    pub use crate::world::{LightSection, SkyLightSection, World, WorldLoadingError};
 }

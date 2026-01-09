@@ -43,7 +43,7 @@ schematic_file = ""
 
 Here's a list of what does not work when loading a schematic:
 - **Entities**: Armor stands, item frames, mobs, and other entities
-- **Light engine**: The world will always be fully lit
+- **Light engine**: Lighting is approximate and may not match Minecraft's exact calculations
 - **Movement mechanics**: Ladder climbing or elytra does not work
 - **Block interactions**: Opening a door only half-opens it, buttons and pressure plates does not reset
 - **Unknown blocks**: If your client doesn't support certain blocks (like newer ones or renamed types such as `grass` → `short_grass` in 1.20.3), they’ll appear as stone blocks instead

@@ -20,6 +20,17 @@ impl Coordinates {
         }
     }
 
+    /// Creates coordinates from a linear index given the width and length dimensions.
+    /// The index is assumed to be in y-major order: y * width * length + z * width + x
+    pub fn from_index(index: usize, width: i32, length: i32) -> Self {
+        let i = index as i32;
+        Self {
+            x: i % width,
+            z: (i / width) % length,
+            y: i / (width * length),
+        }
+    }
+
     pub fn x(&self) -> i32 {
         self.x
     }

@@ -1,4 +1,4 @@
-use crate::internal_mapping::{InternalBlockMapping, InternalId, InternalMapping};
+use crate::internal_mapping::{InternalBlockMapping, InternalMapping, StateData};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -25,7 +25,7 @@ impl<'a> BlockStateLookup<'a> {
 
     /// Parses a block state string like "minecraft:chest[facing=north,type=single]"
     /// and returns the corresponding internal ID.
-    pub fn parse_state_string(&self, state_str: &str) -> Result<InternalId, BlockStateLookupError> {
+    pub fn parse_state_string(&self, state_str: &str) -> Result<&StateData, BlockStateLookupError> {
         // 1: Parse the raw string into a name and a map of property slices
         let (block_name, properties) = self.parse_name_and_properties(state_str)?;
 
@@ -35,7 +35,7 @@ impl<'a> BlockStateLookup<'a> {
         // 3: Find the specific state based on the properties
         // If the properties map is empty, we get the default state.
         if properties.is_empty() {
-            Ok(block_mapping.default_internal_id)
+            Ok(&block_mapping.default_state_data)
         } else {
             self.find_state_in_block(block_mapping, &properties)
                 .ok_or_else(|| BlockStateLookupError::NoMatchingState(block_name.to_string()))
@@ -86,7 +86,7 @@ impl<'a> BlockStateLookup<'a> {
         &self,
         block_mapping: &'a InternalBlockMapping,
         properties: &HashMap<&str, &str>,
-    ) -> Option<InternalId> {
+    ) -> Option<&StateData> {
         block_mapping
             .states
             .inner()
@@ -104,6 +104,6 @@ impl<'a> BlockStateLookup<'a> {
                         .any(|p| p.name == *key && p.value == *value)
                 })
             })
-            .map(|state| state.internal_id)
+            .map(|state| &state.state_data)
     }
 }

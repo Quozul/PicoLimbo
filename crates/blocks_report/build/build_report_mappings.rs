@@ -20,7 +20,7 @@ pub fn build_report_mappings(
     for mapping in internal_mapping.mapping.inner() {
         for state in mapping.states.inner() {
             let key = (mapping.name.clone(), state.properties.clone());
-            state_lookup_map.insert(key, state.internal_id);
+            state_lookup_map.insert(key, state.state_data.internal_id());
         }
     }
 

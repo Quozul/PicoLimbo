@@ -40,6 +40,7 @@ pub struct ChunkDataAndUpdateLightPacket {
 
 impl ChunkDataAndUpdateLightPacket {
     pub fn void(context: VoidChunkContext) -> Self {
+        let dimension = context.dimension;
         Self {
             chunk_x: context.chunk_x,
             chunk_z: context.chunk_z,
@@ -49,7 +50,7 @@ impl ChunkDataAndUpdateLightPacket {
             ignore_old_data: false,
             chunk_data: ChunkData::void(context),
             trust_edges: true,
-            v1_18_light_data: LightData::default(),
+            v1_18_light_data: LightData::new_void(dimension),
         }
     }
 
@@ -59,9 +60,27 @@ impl ChunkDataAndUpdateLightPacket {
         protocol_version: ProtocolVersion,
     ) -> Self {
         let all_sections_bit_mask = 0b1111_1111_1111_1111i32;
+        let chunk_x = chunk_context.chunk_x;
+        let chunk_z = chunk_context.chunk_z;
+        let dimension = chunk_context.dimension;
+
+        let light_data = match (
+            schematic_context
+                .world
+                .get_chunk_sky_light(chunk_x, chunk_z),
+            schematic_context
+                .world
+                .get_chunk_block_light(chunk_x, chunk_z),
+        ) {
+            (Some(sky_light), Some(block_light)) => {
+                LightData::from_light_data(sky_light, block_light, dimension)
+            }
+            _ => LightData::new_void(dimension),
+        };
+
         Self {
-            chunk_x: chunk_context.chunk_x,
-            chunk_z: chunk_context.chunk_z,
+            chunk_x,
+            chunk_z,
             v1_17_primary_bit_mask: LengthPaddedVec::new(vec![all_sections_bit_mask as u64]),
             primary_bit_mask: VarInt::new(all_sections_bit_mask),
             full_chunk: true,
@@ -72,7 +91,7 @@ impl ChunkDataAndUpdateLightPacket {
                 protocol_version,
             ),
             trust_edges: true,
-            v1_18_light_data: LightData::new_with_level(15),
+            v1_18_light_data: light_data,
         }
     }
 }
@@ -102,7 +121,7 @@ mod tests {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
             ),
             (
@@ -125,8 +144,7 @@ mod tests {
                     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
                     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
                     0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                    0, 0, 0,
+                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
                 ],
             ),
             (
@@ -149,8 +167,7 @@ mod tests {
                     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
                     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
                     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                    0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
                 ],
             ),
             (
@@ -174,7 +191,6 @@ mod tests {
                     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
                     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
                     0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1,
-                    0, 0, 0, 0, 0, 0,
                 ],
             ),
         ])
@@ -199,12 +215,22 @@ mod tests {
     fn chunk_data_and_update_light_packets() {
         let snapshots = expected_snapshots();
 
-        for (version, expected_bytes) in snapshots {
-            let packet = create_packet(ProtocolVersion::from(version));
+        for (version, mut expected_bytes) in snapshots {
+            let protocol_version = ProtocolVersion::from(version);
+            let light_data_bytes = {
+                let dimension = Dimension::Overworld;
+                let mut writer = BinaryWriter::default();
+                LightData::new_void(dimension)
+                    .encode(&mut writer, protocol_version)
+                    .unwrap();
+                writer.into_inner()
+            };
+            if protocol_version.is_after_inclusive(ProtocolVersion::V1_18) {
+                expected_bytes.extend_from_slice(&light_data_bytes);
+            }
+            let packet = create_packet(protocol_version);
             let mut writer = BinaryWriter::default();
-            packet
-                .encode(&mut writer, ProtocolVersion::from(version))
-                .unwrap();
+            packet.encode(&mut writer, protocol_version).unwrap();
             let bytes = writer.into_inner();
             assert_eq!(expected_bytes, bytes, "Mismatch for version {version}");
         }

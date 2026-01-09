@@ -1,6 +1,6 @@
 use crate::decompress::decompress_gz_file;
 use crate::internal_block_entity::BlockEntity;
-use blocks_report::{BlockStateLookup, InternalId, InternalMapping};
+use blocks_report::{BlockStateLookup, InternalMapping, StateData};
 use minecraft_protocol::prelude::{Coordinates, VarInt};
 use pico_binutils::prelude::{BinaryReader, BinaryReaderError};
 use pico_nbt::prelude::{Nbt, NbtDecodeError};
@@ -26,12 +26,13 @@ pub enum SchematicError {
     AirNotFound,
 }
 
-#[derive(Default)]
 pub struct Schematic {
-    /// A flat vector storing all block state IDs, indexed by `y * length * width + z * width + x`.
-    block_data: Vec<InternalId>,
+    /// Palette mapping: palette index -> StateData
+    palette: Vec<StateData>,
+    /// Block data: flat vector storing palette indices, indexed by `y * length * width + z * width + x`.
+    block_data: Vec<u32>,
     dimensions: Coordinates,
-    internal_air_id: InternalId,
+    air_palette_index: u32,
     block_entities: Vec<BlockEntity>,
 }
 
@@ -45,20 +46,15 @@ impl Schematic {
 
         Self::validate_version(&nbt)?;
         let dimensions = Self::extract_dimensions(&nbt)?;
-        let (schematic_id_to_internal_id, internal_air_id) =
-            Self::get_schematic_id_to_internal_id(&nbt, internal_mapping)?;
-        let block_data = Self::parse_block_data(
-            &nbt,
-            schematic_id_to_internal_id,
-            dimensions,
-            internal_air_id,
-        )?;
+        let (palette, air_palette_index) = Self::get_palette_and_air_index(&nbt, internal_mapping)?;
+        let block_data = Self::parse_block_data(&nbt, dimensions, palette.len())?;
         let block_entities = Self::parse_block_entities(&nbt)?;
 
         Ok(Self {
+            palette,
             block_data,
             dimensions,
-            internal_air_id,
+            air_palette_index,
             block_entities,
         })
     }
@@ -93,34 +89,31 @@ impl Schematic {
         Ok(Coordinates::new(width, height, length))
     }
 
-    fn get_schematic_id_to_internal_id(
+    fn get_palette_and_air_index(
         nbt: &Nbt,
         internal_mapping: &InternalMapping,
-    ) -> Result<(Vec<InternalId>, InternalId), SchematicError> {
+    ) -> Result<(Vec<StateData>, u32), SchematicError> {
         let max_schematic_id = Self::get_tag_as(nbt, "PaletteMax", |t| t.get_int())?;
         let block_state_lookup = BlockStateLookup::new(internal_mapping);
 
         const AIR_IDENTIFIER: &str = "minecraft:air";
-        let internal_air_id = block_state_lookup
+        let internal_air_id = *block_state_lookup
             .parse_state_string(AIR_IDENTIFIER)
             .map_err(|_| SchematicError::AirNotFound)?;
 
-        let mut schematic_id_to_internal_id: Vec<InternalId> =
-            vec![internal_air_id; (max_schematic_id + 1) as usize];
+        // Initialize palette with air at index 0
+        let mut palette: Vec<StateData> = vec![internal_air_id; (max_schematic_id + 1) as usize];
 
         let palette_nbt = Self::get_tag_as(nbt, "Palette", |t| t.get_nbt_vec())?;
 
         for block_tag in palette_nbt {
             if let Some(schematic_palette_id) = block_tag.get_int() {
-                let internal_id = block_tag
-                    .get_name()
-                    .and_then(|name| block_state_lookup.parse_state_string(&name).ok())
-                    .unwrap_or(internal_air_id);
-
-                if let Some(entry) =
-                    schematic_id_to_internal_id.get_mut(schematic_palette_id as usize)
+                let block_name = block_tag.get_name();
+                if let Some(name) = block_name.as_ref()
+                    && let Ok(state_data) = block_state_lookup.parse_state_string(name)
+                    && let Some(entry) = palette.get_mut(schematic_palette_id as usize)
                 {
-                    *entry = internal_id;
+                    *entry = *state_data;
                 } else {
                     warn!(
                         "Schematic palette contains ID {} which is greater than PaletteMax of {}. Skipping.",
@@ -130,15 +123,14 @@ impl Schematic {
             }
         }
 
-        Ok((schematic_id_to_internal_id, internal_air_id))
+        Ok((palette, 0))
     }
 
     fn parse_block_data(
         nbt: &Nbt,
-        schematic_id_to_internal_id: Vec<InternalId>,
         dimensions: Coordinates,
-        fallback_id: InternalId,
-    ) -> Result<Vec<InternalId>, SchematicError> {
+        palette_size: usize,
+    ) -> Result<Vec<u32>, SchematicError> {
         let total_blocks = (dimensions.x() * dimensions.y() * dimensions.z()) as usize;
         let block_data_i8 = Self::get_tag_as::<Vec<i8>>(nbt, "BlockData", |t| t.get_byte_array())?;
         let block_data_u8: Vec<u8> = block_data_i8.iter().map(|&b| b as u8).collect();
@@ -152,19 +144,24 @@ impl Schematic {
                 break;
             }
 
-            let schematic_block_id = reader.read::<VarInt>()?.inner();
+            let schematic_block_id = reader.read::<VarInt>()?.inner() as u32;
 
-            let internal_id = schematic_id_to_internal_id
-                .get(schematic_block_id as usize)
-                .copied()
-                .unwrap_or(fallback_id);
+            // Validate the index is within palette bounds, use 0 (air) as fallback
+            let palette_index = if (schematic_block_id as usize) < palette_size {
+                schematic_block_id
+            } else {
+                warn!(
+                    "Block ID {} exceeds palette size {}. Using air as fallback.",
+                    schematic_block_id, palette_size
+                );
+                0
+            };
 
-            block_data.push(internal_id);
+            block_data.push(palette_index);
         }
 
         // Ensure the vec is the correct size if the data was truncated
-        block_data.resize(total_blocks, fallback_id);
-
+        block_data.resize(total_blocks, 0); // Fill with air index
         Ok(block_data)
     }
 
@@ -222,17 +219,19 @@ impl Schematic {
     }
 
     /// Gets the internal block state ID at the given relative coordinates within the schematic.
-    pub fn get_block_state_id(&self, schematic_position: Coordinates) -> InternalId {
+    pub fn get_block_state_id(&self, schematic_position: Coordinates) -> &StateData {
         if self.is_out_of_bounds(&schematic_position) {
-            return self.internal_air_id;
+            return &self.palette[self.air_palette_index as usize];
         }
 
         let index = self.position_to_index(schematic_position);
-
-        self.block_data
+        let palette_index = self
+            .block_data
             .get(index)
             .copied()
-            .unwrap_or(self.internal_air_id)
+            .unwrap_or(self.air_palette_index);
+
+        &self.palette[palette_index as usize]
     }
 
     pub fn get_dimensions(&self) -> Coordinates {
@@ -241,5 +240,27 @@ impl Schematic {
 
     pub fn get_block_entities(&self) -> &[BlockEntity] {
         &self.block_entities
+    }
+
+    pub fn get_air_id(&self) -> &StateData {
+        &self.palette[self.air_palette_index as usize]
+    }
+
+    /// Checks if the block at the given position is air
+    pub fn is_air(&self, position: Coordinates) -> bool {
+        self.get_block_state_id(position).internal_id()
+            == self.palette[self.air_palette_index as usize].internal_id()
+    }
+
+    /// Checks if the block at the given position is transparent to sky light.
+    /// This includes air, glass, leaves, and other transparent blocks.
+    pub fn is_transparent(&self, position: Coordinates) -> bool {
+        self.get_block_state_id(position).is_transparent()
+    }
+
+    /// Gets the light level emitted by the block at the given position.
+    /// Returns 0 if the block doesn't emit light.
+    pub fn get_emitted_light(&self, position: Coordinates) -> u8 {
+        self.get_block_state_id(position).get_emitted_light_level()
     }
 }
