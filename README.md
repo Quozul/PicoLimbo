@@ -101,8 +101,6 @@ website.
 - [Limbo](https://github.com/LOOHP/Limbo): Supports only one Minecraft version at a time
 - [NanoLimbo](https://github.com/Nan1t/NanoLimbo): Actively maintained
   (see [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo))
-- [TyphoonLimbo](https://github.com/TyphoonMC/TyphoonLimbo): No longer actively maintained
-- [LiteLimbo](https://github.com/ThomasOM/LiteLimbo): No longer actively maintained
 
 ---
 
