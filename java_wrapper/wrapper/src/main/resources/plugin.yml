@@ -1,0 +1,4 @@
+name: pico_limbo_java_wrapper
+main: dev.quozul.BungeeCordPlugin
+version: 1.0
+author: Quozul

@@ -1,0 +1,9 @@
+[versions]
+jna = "5.18.1"
+velocity = "3.4.0-SNAPSHOT"
+bungeecord = "1.21-R0.4-SNAPSHOT"
+
+[libraries]
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+velocity = { module = "com.velocitypowered:velocity-api", version.ref = "velocity" }
+bungeecord = { module = "net.md-5:bungeecord-api", version.ref = "bungeecord" }

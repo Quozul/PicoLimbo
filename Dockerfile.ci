@@ -1,0 +1,11 @@
+FROM gcr.io/distroless/static:latest
+
+COPY --chown=nonroot:nonroot app_data/.keep /usr/src/app/.keep
+
+WORKDIR /usr/src/app
+
+COPY --chown=nonroot:nonroot pico_limbo /usr/local/bin/pico_limbo
+
+USER nonroot
+
+CMD ["pico_limbo"]

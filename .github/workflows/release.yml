@@ -1,6 +1,11 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version number
   push:
     tags:
       - 'v*'
@@ -8,6 +13,7 @@ on:
       - 'binaries/**'
       - 'crates/**'
       - 'data/generated/**'
+      - 'java_wrapper/**'
       - 'Cargo.lock'
       - 'Cargo.toml'
       - 'Dockerfile'
@@ -19,6 +25,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   BINARY_NAME: pico_limbo
+  LIB_NAME: pico_limbo_lib
 
 jobs:
   build-linux:
@@ -28,9 +35,19 @@ jobs:
           - target: x86_64-unknown-linux-musl
             name: linux-x86_64-musl
             runner: ubuntu-latest
+            library: false
           - target: aarch64-unknown-linux-musl
             name: linux-aarch64-musl
             runner: ubuntu-24.04-arm
+            library: false
+          - target: x86_64-unknown-linux-gnu
+            name: linux-x86_64-gnu
+            runner: ubuntu-latest
+            library: true
+          - target: aarch64-unknown-linux-gnu
+            name: linux-aarch64-gnu
+            runner: ubuntu-24.04-arm
+            library: true
 
     runs-on: ${{ matrix.runner }}
 
@@ -39,6 +56,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install musl-tools
+        if: contains(matrix.target, 'musl')
         run: |
           sudo apt-get update -y
           sudo apt-get install -y musl-tools
@@ -60,8 +78,23 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-cargo-${{ matrix.target }}-
             ${{ runner.os }}-${{ runner.arch }}-cargo-
 
+      # Build Command:
+      # If matrix.library is true (GNU), we add --lib to build the .so file
+      # If false (Musl), we only build the binary to avoid the "cdylib not supported" error
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --bin ${{ env.BINARY_NAME }}
+        run: |
+          if [ "${{ matrix.library }}" = "true" ]; then
+            cargo build --release --target ${{ matrix.target }} --bin ${{ env.BINARY_NAME }} --lib
+          else
+            cargo build --release --target ${{ matrix.target }} --bin ${{ env.BINARY_NAME }}
+          fi
+
+      - name: Upload Library for Java
+        if: matrix.library == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-${{ matrix.name }}
+          path: target/${{ matrix.target }}/release/lib${{ env.LIB_NAME }}.so
 
       - name: Prepare artifacts
         run: |
@@ -100,7 +133,13 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build
-        run: cargo build --release --target aarch64-apple-darwin --bin ${{ env.BINARY_NAME }}
+        run: cargo build --release --target aarch64-apple-darwin --bin ${{ env.BINARY_NAME }} --lib
+
+      - name: Upload Library for Java
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-macos-aarch64
+          path: target/aarch64-apple-darwin/release/lib${{ env.LIB_NAME }}.dylib
 
       - name: Prepare artifacts
         run: |
@@ -137,7 +176,13 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build
-        run: cargo build --release --target x86_64-pc-windows-msvc --bin ${{ env.BINARY_NAME }}
+        run: cargo build --release --target x86_64-pc-windows-msvc --bin ${{ env.BINARY_NAME }} --lib
+
+      - name: Upload Library for Java
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-windows-x86_64
+          path: target/x86_64-pc-windows-msvc/release/${{ env.LIB_NAME }}.dll
 
       - name: Prepare artifacts
         run: |
@@ -151,6 +196,70 @@ jobs:
           name: ${{ env.BINARY_NAME }}_windows-x86_64
           path: ${{ env.BINARY_NAME }}_windows-x86_64.zip
 
+  build-java:
+    runs-on: ubuntu-latest
+    needs:
+      - build-linux
+      - build-macos
+      - build-windows
+
+    defaults:
+      run:
+        working-directory: java_wrapper
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Download Linux x86_64 Lib
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-linux-x86_64-gnu
+          path: java_wrapper/wrapper/src/main/resources/linux/x86_64
+
+      - name: Download Linux Aarch64 Lib
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-linux-aarch64-gnu
+          path: java_wrapper/wrapper/src/main/resources/linux/aarch64
+
+      - name: Download MacOS Aarch64 Lib
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-macos-aarch64
+          path: java_wrapper/wrapper/src/main/resources/macos/aarch64
+
+      - name: Download Windows x86_64 Lib
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-windows-x86_64
+          path: java_wrapper/wrapper/src/main/resources/windows/x86_64
+
+      - name: Verify Library Placement
+        run: ls -R wrapper/src/main/resources
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew build
+
+      - name: Rename and Prepare Artifact
+        run: |
+          mv wrapper/build/libs/wrapper.jar ../${{ env.BINARY_NAME }}_java_wrapper.jar
+
+      - name: Upload Java Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}_java_wrapper
+          path: ${{ env.BINARY_NAME }}_java_wrapper.jar
+
   build-docker:
     strategy:
       fail-fast: false
@@ -158,10 +267,15 @@ jobs:
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
+            artifact_suffix: linux-x86_64-musl
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
+            artifact_suffix: linux-aarch64-musl
 
     runs-on: ${{ matrix.runner }}
+
+    needs:
+      - build-linux
 
     permissions:
       contents: read
@@ -175,6 +289,24 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}_${{ matrix.artifact_suffix }}
+          path: ./downloaded_artifacts
+
+      - name: Prepare Docker Context
+        run: |
+          cd downloaded_artifacts
+          tar -xzf ${{ env.BINARY_NAME }}_${{ matrix.artifact_suffix }}.tar.gz
+
+          mv ${{ env.BINARY_NAME }} ../${{ env.BINARY_NAME }}
+          cd ..
+          chmod +x ${{ env.BINARY_NAME }}
+
+          mkdir -p app_data
+          touch app_data/.keep
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -201,14 +333,13 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile.ci
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ghcr.io/${{ env.REPO_LC }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}-${{ matrix.runner }}
           cache-to: type=gha,mode=max,scope=${{ env.PLATFORM_PAIR }}-${{ matrix.runner }}
-          build-args: |
-            BINARY_NAME=${{ env.BINARY_NAME }}
 
       - name: Export digest
         run: |
@@ -284,6 +415,7 @@ jobs:
       - build-linux
       - build-macos
       - build-windows
+      - build-java
 
     steps:
       - name: Checkout
@@ -294,7 +426,12 @@ jobs:
       - name: Generate release info
         id: release_info
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG_NAME="${{ inputs.version }}"
+          else
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+          fi
+          
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "release_name=Release ${TAG_NAME}" >> $GITHUB_OUTPUT
 

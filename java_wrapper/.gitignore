@@ -1,0 +1,6 @@
+*.dll
+*.dylib
+*.so
+.gradle
+/.idea
+build
