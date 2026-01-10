@@ -1,21 +1,30 @@
 # Installation
 
-## Pterodactyl (Recommended)
+## Pterodactyl
 
-For users running the Pterodactyl panel, deployment is simplified with the provided egg file. This egg is built on the lightweight Alpine base image.
+For users running the Pterodactyl panel, deployment is simplified with the provided egg files. These eggs are built on lightweight base images.
 
-You can find the egg file in the GitHub repository: [egg-pico-limbo.json](https://github.com/Quozul/PicoLimbo/blob/master/pterodactyl/eggs/egg-pico-limbo.json)
+You can find the egg files in the GitHub repository:
+- **Alpine-based (recommended):** [egg-pico-limbo.json](https://github.com/Quozul/PicoLimbo/blob/master/pterodactyl/eggs/egg-pico-limbo.json)
+- **Debian-based:** [egg-pico-limbo--debian.json](https://github.com/Quozul/PicoLimbo/blob/master/pterodactyl/eggs/egg-pico-limbo--debian.json)
 
-The egg supports additional installation configuration through the following environment variable:
+The eggs support additional installation configuration through the following environment variable:
 
-- **VERSION**
+- **VERSION**  
   Specifies the Git tag of the release to install (e.g., `v1.6.0+mc1.21.9`).
     - Default: `latest`
     - When set to `latest` (or left unset), the installer selects the newest stable release.
 
-> [!WARNING]
-> Do not manually upload binary files to your Pterodactyl server. This will not work properly. To update PicoLimbo, you
-> must re-install the server through Pterodactyl's installation process.
+### Custom Binary Upload
+
+If you want to upload a custom binary file, you can modify the startup command in your server settings:
+
+```
+chmod +x pico_limbo && ./pico_limbo
+```
+
+> [!WARNING]  
+> Uploading custom binary files is **not recommended**. The automatic installation through Pterodactyl's built-in process is the preferred method for reliability and updates. Only use this approach if you have specific requirements that prevent using the standard egg installation.
 
 ## Using Docker
 
@@ -31,7 +40,7 @@ You can also mount a custom configuration file:
 docker run --rm -p "25565:25565" -v /path/to/your/server.toml:/usr/src/app/server.toml ghcr.io/quozul/picolimbo:latest
 ```
 
-### Using Docker Compose
+## Using Docker Compose
 
 Here's the complete docker-compose.yml file:
 
@@ -71,10 +80,19 @@ If you cannot use the installation script due to missing dependencies or unsuppo
 
 Select the binary that matches your system:
 
-- **`pico_limbo_linux-x86_64-musl.tar.gz`** - Linux systems with Intel/AMD 64-bit processors (most common)
-- **`pico_limbo_linux-aarch64-musl.tar.gz`** - Linux systems with ARM 64-bit processors (e.g., Raspberry Pi 4+, Apple Silicon under emulation)
-- **`pico_limbo_macos-aarch64.tar.gz`** - macOS with Apple Silicon (M1/M2/M3 chips)
-- **`pico_limbo_windows-x86_64.zip`** - Windows with Intel/AMD 64-bit processors
+##### Recommended
+| Binary                                    | OS            | Architecture     | Use Case                |
+|-------------------------------------------|---------------|------------------|-------------------------|
+| **`pico_limbo_linux-x86_64-musl.tar.gz`** | Linux (musl)  | Intel/AMD 64-bit | Best for most users     |
+| **`pico_limbo_linux-aarch64-gnu.tar.gz`** | Linux (glibc) | ARM 64-bit       | Armbian on Raspberry Pi |
+
+##### Other Builds
+| Binary                                     | OS            | Architecture     |
+|--------------------------------------------|---------------|------------------|
+| **`pico_limbo_linux-x86_64-gnu.tar.gz`**   | Linux (glibc) | Intel/AMD 64-bit |
+| **`pico_limbo_linux-aarch64-musl.tar.gz`** | Linux (musl)  | ARM 64-bit       |
+| **`pico_limbo_macos-aarch64.tar.gz`**      | macOS         | Apple Silicon    |
+| **`pico_limbo_windows-x86_64.zip`**        | Windows       | Intel/AMD 64-bit |
 
 #### Manual Installation
 
@@ -89,11 +107,26 @@ Select the binary that matches your system:
 > [!TIP]
 > On Linux systems, you may want to move the binary to a directory in your PATH (like `/usr/local/bin/`) to run it from anywhere, or make it executable with `chmod +x pico_limbo` if needed.
 
-### Compiling from Source
+## Java Wrapper
+
+A Java wrapper for PicoLimbo is available on [Modrinth](https://modrinth.com/plugin/picolimbo-java-wrapper). This wrapper allows you to run PicoLimbo as a standalone application or as a plugin for Velocity or BungeeCord proxies.
+
+> [!WARNING]
+> The Java wrapper is **not the recommended way** of running PicoLimbo. To get maximum performance, users are encouraged to use the binary directly. The Java wrapper is provided to reach more people that have limited setup options.
+
+> [!NOTE]
+> Since the Java wrapper uses native code, it cannot run on all platforms. It is only compatible with:
+> - **GNU/Linux** (e.g., Debian, Ubuntu) - With x64 CPUs (AMD/Intel) or arm64 CPUs (e.g., Raspberry Pi)
+> - **Windows** - With x64 CPUs (AMD/Intel)
+> - **macOS** - M-series chips (M1/M2/M3+)
+>
+> If you are unsure whether it'll work, try it. Most hosting providers uses GNU/Linux with x64 CPUs so you should be fine.
+
+## Compiling from Source
 
 You can compile PicoLimbo from source using either Cargo or Git:
 
-#### Using Cargo
+### Using Cargo
 
 To install PicoLimbo directly from the repository using Cargo:
 
@@ -115,7 +148,7 @@ pico_limbo
 > This method requires Rust and Cargo to be installed on your system. If you don't have them installed,
 > visit [rustup.rs](https://rustup.rs/) for installation instructions.
 
-#### Using Git
+### Using Git
 
 To clone and build PicoLimbo from source:
 

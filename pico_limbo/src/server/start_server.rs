@@ -8,9 +8,13 @@ use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
 use std::process::ExitCode;
-use tracing::{debug, error};
+use tracing::{Level, debug, error};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
-pub async fn start_server(config_path: PathBuf) -> ExitCode {
+pub async fn start_server(config_path: PathBuf, logging_level: u8) -> ExitCode {
+    enable_logging(logging_level);
     let Some(cfg) = load_configuration(&config_path) else {
         return ExitCode::FAILURE;
     };
@@ -123,4 +127,17 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .server_commands(cfg.commands);
 
     server_state_builder.build()
+}
+
+fn enable_logging(verbose: u8) {
+    let log_level = match verbose {
+        0 => Level::INFO,
+        1 => Level::DEBUG,
+        _ => Level::TRACE,
+    };
+
+    tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env().add_directive(log_level.into()))
+        .with(tracing_subscriber::fmt::layer().with_target(false))
+        .init();
 }

@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add skylight and block light calculation for schematics (1.18+)
 - Allow renaming and disabling commands
 - Allow player to toggle fly and change flyspeed
+- Java wrapper to run PicoLimbo as a Velocity plugin, BungeeCord plugin or standalone using the Java runtime
+
+### Updated
+
+- Now compile and publish pre-built binaries using GNU libc
+- Updated the Debian Pterodactyl egg to use the new GNU binary
 
 ### Fixed
 

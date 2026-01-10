@@ -1,7 +1,16 @@
 [package]
 name = "pico_limbo"
-version = "1.9.1+mc1.21.11"
+version = "1.10.0-alpha.1+mc1.21.11"
 edition = "2024"
+
+[lib]
+name = "pico_limbo_lib"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "pico_limbo"
+path = "src/main.rs"
 
 [dependencies]
 blocks_report = { path = "../crates/blocks_report" }
