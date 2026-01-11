@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed binary not present in Docker image
+- Commands documentation page not present in menu
 
 ## [1.10.0+mc1.21.11] - 2026-01-10
 

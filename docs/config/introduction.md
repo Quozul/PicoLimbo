@@ -13,6 +13,7 @@ If no badge is present, the feature is supported across all versions.
 PicoLimbo uses a simple TOML configuration file to manage all server settings. The configuration is organized into several sections:
 
 - [Boss Bar](./boss-bar) - Customize the boss bar
+- [Commands](./commands) - Configure the commands
 - [Compression](./compression) - Configure the compression
 - [Proxy Integration](./proxy-integration) - Configure proxy integration
 - [Schematic Loading](./schematic-loading) - Experimental features for world customization

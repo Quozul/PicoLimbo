@@ -37,6 +37,7 @@ export default defineConfig({
 				items: [
 					{ text: "Introduction", link: "/config/introduction.html" },
 					{ text: "Boss Bar", link: "/config/boss-bar.html" },
+					{ text: "Commands", link: "/config/commands.html" },
 					{ text: "Compression", link: "/config/compression.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
