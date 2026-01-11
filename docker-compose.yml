@@ -2,6 +2,7 @@ services:
   pico-limbo:
     build:
       context: .
+      dockerfile: docker/Dockerfile
       args:
         BINARY_NAME: pico_limbo
     image: ghcr.io/quozul/picolimbo:latest

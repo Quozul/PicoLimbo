@@ -1,3 +1,6 @@
+# Build this Dockerfile using this command from the repository root:
+# docker build -t picolimbo:latest -f docker/Dockerfile .
+
 # syntax=docker/dockerfile:1.7-labs
 FROM rust:1.92-alpine AS builder
 

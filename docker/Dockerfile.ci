@@ -1,0 +1,21 @@
+# First, place the binary `pico_limbo` in the `docker` directory.
+# Build this Dockerfile using this command from the repository root:
+# docker build -t picolimbo:latest -f docker/Dockerfile.ci docker
+
+FROM alpine AS build-env
+
+WORKDIR /usr/src/app
+
+RUN touch /usr/src/app/.keep
+
+FROM gcr.io/distroless/static:latest
+
+COPY --from=build-env --chown=nonroot:nonroot /usr/src/app /usr/src/app
+
+WORKDIR /usr/src/app
+
+COPY --chown=nonroot:nonroot pico_limbo /usr/local/bin/pico_limbo
+
+USER nonroot
+
+CMD ["pico_limbo"]
