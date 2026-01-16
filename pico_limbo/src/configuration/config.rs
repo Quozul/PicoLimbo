@@ -1,6 +1,7 @@
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::compression::CompressionConfig;
+use crate::configuration::env_placeholders::expand_env_placeholders;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -22,6 +23,9 @@ pub enum ConfigError {
 
     #[error("TOML deserialization error: {0}")]
     TomlDeserialize(#[from] toml::de::Error),
+
+    #[error("Missing environment variable: {0}")]
+    MissingEnvVar(String),
 }
 
 /// Application configuration, serializable to/from TOML.
@@ -104,12 +108,13 @@ pub fn load_or_create<P: AsRef<Path>>(path: P) -> Result<Config, ConfigError> {
     let path = path.as_ref();
 
     if path.exists() {
-        let toml_str = fs::read_to_string(path)?;
+        let raw_toml_str = fs::read_to_string(path)?;
 
-        if toml_str.trim().is_empty() {
+        if raw_toml_str.trim().is_empty() {
             create_default_config(path)
         } else {
-            let cfg: Config = toml::from_str(&toml_str)?;
+            let expanded_toml_str = expand_env_placeholders(&raw_toml_str)?;
+            let cfg: Config = toml::from_str(expanded_toml_str.as_ref())?;
             Ok(cfg)
         }
     } else {
