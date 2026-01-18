@@ -74,13 +74,21 @@ Load a custom world from a schematic file and customize spawn location (1.16+ on
 
 ## Quick Start
 
+### Pterodactyl
+
+Official eggs for Pterodactyl are provided in the [pterodactyl](./pterodactyl) directory. More information about [PicoLimbo's Pterodactyl eggs](https://picolimbo.quozul.dev/about/installation.html#pterodactyl).
+
 ### Docker
 
 ```shell
 docker run --rm -p "25565:25565" ghcr.io/quozul/picolimbo:latest
 ```
 
-### Binary
+### Java Wrapper
+
+For user wishing to run PicoLimbo inside your Velocity, BungeeCord proxy as a plugin or as a standalone jar file, you can download the [Java Wrapper from Modrinth](https://modrinth.com/plugin/picolimbo-java-wrapper).
+
+### Binary / Standalone
 
 Download from [GitHub Releases](https://github.com/Quozul/PicoLimbo/releases)
 

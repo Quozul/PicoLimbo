@@ -105,7 +105,7 @@ Select the binary that matches your system:
     - **Windows**: Double-click `pico_limbo.exe` or run it from Command Prompt
 
 > [!TIP]
-> On Linux systems, you may want to move the binary to a directory in your PATH (like `/usr/local/bin/`) to run it from anywhere, or make it executable with `chmod +x pico_limbo` if needed.
+> On Unix systems (Linux and macOS), you may want to move the binary to a directory in your PATH (like `/usr/local/bin/`) to run it from anywhere, or make it executable with `chmod +x pico_limbo` if needed.
 
 ## Java Wrapper
 
@@ -114,13 +114,50 @@ A Java wrapper for PicoLimbo is available on [Modrinth](https://modrinth.com/plu
 > [!WARNING]
 > The Java wrapper is **not the recommended way** of running PicoLimbo. To get maximum performance, users are encouraged to use the binary directly. The Java wrapper is provided to reach more people that have limited setup options.
 
+### Platform Compatibility
+
+Since the Java wrapper uses native code, it cannot run on all platforms. It is only compatible with:
+
+- **GNU/Linux** (e.g., Debian, Ubuntu) - x64 CPUs (AMD/Intel) or arm64 CPUs (e.g., Raspberry Pi)
+- **Windows** - x64 CPUs (AMD/Intel)
+- **macOS** - M-series chips (M1/M2/M3+)
+
+If you are unsure whether it'll work on your system, try it. Most hosting providers use GNU/Linux with x64 CPUs, so you should be fine.
+
 > [!NOTE]
-> Since the Java wrapper uses native code, it cannot run on all platforms. It is only compatible with:
-> - **GNU/Linux** (e.g., Debian, Ubuntu) - With x64 CPUs (AMD/Intel) or arm64 CPUs (e.g., Raspberry Pi)
-> - **Windows** - With x64 CPUs (AMD/Intel)
-> - **macOS** - M-series chips (M1/M2/M3+)
->
-> If you are unsure whether it'll work, try it. Most hosting providers uses GNU/Linux with x64 CPUs so you should be fine.
+> Since the wrapper uses glibc builds of PicoLimbo, Alpine Linux is **not supported** by the wrapper.
+
+### Installation on Proxies
+
+Simply drag the jar file into your proxy's `plugins` folder and start the proxy. The plugin will create a configuration file at `plugins/pico_limbo_java_wrapper/server.toml`. Installation is identical for both BungeeCord and Velocity.
+
+#### Configuring the Listening Address
+
+PicoLimbo requires manual configuration after the first startup. Follow these steps:
+
+1. Start the proxy once to generate the configuration file
+2. Open `plugins/pico_limbo_java_wrapper/server.toml`
+3. Update the `bind` address to a free port on localhost (e.g., `127.0.0.1:30066`)
+    - Use a different port than your proxy's listening address to avoid conflicts
+4. Configure your proxy to route players to this address
+5. Set up [forwarding](../config/proxy-integration) if using a proxy
+
+> [!NOTE]
+> Automatic configuration and registration when running inside a proxy may be added as a feature in future versions.
+
+### Standalone Installation
+
+To run PicoLimbo without a proxy, simply execute:
+
+::: code-group
+
+```shell [Terminal]
+java -jar pico_limbo_java_wrapper.jar
+```
+
+:::
+
+The configuration file will be created in `server.toml`. You can configure forwarding using the same methods as the proxy installation if needed.
 
 ## Compiling from Source
 
