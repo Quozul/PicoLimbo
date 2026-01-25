@@ -27,6 +27,7 @@ pub mod set_titles_animation;
 pub mod synchronize_player_position_packet;
 pub mod system_chat_message_packet;
 pub mod tab_list_packet;
+pub mod transfer_packet;
 pub mod update_time_packet;
 
 pub use data::chunk_context::{VoidChunkContext, WorldContext};
