@@ -1,3 +1,5 @@
+use std::i8;
+
 use minecraft_protocol::prelude::*;
 
 const ROOT_NODE: i8 = NodeFlagsBuilder::new().node_type(NodeType::Root).build();
@@ -23,7 +25,18 @@ pub struct CommandsPacket {
 
 pub enum CommandArgumentType {
     Float { min: f32, max: f32 },
+    Integer { min: i32, max: i32 },
+    String { behavior: StringBehavior },
 }
+
+#[repr(i8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum StringBehavior {
+    SingleWord = 0,
+    QuotablePhrase = 1,
+    GreedyPhrase = 2,
+}
+
 
 pub struct CommandArgument {
     name: String,
@@ -35,6 +48,20 @@ impl CommandArgument {
         Self {
             name: name.to_string(),
             argument_type: CommandArgumentType::Float { min, max },
+        }
+    }
+
+    pub fn integer(name: impl ToString, min: i32, max: i32) -> Self {
+        Self { 
+            name: name.to_string(), 
+            argument_type: CommandArgumentType::Integer { min, max },
+        }
+    }
+
+    pub fn string(name: impl ToString, behavior: StringBehavior) -> Self {
+        Self {
+            name: name.to_string(),
+            argument_type: CommandArgumentType::String { behavior },
         }
     }
 }
@@ -81,6 +108,8 @@ impl CommandsPacket {
 
                 let properties = match argument.argument_type {
                     CommandArgumentType::Float { min, max } => ParserProperties::float(min, max),
+                    CommandArgumentType::Integer { min, max } => ParserProperties::integer(min, max),
+                    CommandArgumentType::String { behavior } => ParserProperties::string(behavior),
                 };
 
                 nodes.push(Node::argument(argument.name, properties));
@@ -192,18 +221,32 @@ enum ParserProperties {
         /// Only if flags & 0x02. If not specified, defaults to Float.MAX_VALUE (≈ 3.4028235E38)
         max: Omitted<f32>,
     },
+    Integer {
+        flags: i8,
+        /// Only if flags & 0x01. If not specified, defaults to Integer.MIN_VALUE (2147483648)
+        min: Omitted<i32>,
+        /// Only if flags & 0x02. If not specified, defaults to Integer.MAX_VALUE (-2147483647)
+        max: Omitted<i32>,
+    },
+    String {
+        behavior: StringBehavior,
+    }
 }
 
 impl ParserProperties {
     fn id(&self) -> VarInt {
         match self {
             Self::Float { .. } => VarInt::new(1),
+            Self::Integer { .. } => VarInt::new(3),
+            Self::String { .. } => VarInt::new(5),
         }
     }
 
     fn identifier(&self) -> Identifier {
         match self {
             ParserProperties::Float { .. } => Identifier::new("brigadier", "float"),
+            ParserProperties::Integer { .. } => Identifier::new("brigadier", "integer"),
+            ParserProperties::String { .. } => Identifier::new("brigadier", "string"),
         }
     }
 
@@ -213,6 +256,18 @@ impl ParserProperties {
             min: Omitted::Some(min),
             max: Omitted::Some(max),
         }
+    }
+
+    fn integer(min: i32, max: i32) -> Self {
+        Self::Integer {
+            flags: 0x01 | 0x02,
+            min: Omitted::Some(min),
+            max: Omitted::Some(max),
+        }
+    }
+
+    fn string(behavior: StringBehavior) -> Self {
+        Self::String { behavior }
     }
 }
 
@@ -233,6 +288,14 @@ impl EncodePacket for ParserProperties {
                 flags.encode(writer, protocol_version)?;
                 min.encode(writer, protocol_version)?;
                 max.encode(writer, protocol_version)?;
+            }
+            ParserProperties::Integer { flags, min, max } => {
+                flags.encode(writer, protocol_version)?;
+                min.encode(writer, protocol_version)?;
+                max.encode(writer, protocol_version)?;
+            }
+            ParserProperties::String { behavior } => {
+                (*behavior as i8).encode(writer, protocol_version)?;
             }
         }
         Ok(())

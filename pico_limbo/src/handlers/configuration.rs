@@ -11,7 +11,7 @@ use minecraft_packets::login::Property;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
-use minecraft_packets::play::commands_packet::{Command, CommandArgument, CommandsPacket};
+use minecraft_packets::play::commands_packet::{Command, CommandArgument, CommandsPacket, StringBehavior};
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
@@ -396,6 +396,15 @@ fn send_commands_packet(batch: &mut Batch<PacketRegistry>, server_state: &Server
         commands.push(Command::new(
             alias,
             vec![CommandArgument::float("speed", 0.0, 1.0)],
+        ));
+    }
+    if let ServerCommand::Enabled { alias } = server_state.server_commands().transfer() {
+        commands.push(Command::new(
+            alias,
+            vec![
+                CommandArgument::string("hostname", StringBehavior::SingleWord),
+                CommandArgument::integer("port", 0, 65535),
+                ],
         ));
     }
     let packet = CommandsPacket::new(commands);
