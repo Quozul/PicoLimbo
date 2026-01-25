@@ -66,6 +66,8 @@ pub struct Config {
 
     pub allow_flight: bool,
 
+    pub accept_transfers: bool,
+
     pub boss_bar: BossBarConfig,
 
     pub title: TitleConfig,
@@ -92,6 +94,7 @@ impl Default for Config {
             title: TitleConfig::default(),
             allow_unsupported_versions: false,
             allow_flight: false,
+            accept_transfers: false,
             commands: CommandsConfig::default(),
         }
     }
