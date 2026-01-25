@@ -2,8 +2,8 @@ use minecraft_protocol::prelude::*;
 
 #[derive(PacketOut)]
 pub struct TransferPacket { // TODO should this be named PlayTransferPacket since there are also configuration phase transfers?
-    host: String,
-    port: VarInt,
+    pub host: String,
+    pub port: VarInt,
 }
 
 impl TransferPacket {
