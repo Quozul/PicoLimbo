@@ -407,12 +407,13 @@ fn send_commands_packet(
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5)
         && let ServerCommand::Enabled { alias } = server_state.server_commands().transfer()
     {
-        commands.push(Command::new(
+        commands.push(Command::with_required_arguments(
             alias,
             vec![
                 CommandArgument::string("hostname", StringBehavior::SingleWord),
                 CommandArgument::integer("port", 0, 65535),
             ],
+            1,
         ));
     }
     let packet = CommandsPacket::new(commands);

@@ -99,7 +99,7 @@ fn run_command(
                         "{} tried to transfer servers on unsupported version {}",
                         client_state.get_username(),
                         client_state.protocol_version().humanize()
-                    )
+                    );
                 }
             }
         }

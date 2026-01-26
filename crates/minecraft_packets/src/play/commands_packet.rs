@@ -2,16 +2,6 @@ use minecraft_protocol::prelude::*;
 
 const ROOT_NODE: i8 = NodeFlagsBuilder::new().node_type(NodeType::Root).build();
 
-const LITERAL_NODE: i8 = NodeFlagsBuilder::new()
-    .node_type(NodeType::Literal)
-    .executable(true)
-    .build();
-
-const ARGUMENT_NODE: i8 = NodeFlagsBuilder::new()
-    .node_type(NodeType::Argument)
-    .executable(true)
-    .build();
-
 /// This packet is sent since 1.13
 #[derive(PacketOut)]
 pub struct CommandsPacket {
@@ -66,6 +56,7 @@ impl CommandArgument {
 pub struct Command {
     alias: String,
     arguments: Vec<CommandArgument>,
+    required_argument_count: i32,
 }
 
 impl Command {
@@ -73,6 +64,19 @@ impl Command {
         Self {
             alias: alias.to_string(),
             arguments,
+            required_argument_count: 0,
+        }
+    }
+
+    pub fn with_required_arguments(
+        alias: impl ToString,
+        arguments: Vec<CommandArgument>,
+        required_argument_count: i32,
+    ) -> Self {
+        Self {
+            alias: alias.to_string(),
+            arguments,
+            required_argument_count,
         }
     }
 
@@ -80,6 +84,7 @@ impl Command {
         Self {
             alias: alias.to_string(),
             arguments: Vec::new(),
+            required_argument_count: 0,
         }
     }
 }
@@ -94,7 +99,8 @@ impl CommandsPacket {
             let mut current_node_index = nodes.len() as i32;
             root_children_indices.push(current_node_index);
 
-            nodes.push(Node::literal(command.alias));
+            let executable = command.required_argument_count < 1;
+            nodes.push(Node::literal(command.alias, executable));
 
             for argument in command.arguments {
                 let argument_node_index = nodes.len() as i32;
@@ -111,7 +117,9 @@ impl CommandsPacket {
                     CommandArgumentType::String { behavior } => ParserProperties::string(behavior),
                 };
 
-                nodes.push(Node::argument(argument.name, properties));
+                let executable =
+                    argument_node_index - current_node_index >= command.required_argument_count;
+                nodes.push(Node::argument(argument.name, executable, properties));
 
                 current_node_index = argument_node_index;
             }
@@ -154,9 +162,12 @@ impl Node {
         }
     }
 
-    fn literal(name: impl ToString) -> Self {
+    fn literal(name: impl ToString, executable: bool) -> Self {
         Node {
-            flags: LITERAL_NODE,
+            flags: NodeFlagsBuilder::new()
+                .node_type(NodeType::Literal)
+                .executable(executable)
+                .build(),
             children: LengthPaddedVec::default(),
             data: NodeData::Literal {
                 name: name.to_string(),
@@ -164,9 +175,16 @@ impl Node {
         }
     }
 
-    fn argument(name: impl ToString, parser_properties: ParserProperties) -> Self {
+    fn argument(
+        name: impl ToString,
+        executable: bool,
+        parser_properties: ParserProperties,
+    ) -> Self {
         Node {
-            flags: ARGUMENT_NODE,
+            flags: NodeFlagsBuilder::new()
+                .node_type(NodeType::Argument)
+                .executable(executable)
+                .build(),
             children: LengthPaddedVec::default(),
             data: NodeData::Argument {
                 name: name.to_string(),
