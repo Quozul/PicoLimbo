@@ -39,7 +39,8 @@ fly_speed = "flyspeed"
 
 The `/transfer` command allows players to transfer to another server by specifying its `hostname` and optionally a `port`. If a port is not specified the Minecraft default of 25565 is used. 
 
-Note that the destination server must have [accepts-transfers](https://minecraft.wiki/w/Server.properties#Keys) set to true in its server.properties.
+> [!NOTE]
+> The destination server must have [accepts-transfers](https://minecraft.wiki/w/Server.properties#Keys) set to `true` in its server.properties.
 
 :::code-group
 ```toml [server.toml] {2}
