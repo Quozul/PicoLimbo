@@ -8,9 +8,9 @@ use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::transfer_packet::TransferPacket;
-use minecraft_protocol::prelude::VarInt;
+use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
 use thiserror::Error;
-use tracing::info;
+use tracing::{info, warn};
 
 impl PacketHandler for ChatCommandPacket {
     fn handle(
@@ -79,17 +79,28 @@ fn run_command(
                 client_state.set_flying_speed(speed);
             }
             Command::Transfer(host, port) => {
-                info!(
-                    "Transferring {} to {}:{}",
-                    client_state.get_username(),
-                    host,
-                    port
-                );
-                let packet = TransferPacket {
-                    host,
-                    port: VarInt::from(port),
-                };
-                batch.queue(|| PacketRegistry::Transfer(packet));
+                if client_state
+                    .protocol_version()
+                    .is_after_inclusive(ProtocolVersion::V1_20_5)
+                {
+                    info!(
+                        "Transferring {} to {}:{}",
+                        client_state.get_username(),
+                        host,
+                        port
+                    );
+                    let packet = TransferPacket {
+                        host,
+                        port: VarInt::from(port),
+                    };
+                    batch.queue(|| PacketRegistry::Transfer(packet));
+                } else {
+                    warn!(
+                        "{} tried to transfer servers on unsupported version {}",
+                        client_state.get_username(),
+                        client_state.protocol_version().humanize()
+                    )
+                }
             }
         }
     }
