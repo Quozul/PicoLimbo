@@ -41,7 +41,8 @@ impl PacketHandler for HandshakePacket {
                         Ok(batch)
                     }
                     State::Transfer => {
-                        if server_state.accepts_transfers() {
+                        if server_state.accept_transfers() {
+                            client_state.set_state(State::Login);
                             begin_login(client_state, server_state, &self.hostname)?;
                             Ok(batch)
                         } else {

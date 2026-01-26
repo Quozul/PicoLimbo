@@ -79,11 +79,11 @@ fn run_command(
                 client_state.set_flying_speed(speed);
             }
             Command::Transfer(host, port) => {
+                info!("Transferring {} to {}:{}", client_state.get_username(), host, port);
                 let packet = TransferPacket {
                     host: host,
                     port: VarInt::from(port),
                 };
-
                 batch.queue(|| PacketRegistry::Transfer(packet));
             }
         }
