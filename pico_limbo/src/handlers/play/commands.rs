@@ -79,9 +79,14 @@ fn run_command(
                 client_state.set_flying_speed(speed);
             }
             Command::Transfer(host, port) => {
-                info!("Transferring {} to {}:{}", client_state.get_username(), host, port);
+                info!(
+                    "Transferring {} to {}:{}",
+                    client_state.get_username(),
+                    host,
+                    port
+                );
                 let packet = TransferPacket {
-                    host: host,
+                    host,
                     port: VarInt::from(port),
                 };
                 batch.queue(|| PacketRegistry::Transfer(packet));
@@ -124,7 +129,10 @@ impl Command {
             let speed = speed_str.parse::<f32>()?.clamp(0.0, 1.0);
             Ok(Self::FlySpeed(speed))
         } else if Self::is_command(server_commands.transfer(), cmd) {
-            let host = parts.next().ok_or(ParseCommandError::InvalidHost)?.to_string();
+            let host = parts
+                .next()
+                .ok_or(ParseCommandError::InvalidHost)?
+                .to_string();
             let port_str = parts.next().unwrap_or("25565");
             let port = port_str.parse::<i32>()?;
             Ok(Self::Transfer(host, port))

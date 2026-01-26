@@ -326,11 +326,7 @@ pub enum PacketRegistry {
     )]
     SetActionBarText(SetActionBarTextPacket),
 
-    #[protocol_id(
-        state = "play",
-        bound = "clientbound",
-        name = "minecraft:transfer"
-    )]
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:transfer")]
     Transfer(TransferPacket),
 
     #[protocol_id(

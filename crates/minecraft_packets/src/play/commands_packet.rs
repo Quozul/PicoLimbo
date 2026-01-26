@@ -1,5 +1,3 @@
-use std::i8;
-
 use minecraft_protocol::prelude::*;
 
 const ROOT_NODE: i8 = NodeFlagsBuilder::new().node_type(NodeType::Root).build();
@@ -37,7 +35,6 @@ pub enum StringBehavior {
     GreedyPhrase = 2,
 }
 
-
 pub struct CommandArgument {
     name: String,
     argument_type: CommandArgumentType,
@@ -52,8 +49,8 @@ impl CommandArgument {
     }
 
     pub fn integer(name: impl ToString, min: i32, max: i32) -> Self {
-        Self { 
-            name: name.to_string(), 
+        Self {
+            name: name.to_string(),
             argument_type: CommandArgumentType::Integer { min, max },
         }
     }
@@ -108,7 +105,9 @@ impl CommandsPacket {
 
                 let properties = match argument.argument_type {
                     CommandArgumentType::Float { min, max } => ParserProperties::float(min, max),
-                    CommandArgumentType::Integer { min, max } => ParserProperties::integer(min, max),
+                    CommandArgumentType::Integer { min, max } => {
+                        ParserProperties::integer(min, max)
+                    }
                     CommandArgumentType::String { behavior } => ParserProperties::string(behavior),
                 };
 
@@ -230,7 +229,7 @@ enum ParserProperties {
     },
     String {
         behavior: StringBehavior,
-    }
+    },
 }
 
 impl ParserProperties {
