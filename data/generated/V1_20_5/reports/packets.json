@@ -13,6 +13,9 @@
       "minecraft:registry_data": {
         "protocol_id": 7
       },
+      "minecraft:transfer": {
+        "protocol_id": 11
+      },
       "minecraft:select_known_packs": {
         "protocol_id": 14
       },
@@ -127,6 +130,9 @@
       },
       "minecraft:player_abilities": {
         "protocol_id": 56
+      },
+      "minecraft:transfer": {
+        "protocol_id": 115
       }
     },
     "serverbound": {
