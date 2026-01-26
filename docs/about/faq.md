@@ -27,7 +27,7 @@ If you need authenticated players, you should handle authentication at the proxy
 PicoLimbo cannot load existing worlds or generate terrain. Players connect to a void environment by default.
 
 However, PicoLimbo includes experimental support for loading small structures using `.schem` files. See the [Experimental World Loading](/config/world.html) section for configuration details.
-s
+
 ## Does PicoLimbo support Bedrock players?
 
 While it is not planned in the near future, I understand the need for such a feature. In the meantime, you can probably install Geyser as a plugin on a Velocity proxy.
