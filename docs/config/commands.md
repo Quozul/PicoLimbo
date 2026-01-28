@@ -35,7 +35,7 @@ fly_speed = "flyspeed"
 ```
 :::
 
-## Transfer Command
+## Transfer Command <Badge type="warning" text="1.20.5+" />
 
 The `/transfer` command allows players to transfer to another server by specifying its `hostname` and optionally a `port`. If a port is not specified the Minecraft default of 25565 is used. 
 

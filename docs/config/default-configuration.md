@@ -20,6 +20,7 @@ fetch_player_skins = false
 reduced_debug_info = false
 allow_unsupported_versions = false
 allow_flight = false
+accept_transfers = false
 
 [forwarding]
 # Disable forwarding
@@ -103,5 +104,6 @@ fade_out = 20
 spawn = "spawn"
 fly = "fly"
 fly_speed = "flyspeed"
+transfer = "transfer"
 ```
 :::

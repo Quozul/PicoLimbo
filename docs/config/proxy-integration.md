@@ -32,6 +32,19 @@ sup3r-s3cr3t
 
 :::
 
+> [!TIP]
+> You can use environment variables to store the forwarding secret.
+
+:::code-group
+
+```toml [server.toml] {3}
+[forwarding]
+method = "MODERN"
+secret = "${FORWARDING_SECRET}"
+```
+
+:::
+
 ## BungeeGuard Authentication
 
 BungeeGuard is an additional security feature that provide token-based authentication for incoming player connections. To enable BungeeGuard authentication, set the following configuration options:

@@ -142,7 +142,7 @@ fetch_player_skins = true
 > [!WARNING]
 > If you expect a large amount of player to connect to your limbo server instance, your server's IP may get black listed from Mojang API.
 
-## Accept Transfers
+## Accept Transfers <Badge type="warning" text="1.20.5+" />
 
 Whether players who have been transferred from another server via a [transfer packet](https://minecraft.wiki/w/Commands/transfer) should be accepted.
 

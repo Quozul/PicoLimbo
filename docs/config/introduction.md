@@ -22,3 +22,7 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Tab List](./tab-list) - Configure the tab list
 - [Title](./title) - Configure titles
 - [World](./world) - Configure the world
+
+## Environment Variables
+
+You can use environment variable placeholders everywhere in the configuration file using the `${VARIABLE_NAME}` syntax.
