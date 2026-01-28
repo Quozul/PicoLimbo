@@ -32,7 +32,7 @@ impl PacketHandler for LoginAcknowledgedPacket {
     }
 }
 
-/// Only for <= 1.20.2
+/// Only for >= 1.20.2
 fn send_configuration_packets(
     batch: &mut Batch<PacketRegistry>,
     protocol_version: ProtocolVersion,
