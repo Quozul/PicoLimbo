@@ -38,11 +38,8 @@ fn load_configuration(config_path: &PathBuf) -> Option<Config> {
         Err(ConfigError::Io(message, ..)) => {
             error!("Failed to load configuration: {}", message);
         }
-        Err(ConfigError::MissingEnvVar(var)) => {
-            error!(
-                "Failed to load configuration: missing environment variable {}",
-                var
-            );
+        Err(ConfigError::EnvPlaceholder(var)) => {
+            error!("Failed to load configuration: {}", var);
         }
         Err(ConfigError::TomlSerialize(message, ..)) => {
             error!("Failed to save default configuration file: {}", message);

@@ -1,6 +1,6 @@
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::compression::CompressionConfig;
-use crate::configuration::env_placeholders::expand_env_placeholders;
+use crate::configuration::env_placeholders::{EnvPlaceholderError, expand_env_placeholders};
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -23,8 +23,8 @@ pub enum ConfigError {
     #[error("TOML deserialization error: {0}")]
     TomlDeserialize(#[from] toml::de::Error),
 
-    #[error("Missing environment variable: {0}")]
-    MissingEnvVar(String),
+    #[error("Failed to apply environment placeholders: {0}")]
+    EnvPlaceholder(#[from] EnvPlaceholderError),
 }
 
 /// Application configuration, serializable to/from TOML.
