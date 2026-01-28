@@ -28,10 +28,6 @@ PicoLimbo cannot load existing worlds or generate terrain. Players connect to a 
 
 However, PicoLimbo includes experimental support for loading small structures using `.schem` files. See the [Experimental World Loading](/config/world.html) section for configuration details.
 
-## Does PicoLimbo support transfer packets?
-
-Transfer packet support is not currently implemented in PicoLimbo, but this is a planned feature for a future release.
-
 ## Does PicoLimbo support Bedrock players?
 
 While it is not planned in the near future, I understand the need for such a feature. In the meantime, you can probably install Geyser as a plugin on a Velocity proxy.

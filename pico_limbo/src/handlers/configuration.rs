@@ -11,7 +11,9 @@ use minecraft_packets::login::Property;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
-use minecraft_packets::play::commands_packet::{Command, CommandArgument, CommandsPacket};
+use minecraft_packets::play::commands_packet::{
+    Command, CommandArgument, CommandsPacket, StringBehavior,
+};
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
@@ -175,7 +177,7 @@ pub fn send_play_packets(
     client_state.set_feet_position(y);
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
-        send_commands_packet(batch, server_state);
+        send_commands_packet(batch, protocol_version, server_state);
     }
 
     // The brand is not visible for clients prior to 1.13, no need to send it
@@ -384,7 +386,11 @@ fn send_skin_packets(
     }
 }
 
-fn send_commands_packet(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
+fn send_commands_packet(
+    batch: &mut Batch<PacketRegistry>,
+    protocol_version: ProtocolVersion,
+    server_state: &ServerState,
+) {
     let mut commands = vec![];
     if let ServerCommand::Enabled { alias } = server_state.server_commands().spawn() {
         commands.push(Command::no_arguments(alias));
@@ -396,6 +402,18 @@ fn send_commands_packet(batch: &mut Batch<PacketRegistry>, server_state: &Server
         commands.push(Command::new(
             alias,
             vec![CommandArgument::float("speed", 0.0, 1.0)],
+        ));
+    }
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5)
+        && let ServerCommand::Enabled { alias } = server_state.server_commands().transfer()
+    {
+        commands.push(Command::with_required_arguments(
+            alias,
+            vec![
+                CommandArgument::string("hostname", StringBehavior::SingleWord),
+                CommandArgument::integer("port", 0, 65535),
+            ],
+            1,
         ));
     }
     let packet = CommandsPacket::new(commands);

@@ -35,6 +35,20 @@ fly_speed = "flyspeed"
 ```
 :::
 
+## Transfer Command
+
+The `/transfer` command allows players to transfer to another server by specifying its `hostname` and optionally a `port`. If a port is not specified the Minecraft default of 25565 is used. 
+
+> [!NOTE]
+> The destination server must have [accepts-transfers](https://minecraft.wiki/w/Server.properties#Keys) set to `true` in its server.properties.
+
+:::code-group
+```toml [server.toml] {2}
+[commands]
+transfer = "transfer"
+```
+:::
+
 ## Disabling Commands
 
 Any command can be disabled by setting its value to an empty string `""`. This prevents players from using that command entirely.
@@ -45,6 +59,7 @@ Any command can be disabled by setting its value to an empty string `""`. This p
 spawn = ""
 fly = "fly"
 fly_speed = ""
+transfer = ""
 ```
 :::
 
@@ -58,5 +73,6 @@ You can rename any command to a custom alias by changing its value. For example,
 spawn = "home"
 fly = "soar"
 fly_speed = "speed"
+transfer = "server"
 ```
 :::

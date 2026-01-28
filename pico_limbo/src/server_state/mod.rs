@@ -107,7 +107,7 @@ pub struct ServerState {
     reduced_debug_info: bool,
     is_player_listed: bool,
     reply_to_status: bool,
-    accepts_transfers: bool,
+    accept_transfers: bool,
     allow_unsupported_versions: bool,
     allow_flight: bool,
     server_commands: ServerCommands,
@@ -254,8 +254,8 @@ impl ServerState {
         self.allow_flight
     }
 
-    pub const fn accepts_transfers(&self) -> bool {
-        self.accepts_transfers
+    pub const fn accept_transfers(&self) -> bool {
+        self.accept_transfers
     }
 
     pub const fn server_commands(&self) -> &ServerCommands {
@@ -301,6 +301,7 @@ pub struct ServerStateBuilder {
     reply_to_status: bool,
     allow_unsupported_versions: bool,
     allow_flight: bool,
+    accept_transfers: bool,
     server_commands: ServerCommands,
 }
 
@@ -427,6 +428,11 @@ impl ServerStateBuilder {
 
     pub const fn set_allow_flight(&mut self, allow_flight: bool) -> &mut Self {
         self.allow_flight = allow_flight;
+        self
+    }
+
+    pub const fn set_accept_transfers(&mut self, accept_transfers: bool) -> &mut Self {
+        self.accept_transfers = accept_transfers;
         self
     }
 
@@ -611,7 +617,7 @@ impl ServerStateBuilder {
             reply_to_status: self.reply_to_status,
             allow_unsupported_versions: self.allow_unsupported_versions,
             allow_flight: self.allow_flight,
-            accepts_transfers: false,
+            accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
         })
     }

@@ -43,6 +43,7 @@ use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
+use minecraft_packets::play::transfer_packet::TransferPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PongResponsePacket;
@@ -324,6 +325,9 @@ pub enum PacketRegistry {
         name = "minecraft:set_action_bar_text"
     )]
     SetActionBarText(SetActionBarTextPacket),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:transfer")]
+    Transfer(TransferPacket),
 
     #[protocol_id(
         state = "play",

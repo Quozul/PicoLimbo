@@ -7,8 +7,10 @@ use crate::server_state::{ServerCommand, ServerCommands, ServerState};
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
+use minecraft_packets::play::transfer_packet::TransferPacket;
+use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
 use thiserror::Error;
-use tracing::info;
+use tracing::{info, warn};
 
 impl PacketHandler for ChatCommandPacket {
     fn handle(
@@ -76,6 +78,30 @@ fn run_command(
                 batch.queue(|| PacketRegistry::ClientBoundPlayerAbilities(packet));
                 client_state.set_flying_speed(speed);
             }
+            Command::Transfer(host, port) => {
+                if client_state
+                    .protocol_version()
+                    .is_after_inclusive(ProtocolVersion::V1_20_5)
+                {
+                    info!(
+                        "Transferring {} to {}:{}",
+                        client_state.get_username(),
+                        host,
+                        port
+                    );
+                    let packet = TransferPacket {
+                        host,
+                        port: VarInt::from(port),
+                    };
+                    batch.queue(|| PacketRegistry::Transfer(packet));
+                } else {
+                    warn!(
+                        "{} tried to transfer servers on unsupported version {}",
+                        client_state.get_username(),
+                        client_state.protocol_version().humanize()
+                    );
+                }
+            }
         }
     }
 }
@@ -88,12 +114,17 @@ pub enum ParseCommandError {
     Unknown,
     #[error("invalid speed value")]
     InvalidSpeed(#[from] std::num::ParseFloatError),
+    #[error("invalid hostname")]
+    InvalidHost,
+    #[error("invalid port")]
+    InvalidPort(#[from] std::num::ParseIntError),
 }
 
 enum Command {
     Spawn,
     Fly,
     FlySpeed(f32),
+    Transfer(String, i32),
 }
 
 impl Command {
@@ -108,6 +139,14 @@ impl Command {
             let speed_str = parts.next().unwrap_or("0.05");
             let speed = speed_str.parse::<f32>()?.clamp(0.0, 1.0);
             Ok(Self::FlySpeed(speed))
+        } else if Self::is_command(server_commands.transfer(), cmd) {
+            let host = parts
+                .next()
+                .ok_or(ParseCommandError::InvalidHost)?
+                .to_string();
+            let port_str = parts.next().unwrap_or("25565");
+            let port = port_str.parse::<i32>()?;
+            Ok(Self::Transfer(host, port))
         } else {
             Err(ParseCommandError::Unknown)
         }
