@@ -553,3 +553,13 @@ pub fn to_bytes<T: Serialize>(value: &T, root_name: Option<&str>) -> Result<Vec<
     to_writer(&mut buf, value, root_name)?;
     Ok(buf)
 }
+
+pub fn to_bytes_with_options<T: Serialize>(
+    value: &T,
+    root_name: Option<&str>,
+    nbt_options: NbtOptions,
+) -> Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    to_writer_with_options(&mut buf, value, root_name, nbt_options)?;
+    Ok(buf)
+}
