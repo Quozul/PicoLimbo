@@ -8,6 +8,7 @@ blocks_report = { path = "../blocks_report" }
 minecraft_protocol = { path = "../minecraft_protocol" }
 pico_text_component = { path = "../pico_text_component" }
 pico_structures = { path = "../pico_structures" }
+pico_nbt2 = { path = "../../pico_libraries/pico_nbt2" }
 rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

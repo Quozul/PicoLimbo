@@ -13,7 +13,6 @@ members = [
     "crates/minecraft_protocol",
     "crates/net",
     "crates/pico_binutils",
-    "crates/pico_nbt",
     "crates/pico_structures",
     "crates/pico_text_component",
     "crates/protocol_version",

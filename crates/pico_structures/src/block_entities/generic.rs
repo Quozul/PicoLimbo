@@ -1,13 +1,16 @@
-use pico_nbt::prelude::Nbt;
+use pico_nbt2::Value;
 
 #[derive(Clone)]
 pub struct GenericBlockEntity {
-    nbt: Nbt,
+    nbt: Value,
 }
 
 impl GenericBlockEntity {
-    pub fn from_nbt(entity_nbt: &Nbt) -> Self {
-        let nbt = match entity_nbt {
+    /// Removes the additional fields from the Value stored in the schematic that are used to know
+    /// where the block entity is.
+    pub fn from_nbt(_entity_nbt: &Value) -> Self {
+        unimplemented!();
+        /*let nbt = match entity_nbt {
             Nbt::Compound { value, .. } => {
                 let filtered: Vec<Nbt> = value
                     .iter()
@@ -26,10 +29,10 @@ impl GenericBlockEntity {
             }
             _ => entity_nbt.clone(),
         };
-        Self { nbt }
+        Self { nbt }*/
     }
 
-    pub fn to_nbt(&self) -> Nbt {
-        self.nbt.clone()
+    pub fn to_nbt(&self) -> &Value {
+        &self.nbt
     }
 }

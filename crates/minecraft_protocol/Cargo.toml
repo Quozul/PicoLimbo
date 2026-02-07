@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 macros = { path = "../macros" }
-pico_nbt = { path = "../pico_nbt" }
+pico_nbt2 = { path = "../../pico_libraries/pico_nbt2" }
 pico_binutils = { path = "../pico_binutils", features = ["binary_reader", "binary_writer", "length_prefixed", "var_int", "uuid"] }
 protocol_version = { path = "../protocol_version" }
 pico_identifier = { path = "../../pico_libraries/pico_identifier" }
