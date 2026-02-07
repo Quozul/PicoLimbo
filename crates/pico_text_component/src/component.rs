@@ -1,30 +1,23 @@
 use minecraft_protocol::prelude::{BinaryWriter, BinaryWriterError, EncodePacket, ProtocolVersion};
-use pico_nbt::prelude::Nbt;
+use pico_nbt2::Value;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
 pub struct Component {
     #[serde(default)]
     pub text: String,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub bold: bool,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub italic: bool,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub underlined: bool,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub strikethrough: bool,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub obfuscated: bool,
-
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub extra: Vec<Component>,
 }
@@ -44,70 +37,17 @@ impl Component {
         }
     }
 
-    pub fn from_nbt(nbt: &Nbt) -> Self {
-        let mut component = Component::default();
-        if let Some(text) = nbt.find_tag("text").and_then(|n| n.get_string()) {
-            component.text = text;
-        }
-        component.color = nbt.find_tag("color").and_then(|n| n.get_string());
-        if let Some(bold) = nbt.find_tag("bold").and_then(|n| n.get_bool()) {
-            component.bold = bold;
-        }
-        if let Some(italic) = nbt.find_tag("italic").and_then(|n| n.get_bool()) {
-            component.italic = italic;
-        }
-        if let Some(underlined) = nbt.find_tag("underlined").and_then(|n| n.get_bool()) {
-            component.underlined = underlined;
-        }
-        if let Some(strikethrough) = nbt.find_tag("strikethrough").and_then(|n| n.get_bool()) {
-            component.strikethrough = strikethrough;
-        }
-        if let Some(obfuscated) = nbt.find_tag("obfuscated").and_then(|n| n.get_bool()) {
-            component.obfuscated = obfuscated;
-        }
-        component
+    pub fn from_nbt(_value: &Value) -> Self {
+        // pico_nbt2::from_value(value).unwrap()
+        Self::default() // TODO
     }
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self).unwrap_or_default()
     }
 
-    pub fn to_nbt(&self) -> Nbt {
-        let mut compound = vec![Nbt::string("text", &self.text)];
-
-        if let Some(color) = &self.color {
-            compound.push(Nbt::string("color", color));
-        }
-
-        if self.bold {
-            compound.push(Nbt::byte("bold", 1));
-        }
-
-        if self.italic {
-            compound.push(Nbt::byte("italic", 1));
-        }
-
-        if self.underlined {
-            compound.push(Nbt::byte("underlined", 1));
-        }
-
-        if self.strikethrough {
-            compound.push(Nbt::byte("strikethrough", 1));
-        }
-
-        if self.obfuscated {
-            compound.push(Nbt::byte("obfuscated", 1));
-        }
-
-        if !self.extra.is_empty() {
-            let mut extras = Vec::with_capacity(self.extra.len());
-            for extra in &self.extra {
-                extras.push(extra.to_nbt());
-            }
-            compound.push(Nbt::compound_list("extra", extras));
-        }
-
-        Nbt::compound("", compound)
+    pub fn to_nbt(&self) -> Value {
+        pico_nbt2::to_value(self).unwrap()
     }
 
     pub fn to_legacy(&self) -> String {

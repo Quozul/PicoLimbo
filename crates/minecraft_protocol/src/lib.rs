@@ -24,7 +24,6 @@ pub mod prelude {
         VarIntPrefixedString,
     };
     pub use pico_identifier::Identifier;
-    pub use pico_nbt::prelude::*;
     pub use protocol_version::protocol_version::ProtocolVersion;
     pub use uuid::Uuid;
 }

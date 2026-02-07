@@ -7,10 +7,12 @@ edition = "2024"
 blocks_report = { path = "../blocks_report" }
 minecraft_protocol = { path = "../minecraft_protocol" }
 pico_binutils = { path = "../pico_binutils", features = ["binary_reader"] }
-pico_nbt = { path = "../pico_nbt" }
+pico_nbt2 = { path = "../../pico_libraries/pico_nbt2" }
 pico_text_component = { path = "../pico_text_component" }
 flate2 = { workspace = true }
 rayon = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-serde_json = "1.0.145"
+serde_bytes = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }

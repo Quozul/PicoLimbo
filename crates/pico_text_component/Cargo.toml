@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pico_nbt = { path = "../pico_nbt" }
+pico_nbt2 = { path = "../../pico_libraries/pico_nbt2" }
 minecraft_protocol = { path = "../minecraft_protocol" }
 quick-xml = { workspace = true }
 serde = { workspace = true }
