@@ -1,27 +1,24 @@
 use crate::prelude::EncodePacket;
 use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
-use pico_nbt::prelude::{Nbt, NbtFeatures};
+use pico_nbt2::{NbtOptions, Value};
 use protocol_version::protocol_version::ProtocolVersion;
 
-impl EncodePacket for Nbt {
+impl EncodePacket for Value {
     fn encode(
         &self,
         writer: &mut BinaryWriter,
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
-        let nbt_bytes = self.to_bytes(from_protocol_version(protocol_version))?;
+        let nbt_bytes =
+            pico_nbt2::to_bytes_with_options(self, None, from_protocol_version(protocol_version))
+                .map_err(|_| BinaryWriterError::UnsupportedOperation)?;
         writer.write_bytes(&nbt_bytes)?;
         Ok(())
     }
 }
 
-fn from_protocol_version(value: ProtocolVersion) -> NbtFeatures {
-    let mut builder = NbtFeatures::builder();
-    if value.is_after_inclusive(ProtocolVersion::V1_20_2) {
-        builder.nameless();
-    };
-    if value.is_after_inclusive(ProtocolVersion::V1_21_5) {
-        builder.dynamic_lists();
-    };
-    builder.build()
+fn from_protocol_version(value: ProtocolVersion) -> NbtOptions {
+    NbtOptions::new()
+        .nameless_root(value.is_after_inclusive(ProtocolVersion::V1_20_2))
+        .dynamic_lists(value.is_after_inclusive(ProtocolVersion::V1_21_5))
 }

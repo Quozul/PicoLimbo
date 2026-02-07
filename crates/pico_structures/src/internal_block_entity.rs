@@ -1,7 +1,7 @@
 use crate::block_entities::generic::GenericBlockEntity;
 use crate::block_entities::sign::SignBlockEntity;
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
-use pico_nbt::prelude::Nbt;
+use pico_nbt2::Value;
 use std::fmt::Display;
 
 #[derive(Clone)]
@@ -40,8 +40,9 @@ pub struct BlockEntity {
 }
 
 impl BlockEntity {
-    pub fn from_nbt(entity_nbt: &Nbt) -> Option<Self> {
-        let coordinates = entity_nbt
+    pub fn from_nbt(entity_nbt: &Value) -> Option<Self> {
+        unimplemented!();
+        /*let coordinates = entity_nbt
             .find_tag("Pos")
             .and_then(|tag| tag.get_int_array())
             .map(|pos_array| Coordinates::new(pos_array[0], pos_array[1], pos_array[2]));
@@ -59,10 +60,10 @@ impl BlockEntity {
             })
         } else {
             None
-        }
+        }*/
     }
 
-    pub fn to_nbt(&self, protocol_version: ProtocolVersion) -> Nbt {
+    pub fn to_nbt(&self, protocol_version: ProtocolVersion) -> Value {
         self.block_entity_data.to_nbt(protocol_version)
     }
 
@@ -82,8 +83,9 @@ pub enum BlockEntityData {
 }
 
 impl BlockEntityData {
-    fn from_nbt(id_tag: String, entity_nbt: &Nbt) -> Self {
-        match id_tag.as_str() {
+    fn from_nbt(id_tag: String, entity_nbt: &Value) -> Self {
+        unimplemented!();
+        /*match id_tag.as_str() {
             "minecraft:sign" | "minecraft:hanging_sign" => {
                 Self::Sign(Box::new(SignBlockEntity::from_nbt(entity_nbt)))
             }
@@ -91,13 +93,14 @@ impl BlockEntityData {
             _ => Self::Generic {
                 entity: GenericBlockEntity::from_nbt(entity_nbt),
             },
-        }
+        }*/
     }
 
-    fn to_nbt(&self, protocol_version: ProtocolVersion) -> Nbt {
-        match self {
+    fn to_nbt(&self, protocol_version: ProtocolVersion) -> Value {
+        unimplemented!();
+        /*match self {
             BlockEntityData::Sign(entity) => entity.to_nbt(protocol_version),
             BlockEntityData::Generic { entity } => entity.to_nbt(),
-        }
+        }*/
     }
 }

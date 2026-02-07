@@ -7,7 +7,7 @@ pub struct DisconnectPacket {
     #[pvn(..765)]
     reason: String, // JSON encoded
     #[pvn(765..)]
-    v1_20_3_reason: Nbt, // Nbt starting from 1.20.3 included
+    v1_20_3_reason: pico_nbt2::Value, // Nbt starting from 1.20.3 included
 }
 
 impl DisconnectPacket {

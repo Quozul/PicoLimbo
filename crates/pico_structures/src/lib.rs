@@ -5,6 +5,7 @@ mod internal_block_entity;
 mod pack_direct;
 mod palette;
 mod schematic;
+mod schematic_file;
 mod world;
 
 pub mod prelude {
