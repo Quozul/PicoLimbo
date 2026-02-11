@@ -33,6 +33,6 @@ without consuming significant system resources.
 
 ## Why PicoLimbo Over Other Alternatives?
 
-* Compare supported features in our [comparison table](./comparison).
+* PicoLimbo supports even more features that NanoLimbo or Limbo combined.
 * PicoLimbo is also extremely lightweight, as shown in [the benchmarks](./benchmarks).
 * Every feature can be customized via the [configuration file](/config/introduction).
