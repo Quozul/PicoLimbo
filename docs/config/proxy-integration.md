@@ -34,16 +34,16 @@ sup3r-s3cr3t
 
 > [!TIP]
 > You can use environment variables to store the forwarding secret.
-
-:::code-group
-
-```toml [server.toml] {3}
-[forwarding]
-method = "MODERN"
-secret = "${FORWARDING_SECRET}"
-```
-
-:::
+>
+> :::code-group
+> 
+> ```toml [server.toml] {3}
+> [forwarding]
+> method = "MODERN"
+> secret = "${FORWARDING_SECRET}"
+> ```
+> 
+> :::
 
 ## BungeeGuard Authentication
 
@@ -76,7 +76,7 @@ sup3r-s3cr3t
 
 ### On BungeeCord
 
-First, install the [BungeeGuard](https://www.spigotmc.org/resources/bungeeguard.79601/) or [BungeeGuard+](https://github.com/lucko/bungeeguard) plugin.
+First, install the [BungeeGuard](https://www.spigotmc.org/resources/bungeeguard.79601/) or [BungeeGuardPlus](https://github.com/nickuc-com/BungeeGuardPlus) plugin.
 
 :::code-group
 
