@@ -1,3 +1,4 @@
+pub mod pick_item_from_block;
 mod commands;
 pub mod fetch_minecraft_profile;
 mod player_abilities;

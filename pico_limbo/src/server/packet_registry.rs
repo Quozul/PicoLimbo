@@ -52,7 +52,6 @@ use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
 use minecraft_protocol::prelude::*;
 use net::raw_packet::RawPacket;
-use tracing::debug;
 
 #[derive(PacketReport)]
 pub enum PacketRegistry {
@@ -372,6 +371,7 @@ impl PacketHandler for PacketRegistry {
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
+            Self::PickItemFromBlock(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }
