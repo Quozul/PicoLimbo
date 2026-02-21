@@ -23,6 +23,7 @@ use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_subtitle_text_packet::SetSubtitleTextPacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -284,13 +285,13 @@ fn send_title_text_packets(
                     batch.queue(|| PacketRegistry::SetTitleText(title_packet));
                 }
                 TitleType::Subtitle(subtitle) => {
-                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    let subtitle_packet = SetSubtitleTextPacket::new(subtitle);
                     batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
                 }
                 TitleType::Both { title, subtitle } => {
                     let title_packet = SetTitleTextPacket::new(title);
                     batch.queue(|| PacketRegistry::SetTitleText(title_packet));
-                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    let subtitle_packet = SetSubtitleTextPacket::new(subtitle);
                     batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
                 }
             }

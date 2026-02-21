@@ -38,6 +38,7 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
+use minecraft_packets::play::set_subtitle_text_packet::SetSubtitleTextPacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -310,7 +311,7 @@ pub enum PacketRegistry {
         bound = "clientbound",
         name = "minecraft:set_subtitle_text"
     )]
-    SetSubtitleText(SetTitleTextPacket),
+    SetSubtitleText(SetSubtitleTextPacket),
 
     #[protocol_id(
         state = "play",
