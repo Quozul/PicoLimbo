@@ -30,6 +30,7 @@ use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
+use minecraft_packets::play::pick_item_from_block_packet::PickItemFromBlockPacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::server_bound_player_abilities_packet::ServerBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
@@ -51,6 +52,7 @@ use minecraft_packets::status::status_request_packet::StatusRequestPacket;
 use minecraft_packets::status::status_response_packet::StatusResponsePacket;
 use minecraft_protocol::prelude::*;
 use net::raw_packet::RawPacket;
+use tracing::debug;
 
 #[derive(PacketReport)]
 pub enum PacketRegistry {
@@ -342,6 +344,13 @@ pub enum PacketRegistry {
         name = "minecraft:player_abilities"
     )]
     ServerBoundPlayerAbilities(ServerBoundPlayerAbilitiesPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "serverbound",
+        name = "minecraft:pick_item_from_block"
+    )]
+    PickItemFromBlock(PickItemFromBlockPacket),
 }
 
 impl PacketHandler for PacketRegistry {
