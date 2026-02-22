@@ -12,6 +12,7 @@ pub mod game_event_packet;
 pub mod legacy_chat_message_packet;
 pub mod legacy_set_title_packet;
 pub mod login_packet;
+pub mod pick_item_from_block_packet;
 pub mod player_info_update_packet;
 pub mod player_position_packet;
 pub mod server_bound_player_abilities_packet;

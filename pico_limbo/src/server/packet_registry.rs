@@ -30,6 +30,7 @@ use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
+use minecraft_packets::play::pick_item_from_block_packet::PickItemFromBlockPacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::server_bound_player_abilities_packet::ServerBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
@@ -342,6 +343,13 @@ pub enum PacketRegistry {
         name = "minecraft:player_abilities"
     )]
     ServerBoundPlayerAbilities(ServerBoundPlayerAbilitiesPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "serverbound",
+        name = "minecraft:pick_item_from_block"
+    )]
+    PickItemFromBlock(PickItemFromBlockPacket),
 }
 
 impl PacketHandler for PacketRegistry {
@@ -363,6 +371,7 @@ impl PacketHandler for PacketRegistry {
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
+            Self::PickItemFromBlock(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }
