@@ -8,8 +8,8 @@ use minecraft_packets::play::pick_item_from_block_packet::PickItemFromBlockPacke
 impl PacketHandler for PickItemFromBlockPacket {
     fn handle(
         &self,
-        _client_state: &mut ClientState,
-        _server_state: &ServerState,
+        client_state: &mut ClientState,
+        server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         println!(
             "Received PickItemFromBlockPacket: location=({}, {}, {}), include_data={}",
@@ -18,6 +18,39 @@ impl PacketHandler for PickItemFromBlockPacket {
             self.location().z(),
             self.include_data()
         );
+
+        if let Some(world_context) = &server_state.world() {
+            if let Some(internal_id) = world_context.get_block_at(
+                self.location().x(),
+                self.location().y(),
+                self.location().z(),
+            ) {
+                println!(
+                    "Block at location=({}, {}, {}) internal_id={}",
+                    self.location().x(),
+                    self.location().y(),
+                    self.location().z(),
+                    internal_id
+                );
+            }
+
+            if self.include_data() {
+                if let Some(block_entity) = world_context.get_block_entity_at(
+                    self.location().x(),
+                    self.location().y(),
+                    self.location().z(),
+                ) {
+                    let nbt = block_entity.to_nbt(client_state.protocol_version());
+                    println!(
+                        "Block entity at location=({}, {}, {}) nbt={:?}",
+                        self.location().x(),
+                        self.location().y(),
+                        self.location().z(),
+                        nbt
+                    );
+                }
+            }
+        }
 
         Ok(Batch::new())
     }
