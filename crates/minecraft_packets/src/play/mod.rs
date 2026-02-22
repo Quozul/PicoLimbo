@@ -17,6 +17,7 @@ pub mod player_info_update_packet;
 pub mod player_position_packet;
 pub mod server_bound_player_abilities_packet;
 pub mod set_action_bar_text_packet;
+pub mod set_carried_item_packet;
 pub mod set_chunk_cache_center_packet;
 pub mod set_default_spawn_position_packet;
 pub mod set_entity_data_packet;

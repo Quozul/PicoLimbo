@@ -19,6 +19,10 @@ impl PacketHandler for PickItemFromBlockPacket {
             self.include_data()
         );
 
+        let current_inventory_slot = client_state.inventory().current_slot();
+
+        println!("Current selected hotbar slot: {}", current_inventory_slot);
+
         if let Some(world_context) = &server_state.world() {
             if let Some(internal_id) = world_context.get_block_at(
                 self.location().x(),

@@ -34,6 +34,7 @@ use minecraft_packets::play::pick_item_from_block_packet::PickItemFromBlockPacke
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::server_bound_player_abilities_packet::ServerBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
+use minecraft_packets::play::set_carried_item_packet::SetCarriedItemPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
@@ -350,6 +351,13 @@ pub enum PacketRegistry {
         name = "minecraft:pick_item_from_block"
     )]
     PickItemFromBlock(PickItemFromBlockPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "serverbound",
+        name = "minecraft:set_carried_item"
+    )]
+    SetCarriedItem(SetCarriedItemPacket),
 }
 
 impl PacketHandler for PacketRegistry {
@@ -372,6 +380,7 @@ impl PacketHandler for PacketRegistry {
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
             Self::PickItemFromBlock(packet) => packet.handle(client_state, server_state),
+            Self::SetCarriedItem(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }
