@@ -1,12 +1,10 @@
 import {
-    writeFile,
     mkdtemp,
     copyFile,
     rm,
     mkdir,
     readdir,
     opendir,
-    readFile,
 } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { exec } from "node:child_process";
