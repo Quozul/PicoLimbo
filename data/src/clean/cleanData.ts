@@ -78,7 +78,11 @@ const REGISTRIES_TO_SEND = [
     "frog_variant",
     "pig_variant",
     "wolf_sound_variant",
+    // The following registries were added in 1.21.6
+    "dialog",
+    "tags/dialog",
     // The following registries were added in 1.21.11
     "zombie_nautilus_variant",
-    "tags/timeline"
+    "timeline",
+    "tags/timeline",
 ];

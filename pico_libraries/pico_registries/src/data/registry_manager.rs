@@ -41,6 +41,7 @@ impl RegistryManagerBuilder {
         RegistryKeys::ChickenVariant,
         RegistryKeys::CowVariant,
         RegistryKeys::DamageType,
+        RegistryKeys::Dialog,
         RegistryKeys::DimensionType,
         RegistryKeys::FrogVariant,
         RegistryKeys::PaintingVariant,

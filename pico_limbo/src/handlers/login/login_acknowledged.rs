@@ -54,10 +54,11 @@ fn send_configuration_packets(
     }
 
     // Send tags
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_11) {
-        // Since 1.21.11, only the Timeline tags are required
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_6) {
+        // Since 1.21.6, the Dialog tags should be sent to have server links working
+        // Since 1.21.11, the Timeline tags should be sent to get the time of day working
         // All tags are sent in a single packet
-        // TODO: `wolf_variant` tags should probably be sent too
+        // TODO: `wolf_variant` tags should probably be sent too?
         let tagged_registries = registry_provider
             .get_tagged_registries()?
             .iter()
