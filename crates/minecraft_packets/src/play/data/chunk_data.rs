@@ -6,28 +6,7 @@ use minecraft_protocol::prelude::*;
 use pico_nbt2::{IndexMap, Value};
 use serde::Serialize;
 
-/*
-  let long_array_tag = Nbt::LongArray {
-           name: Some("MOTION_BLOCKING".to_string()),
-           value: vec![0; 37],
-       };
-       let root_tag = Nbt::Compound {
-           name: None,
-           value: vec![long_array_tag],
-       };
-*/
-
-#[derive(Serialize)]
-struct HeightMaps {
-    #[serde(alias = "MOTION_BLOCKING")]
-    motion_blocking: Vec<i64>,
-}
-
 fn height_maps() -> Value {
-    /*let root_tag = to_value(HeightMaps {
-        motion_blocking: vec![0; 37],
-    })
-    .unwrap();*/
     let mut compound = IndexMap::new();
     compound.insert("MOTION_BLOCKING".to_string(), Value::LongArray(vec![0; 37]));
     let root_tag = Value::Compound(compound);
@@ -142,8 +121,7 @@ impl ChunkData {
         block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
     ) -> (Vec<Value>, Vec<ChunkBlockEntity>) {
-        (Vec::new(), Vec::new())
-        /*let mut block_entities = Vec::new();
+        let mut block_entities = Vec::new();
         let mut v1_18_block_entities = Vec::new();
 
         // Get pre-computed block entities for this chunk
@@ -175,22 +153,32 @@ impl ChunkData {
                     nbt,
                 ));
             } else {
-                let mut nbt_fields = vec![
-                    Nbt::string("id", entity_data.block_entity_type.clone()),
-                    Nbt::int("x", coordinates.x()),
-                    Nbt::int("y", coordinates.y()),
-                    Nbt::int("z", coordinates.z()),
-                ];
-
-                if let Nbt::Compound { value, .. } = nbt {
-                    nbt_fields.extend(value);
+                #[derive(Serialize)]
+                struct ChunkBlockEntity {
+                    id: String,
+                    x: i32,
+                    y: i32,
+                    z: i32,
+                    #[serde(flatten)]
+                    data: Value,
                 }
 
-                block_entities.push(Nbt::nameless_compound(nbt_fields));
+                let nbt_fields = ChunkBlockEntity {
+                    id: entity_data.block_entity_type.to_string(),
+                    x: coordinates.x(),
+                    y: coordinates.y(),
+                    z: coordinates.z(),
+                    data: nbt,
+                };
+
+                block_entities.push(
+                    pico_nbt2::to_value(nbt_fields)
+                        .expect("Failed to convert block entity to nbt value"),
+                );
             }
         }
 
-        (block_entities, v1_18_block_entities)*/
+        (block_entities, v1_18_block_entities)
     }
 }
 

@@ -314,3 +314,57 @@ fn test_nameless_root_hello_world_decode() {
         )]))
     );
 }
+
+#[test]
+fn test_deserialize_nested_value_struct() {
+    // Given
+    let bytes = vec![
+        10, // compound type
+        0, 0, // name length
+        8, // compound type (string)
+        0, 3, // name length
+        102, 111, 111, // "foo"
+        0, 3, // name length
+        98, 97, 114, // bar
+        0,   // end
+    ];
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Test {
+        foo: Value,
+    }
+
+    // When
+    let (root_name, test) = from_slice_struct::<Test>(&bytes).expect("Failed to read test data");
+
+    // Then
+    assert_eq!(root_name, "");
+    assert_eq!(test.foo, Value::String("bar".to_string()))
+}
+
+#[test]
+fn test_deserialize_struct() {
+    // Given
+    let bytes = vec![
+        10, // compound type
+        0, 0, // name length
+        8, // compound type (string)
+        0, 3, // name length
+        102, 111, 111, // "foo"
+        0, 3, // name length
+        98, 97, 114, // bar
+        0,   // end
+    ];
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Test {
+        foo: String,
+    }
+
+    // When
+    let (root_name, test) = from_slice_struct::<Test>(&bytes).expect("Failed to read test data");
+
+    // Then
+    assert_eq!(root_name, "");
+    assert_eq!(test.foo, "bar".to_string())
+}

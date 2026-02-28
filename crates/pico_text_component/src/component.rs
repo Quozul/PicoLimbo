@@ -37,11 +37,6 @@ impl Component {
         }
     }
 
-    pub fn from_nbt(_value: &Value) -> Self {
-        // pico_nbt2::from_value(value).unwrap()
-        Self::default() // TODO
-    }
-
     pub fn to_json(&self) -> String {
         serde_json::to_string(&self).unwrap_or_default()
     }

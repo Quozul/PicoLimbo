@@ -1,12 +1,18 @@
 use indexmap::IndexMap;
-use pico_nbt2::{CompressionType, Value, encode, from_slice, to_bytes};
+use pico_nbt2::{CompressionType, Value, encode, from_slice};
 
 use std::io::Cursor;
 
 #[test]
 fn test_roundtrip_primitive() {
     let v = Value::Int(12345);
-    let bytes = to_bytes(&v, Some("test")).unwrap();
+    let bytes = v
+        .to_byte(
+            CompressionType::None,
+            pico_nbt2::NbtOptions::new(),
+            Some("test"),
+        )
+        .unwrap();
     let (name, v2) = from_slice(&bytes).unwrap();
     assert_eq!(name, "test");
     assert_eq!(v, v2);
@@ -19,7 +25,13 @@ fn test_roundtrip_compound() {
     map.insert("string".into(), Value::String("hello".into()));
     let v = Value::Compound(map);
 
-    let bytes = to_bytes(&v, Some("root")).unwrap();
+    let bytes = v
+        .to_byte(
+            CompressionType::None,
+            pico_nbt2::NbtOptions::new(),
+            Some("root"),
+        )
+        .unwrap();
     let (name, v2) = from_slice(&bytes).unwrap();
     assert_eq!(name, "root");
     assert_eq!(v, v2);

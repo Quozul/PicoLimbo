@@ -1,4 +1,5 @@
 use std::ops::{Add, Div, Mul, Sub};
+use thiserror::Error;
 
 #[derive(Default, Clone, Copy)]
 pub struct Coordinates {
@@ -41,6 +42,21 @@ impl Coordinates {
 
     pub fn z(&self) -> i32 {
         self.z
+    }
+}
+
+#[derive(Debug, Error)]
+#[error("the provided vec does not have a valid length; has length of {0} items but expected 3")]
+pub struct InvalidCoordinateVec(usize);
+
+impl TryFrom<Vec<i32>> for Coordinates {
+    type Error = InvalidCoordinateVec;
+
+    fn try_from(value: Vec<i32>) -> Result<Self, Self::Error> {
+        if value.len() != 3 {
+            return Err(InvalidCoordinateVec(value.len()));
+        }
+        Ok(Self::new(value[0], value[1], value[2]))
     }
 }
 

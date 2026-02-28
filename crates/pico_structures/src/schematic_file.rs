@@ -1,4 +1,4 @@
-use minecraft_protocol::prelude::Coordinates;
+use minecraft_protocol::prelude::{Coordinates, InvalidCoordinateVec};
 use pico_nbt2::{Value, from_path_struct};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
@@ -44,7 +44,7 @@ struct BlockContainer {
     #[serde(deserialize_with = "deserialize_var_int_array")]
     data: Vec<i32>,
     #[serde(default)]
-    block_entities: Option<Vec<Value>>,
+    block_entities: Option<Vec<BlockEntity>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,7 +74,7 @@ struct SchematicV2 {
     #[serde(alias = "BlockData", deserialize_with = "deserialize_var_int_array")]
     block_data: Vec<i32>,
     #[serde(alias = "TileEntities", default)]
-    block_entities: Option<Vec<Value>>,
+    block_entities: Option<Vec<BlockEntity>>,
     #[serde(default)]
     entities: Option<Vec<Value>>,
     #[serde(default)]
@@ -96,6 +96,31 @@ struct Metadata {
     author: Option<String>,
     date: Option<i64>,
     required_mods: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct BlockEntity {
+    #[serde(rename = "Pos")]
+    position: Vec<i32>,
+    #[serde(rename = "Id")]
+    identifier: String,
+    components: Value, // TODO: Find the exact type of this
+    #[serde(flatten)]
+    data: Value,
+}
+
+impl BlockEntity {
+    pub fn position(&self) -> Result<Coordinates, InvalidCoordinateVec> {
+        Coordinates::try_from(self.position.clone())
+    }
+
+    pub fn identifier(&self) -> &str {
+        self.identifier.as_str()
+    }
+
+    pub fn data(&self) -> &Value {
+        &self.data
+    }
 }
 
 fn deserialize_opt_var_int_array<'de, D>(deserializer: D) -> Result<Option<Vec<i32>>, D::Error>
@@ -179,7 +204,7 @@ impl SchematicFile {
         }
     }
 
-    pub fn get_block_entities(&self) -> Option<&Vec<Value>> {
+    pub fn get_block_entities(&self) -> Option<&Vec<BlockEntity>> {
         match self {
             SchematicFile::V3(SchematicV3Wrapper { schematic }) => {
                 schematic.blocks.block_entities.as_ref()

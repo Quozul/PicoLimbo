@@ -1,6 +1,5 @@
 mod block_entities;
 mod chunk_processor;
-mod decompress;
 mod internal_block_entity;
 mod pack_direct;
 mod palette;

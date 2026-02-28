@@ -13,13 +13,13 @@ pub enum Value {
     Long(i64),
     Float(f32),
     Double(f64),
-    #[serde(with = "serde_bytes")]
-    ByteArray(Vec<u8>),
     String(String),
     List(Vec<Self>),
     Compound(IndexMap<String, Self>),
     IntArray(Vec<i32>),
     LongArray(Vec<i64>),
+    #[serde(with = "serde_bytes")]
+    ByteArray(Vec<u8>),
 }
 
 impl Value {
