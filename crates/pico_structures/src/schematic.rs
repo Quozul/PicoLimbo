@@ -5,7 +5,7 @@ use minecraft_protocol::prelude::Coordinates;
 use pico_binutils::prelude::BinaryReaderError;
 use std::path::Path;
 use thiserror::Error;
-use tracing::warn;
+use tracing::{debug, warn};
 
 #[derive(Error, Debug)]
 pub enum SchematicError {
@@ -46,8 +46,13 @@ impl Schematic {
         let (palette, air_palette_index) =
             Self::get_palette_and_air_index(&schematic_file, internal_mapping)?;
         let block_data = schematic_file.get_block_data().to_vec();
-        // let block_entities = Self::parse_block_entities(&schematic_file);
-        let block_entities = Vec::new(); // FIXME: Reimplement block entities
+        let block_entities = schematic_file
+            .get_block_entities()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .filter_map(BlockEntity::from_nbt)
+            .collect::<Vec<_>>();
+        debug!("Loaded {} block entities", block_entities.len());
 
         Ok(Self {
             palette,
@@ -89,18 +94,6 @@ impl Schematic {
         }
 
         Ok((palette, 0))
-    }
-
-    fn parse_block_entities(schematic_file: &SchematicFile) -> Vec<BlockEntity> {
-        schematic_file
-            .get_block_entities()
-            .map(|block_entities| {
-                block_entities
-                    .iter()
-                    .filter_map(BlockEntity::from_nbt)
-                    .collect::<Vec<BlockEntity>>()
-            })
-            .unwrap_or_default()
     }
 
     /// Converts a 3D coordinate within the schematic to a 1D index for the `block_data` vector.

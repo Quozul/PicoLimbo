@@ -8,6 +8,7 @@ mod ser;
 mod snbt;
 mod value;
 
+pub use de::from_value;
 pub use error::{Error, Result};
 pub use indexmap::IndexMap;
 pub use io::{CompressionType, decode, encode};

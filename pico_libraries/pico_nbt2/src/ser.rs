@@ -549,9 +549,11 @@ impl ser::SerializeStructVariant for SerializeMap {
 /// Returns an error if serialization fails, including if the value contains
 /// heterogeneous lists or arrays that are too large.
 pub fn to_bytes<T: Serialize>(value: &T, root_name: Option<&str>) -> Result<Vec<u8>> {
-    let mut buf = Vec::new();
-    to_writer(&mut buf, value, root_name)?;
-    Ok(buf)
+    to_value(value)?.to_byte(
+        crate::io::CompressionType::None,
+        NbtOptions::new(),
+        root_name,
+    )
 }
 
 pub fn to_bytes_with_options<T: Serialize>(
@@ -559,7 +561,5 @@ pub fn to_bytes_with_options<T: Serialize>(
     root_name: Option<&str>,
     nbt_options: NbtOptions,
 ) -> Result<Vec<u8>> {
-    let mut buf = Vec::new();
-    to_writer_with_options(&mut buf, value, root_name, nbt_options)?;
-    Ok(buf)
+    to_value(value)?.to_byte(crate::io::CompressionType::None, nbt_options, root_name)
 }

@@ -259,3 +259,252 @@ impl<'de, R: Read> de::SeqAccess<'de> for ListAccess<'_, R> {
         seed.deserialize(&mut *self.reader).map(Some)
     }
 }
+
+impl de::IntoDeserializer<'_, Error> for Value {
+    type Deserializer = Self;
+
+    fn into_deserializer(self) -> Self {
+        self
+    }
+}
+
+impl<'de> de::Deserializer<'de> for Value {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        match self {
+            Self::Byte(n) => visitor.visit_i8(n),
+            Self::Short(n) => visitor.visit_i16(n),
+            Self::Int(n) => visitor.visit_i32(n),
+            Self::Long(n) => visitor.visit_i64(n),
+            Self::Float(n) => visitor.visit_f32(n),
+            Self::Double(n) => visitor.visit_f64(n),
+            Self::ByteArray(n) => visitor.visit_byte_buf(n),
+            Self::String(n) => visitor.visit_string(n),
+            Self::List(n) => visitor.visit_seq(SeqAccess::new(n.into_iter())),
+            Self::Compound(n) => visitor.visit_map(MapAccess::new(n.into_iter())),
+            Self::IntArray(n) => visitor.visit_seq(SeqAccess::new(n.into_iter().map(Value::Int))),
+            Self::LongArray(n) => visitor.visit_seq(SeqAccess::new(n.into_iter().map(Value::Long))),
+        }
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_some(self)
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        _name: &str,
+        _variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        let (variant, value) = match self {
+            Self::Compound(value) => {
+                let mut iter = value.into_iter();
+                let Some((variant, value)) = iter.next() else {
+                    return Err(serde::ser::Error::custom("expected enum variant name"));
+                };
+                // enums are encoded in json as maps with a single key:value pair
+                if iter.next().is_some() {
+                    return Err(serde::ser::Error::custom(
+                        "expected enum variant name: found multiple keys",
+                    ));
+                }
+                (variant, Some(value))
+            }
+            Self::String(variant) => (variant, None),
+            other => {
+                return Err(serde::ser::Error::custom(format!(
+                    "expected enum variant name: found {other:?}"
+                )));
+            }
+        };
+
+        visitor.visit_enum(EnumAccess { variant, value })
+    }
+
+    #[inline]
+    fn deserialize_newtype_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_newtype_struct(self)
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        match self {
+            Self::Byte(n) => visitor.visit_bool(n != 0),
+            _ => self.deserialize_any(visitor),
+        }
+    }
+
+    serde::forward_to_deserialize_any! {
+        i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+        bytes byte_buf unit unit_struct seq tuple
+        tuple_struct map struct identifier ignored_any
+    }
+}
+
+struct SeqAccess<I> {
+    iter: I,
+}
+
+impl<I> SeqAccess<I> {
+    const fn new(iter: I) -> Self {
+        Self { iter }
+    }
+}
+
+impl<'de, I> de::SeqAccess<'de> for SeqAccess<I>
+where
+    I: Iterator<Item = Value>,
+{
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+    where
+        T: de::DeserializeSeed<'de>,
+    {
+        self.iter
+            .next()
+            .map_or_else(|| Ok(None), |value| seed.deserialize(value).map(Some))
+    }
+}
+
+struct MapAccess<I> {
+    iter: I,
+    value: Option<Value>,
+}
+
+impl<I> MapAccess<I> {
+    const fn new(iter: I) -> Self {
+        Self { iter, value: None }
+    }
+}
+
+impl<'de, I> de::MapAccess<'de> for MapAccess<I>
+where
+    I: Iterator<Item = (String, Value)>,
+{
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+    where
+        K: de::DeserializeSeed<'de>,
+    {
+        match self.iter.next() {
+            Some((key, value)) => {
+                self.value = Some(value);
+                seed.deserialize(key.into_deserializer()).map(Some)
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+        self.value.take().map_or_else(
+            || Err(serde::ser::Error::custom("value is missing")),
+            |value| seed.deserialize(value),
+        )
+    }
+}
+
+struct EnumAccess {
+    variant: String,
+    value: Option<Value>,
+}
+
+impl<'de> de::EnumAccess<'de> for EnumAccess {
+    type Error = Error;
+    type Variant = VariantAccess;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, VariantAccess)>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+        let variant = self.variant.into_deserializer();
+        let visitor = VariantAccess { value: self.value };
+        seed.deserialize(variant).map(|v| (v, visitor))
+    }
+}
+
+struct VariantAccess {
+    value: Option<Value>,
+}
+
+impl<'de> de::VariantAccess<'de> for VariantAccess {
+    type Error = Error;
+
+    fn unit_variant(self) -> Result<()> {
+        self.value.map_or(Ok(()), de::Deserialize::deserialize)
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
+    where
+        T: de::DeserializeSeed<'de>,
+    {
+        self.value.map_or_else(
+            || Err(serde::ser::Error::custom("struct variant missing value")),
+            |value| seed.deserialize(value),
+        )
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        match self.value {
+            Some(Value::List(v)) => de::Deserializer::deserialize_any(Value::List(v), visitor),
+            Some(other) => Err(serde::ser::Error::custom(format!(
+                "expected tuple variant, found {other:?}"
+            ))),
+            None => Err(serde::ser::Error::custom("tuple variant missing value")),
+        }
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        match self.value {
+            Some(Value::Compound(v)) => {
+                de::Deserializer::deserialize_any(Value::Compound(v), visitor)
+            }
+            Some(other) => Err(serde::ser::Error::custom(format!(
+                "expected struct variant, found {other:?}"
+            ))),
+            None => Err(serde::ser::Error::custom("struct variant missing value")),
+        }
+    }
+}
+
+/// Interpret a `Value` as an instance of type `T`.
+///
+/// # Errors
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct end the Value
+/// contains something other than a Compound. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong, for example because a required struct field is missing.
+pub fn from_value<T>(value: Value) -> Result<T>
+where
+    T: de::DeserializeOwned,
+{
+    de::Deserialize::deserialize(value)
+}

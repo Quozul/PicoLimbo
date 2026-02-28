@@ -69,7 +69,7 @@ struct BlockContainer {
     #[serde(deserialize_with = "deserialize_var_int_array")]
     data: Vec<i32>,
     #[serde(default)]
-    block_entities: Option<Vec<Value>>,
+    block_entities: Option<Vec<BlockEntity>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -101,7 +101,7 @@ struct SchematicV2 {
     #[serde(alias = "BlockData", deserialize_with = "deserialize_var_int_array")]
     block_data: Vec<i32>,
     #[serde(alias = "TileEntities", default)]
-    block_entities: Option<Vec<Value>>,
+    block_entities: Option<Vec<BlockEntity>>,
     #[serde(default)]
     entities: Option<Vec<Value>>,
     #[serde(default)]
@@ -124,6 +124,17 @@ struct Metadata {
     author: Option<String>,
     date: Option<i64>,
     required_mods: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Debug)]
+struct BlockEntity {
+    #[serde(rename = "Pos")]
+    position: Vec<i32>,
+    #[serde(rename = "Id")]
+    identifier: String,
+    components: Value, // TODO: Find the exact type of this
+    #[serde(flatten)]
+    data: Option<Value>,
 }
 
 fn deserialize_var_int_array<'de, D>(deserializer: D) -> Result<Vec<i32>, D::Error>
