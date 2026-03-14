@@ -1,4 +1,4 @@
-use pico_nbt2::Value;
+use pico_nbt::Value;
 
 #[derive(Clone)]
 pub struct GenericBlockEntity {

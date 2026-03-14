@@ -3,7 +3,7 @@
 //! Reads an NBT file (compressed or uncompressed) and prints it as SNBT.
 
 use clap::Parser;
-use pico_nbt2::from_path;
+use pico_nbt::from_path;
 use std::path::PathBuf;
 
 #[derive(Parser)]

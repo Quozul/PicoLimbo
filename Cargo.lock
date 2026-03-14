@@ -855,7 +855,7 @@ version = "0.1.0"
 dependencies = [
  "blocks_report",
  "minecraft_protocol",
- "pico_nbt2",
+ "pico_nbt",
  "pico_structures",
  "pico_text_component",
  "rand",
@@ -870,7 +870,7 @@ dependencies = [
  "macros",
  "pico_binutils",
  "pico_identifier",
- "pico_nbt2",
+ "pico_nbt",
  "protocol_version",
  "thiserror",
  "uuid",
@@ -1026,7 +1026,7 @@ dependencies = [
  "minecraft_packets",
  "minecraft_protocol",
  "net",
- "pico_nbt2",
+ "pico_nbt",
  "pico_precomputed_registries",
  "pico_registries",
  "pico_structures",
@@ -1046,7 +1046,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pico_nbt2"
+name = "pico_nbt"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1076,7 +1076,7 @@ name = "pico_registries"
 version = "0.1.0"
 dependencies = [
  "pico_identifier",
- "pico_nbt2",
+ "pico_nbt",
  "protocol_version",
  "serde",
  "serde_json",
@@ -1093,7 +1093,7 @@ dependencies = [
  "flate2",
  "minecraft_protocol",
  "pico_binutils",
- "pico_nbt2",
+ "pico_nbt",
  "pico_text_component",
  "rayon",
  "serde",
@@ -1108,7 +1108,7 @@ name = "pico_text_component"
 version = "0.1.0"
 dependencies = [
  "minecraft_protocol",
- "pico_nbt2",
+ "pico_nbt",
  "quick-xml",
  "serde",
  "serde_json",

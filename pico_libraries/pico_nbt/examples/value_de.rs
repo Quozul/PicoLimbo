@@ -1,4 +1,4 @@
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -16,7 +16,7 @@ fn main() -> anyhow::Result<()> {
     map.insert("active".into(), Value::Byte(1));
     let value = Value::Compound(map);
 
-    let obj: MyStruct = pico_nbt2::from_value(value)?;
+    let obj: MyStruct = pico_nbt::from_value(value)?;
 
     println!("Deserialized: {obj:?}");
 

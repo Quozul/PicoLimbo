@@ -3,7 +3,7 @@ use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
-use pico_nbt2::{IndexMap, Value};
+use pico_nbt::{IndexMap, Value};
 use serde::Serialize;
 
 fn height_maps() -> Value {
@@ -171,7 +171,7 @@ impl ChunkData {
                 };
 
                 block_entities.push(
-                    pico_nbt2::to_value(nbt_fields)
+                    pico_nbt::to_value(nbt_fields)
                         .expect("Failed to convert block entity to nbt value"),
                 );
             }

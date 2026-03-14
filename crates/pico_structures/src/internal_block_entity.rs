@@ -1,7 +1,7 @@
 use crate::block_entities::generic::GenericBlockEntity;
 use crate::block_entities::sign::SignBlockEntity;
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use std::fmt::Display;
 use tracing::debug;
 
@@ -80,12 +80,12 @@ pub enum BlockEntityData {
 }
 
 impl BlockEntityData {
-    fn from_nbt(id_tag: &str, entity_nbt: &Value) -> pico_nbt2::Result<Self> {
+    fn from_nbt(id_tag: &str, entity_nbt: &Value) -> pico_nbt::Result<Self> {
         let entity_nbt = remove_string_tag_quote(entity_nbt);
 
         match id_tag {
             "minecraft:sign" | "minecraft:hanging_sign" => {
-                let sign_block_entity = pico_nbt2::from_value::<SignBlockEntity>(entity_nbt)?;
+                let sign_block_entity = pico_nbt::from_value::<SignBlockEntity>(entity_nbt)?;
                 Ok(Self::Sign(Box::new(sign_block_entity)))
             }
 
@@ -95,7 +95,7 @@ impl BlockEntityData {
         }
     }
 
-    pub fn value(&self, protocol_version: ProtocolVersion) -> pico_nbt2::Result<Value> {
+    pub fn value(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
         match self {
             BlockEntityData::Sign(entity) => entity.to_version_value(protocol_version),
             BlockEntityData::Generic { entity } => Ok(entity.to_nbt().clone()),

@@ -1,4 +1,4 @@
-use pico_nbt2::{NbtOptions, Value, from_reader_with_options, to_writer_with_options};
+use pico_nbt::{NbtOptions, Value, from_reader_with_options, to_writer_with_options};
 use serde::Serialize;
 use std::io::Cursor;
 

@@ -1,4 +1,4 @@
-use pico_nbt2::{Value, from_file, from_path};
+use pico_nbt::{Value, from_file, from_path};
 use std::fs::File;
 use std::path::PathBuf;
 

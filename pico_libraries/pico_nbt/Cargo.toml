@@ -1,5 +1,5 @@
 [package]
-name = "pico_nbt2"
+name = "pico_nbt"
 version = "0.1.0"
 edition = "2024"
 

@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::{Coordinates, InvalidCoordinateVec};
-use pico_nbt2::{Value, from_path_struct};
+use pico_nbt::{Value, from_path_struct};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -166,7 +166,7 @@ where
 }
 
 impl SchematicFile {
-    pub fn from_path(path: &Path) -> pico_nbt2::Result<Self> {
+    pub fn from_path(path: &Path) -> pico_nbt::Result<Self> {
         let (_, schematic) = from_path_struct::<SchematicFile>(path)?;
         Ok(schematic)
     }

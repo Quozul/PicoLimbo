@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::ProtocolVersion;
-use pico_nbt2::{IndexMap, Value, to_value};
+use pico_nbt::{IndexMap, Value, to_value};
 use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -173,7 +173,7 @@ pub enum SignBlockEntity {
 }
 
 impl SignBlockEntity {
-    pub fn to_version_value(&self, protocol_version: ProtocolVersion) -> pico_nbt2::Result<Value> {
+    pub fn to_version_value(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
             let modern = self.to_modern();
             match modern {

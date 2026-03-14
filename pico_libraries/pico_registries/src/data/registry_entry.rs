@@ -1,6 +1,6 @@
 use crate::data::registry_entry_value::{DimensionType, RegistryEntryValue};
 use crate::data::registry_key::RegistryKey;
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]

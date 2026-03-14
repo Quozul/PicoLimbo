@@ -1,7 +1,7 @@
 use crate::data::registry_entry::RegistryEntry;
 use crate::registry_provider::Dimension;
 use crate::{RegistryKeys, RegistryManager, RegistryManagerBuilder};
-use pico_nbt2::NbtOptions;
+use pico_nbt::NbtOptions;
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
 use std::borrow::Cow;
@@ -56,11 +56,11 @@ pub fn get_dimension(
 pub fn encode_nameless_compound_to_bytes<T: Serialize>(
     protocol_version: ProtocolVersion,
     value: &T,
-) -> pico_nbt2::Result<Cow<'static, [u8]>> {
+) -> pico_nbt::Result<Cow<'static, [u8]>> {
     let is_nameless = protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2);
     let options = NbtOptions::new().nameless_root(is_nameless);
     let name = if is_nameless { None } else { Some("") };
     let mut bytes = Vec::new();
-    pico_nbt2::to_writer_with_options(&mut bytes, &value, name, options)?;
+    pico_nbt::to_writer_with_options(&mut bytes, &value, name, options)?;
     Ok(Cow::Owned(bytes))
 }

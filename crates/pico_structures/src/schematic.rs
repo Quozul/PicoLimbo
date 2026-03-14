@@ -12,7 +12,7 @@ pub enum SchematicError {
     #[error("Error decompressing or reading file: {0}")]
     Io(#[from] std::io::Error),
     #[error("Error decoding NBT data: {0}")]
-    Nbt(#[from] pico_nbt2::Error),
+    Nbt(#[from] pico_nbt::Error),
     #[error("Error reading binary block data: {0}")]
     BinaryRead(#[from] BinaryReaderError),
     #[error("Missing NBT tag: {0}")]

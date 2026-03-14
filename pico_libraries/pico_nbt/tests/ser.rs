@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pico_nbt2::{CompressionType, Value};
+use pico_nbt::{CompressionType, Value};
 use std::fs;
 use std::path::PathBuf;
 
@@ -18,7 +18,7 @@ fn test_hello_world_encode() {
     let encoded_bytes = value
         .to_byte(
             CompressionType::None,
-            pico_nbt2::NbtOptions::new(),
+            pico_nbt::NbtOptions::new(),
             Some("hello world"),
         )
         .unwrap();
@@ -41,7 +41,7 @@ fn test_nameless_root_hello_world_encode() {
     let encoded_bytes = value
         .to_byte(
             CompressionType::None,
-            pico_nbt2::NbtOptions::new().nameless_root(true),
+            pico_nbt::NbtOptions::new().nameless_root(true),
             None,
         )
         .unwrap();

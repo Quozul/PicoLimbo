@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 protocol_version = { path = "../../crates/protocol_version" }
 pico_identifier = { path = "../pico_identifier", features = ["serde"] }
-pico_nbt2 = { path = "../pico_nbt2" }
+pico_nbt = { path = "../pico_nbt" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

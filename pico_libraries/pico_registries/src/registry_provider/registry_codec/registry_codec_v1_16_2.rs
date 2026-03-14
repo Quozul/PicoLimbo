@@ -1,6 +1,6 @@
 use crate::RegistryManager;
 use crate::registry_provider::shared::{encode_nameless_compound_to_bytes, get_registry_keys};
-use pico_nbt2::{IndexMap, Value};
+use pico_nbt::{IndexMap, Value};
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
 use std::borrow::Cow;
