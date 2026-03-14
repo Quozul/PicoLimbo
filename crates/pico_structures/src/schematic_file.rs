@@ -14,13 +14,14 @@ pub enum SchematicFile {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
-struct SchematicV3Wrapper {
+pub struct SchematicV3Wrapper {
     schematic: SchematicV3,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
-struct SchematicV3 {
+#[allow(dead_code)]
+pub struct SchematicV3 {
     version: i32,
     data_version: i32,
     #[serde(default)]
@@ -49,6 +50,7 @@ struct BlockContainer {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
+#[allow(dead_code)]
 struct BiomeContainer {
     palette: HashMap<String, i32>,
     #[serde(deserialize_with = "deserialize_var_int_array")]
@@ -57,7 +59,8 @@ struct BiomeContainer {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
-struct SchematicV2 {
+#[allow(dead_code)]
+pub struct SchematicV2 {
     version: i32,
     #[serde(default)]
     data_version: Option<i32>,
@@ -91,6 +94,7 @@ struct SchematicV2 {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
+#[allow(dead_code)]
 struct Metadata {
     name: Option<String>,
     author: Option<String>,
@@ -104,7 +108,6 @@ pub struct BlockEntity {
     position: Vec<i32>,
     #[serde(rename = "Id")]
     identifier: String,
-    components: Value, // TODO: Find the exact type of this
     #[serde(flatten)]
     data: Value,
 }

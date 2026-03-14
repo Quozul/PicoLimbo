@@ -127,6 +127,7 @@ struct Metadata {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct BlockEntity {
     #[serde(rename = "Pos")]
     position: Vec<i32>,

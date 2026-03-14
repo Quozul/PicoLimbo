@@ -1,7 +1,6 @@
 use minecraft_protocol::prelude::ProtocolVersion;
 use pico_nbt2::{IndexMap, Value, to_value};
 use serde::{Deserialize, Deserializer, Serialize};
-use tracing::debug;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(untagged)]

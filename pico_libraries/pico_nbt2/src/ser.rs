@@ -556,6 +556,9 @@ pub fn to_bytes<T: Serialize>(value: &T, root_name: Option<&str>) -> Result<Vec<
     )
 }
 
+/// # Errors
+///
+/// Returns an error if the value cannot be serialized to NBT format.
 pub fn to_bytes_with_options<T: Serialize>(
     value: &T,
     root_name: Option<&str>,

@@ -2,6 +2,7 @@ use pico_nbt2::Value;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct MyStruct {
     name: String,
     id: i32,
