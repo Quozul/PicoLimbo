@@ -9,8 +9,7 @@ use serde::Serialize;
 fn height_maps() -> Value {
     let mut compound = IndexMap::new();
     compound.insert("MOTION_BLOCKING".to_string(), Value::LongArray(vec![0; 37]));
-    let root_tag = Value::Compound(compound);
-    root_tag
+    Value::Compound(compound)
 }
 
 #[derive(PacketOut)]

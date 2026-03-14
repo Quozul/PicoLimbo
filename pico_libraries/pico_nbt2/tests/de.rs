@@ -30,6 +30,7 @@ fn test_hello_world_decode() {
 }
 
 #[test]
+#[allow(clippy::cast_sign_loss)]
 fn test_bigtest() {
     // Given
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -107,41 +108,43 @@ fn test_bigtest() {
     );
 }
 
+#[derive(Debug, Deserialize)]
+struct ListTestCompound {
+    #[serde(rename = "created-on")]
+    created_on: i64,
+    name: String,
+}
+#[derive(Debug, Deserialize)]
+struct NestedCompoundTest {
+    name: String,
+    value: f32,
+}
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BigTest {
+    int_test: i32,
+    byte_test: i8,
+    string_test: String,
+    double_test: f64,
+    float_test: f32,
+    long_test: i64,
+    short_test: i16,
+    #[serde(rename = "listTest (long)")]
+    list_test_long: Vec<i64>,
+    #[serde(rename = "nested compound test")]
+    nested_compound_test: HashMap<String, NestedCompoundTest>,
+    #[serde(rename = "listTest (compound)")]
+    list_test_compound: Vec<ListTestCompound>,
+    #[serde(
+        rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
+    )]
+    #[serde(with = "serde_bytes")]
+    byte_array_test: Vec<u8>,
+}
+
 #[test]
+#[allow(clippy::float_cmp, clippy::cast_sign_loss)]
 fn test_bigtest_struct() {
-    #[derive(Debug, Deserialize)]
-    struct ListTestCompound {
-        #[serde(rename = "created-on")]
-        created_on: i64,
-        name: String,
-    }
-    #[derive(Debug, Deserialize)]
-    struct NestedCompoundTest {
-        name: String,
-        value: f32,
-    }
-    #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct BigTest {
-        int_test: i32,
-        byte_test: i8,
-        string_test: String,
-        double_test: f64,
-        float_test: f32,
-        long_test: i64,
-        short_test: i16,
-        #[serde(rename = "listTest (long)")]
-        list_test_long: Vec<i64>,
-        #[serde(rename = "nested compound test")]
-        nested_compound_test: HashMap<String, NestedCompoundTest>,
-        #[serde(rename = "listTest (compound)")]
-        list_test_compound: Vec<ListTestCompound>,
-        #[serde(
-            rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
-        )]
-        #[serde(with = "serde_bytes")]
-        byte_array_test: Vec<u8>,
-    }
     // Given
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("test_files");
@@ -315,6 +318,11 @@ fn test_nameless_root_hello_world_decode() {
     );
 }
 
+#[derive(Deserialize, Debug, PartialEq)]
+struct Test1 {
+    foo: Value,
+}
+
 #[test]
 fn test_deserialize_nested_value_struct() {
     // Given
@@ -329,17 +337,17 @@ fn test_deserialize_nested_value_struct() {
         0,   // end
     ];
 
-    #[derive(Deserialize, Debug, PartialEq)]
-    struct Test {
-        foo: Value,
-    }
-
     // When
-    let (root_name, test) = from_slice_struct::<Test>(&bytes).expect("Failed to read test data");
+    let (root_name, test) = from_slice_struct::<Test1>(&bytes).expect("Failed to read test data");
 
     // Then
     assert_eq!(root_name, "");
-    assert_eq!(test.foo, Value::String("bar".to_string()))
+    assert_eq!(test.foo, Value::String("bar".to_string()));
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+struct Test2 {
+    foo: String,
 }
 
 #[test]
@@ -356,15 +364,10 @@ fn test_deserialize_struct() {
         0,   // end
     ];
 
-    #[derive(Deserialize, Debug, PartialEq)]
-    struct Test {
-        foo: String,
-    }
-
     // When
-    let (root_name, test) = from_slice_struct::<Test>(&bytes).expect("Failed to read test data");
+    let (root_name, test) = from_slice_struct::<Test2>(&bytes).expect("Failed to read test data");
 
     // Then
     assert_eq!(root_name, "");
-    assert_eq!(test.foo, "bar".to_string())
+    assert_eq!(test.foo, "bar".to_string());
 }

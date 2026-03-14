@@ -80,7 +80,7 @@ impl Schematic {
         let palette_nbt = schematic_file.get_palette();
 
         for (block_name, schematic_palette_id) in palette_nbt {
-            if let Ok(state_data) = block_state_lookup.parse_state_string(&block_name)
+            if let Ok(state_data) = block_state_lookup.parse_state_string(block_name)
                 && let Some(entry) =
                     palette.get_mut(usize::try_from(*schematic_palette_id).unwrap_or_default())
             {
