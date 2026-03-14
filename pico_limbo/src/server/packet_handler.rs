@@ -38,8 +38,8 @@ impl From<pico_registries::Error> for PacketHandlerError {
     }
 }
 
-impl From<pico_nbt2::Error> for PacketHandlerError {
-    fn from(error: pico_nbt2::Error) -> Self {
+impl From<pico_nbt::Error> for PacketHandlerError {
+    fn from(error: pico_nbt::Error) -> Self {
         Self::Custom(error.to_string())
     }
 }

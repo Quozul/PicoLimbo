@@ -1,4 +1,4 @@
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use serde::Deserialize;
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -17,7 +17,7 @@ fn test_struct_from_value() {
     let value = Value::Compound(map);
 
     // This function will be implemented
-    let obj: TestStruct = pico_nbt2::from_value(value).unwrap();
+    let obj: TestStruct = pico_nbt::from_value(value).unwrap();
 
     assert_eq!(
         obj,
@@ -33,7 +33,7 @@ fn test_struct_from_value() {
 fn test_vec_from_list() {
     let list = Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
 
-    let vec: Vec<i32> = pico_nbt2::from_value(list).unwrap();
+    let vec: Vec<i32> = pico_nbt::from_value(list).unwrap();
     assert_eq!(vec, vec![1, 2, 3]);
 }
 
@@ -43,6 +43,6 @@ fn test_map_from_compound() {
     map.insert("key".into(), Value::String("value".into()));
     let value = Value::Compound(map);
 
-    let map: std::collections::HashMap<String, String> = pico_nbt2::from_value(value).unwrap();
+    let map: std::collections::HashMap<String, String> = pico_nbt::from_value(value).unwrap();
     assert_eq!(map.get("key"), Some(&"value".to_string()));
 }

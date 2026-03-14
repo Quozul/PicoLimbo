@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::*;
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use pico_text_component::prelude::Component;
 
 /// Sends the client a raw system message.

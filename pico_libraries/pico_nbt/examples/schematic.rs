@@ -4,7 +4,7 @@
 //! Only supports Sponge V2 and V3 formats.
 
 use clap::Parser;
-use pico_nbt2::{Value, from_path_struct};
+use pico_nbt::{Value, from_path_struct};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;

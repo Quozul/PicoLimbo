@@ -52,8 +52,8 @@ impl From<serde_json::error::Error> for Error {
     }
 }
 
-impl From<pico_nbt2::Error> for Error {
-    fn from(_: pico_nbt2::Error) -> Self {
+impl From<pico_nbt::Error> for Error {
+    fn from(_: pico_nbt::Error) -> Self {
         Self::Nbt
     }
 }

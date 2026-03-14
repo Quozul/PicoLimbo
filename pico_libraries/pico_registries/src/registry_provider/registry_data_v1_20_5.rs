@@ -1,7 +1,7 @@
 use crate::RegistryManager;
 use crate::registry_provider::shared::get_registry_keys;
 use pico_identifier::Identifier;
-use pico_nbt2::{CompressionType, NbtOptions};
+use pico_nbt::{CompressionType, NbtOptions};
 use protocol_version::protocol_version::ProtocolVersion;
 use std::borrow::Cow;
 

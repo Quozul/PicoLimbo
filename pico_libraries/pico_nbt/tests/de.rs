@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use pico_nbt2::{
+use pico_nbt::{
     NbtOptions, Value, from_path, from_path_struct, from_path_with_options, from_slice_struct,
 };
 use serde::Deserialize;

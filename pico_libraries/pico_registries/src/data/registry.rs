@@ -106,7 +106,7 @@ impl Registry {
                 };
                 let json_data = serde_json::from_str(&json_str)?;
 
-                let nbt_value = pico_nbt2::json_to_nbt(json_data)?;
+                let nbt_value = pico_nbt::json_to_nbt(json_data)?;
 
                 let entry = RegistryEntry::new(value, nbt_value, registry_key, protocol_id);
                 protocol_id += 1;

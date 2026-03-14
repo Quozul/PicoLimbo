@@ -1,4 +1,4 @@
-use pico_nbt2::to_bytes;
+use pico_nbt::to_bytes;
 use serde::Serialize;
 
 #[test]
@@ -22,13 +22,13 @@ fn test_struct_serialization_fail() {
     let bytes = to_bytes(&s, Some("root")).expect("Failed to serialize struct");
 
     // Verify content
-    let (name, value) = pico_nbt2::from_slice(&bytes).expect("Failed to deserialize");
+    let (name, value) = pico_nbt::from_slice(&bytes).expect("Failed to deserialize");
     assert_eq!(name, "root");
-    if let pico_nbt2::Value::Compound(map) = value {
-        assert_eq!(map.get("foo"), Some(&pico_nbt2::Value::Int(123)));
+    if let pico_nbt::Value::Compound(map) = value {
+        assert_eq!(map.get("foo"), Some(&pico_nbt::Value::Int(123)));
         assert_eq!(
             map.get("bar"),
-            Some(&pico_nbt2::Value::String("hello".into()))
+            Some(&pico_nbt::Value::String("hello".into()))
         );
     } else {
         panic!("Expected compound");

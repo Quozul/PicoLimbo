@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::{BinaryWriter, BinaryWriterError, EncodePacket, ProtocolVersion};
-use pico_nbt2::Value;
+use pico_nbt::Value;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
@@ -42,7 +42,7 @@ impl Component {
     }
 
     pub fn to_nbt(&self) -> Value {
-        pico_nbt2::to_value(self).unwrap()
+        pico_nbt::to_value(self).unwrap()
     }
 
     pub fn to_legacy(&self) -> String {

@@ -3,7 +3,7 @@
 //! Reads a JSON file and convert it to NBT or prints it as SNBT.
 
 use clap::{Parser, ValueEnum};
-use pico_nbt2::{CompressionType, NbtOptions};
+use pico_nbt::{CompressionType, NbtOptions};
 use serde_json::Value as JsonValue;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
@@ -60,7 +60,7 @@ fn main() -> anyhow::Result<()> {
     let reader = BufReader::new(file);
     let json_data: JsonValue = serde_json::from_reader(reader)?;
 
-    let nbt_value = pico_nbt2::json_to_nbt(json_data)?;
+    let nbt_value = pico_nbt::json_to_nbt(json_data)?;
     let root_name = cli
         .input
         .file_stem()
@@ -84,13 +84,13 @@ fn main() -> anyhow::Result<()> {
         let file = File::create(&output_path)?;
         let writer = BufWriter::new(file);
 
-        let mut encoder = pico_nbt2::encode(writer, cli.compression.into())?;
+        let mut encoder = pico_nbt::encode(writer, cli.compression.into())?;
 
         let options = NbtOptions::new()
             .nameless_root(cli.nameless_root)
             .dynamic_lists(cli.dynamic_lists);
 
-        pico_nbt2::to_writer_with_options(&mut encoder, &nbt_value, Some(root_name), options)?;
+        pico_nbt::to_writer_with_options(&mut encoder, &nbt_value, Some(root_name), options)?;
 
         println!(
             "Converted {} to {}",

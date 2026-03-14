@@ -18,7 +18,7 @@ members = [
     "crates/protocol_version",
     "crates/protocol_version_macro",
     "pico_libraries/pico_identifier",
-    "pico_libraries/pico_nbt2",
+    "pico_libraries/pico_nbt",
     "pico_libraries/pico_precomputed_registries",
     "pico_libraries/pico_registries",
     "pico_limbo",
