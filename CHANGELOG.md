@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added support for Schematic V3
+- Added some missing registries (Dialog)
+- Added tag packets (specifically, Dialog and Timeline tags for now)
+
+### Update
+
+- Full rewrite of the registries implementation
+- Full rewrite of the NBT implementation
+
+### Fixed
+
+- Fixed time not advancing starting 1.21.11
+- Unable to send server links from the proxy
+- Player heads don't have skins (partially fixed, for recent versions only)
+
 ## [1.11.0+mc1.21.11] - 2026-02-11
 
 ### Added
