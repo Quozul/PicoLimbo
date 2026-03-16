@@ -11,7 +11,7 @@ You can find the egg files in the GitHub repository:
 The eggs support additional installation configuration through the following environment variable:
 
 - **VERSION**  
-  Specifies the Git tag of the release to install (e.g., `v1.10.0+mc1.21.11`).
+  Specifies the Git tag of the release to install (e.g., `v1.12.0+mc26.1`).
     - Default: `latest`
     - When set to `latest` (or left unset), the installer selects the newest stable release.
 

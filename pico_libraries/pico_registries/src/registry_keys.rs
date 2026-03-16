@@ -1,103 +1,62 @@
+use macros::RegistryKeys;
 use pico_identifier::prelude::Identifier;
 use protocol_version::protocol_version::ProtocolVersion;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
 /// Only absolute mandatory registry keys are mapped for now
-#[derive(Hash, Eq, PartialEq, Clone)]
+#[derive(Hash, Eq, PartialEq, Clone, RegistryKeys)]
 pub enum RegistryKeys {
+    #[registry(root)]
     Root,
-    Biome,
+    #[registry(id = "minecraft:banner_pattern", min_version = V26_1, is_mandatory = true)]
+    BannerPattern,
+    #[registry(id = "minecraft:cat_sound_variant", min_version = V26_1, is_mandatory = true)]
+    CatSoundVariant,
+    #[registry(id = "minecraft:cat_variant", min_version = V1_21_5, is_mandatory = true)]
     CatVariant,
+    #[registry(id = "minecraft:chicken_sound_variant", min_version = V26_1, is_mandatory = true)]
+    ChickenSoundVariant,
+    #[registry(id = "minecraft:chicken_variant", min_version = V1_21_5, is_mandatory = true)]
     ChickenVariant,
+    #[registry(id = "minecraft:cow_sound_variant", min_version = V26_1, is_mandatory = true)]
+    CowSoundVariant,
+    #[registry(id = "minecraft:cow_variant", min_version = V1_21_5, is_mandatory = true)]
     CowVariant,
+    #[registry(id = "minecraft:damage_type", min_version = V1_19_4, is_mandatory = true)]
     DamageType,
+    #[registry(id = "minecraft:dialog", min_version = V1_21_6, is_mandatory = true)]
     Dialog,
+    #[registry(id = "minecraft:dimension_type", min_version = V1_16, is_mandatory = true)]
     DimensionType,
+    #[registry(id = "minecraft:frog_variant", min_version = V1_21_5, is_mandatory = true)]
     FrogVariant,
+    #[registry(id = "minecraft:instrument", min_version = V26_1, is_mandatory = true)]
+    Instrument,
+    #[registry(id = "minecraft:jukebox_song", min_version = V26_1, is_mandatory = true)]
+    JukeboxSong,
+    #[registry(id = "minecraft:painting_variant", min_version = V1_21, is_mandatory = true)]
     PaintingVariant,
+    #[registry(id = "minecraft:pig_sound_variant", min_version = V26_1, is_mandatory = true)]
+    PigSoundVariant,
+    #[registry(id = "minecraft:pig_variant", min_version = V1_21_5, is_mandatory = true)]
     PigVariant,
+    #[registry(id = "minecraft:timeline", min_version = V1_21_11, is_mandatory = true)]
     Timeline,
+    #[registry(id = "minecraft:trim_material", min_version = V26_1, is_mandatory = true)]
+    TrimMaterial,
+    #[registry(id = "minecraft:wolf_sound_variant", min_version = V1_21_5, is_mandatory = true)]
     WolfSoundVariant,
+    #[registry(id = "minecraft:wolf_variant", min_version = V1_20_5, is_mandatory = true)]
     WolfVariant,
+    #[registry(id = "minecraft:world_clock", min_version = V26_1, is_mandatory = true)]
+    WorldClock,
+    #[registry(id = "minecraft:worldgen/biome", min_version = V1_16_2, is_mandatory = true)]
+    WorldGenBiome,
+    #[registry(id = "minecraft:zombie_nautilus_variant", min_version = V1_21_11, is_mandatory = true)]
     ZombieNautilusVariant,
+    #[registry(custom)]
     Custom(Identifier),
-}
-
-impl RegistryKeys {
-    #[must_use]
-    pub fn id(&self) -> Identifier {
-        match self {
-            Self::Root => Identifier::vanilla_unchecked("root"),
-            Self::Biome => Identifier::vanilla_unchecked("worldgen/biome"),
-            Self::CatVariant => Identifier::vanilla_unchecked("cat_variant"),
-            Self::ChickenVariant => Identifier::vanilla_unchecked("chicken_variant"),
-            Self::CowVariant => Identifier::vanilla_unchecked("cow_variant"),
-            Self::DamageType => Identifier::vanilla_unchecked("damage_type"),
-            Self::Dialog => Identifier::vanilla_unchecked("dialog"),
-            Self::DimensionType => Identifier::vanilla_unchecked("dimension_type"),
-            Self::FrogVariant => Identifier::vanilla_unchecked("frog_variant"),
-            Self::PaintingVariant => Identifier::vanilla_unchecked("painting_variant"),
-            Self::PigVariant => Identifier::vanilla_unchecked("pig_variant"),
-            Self::Timeline => Identifier::vanilla_unchecked("timeline"),
-            Self::WolfSoundVariant => Identifier::vanilla_unchecked("wolf_sound_variant"),
-            Self::WolfVariant => Identifier::vanilla_unchecked("wolf_variant"),
-            Self::ZombieNautilusVariant => Identifier::vanilla_unchecked("zombie_nautilus_variant"),
-            Self::Custom(identifier) => identifier.clone(),
-        }
-    }
-
-    #[must_use]
-    pub const fn is_mandatory(&self) -> bool {
-        matches!(
-            self,
-            Self::Biome
-                | Self::CatVariant
-                | Self::ChickenVariant
-                | Self::CowVariant
-                | Self::DamageType
-                | Self::Dialog
-                | Self::DimensionType
-                | Self::FrogVariant
-                | Self::PaintingVariant
-                | Self::PigVariant
-                | Self::Timeline
-                | Self::WolfSoundVariant
-                | Self::WolfVariant
-                | Self::ZombieNautilusVariant
-        )
-    }
-
-    #[must_use]
-    pub const fn is_root(&self) -> bool {
-        matches!(self, Self::Root)
-    }
-
-    #[must_use]
-    pub fn get_tag_path(&self) -> String {
-        format!("tags/{}", self.id().thing)
-    }
-
-    #[must_use]
-    pub const fn get_minimum_version(&self) -> Option<ProtocolVersion> {
-        match self {
-            Self::Biome => Some(ProtocolVersion::V1_16_2),
-            Self::CatVariant
-            | Self::ChickenVariant
-            | Self::CowVariant
-            | Self::FrogVariant
-            | Self::PigVariant
-            | Self::WolfSoundVariant => Some(ProtocolVersion::V1_21_5),
-            Self::DamageType => Some(ProtocolVersion::V1_19_4),
-            Self::Dialog => Some(ProtocolVersion::V1_21_6),
-            Self::DimensionType => Some(ProtocolVersion::V1_16),
-            Self::PaintingVariant => Some(ProtocolVersion::V1_21),
-            Self::Timeline | Self::ZombieNautilusVariant => Some(ProtocolVersion::V1_21_11),
-            Self::WolfVariant => Some(ProtocolVersion::V1_20_5),
-
-            _ => None,
-        }
-    }
 }
 
 impl Display for RegistryKeys {

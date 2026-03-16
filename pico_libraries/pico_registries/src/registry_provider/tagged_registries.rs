@@ -15,7 +15,12 @@ pub struct RegistryTag {
 }
 
 pub fn get_tagged_registries(registry_manager: &RegistryManager) -> Vec<TaggedRegistry> {
-    let tag_registries = &[RegistryKeys::Timeline, RegistryKeys::Dialog];
+    let tag_registries = &[
+        RegistryKeys::BannerPattern,
+        RegistryKeys::DamageType,
+        RegistryKeys::Dialog,
+        RegistryKeys::Timeline,
+    ];
 
     tag_registries
         .iter()

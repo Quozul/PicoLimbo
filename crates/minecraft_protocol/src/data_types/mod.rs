@@ -1,5 +1,6 @@
 pub mod bit_set;
 pub mod boolean;
+mod hash_map;
 pub mod identifier;
 pub mod nbt;
 pub mod number;
@@ -10,4 +11,5 @@ mod slices;
 mod string;
 pub mod uuid;
 pub mod var_int;
+pub mod var_long;
 pub mod vec_no_length;
