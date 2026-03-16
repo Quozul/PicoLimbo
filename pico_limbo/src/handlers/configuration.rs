@@ -202,7 +202,7 @@ pub fn send_play_packets(
 
     let ticks = server_state.time_world_ticks();
     let lock_time = server_state.is_time_locked();
-    let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
+    let packet = UpdateTimePacket::new(ticks, !lock_time);
     batch.queue(|| PacketRegistry::UpdateTime(packet));
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
@@ -222,18 +222,18 @@ pub fn send_play_packets(
             batch.queue(|| PacketRegistry::GameEvent(packet));
         }
 
+        let center_chunk = world_position_to_chunk_position((x, z))?;
+        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+            let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
+            batch.queue(|| PacketRegistry::SetCenterChunk(packet));
+        }
+
         // Send Chunk Data and Update Light
         let biome_id = registry_provider
             .get_biome_protocol_id(&Identifier::vanilla_unchecked("plains"))
             .unwrap_or(1); // Plains biome ID is 1 before 1.13
         let dimension_info =
             registry_provider.get_dimension_info(to_registry_dimension(dimension))?;
-
-        let center_chunk = world_position_to_chunk_position((x, z))?;
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
-            batch.queue(|| PacketRegistry::SetCenterChunk(packet));
-        }
 
         let iter = CircularChunkPacketIterator::new(
             center_chunk,
