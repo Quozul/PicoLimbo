@@ -26,7 +26,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
-    "26.1-pre-2",
+    "26.1",
     "1.21.11",
     "1.21.9",
     "1.21.7",

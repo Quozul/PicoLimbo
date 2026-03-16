@@ -1015,7 +1015,7 @@ dependencies = [
 
 [[package]]
 name = "pico_limbo"
-version = "1.11.0-beta.1+mc1.21.11"
+version = "1.12.0-beta.2+mc26.1"
 dependencies = [
  "base64",
  "blocks_report",
@@ -1075,6 +1075,7 @@ dependencies = [
 name = "pico_registries"
 version = "0.1.0"
 dependencies = [
+ "macros",
  "pico_identifier",
  "pico_nbt",
  "protocol_version",

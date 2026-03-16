@@ -4,7 +4,7 @@
 
 **An ultra-lightweight, multi-version Minecraft limbo server written in Rust**
 
-*Supporting all Minecraft versions from 1.7.2 through 1.21.11*
+*Supporting all Minecraft versions from 1.7.2 through 26.1*
 
 [![GitHub CI](https://img.shields.io/github/actions/workflow/status/Quozul/PicoLimbo/.github%2Fworkflows%2Fci.yml?branch=master)](https://github.com/Quozul/PicoLimbo/actions)
 [![Latest Release](https://img.shields.io/github/v/release/Quozul/PicoLimbo)](https://github.com/Quozul/PicoLimbo/releases)
@@ -31,14 +31,13 @@ in Rust, designed primarily as an AFK or waiting server. Its core focus is on ef
 packets required for client login and maintaining connection (keep-alive) without unnecessary overhead.
 
 While not aiming to replicate every Minecraft server feature, PicoLimbo supports **all Minecraft versions from 1.7.2
-through 1.21.11**, excluding snapshots, with only 44 implemented packets covering over 49 different protocol versions or
-77 Minecraft versions.
+through 26.1**, excluding snapshots.
 
 ## Features
 
 ### 🎮 Wide Version Compatibility
 
-Supports all Minecraft versions from **1.7.2 to 1.21.11** natively, no need for ViaVersion or additional compatibility
+Supports all Minecraft versions from **1.7.2 to 26.1** natively, no need for ViaVersion or additional compatibility
 layers.
 
 ### ⚡ Ultra-Lightweight & Highly Scalable

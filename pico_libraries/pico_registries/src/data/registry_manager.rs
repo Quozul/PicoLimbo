@@ -35,23 +35,6 @@ pub struct RegistryManagerBuilder {
 }
 
 impl RegistryManagerBuilder {
-    pub const DEFAULT_REGISTRIES: &[RegistryKeys] = &[
-        RegistryKeys::Biome,
-        RegistryKeys::CatVariant,
-        RegistryKeys::ChickenVariant,
-        RegistryKeys::CowVariant,
-        RegistryKeys::DamageType,
-        RegistryKeys::Dialog,
-        RegistryKeys::DimensionType,
-        RegistryKeys::FrogVariant,
-        RegistryKeys::PaintingVariant,
-        RegistryKeys::PigVariant,
-        RegistryKeys::Timeline,
-        RegistryKeys::WolfSoundVariant,
-        RegistryKeys::WolfVariant,
-        RegistryKeys::ZombieNautilusVariant,
-    ];
-
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -99,7 +82,7 @@ impl RegistryManagerBuilder {
     /// Register the default set of registry keys
     #[must_use]
     pub fn with_defaults(self) -> Self {
-        self.register_all(Self::DEFAULT_REGISTRIES)
+        self.register_all(RegistryKeys::ALL_REGISTRIES)
     }
 }
 
