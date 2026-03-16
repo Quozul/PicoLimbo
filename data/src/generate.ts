@@ -26,6 +26,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
+    "26.1-pre-2",
     "1.21.11",
     "1.21.9",
     "1.21.7",
@@ -91,8 +92,8 @@ const SUPPORTED_VERSIONS = [
         );
 
         // Cleanup
-        await cleanDataDirectory(dataDirectory);
-        await cleanReportsDirectory(reportsDirectory);
+        // await cleanDataDirectory(dataDirectory);
+        // await cleanReportsDirectory(reportsDirectory);
         await rm(generatedDirectory, { recursive: true, force: true });
     }
 })();
