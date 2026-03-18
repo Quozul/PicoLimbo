@@ -4,6 +4,7 @@ pub mod client_state;
 mod controllable_interval;
 pub mod game_mode;
 pub mod game_profile;
+pub mod inventory;
 pub mod network;
 pub mod packet_handler;
 pub mod packet_registry;
