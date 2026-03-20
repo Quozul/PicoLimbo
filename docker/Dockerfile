@@ -2,7 +2,7 @@
 # docker build -t picolimbo:latest -f docker/Dockerfile .
 
 # syntax=docker/dockerfile:1.7-labs
-FROM rust:1.92-alpine AS builder
+FROM rust:1.94-alpine AS builder
 
 ARG TARGETPLATFORM
 ARG BINARY_NAME=pico_limbo

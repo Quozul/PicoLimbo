@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added tag packets (specifically, Dialog and Timeline tags for now)
 - Added support for Minecraft 26.1
 
-### Update
+### Updated
 
 - Full rewrite of the registries implementation
 - Full rewrite of the NBT implementation
+- Upgraded to Rust 1.94
 
 ### Fixed
 
