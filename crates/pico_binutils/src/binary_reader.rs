@@ -49,6 +49,9 @@ pub enum BinaryReaderError {
     #[cfg(feature = "var_int")]
     #[error("var int too big")]
     VarIntTooBig,
+    #[cfg(feature = "var_int")]
+    #[error("var long too big")]
+    VarLongTooBig,
     #[error("custom error")]
     Custom,
 }

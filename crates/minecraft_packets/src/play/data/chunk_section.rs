@@ -6,6 +6,8 @@ use minecraft_protocol::prelude::*;
 pub struct ChunkSection {
     /// Number of non-air blocks present in the chunk section.
     pub block_count: i16,
+    #[pvn(775..)]
+    pub fluid_count: i16,
     /// Consists of 4096 entries, representing all the blocks in the chunk section.
     pub block_states: PaletteContainer,
     /// Consists of 64 entries, representing 4×4×4 biome regions in the chunk section.
@@ -19,6 +21,7 @@ impl ChunkSection {
     pub fn void(biome_id: i32) -> Self {
         Self {
             block_count: 0,
+            fluid_count: 0,
             block_states: PaletteContainer::blocks_void(),
             biomes: PaletteContainer::single_valued(biome_id),
         }
@@ -36,6 +39,7 @@ impl ChunkSection {
 
             ChunkSection {
                 block_count: 4096,
+                fluid_count: 0,
                 block_states,
                 biomes,
             }

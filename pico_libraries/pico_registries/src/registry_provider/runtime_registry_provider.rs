@@ -35,7 +35,7 @@ impl RegistryProvider for RuntimeRegistryProvider {
     fn get_biome_protocol_id(&self, biome_identifier: &Identifier) -> crate::Result<u32> {
         Ok(self
             .registry_manager
-            .get(&RegistryKeys::Biome)?
+            .get(&RegistryKeys::WorldGenBiome)?
             .get(biome_identifier)?
             .get_protocol_id())
     }

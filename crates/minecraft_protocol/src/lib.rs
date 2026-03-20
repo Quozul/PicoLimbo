@@ -21,7 +21,7 @@ pub mod prelude {
     pub use macros::PacketOut;
     pub use pico_binutils::prelude::{
         BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
-        VarIntPrefixedString,
+        VarIntPrefixedString, VarLong,
     };
     pub use pico_identifier::Identifier;
     pub use protocol_version::protocol_version::ProtocolVersion;

@@ -1,6 +1,6 @@
 use crate::data::registry_entry::RegistryEntry;
 use crate::registry_provider::Dimension;
-use crate::{RegistryKeys, RegistryManager, RegistryManagerBuilder};
+use crate::{RegistryKeys, RegistryManager};
 use pico_nbt::NbtOptions;
 use protocol_version::protocol_version::ProtocolVersion;
 use serde::Serialize;
@@ -31,7 +31,7 @@ pub fn get_registry_keys(protocol_version: ProtocolVersion) -> crate::Result<Vec
         ProtocolVersion::V1_16,
         ProtocolVersion::latest(),
     )?;
-    Ok(RegistryManagerBuilder::DEFAULT_REGISTRIES
+    Ok(RegistryKeys::ALL_REGISTRIES
         .iter()
         .filter(|key| {
             key.is_mandatory()
