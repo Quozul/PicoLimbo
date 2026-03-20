@@ -27,7 +27,7 @@ The schematic will be loaded with its minimum corner placed at world coordinates
 You can create compatible schematic files using WorldEdit with the following command:
 
 ```
-//schem save <filename> sponge.2
+//schem save <filename> sponge.3
 ```
 
 To disable schematic loading:
