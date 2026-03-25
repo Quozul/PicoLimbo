@@ -2,6 +2,7 @@ use crate::chunk_processor::{ChunkProcessor, ChunkProcessorError};
 use crate::internal_block_entity::BlockEntity;
 use crate::palette::Palette;
 use crate::prelude::Schematic;
+use blocks_report::InternalId;
 use minecraft_protocol::prelude::Coordinates;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::IntoParallelIterator;
@@ -439,5 +440,27 @@ impl World {
     /// Get the number of Y sections in the world
     pub fn get_section_count_y(&self) -> i32 {
         self.size_in_chunks.y()
+    }
+
+    /// Get the InternalId of the block at the given world position.
+    pub fn get_block_at(&self, x: i32, y: i32, z: i32) -> Option<InternalId> {
+        let section_coords = Coordinates::new(x.div_euclid(16), y.div_euclid(16), z.div_euclid(16));
+        self.get_section(&section_coords).and_then(|palette| {
+            palette.get_block_at(x.rem_euclid(16), y.rem_euclid(16), z.rem_euclid(16))
+        })
+    }
+
+    /// Get the BlockEntity at the given world position, if one exists.
+    pub fn get_block_entity_at(&self, x: i32, y: i32, z: i32) -> Option<&BlockEntity> {
+        let chunk_x = x.div_euclid(16);
+        let chunk_z = z.div_euclid(16);
+
+        self.get_chunk_block_entities(chunk_x, chunk_z)
+            .and_then(|entities| {
+                entities.iter().find(|e| {
+                    let pos = e.get_position();
+                    pos.x() == x && pos.y() == y && pos.z() == z
+                })
+            })
     }
 }
