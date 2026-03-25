@@ -215,7 +215,7 @@ pub fn send_play_packets(
         send_boss_bar_packets(batch, server_state);
     }
 
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
             // Send Game Event
             let packet = GameEventPacket::start_waiting_for_chunks(0.0);
@@ -232,15 +232,23 @@ pub fn send_play_packets(
         let biome_id = registry_provider
             .get_biome_protocol_id(&Identifier::vanilla_unchecked("plains"))
             .unwrap_or(1); // Plains biome ID is 1 before 1.13
-        let dimension_info =
-            registry_provider.get_dimension_info(to_registry_dimension(dimension))?;
+        let (dimension_height, dimension_min_y) =
+            if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
+                let dimension_info =
+                    registry_provider.get_dimension_info(to_registry_dimension(dimension))?;
+                (dimension_info.height, dimension_info.min_y)
+            } else {
+                (256, 0)
+            };
 
         let iter = CircularChunkPacketIterator::new(
             center_chunk,
             view_distance,
             server_state.world(),
             i32::try_from(biome_id)?,
-            &dimension_info,
+            dimension_height,
+            dimension_min_y,
+            matches!(dimension, ProtocolDimension::Overworld),
             protocol_version,
         );
         batch.chain_iter(iter);
@@ -634,6 +642,10 @@ mod tests {
             batch.next().await.unwrap(),
             PacketRegistry::SetEntityMetadata(_)
         ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
+        ));
         assert!(batch.next().await.is_none());
     }
 
@@ -672,6 +684,10 @@ mod tests {
         assert!(matches!(
             batch.next().await.unwrap(),
             PacketRegistry::SetEntityMetadata(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap(),
+            PacketRegistry::LegacyChunkData(_)
         ));
         assert!(batch.next().await.is_none());
     }

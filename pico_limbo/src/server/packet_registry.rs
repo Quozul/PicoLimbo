@@ -29,6 +29,7 @@ use minecraft_packets::play::commands_packet::CommandsPacket;
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
+use minecraft_packets::play::legacy_chunk_data_packet::LegacyChunkDataPacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
@@ -253,6 +254,13 @@ pub enum PacketRegistry {
         name = "minecraft:level_chunk_with_light"
     )]
     ChunkDataAndUpdateLight(Box<ChunkDataAndUpdateLightPacket>),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:legacy_level_chunk"
+    )]
+    LegacyChunkData(Box<LegacyChunkDataPacket>),
 
     #[protocol_id(
         state = "play",
