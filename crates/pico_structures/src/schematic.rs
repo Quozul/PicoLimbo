@@ -142,6 +142,10 @@ impl Schematic {
         &self.block_entities
     }
 
+    pub fn air_internal_id(&self) -> u16 {
+        self.palette[self.air_palette_index as usize].internal_id()
+    }
+
     /// Checks if the block at the given position is transparent to sky light.
     /// This includes air, glass, leaves, and other transparent blocks.
     pub fn is_transparent(&self, position: Coordinates) -> bool {

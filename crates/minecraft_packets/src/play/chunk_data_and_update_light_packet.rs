@@ -15,7 +15,7 @@ pub struct ChunkDataAndUpdateLightPacket {
     full_chunk: bool,
 
     /// If false, the client will recalculate lighting based on the old/new chunk data
-    #[pvn(..751)]
+    #[pvn(735..751)]
     ignore_old_data: bool,
 
     /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
@@ -39,7 +39,7 @@ pub struct ChunkDataAndUpdateLightPacket {
 }
 
 impl ChunkDataAndUpdateLightPacket {
-    pub fn void(context: VoidChunkContext) -> Self {
+    pub fn void(context: VoidChunkContext, protocol_version: ProtocolVersion) -> Self {
         let dimension_height = context.dimension_height;
         Self {
             chunk_x: context.chunk_x,
@@ -48,7 +48,7 @@ impl ChunkDataAndUpdateLightPacket {
             primary_bit_mask: VarInt::default(),
             full_chunk: true,
             ignore_old_data: false,
-            chunk_data: ChunkData::void(context),
+            chunk_data: ChunkData::void(context, protocol_version),
             trust_edges: true,
             v1_18_light_data: LightData::new_void(dimension_height),
         }
