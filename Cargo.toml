@@ -33,6 +33,7 @@ flate2 = "1.1.5"
 futures = "0.3.31"
 hmac = "0.12.1"
 indexmap = { version = "2.12.1", features = ["serde"] }
+md5 = { package = "md-5", version = "0.10.6" }
 phf = { version = "0.13.1", features = ["macros"] }
 phf_codegen = "0.13.1"
 proc-macro2 = "1.0.103"

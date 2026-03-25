@@ -1,7 +1,8 @@
+use md5::{Digest, Md5};
 use minecraft_packets::login::Property;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
-use minecraft_protocol::prelude::Uuid;
-use sha2::{Digest, Sha256};
+use minecraft_protocol::prelude::*;
+use uuid::Builder as UuidBuilder;
 
 #[derive(Clone)]
 pub struct GameProfile {
@@ -75,33 +76,56 @@ impl From<&LoginStartPacket> for GameProfile {
 }
 
 fn offline_uuid_from_username(username: &str) -> Uuid {
-    // Keep UUID stable for offline/legacy clients that do not send one.
-    let mut hasher = Sha256::new();
+    // Matches Java's UUID.nameUUIDFromBytes("OfflinePlayer:<username>" UTF-8 bytes).
+    let mut hasher = Md5::new();
     hasher.update(b"OfflinePlayer:");
     hasher.update(username.as_bytes());
-    let digest = hasher.finalize();
-
-    let mut bytes = [0u8; 16];
-    bytes.copy_from_slice(&digest[..16]);
-    bytes[6] = (bytes[6] & 0x0F) | 0x30; // version 3 style (name-based)
-    bytes[8] = (bytes[8] & 0x3F) | 0x80; // RFC4122 variant
-    Uuid::from_bytes(bytes)
+    let digest: [u8; 16] = hasher.finalize().into();
+    UuidBuilder::from_md5_bytes(digest).into_uuid()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use minecraft_packets::login::login_state_packet::LoginStartPacket;
+    use minecraft_protocol::prelude::{BinaryReader, BinaryWriter, DecodePacket, EncodePacket};
+    use std::str::FromStr;
 
     #[test]
-    fn login_start_without_uuid_gets_stable_fallback_uuid() {
-        let mut packet = LoginStartPacket::default();
-        packet.name = "PlayerName".to_string();
+    fn login_start_with_uuid_keeps_packet_uuid() {
+        let expected_uuid =
+            Uuid::from_str("01234567-89ab-cdef-0123-456789abcdef").expect("valid uuid");
+        let packet = build_login_start_packet("PlayerName", expected_uuid);
+        let profile = GameProfile::from(&packet);
 
+        assert_eq!(profile.uuid(), expected_uuid);
+    }
+
+    #[test]
+    fn login_start_with_nil_uuid_uses_expected_offline_uuid_and_is_idempotent() {
+        let packet = build_login_start_packet("PlayerName", Uuid::nil());
         let first = GameProfile::from(&packet);
         let second = GameProfile::from(&packet);
+        let expected = Uuid::from_str("823dfbec-453f-3a13-bc3b-1afd172427d6").expect("valid uuid");
 
-        assert!(!first.uuid().is_nil());
+        assert_eq!(first.uuid(), expected);
+        assert_eq!(second.uuid(), expected);
         assert_eq!(first.uuid(), second.uuid());
+    }
+
+    fn build_login_start_packet(name: &str, uuid: Uuid) -> LoginStartPacket {
+        let protocol_version = ProtocolVersion::V1_20_2;
+        let mut writer = BinaryWriter::new();
+        name.to_string()
+            .encode(&mut writer, protocol_version)
+            .expect("encode name");
+        writer.write(&uuid).expect("encode uuid");
+        let payload = writer.into_inner();
+        let mut reader = BinaryReader::new(&payload);
+        let packet =
+            LoginStartPacket::decode(&mut reader, protocol_version).expect("decode login start");
+
+        assert_eq!(packet.name(), name);
+        packet
     }
 }
