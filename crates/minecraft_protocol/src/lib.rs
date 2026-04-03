@@ -6,10 +6,9 @@ mod packet_serializer;
 mod state;
 
 pub mod prelude {
-    pub use crate::data::coordinates::Coordinates;
+    pub use crate::data::coordinates::{Coordinates, InvalidCoordinateVec};
     pub use crate::data::dimension::Dimension;
     pub use crate::data_types::bit_set::BitSet;
-    pub use crate::data_types::identifier::Identifier;
     pub use crate::data_types::optional::{Omitted, Optional};
     pub use crate::data_types::position::Position;
     pub use crate::data_types::prefixed::LengthPaddedVec;
@@ -22,9 +21,9 @@ pub mod prelude {
     pub use macros::PacketOut;
     pub use pico_binutils::prelude::{
         BinaryReader, BinaryReaderError, BinaryWriter, BinaryWriterError, VarInt,
-        VarIntPrefixedString,
+        VarIntPrefixedString, VarLong,
     };
-    pub use pico_nbt::prelude::*;
+    pub use pico_identifier::Identifier;
     pub use protocol_version::protocol_version::ProtocolVersion;
     pub use uuid::Uuid;
 }

@@ -23,16 +23,20 @@ use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_subtitle_text_packet::SetSubtitleTextPacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
-use minecraft_protocol::prelude::{Dimension, ProtocolVersion, State};
+use minecraft_protocol::prelude::{Dimension as ProtocolDimension, ProtocolVersion, State};
+use pico_precomputed_registries::PrecomputedRegistries;
+use pico_registries::Identifier;
+use pico_registries::registry_provider::Dimension as RegistryDimension;
+use pico_registries::registry_provider::RegistryProvider;
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
-use registries::{Registries, get_dimension_index, get_plains_biome_index, get_registries};
 use std::num::TryFromIntError;
 
 impl PacketHandler for AcknowledgeConfigurationPacket {
@@ -49,47 +53,51 @@ impl PacketHandler for AcknowledgeConfigurationPacket {
 
 fn build_login_packet(
     protocol_version: ProtocolVersion,
-    spawn_dimension: Dimension,
+    spawn_dimension: ProtocolDimension,
 ) -> Result<LoginPacket, PacketHandlerError> {
+    let registry_provider = PrecomputedRegistries::new(protocol_version);
     if protocol_version.between_inclusive(ProtocolVersion::V1_7_2, ProtocolVersion::V1_15_2) {
         Ok(LoginPacket::with_dimension_pre_v1_16(spawn_dimension))
-    } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_20) {
-        // We only need the registries here from 1.16 up to 1.20 included
-        match get_registries(protocol_version, spawn_dimension) {
-            Registries::V1_19 { registry_codec } | Registries::V1_16 { registry_codec } => Ok(
-                LoginPacket::with_registry_codec(spawn_dimension, registry_codec),
-            ),
-            Registries::V1_16_2 {
-                registry_codec,
-                dimension,
-            } => Ok(LoginPacket::with_dimension_codec(
-                spawn_dimension,
-                registry_codec,
-                dimension,
-            )),
-            _ => unreachable!(),
-        }
+    } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_16_1)
+        || protocol_version.between_inclusive(ProtocolVersion::V1_19, ProtocolVersion::V1_20)
+    {
+        let registry_codec = registry_provider.get_registry_codec_v1_16()?;
+        Ok(LoginPacket::with_registry_codec(
+            spawn_dimension,
+            registry_codec,
+        ))
+    } else if protocol_version.between_inclusive(ProtocolVersion::V1_16_2, ProtocolVersion::V1_18_2)
+    {
+        let registry_codec = registry_provider.get_registry_codec_v1_16()?;
+        let dimension_codec = registry_provider
+            .get_dimension_codec_v1_16_2(to_registry_dimension(spawn_dimension))?;
+        Ok(LoginPacket::with_dimension_codec(
+            spawn_dimension,
+            registry_codec,
+            dimension_codec,
+        ))
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_20_2, ProtocolVersion::V1_20_3)
     {
         Ok(LoginPacket::with_dimension_post_v1_20_2(spawn_dimension))
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
-        get_dimension_index(protocol_version, spawn_dimension).map_or_else(
-            || {
-                Err(PacketHandlerError::InvalidState(format!(
-                    "Dimension index was not found for version {protocol_version}",
-                )))
-            },
-            |dimension_index| {
-                Ok(LoginPacket::with_dimension_index(
-                    spawn_dimension,
-                    dimension_index,
-                ))
-            },
-        )
+        let dimension_type =
+            registry_provider.get_dimension_info(to_registry_dimension(spawn_dimension))?;
+        Ok(LoginPacket::with_dimension_index(
+            spawn_dimension,
+            i32::try_from(dimension_type.protocol_id)?,
+        ))
     } else {
-        Err(PacketHandlerError::InvalidState(format!(
+        Err(PacketHandlerError::invalid_state(&format!(
             "Cannot build login packet for version {protocol_version}",
         )))
+    }
+}
+
+const fn to_registry_dimension(protocol_dimension: ProtocolDimension) -> RegistryDimension {
+    match protocol_dimension {
+        ProtocolDimension::Overworld => RegistryDimension::Overworld,
+        ProtocolDimension::Nether => RegistryDimension::Nether,
+        ProtocolDimension::End => RegistryDimension::End,
     }
 }
 
@@ -129,6 +137,7 @@ pub fn send_play_packets(
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
     let reduced_debug_info = server_state.reduced_debug_info();
+    let registry_provider = PrecomputedRegistries::new(protocol_version);
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -193,7 +202,7 @@ pub fn send_play_packets(
 
     let ticks = server_state.time_world_ticks();
     let lock_time = server_state.is_time_locked();
-    let packet = UpdateTimePacket::new(ticks, ticks, !lock_time);
+    let packet = UpdateTimePacket::new(ticks, !lock_time);
     batch.queue(|| PacketRegistry::UpdateTime(packet));
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
@@ -213,25 +222,25 @@ pub fn send_play_packets(
             batch.queue(|| PacketRegistry::GameEvent(packet));
         }
 
-        // Send Chunk Data and Update Light
-        let biome_id = get_plains_biome_index(protocol_version).ok_or_else(|| {
-            PacketHandlerError::InvalidState(format!(
-                "Cannot find plains biome index for version {protocol_version}"
-            ))
-        })?;
-
         let center_chunk = world_position_to_chunk_position((x, z))?;
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
             let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
             batch.queue(|| PacketRegistry::SetCenterChunk(packet));
         }
 
+        // Send Chunk Data and Update Light
+        let biome_id = registry_provider
+            .get_biome_protocol_id(&Identifier::vanilla_unchecked("plains"))
+            .unwrap_or(1); // Plains biome ID is 1 before 1.13
+        let dimension_info =
+            registry_provider.get_dimension_info(to_registry_dimension(dimension))?;
+
         let iter = CircularChunkPacketIterator::new(
             center_chunk,
             view_distance,
             server_state.world(),
-            biome_id,
-            dimension,
+            i32::try_from(biome_id)?,
+            &dimension_info,
             protocol_version,
         );
         batch.chain_iter(iter);
@@ -284,13 +293,13 @@ fn send_title_text_packets(
                     batch.queue(|| PacketRegistry::SetTitleText(title_packet));
                 }
                 TitleType::Subtitle(subtitle) => {
-                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    let subtitle_packet = SetSubtitleTextPacket::new(subtitle);
                     batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
                 }
                 TitleType::Both { title, subtitle } => {
                     let title_packet = SetTitleTextPacket::new(title);
                     batch.queue(|| PacketRegistry::SetTitleText(title_packet));
-                    let subtitle_packet = SetTitleTextPacket::new(subtitle);
+                    let subtitle_packet = SetSubtitleTextPacket::new(subtitle);
                     batch.queue(|| PacketRegistry::SetSubtitleText(subtitle_packet));
                 }
             }

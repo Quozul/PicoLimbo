@@ -12,7 +12,7 @@ impl CustomQueryPacket {
     pub fn velocity_info_channel(message_id: i32) -> Self {
         Self {
             message_id: VarInt::new(message_id),
-            channel: Identifier::new("velocity", "player_info"),
+            channel: Identifier::new_unchecked("velocity", "player_info"),
             data: Vec::new(),
         }
     }

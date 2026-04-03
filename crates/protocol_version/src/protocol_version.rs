@@ -5,6 +5,7 @@ use std::cmp::PartialEq;
 #[repr(i32)]
 pub enum ProtocolVersion {
     #[default]
+    V26_1 = 775,
     #[pvn(packets = V1_21_9)]
     V1_21_11 = 774,
     #[pvn(data = V1_21_6)]
@@ -126,6 +127,11 @@ impl ProtocolVersion {
     #[inline]
     pub fn is_modern(&self) -> bool {
         self.is_after_inclusive(ProtocolVersion::V1_13)
+    }
+
+    #[inline]
+    pub fn has_registries(&self) -> bool {
+        self.is_after_inclusive(ProtocolVersion::V1_16)
     }
 
     #[inline]

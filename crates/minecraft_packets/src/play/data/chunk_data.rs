@@ -3,11 +3,20 @@ use crate::play::data::chunk_section::ChunkSection;
 use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
+use pico_nbt::{IndexMap, Value};
+use serde::Serialize;
+
+fn height_maps() -> Value {
+    let mut compound = IndexMap::new();
+    compound.insert("MOTION_BLOCKING".to_string(), Value::LongArray(vec![0; 37]));
+    Value::Compound(compound)
+}
 
 #[derive(PacketOut)]
 pub struct ChunkData {
     #[pvn(..770)]
-    height_maps: Nbt,
+    height_maps: Value,
+
     #[pvn(770..)]
     v1_21_5_height_maps: LengthPaddedVec<HeightMap>,
 
@@ -24,7 +33,7 @@ pub struct ChunkData {
 
     // 1.17 and below
     #[pvn(..757)]
-    block_entities: LengthPaddedVec<Nbt>,
+    block_entities: LengthPaddedVec<Value>,
 
     // 1.18+
     #[pvn(757..)]
@@ -33,16 +42,9 @@ pub struct ChunkData {
 
 impl ChunkData {
     pub fn void(context: VoidChunkContext) -> Self {
-        let long_array_tag = Nbt::LongArray {
-            name: Some("MOTION_BLOCKING".to_string()),
-            value: vec![0; 37],
-        };
-        let root_tag = Nbt::Compound {
-            name: None,
-            value: vec![long_array_tag],
-        };
+        let root_tag = height_maps();
 
-        let section_count = context.dimension.height() / ChunkSection::SECTION_SIZE;
+        let section_count = context.dimension_height / ChunkSection::SECTION_SIZE;
 
         Self {
             height_maps: root_tag,
@@ -66,20 +68,13 @@ impl ChunkData {
         schematic_context: &WorldContext,
         protocol_version: ProtocolVersion,
     ) -> Self {
-        let long_array_tag = Nbt::LongArray {
-            name: Some("MOTION_BLOCKING".to_string()),
-            value: vec![0; 37],
-        };
-        let root_tag = Nbt::Compound {
-            name: None,
-            value: vec![long_array_tag],
-        };
+        let root_tag = height_maps();
 
         let mut data = Vec::new();
         let negative_section_count =
-            chunk_context.dimension.min_y().abs() / ChunkSection::SECTION_SIZE;
+            chunk_context.dimension_min_y.abs() / ChunkSection::SECTION_SIZE;
         let positive_section_count =
-            chunk_context.dimension.height() / ChunkSection::SECTION_SIZE - negative_section_count;
+            chunk_context.dimension_height / ChunkSection::SECTION_SIZE - negative_section_count;
 
         for section_y in -negative_section_count..positive_section_count {
             let coordinates =
@@ -124,7 +119,7 @@ impl ChunkData {
         schematic_context: &WorldContext,
         block_entity_lookup: &BlockEntityTypeLookup,
         protocol_version: ProtocolVersion,
-    ) -> (Vec<Nbt>, Vec<ChunkBlockEntity>) {
+    ) -> (Vec<Value>, Vec<ChunkBlockEntity>) {
         let mut block_entities = Vec::new();
         let mut v1_18_block_entities = Vec::new();
 
@@ -157,18 +152,28 @@ impl ChunkData {
                     nbt,
                 ));
             } else {
-                let mut nbt_fields = vec![
-                    Nbt::string("id", entity_data.block_entity_type.clone()),
-                    Nbt::int("x", coordinates.x()),
-                    Nbt::int("y", coordinates.y()),
-                    Nbt::int("z", coordinates.z()),
-                ];
-
-                if let Nbt::Compound { value, .. } = nbt {
-                    nbt_fields.extend(value);
+                #[derive(Serialize)]
+                struct ChunkBlockEntity {
+                    id: String,
+                    x: i32,
+                    y: i32,
+                    z: i32,
+                    #[serde(flatten)]
+                    data: Value,
                 }
 
-                block_entities.push(Nbt::nameless_compound(nbt_fields));
+                let nbt_fields = ChunkBlockEntity {
+                    id: entity_data.block_entity_type.to_string(),
+                    x: coordinates.x(),
+                    y: coordinates.y(),
+                    z: coordinates.z(),
+                    data: nbt,
+                };
+
+                block_entities.push(
+                    pico_nbt::to_value(nbt_fields)
+                        .expect("Failed to convert block entity to nbt value"),
+                );
             }
         }
 
@@ -198,7 +203,7 @@ pub struct ChunkBlockEntity {
     /// Type of block entity (VarInt registry ID)
     block_entity_type: VarInt,
     /// NBT data for the block entity
-    data: Nbt,
+    data: Value,
 }
 
 impl ChunkBlockEntity {
@@ -208,7 +213,7 @@ impl ChunkBlockEntity {
         world_y: i32,
         world_z: i32,
         block_entity_type: VarInt,
-        data: Nbt,
+        data: Value,
     ) -> Self {
         // Pack X and Z coordinates (each only needs 4 bits since chunk is 16x16)
         let chunk_x = (world_x & 15) as u8;

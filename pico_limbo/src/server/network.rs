@@ -88,8 +88,12 @@ impl From<PacketHandlerError> for PacketProcessingError {
     fn from(e: PacketHandlerError) -> Self {
         match e {
             PacketHandlerError::Custom(reason) => Self::Custom(reason),
-            PacketHandlerError::InvalidState(reason) => {
-                warn!("{reason}");
+            PacketHandlerError::InvalidState(reason, should_warn) => {
+                if should_warn {
+                    warn!("{reason}");
+                } else {
+                    debug!("{reason}");
+                }
                 Self::Disconnected
             }
         }

@@ -1,201 +1,271 @@
 use minecraft_protocol::prelude::ProtocolVersion;
-use pico_nbt::prelude::Nbt;
-use pico_text_component::prelude::Component;
+use pico_nbt::{IndexMap, Value, to_value};
+use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Clone)]
-pub struct SignBlockEntity {
-    front_text: SignFace,
-    back_text: SignFace,
-    is_waxed: bool,
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum Component {
+    String(String),
 }
 
-impl SignBlockEntity {
-    pub fn to_nbt(&self, protocol_version: ProtocolVersion) -> Nbt {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
-            let front_text = self.front_text.to_nbt("front_text", protocol_version);
-            let back_text = self.back_text.to_nbt("back_text", protocol_version);
-
-            Nbt::nameless_compound(vec![
-                front_text,
-                back_text,
-                Nbt::bool("is_waxed", self.is_waxed),
-            ])
-        } else {
-            self.front_text.to_nbt("front_text", protocol_version)
-        }
-    }
-
-    pub fn from_nbt(entity_nbt: &Nbt) -> Self {
-        let is_legacy = entity_nbt.find_tag("Text1").is_some();
-
-        let (front_face, back_face) = if is_legacy {
-            let front_face = Self::extract_sign_face_legacy(entity_nbt);
-            let back_face = SignFace::default();
-            (front_face, back_face)
-        } else {
-            // Modern format (1.20+)
-            let front_face = Self::extract_sign_face(entity_nbt, "front_text");
-            let back_face = Self::extract_sign_face(entity_nbt, "back_text");
-            (front_face, back_face)
-        };
-
-        let is_waxed =
-            matches!(entity_nbt.find_tag("is_waxed"), Some(Nbt::Byte { value, .. }) if *value != 0);
-
-        Self {
-            front_text: front_face,
-            back_text: back_face,
-            is_waxed,
-        }
-    }
-
-    /// Extract sign face from legacy format (1.19 and earlier)
-    fn extract_sign_face_legacy(nbt: &Nbt) -> SignFace {
-        let mut messages = [
-            Component::default(),
-            Component::default(),
-            Component::default(),
-            Component::default(),
-        ];
-        let mut color = "black".to_string();
-        let mut is_glowing = false;
-
-        // Extract color
-        if let Some(c) = nbt.find_tag("Color").and_then(|t| t.get_string()) {
-            color = c;
-        }
-
-        // Extract glowing text
-        if let Some(Nbt::Byte { value, .. }) = nbt.find_tag("GlowingText") {
-            is_glowing = *value != 0;
-        }
-
-        // Extract text lines
-        let text_tags = ["Text1", "Text2", "Text3", "Text4"];
-        for (i, tag_name) in text_tags.iter().enumerate() {
-            if let Some(text_nbt) = nbt.find_tag(tag_name)
-                && let Some(text_str) = text_nbt.get_string()
-            {
-                // Parse JSON text component
-                messages[i] =
-                    serde_json::from_str(&text_str).unwrap_or_else(|_| Component::new(&text_str));
-            }
-        }
-
-        SignFace::new(messages, color, is_glowing)
-    }
-
-    fn extract_sign_face(nbt: &Nbt, text_side: &str) -> SignFace {
-        let mut messages = [
-            Component::default(),
-            Component::default(),
-            Component::default(),
-            Component::default(),
-        ];
-        let mut color = "black".to_string();
-        let mut is_glowing = false;
-
-        if let Some(text_tag) = nbt.find_tag(text_side) {
-            if let Some(c) = text_tag.find_tag("color").and_then(|t| t.get_string()) {
-                color = c;
-            }
-            if let Some(Nbt::Byte { value, .. }) = text_tag.find_tag("has_glowing_text") {
-                is_glowing = *value != 0;
-            }
-            if let Some(msg_list) = text_tag.find_tag("messages").and_then(|t| t.get_nbt_vec()) {
-                for (i, msg) in msg_list.iter().take(4).enumerate() {
-                    messages[i] = match msg {
-                        Nbt::String { value, .. } => {
-                            let text = value
-                                .strip_prefix('"')
-                                .and_then(|s| s.strip_suffix('"'))
-                                .unwrap_or(value);
-
-                            Component::new(text)
-                        }
-                        _ => Component::from_nbt(msg),
-                    };
-                }
-            }
-        }
-
-        SignFace::new(messages, color, is_glowing)
-    }
-}
-
-#[derive(Clone)]
-pub struct SignFace {
-    messages: [Component; 4],
-    color: String,
-    is_glowing: bool,
-}
-
-impl Default for SignFace {
+impl Default for Component {
     fn default() -> Self {
-        Self {
-            messages: [
-                Component::default(),
-                Component::default(),
-                Component::default(),
-                Component::default(),
-            ],
-            color: "black".to_string(),
-            is_glowing: false,
+        Component::String("".to_owned())
+    }
+}
+
+impl Component {
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+
+    pub fn to_value(&self) -> Value {
+        match self {
+            Component::String(s) => Value::String(s.to_owned()),
         }
     }
+}
+
+/// Wrapper enum for deserializing sign messages in both JSON (pre-1.21.5) and NBT (1.21.5+) formats.
+#[derive(Deserialize, Clone)]
+#[serde(untagged)]
+enum SignMessage {
+    /// NBT compound format (1.21.5+)
+    Nbt(Component),
+    /// JSON string format (pre-1.21.5)
+    Json(String),
+}
+
+impl SignMessage {
+    fn into_component(self) -> Component {
+        match self {
+            SignMessage::Nbt(c) => c,
+            SignMessage::Json(json) => serde_json::from_str(&json).unwrap_or_default(),
+        }
+    }
+}
+
+/// Deserializes a single sign message from either JSON string or NBT compound.
+fn deserialize_message<'de, D>(deserializer: D) -> Result<Component, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    SignMessage::deserialize(deserializer).map(|msg| msg.into_component())
+}
+
+/// Deserializes a vector of sign messages from either JSON strings or NBT compounds.
+fn deserialize_messages<'de, D>(deserializer: D) -> Result<Vec<Component>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Vec::<SignMessage>::deserialize(deserializer)
+        .map(|messages| {
+            messages
+                .into_iter()
+                .map(|msg| msg.into_component())
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+#[derive(Default, Deserialize, Serialize, Clone)]
+pub enum SignColor {
+    #[default]
+    #[serde(rename = "black")]
+    Black,
+    #[serde(rename = "white")]
+    White,
+    #[serde(rename = "orange")]
+    Orange,
+    #[serde(rename = "magenta")]
+    Magenta,
+    #[serde(rename = "light_blue")]
+    LightBlue,
+    #[serde(rename = "yellow")]
+    Yellow,
+    #[serde(rename = "lime")]
+    Lime,
+    #[serde(rename = "pink")]
+    Pink,
+    #[serde(rename = "gray")]
+    Gray,
+    #[serde(rename = "light_gray")]
+    LightGray,
+    #[serde(rename = "cyan")]
+    Cyan,
+    #[serde(rename = "purple")]
+    Purple,
+    #[serde(rename = "blue")]
+    Blue,
+    #[serde(rename = "brown")]
+    Brown,
+    #[serde(rename = "green")]
+    Green,
+    #[serde(rename = "red")]
+    Red,
+}
+
+#[derive(Deserialize, Clone, Default)]
+pub struct SignFace {
+    #[serde(default)]
+    has_glowing_text: i8,
+    #[serde(default)]
+    color: SignColor,
+    #[serde(default, deserialize_with = "deserialize_messages")]
+    messages: Vec<Component>,
 }
 
 impl SignFace {
-    pub fn new(messages: [Component; 4], color: String, is_glowing: bool) -> Self {
-        Self {
-            messages,
-            color,
-            is_glowing,
-        }
-    }
+    /// Converts this `SignFace` to an NBT `Value`, encoding messages based on protocol version.
+    ///
+    /// - Before 1.21.5: messages are encoded as JSON strings
+    /// - 1.21.5+: messages are encoded as NBT compounds
+    pub fn to_value(&self, protocol_version: ProtocolVersion) -> Value {
+        let mut map = IndexMap::new();
+        map.insert(
+            "has_glowing_text".into(),
+            Value::Byte(self.has_glowing_text),
+        );
+        map.insert("color".into(), to_value(&self.color).unwrap());
 
-    fn to_nbt(&self, face_name: impl ToString, protocol_version: ProtocolVersion) -> Nbt {
+        let messages: Vec<Value> = if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5)
+        {
+            self.messages
+                .iter()
+                .map(|c: &Component| c.to_value())
+                .collect()
+        } else {
+            self.messages
+                .iter()
+                .map(|c: &Component| Value::String(c.to_json()))
+                .collect()
+        };
+        map.insert("messages".into(), Value::List(messages));
+
+        Value::Compound(map)
+    }
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(untagged)]
+pub enum SignBlockEntity {
+    Legacy {
+        #[serde(alias = "GlowingText")]
+        glowing_text: i8,
+        #[serde(alias = "Color")]
+        color: SignColor,
+        #[serde(alias = "Text1", deserialize_with = "deserialize_message")]
+        text_1: Component,
+        #[serde(alias = "Text2", deserialize_with = "deserialize_message")]
+        text_2: Component,
+        #[serde(alias = "Text3", deserialize_with = "deserialize_message")]
+        text_3: Component,
+        #[serde(alias = "Text4", deserialize_with = "deserialize_message")]
+        text_4: Component,
+    },
+    /// This is the format used starting 1.20
+    Modern {
+        #[serde(default)]
+        is_waxed: i8,
+        #[serde(default)]
+        front_text: SignFace,
+        #[serde(default)]
+        back_text: SignFace,
+    },
+}
+
+impl SignBlockEntity {
+    pub fn to_version_value(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
         if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
-            self.format_sign_text(protocol_version, face_name)
+            let modern = self.to_modern();
+            match modern {
+                Self::Modern {
+                    is_waxed,
+                    front_text,
+                    back_text,
+                } => {
+                    let mut map = IndexMap::new();
+                    map.insert("is_waxed".into(), Value::Byte(is_waxed));
+                    map.insert("front_text".into(), front_text.to_value(protocol_version));
+                    map.insert("back_text".into(), back_text.to_value(protocol_version));
+                    Ok(Value::Compound(map))
+                }
+                _ => unreachable!(),
+            }
         } else {
-            let texts = self.messages.clone().map(|msg| msg.to_json());
-
-            Nbt::nameless_compound(vec![
-                Nbt::string("Text1", texts[0].clone()),
-                Nbt::string("Text2", texts[1].clone()),
-                Nbt::string("Text3", texts[2].clone()),
-                Nbt::string("Text4", texts[3].clone()),
-                Nbt::string("Color", self.color.clone()),
-                Nbt::bool("GlowingText", self.is_glowing),
-            ])
+            let legacy = self.to_legacy();
+            match legacy {
+                Self::Legacy {
+                    glowing_text,
+                    color,
+                    text_1,
+                    text_2,
+                    text_3,
+                    text_4,
+                } => {
+                    let mut map = IndexMap::new();
+                    map.insert("GlowingText".into(), Value::Byte(glowing_text));
+                    map.insert("Color".into(), to_value(&color)?);
+                    map.insert("Text1".into(), Value::String(text_1.to_json()));
+                    map.insert("Text2".into(), Value::String(text_2.to_json()));
+                    map.insert("Text3".into(), Value::String(text_3.to_json()));
+                    map.insert("Text4".into(), Value::String(text_4.to_json()));
+                    Ok(Value::Compound(map))
+                }
+                _ => unreachable!(),
+            }
         }
     }
 
-    fn format_sign_text(&self, protocol_version: ProtocolVersion, face_name: impl ToString) -> Nbt {
-        Nbt::compound(
-            face_name,
-            vec![
-                Nbt::String {
-                    name: Some("color".to_string()),
-                    value: self.color.clone(),
-                },
-                Nbt::bool("has_glowing_text", self.is_glowing),
-                self.format_messages(protocol_version),
-            ],
-        )
+    fn to_legacy(&self) -> Self {
+        match self {
+            SignBlockEntity::Legacy { .. } => self.clone(),
+            SignBlockEntity::Modern { front_text, .. } => {
+                let text_1 = front_text.messages.first().cloned().unwrap_or_default();
+                let text_2 = front_text.messages.get(1).cloned().unwrap_or_default();
+                let text_3 = front_text.messages.get(2).cloned().unwrap_or_default();
+                let text_4 = front_text.messages.get(3).cloned().unwrap_or_default();
+
+                SignBlockEntity::Legacy {
+                    glowing_text: front_text.has_glowing_text,
+                    color: front_text.color.clone(),
+                    text_1,
+                    text_2,
+                    text_3,
+                    text_4,
+                }
+            }
+        }
     }
 
-    fn format_messages(&self, protocol_version: ProtocolVersion) -> Nbt {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5) {
-            Nbt::compound_list(
-                "messages",
-                self.messages.clone().map(|c| c.to_nbt()).to_vec(),
-            )
-        } else {
-            Nbt::string_list(
-                "messages",
-                self.messages.clone().map(|c| c.to_json()).to_vec(),
-            )
+    fn to_modern(&self) -> Self {
+        match self {
+            SignBlockEntity::Modern { .. } => self.clone(),
+            SignBlockEntity::Legacy {
+                glowing_text,
+                color,
+                text_1,
+                text_2,
+                text_3,
+                text_4,
+            } => {
+                let front_messages = vec![
+                    text_1.clone(),
+                    text_2.clone(),
+                    text_3.clone(),
+                    text_4.clone(),
+                ];
+
+                SignBlockEntity::Modern {
+                    is_waxed: 0,
+                    front_text: SignFace {
+                        has_glowing_text: *glowing_text,
+                        color: color.clone(),
+                        messages: front_messages,
+                    },
+                    back_text: SignFace::default(),
+                }
+            }
         }
     }
 }

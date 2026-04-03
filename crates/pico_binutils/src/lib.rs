@@ -10,6 +10,8 @@ mod length_prefixed;
 mod uuid;
 #[cfg(feature = "var_int")]
 mod var_int;
+#[cfg(feature = "var_int")]
+mod var_long;
 
 pub mod prelude {
     #[cfg(feature = "binary_reader")]
@@ -26,4 +28,6 @@ pub mod prelude {
     pub use crate::length_prefixed::writer::WriteLengthPrefix;
     #[cfg(feature = "var_int")]
     pub use crate::var_int::VarInt;
+    #[cfg(feature = "var_int")]
+    pub use crate::var_long::VarLong;
 }

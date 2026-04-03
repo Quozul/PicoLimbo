@@ -13,8 +13,7 @@ pub enum Dimension {
 }
 
 impl Dimension {
-    pub const ALL_DIMENSIONS: &'static [Dimension] =
-        &[Dimension::Overworld, Dimension::Nether, Dimension::End];
+    pub const ALL_DIMENSIONS: &'static [Self] = &[Self::Overworld, Self::Nether, Self::End];
 
     pub const fn legacy_i8(self) -> i8 {
         self as i8
@@ -24,9 +23,9 @@ impl Dimension {
     ///   0: overworld, 1: overworld_caves, 2: the_end, 3: the_nether
     pub fn type_index_1_20_5(self) -> VarInt {
         let idx = match self {
-            Dimension::Overworld => 0,
-            Dimension::Nether => 3,
-            Dimension::End => 2,
+            Self::Overworld => 0,
+            Self::Nether => 3,
+            Self::End => 2,
         };
         VarInt::new(idx)
     }
@@ -34,20 +33,10 @@ impl Dimension {
     /// Always use the vanilla identifier for name and dimension_type in 1.16+ clients
     pub fn identifier(self) -> Identifier {
         match self {
-            Dimension::Overworld => Identifier::minecraft("overworld"),
-            Dimension::Nether => Identifier::minecraft("the_nether"),
-            Dimension::End => Identifier::minecraft("the_end"),
+            Self::Overworld => Identifier::vanilla_unchecked("overworld"),
+            Self::Nether => Identifier::vanilla_unchecked("the_nether"),
+            Self::End => Identifier::vanilla_unchecked("the_end"),
         }
-    }
-
-    #[inline]
-    pub const fn height(self) -> i32 {
-        256
-    }
-
-    #[inline]
-    pub const fn min_y(self) -> i32 {
-        0
     }
 }
 
@@ -60,9 +49,9 @@ impl FromStr for Dimension {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "minecraft:overworld" => Ok(Dimension::Overworld),
-            "minecraft:the_nether" => Ok(Dimension::Nether),
-            "minecraft:the_end" => Ok(Dimension::End),
+            "minecraft:overworld" => Ok(Self::Overworld),
+            "minecraft:the_nether" => Ok(Self::Nether),
+            "minecraft:the_end" => Ok(Self::End),
             _ => Err(InvalidDimension(s.to_string())),
         }
     }
@@ -71,9 +60,9 @@ impl FromStr for Dimension {
 impl Display for Dimension {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Dimension::Overworld => write!(f, "Overworld"),
-            Dimension::Nether => write!(f, "Nether"),
-            Dimension::End => write!(f, "End"),
+            Self::Overworld => write!(f, "Overworld"),
+            Self::Nether => write!(f, "Nether"),
+            Self::End => write!(f, "End"),
         }
     }
 }

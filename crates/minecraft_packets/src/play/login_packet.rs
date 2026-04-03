@@ -2,6 +2,7 @@ use crate::play::data::login_packet_data::post_v1_16::PostV1_16Data;
 use crate::play::data::login_packet_data::post_v1_20_2::PostV1_20_2Data;
 use crate::play::data::login_packet_data::pre_v1_16::{DimensionField, PreV1_16Data};
 use minecraft_protocol::prelude::*;
+use std::borrow::Cow;
 
 #[derive(PacketOut)]
 pub struct LoginPacket {
@@ -34,8 +35,8 @@ impl LoginPacket {
     /// This is the constructor for version 1.16.2 up to 1.18.2 included
     pub fn with_dimension_codec(
         dimension: Dimension,
-        registry_codec_bytes: &'static [u8],
-        dimension_codec_bytes: &'static [u8],
+        registry_codec_bytes: Cow<'static, [u8]>,
+        dimension_codec_bytes: Cow<'static, [u8]>,
     ) -> Self {
         let iden = dimension.identifier();
         Self {
@@ -52,7 +53,10 @@ impl LoginPacket {
     }
 
     /// This is the constructor for 1.16, 1.16.1 and 1.19 up to 1.20 included
-    pub fn with_registry_codec(dimension: Dimension, registry_codec_bytes: &'static [u8]) -> Self {
+    pub fn with_registry_codec(
+        dimension: Dimension,
+        registry_codec_bytes: Cow<'static, [u8]>,
+    ) -> Self {
         let iden = dimension.identifier();
         Self {
             entity_id: 0,
@@ -541,8 +545,8 @@ mod tests {
             LoginPacket {
                 entity_id: 0,
                 data: LoginPacketData::PostV1_16(PostV1_16Data {
-                    registry_codec_bytes: Omitted::Some(NBT_BYTES),
-                    v1_16_2_dimension_codec_bytes: Omitted::Some(NBT_BYTES),
+                    registry_codec_bytes: Omitted::Some(Cow::Borrowed(NBT_BYTES)),
+                    v1_16_2_dimension_codec_bytes: Omitted::Some(Cow::Borrowed(NBT_BYTES)),
                     ..PostV1_16Data::default()
                 }),
             }

@@ -2,7 +2,8 @@ use crate::server::packet_registry::PacketRegistry;
 use blocks_report::get_block_report_id_mapping;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
-use minecraft_protocol::prelude::{Coordinates, Dimension, ProtocolVersion};
+use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
+use pico_registries::registry_provider::DimensionInfo;
 use pico_structures::prelude::World;
 use std::sync::Arc;
 
@@ -98,7 +99,8 @@ impl Iterator for SpiralIterator {
 
 pub struct CircularChunkPacketIterator {
     biome_index: i32,
-    dimension: Dimension,
+    pub dimension_height: i32,
+    pub dimension_min_y: i32,
     schematic_context: Option<WorldContext>,
     spiral_iterator: SpiralIterator,
     protocol_version: ProtocolVersion,
@@ -110,7 +112,7 @@ impl CircularChunkPacketIterator {
         view_distance: i32,
         world: Option<Arc<World>>,
         biome_index: i32,
-        dimension: Dimension,
+        dimension_info: &DimensionInfo,
         protocol_version: ProtocolVersion,
     ) -> Self {
         let (center_x, center_z) = center_chunk;
@@ -127,7 +129,8 @@ impl CircularChunkPacketIterator {
 
         Self {
             biome_index,
-            dimension,
+            dimension_height: dimension_info.height,
+            dimension_min_y: dimension_info.min_y,
             schematic_context,
             spiral_iterator: SpiralIterator::new(center_x, center_z, view_distance),
             protocol_version,
@@ -145,7 +148,8 @@ impl Iterator for CircularChunkPacketIterator {
             chunk_x,
             chunk_z,
             biome_index: self.biome_index,
-            dimension: self.dimension,
+            dimension_height: self.dimension_height,
+            dimension_min_y: self.dimension_min_y,
         };
 
         let packet = match &self.schematic_context {

@@ -1,6 +1,6 @@
 [package]
 name = "pico_limbo"
-version = "1.11.0+mc1.21.11"
+version = "1.12.1+mc26.1.1"
 edition = "2024"
 
 [lib]
@@ -20,7 +20,9 @@ minecraft_protocol = { path = "../crates/minecraft_protocol" }
 net = { path = "../crates/net" }
 pico_structures = { path = "../crates/pico_structures" }
 pico_text_component = { path = "../crates/pico_text_component" }
-registries = { path = "../crates/registries" }
+pico_registries = { path = "../pico_libraries/pico_registries" }
+pico_precomputed_registries = { path = "../pico_libraries/pico_precomputed_registries" }
+pico_nbt = { path = "../pico_libraries/pico_nbt" }
 base64 = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }
@@ -30,6 +32,7 @@ regex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+md5 = { workspace = true }
 sha2 = { workspace = true }
 subtle = { workspace = true }
 thiserror = { workspace = true }
@@ -37,3 +40,4 @@ tokio = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+uuid = { workspace = true }

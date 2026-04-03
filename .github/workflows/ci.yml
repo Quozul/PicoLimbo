@@ -40,8 +40,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@1.92
       - name: Run cargo test
         run: cargo +stable test
 
@@ -63,10 +61,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.toml') }}
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@1.92
-        with:
-          components: clippy
       - name: Run clippy
         run: cargo +stable clippy --all-targets --all-features -- -D warnings
 
@@ -78,9 +72,5 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@1.92
-        with:
-          components: rustfmt
       - name: Run cargo fmt
         run: cargo +stable fmt --all -- --check

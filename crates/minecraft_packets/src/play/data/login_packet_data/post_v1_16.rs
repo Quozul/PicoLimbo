@@ -1,5 +1,6 @@
 use crate::play::data::death_location::DeathLocation;
 use minecraft_protocol::prelude::*;
+use std::borrow::Cow;
 
 /// Min protocol version for this is 735 or 1.16 included
 /// Max protocol version for this is 763 or 1.20 included
@@ -10,9 +11,9 @@ pub struct PostV1_16Data {
     pub game_mode: u8,
     pub previous_game_mode: i8,
     pub dimension_names: LengthPaddedVec<Identifier>,
-    pub registry_codec_bytes: Omitted<&'static [u8]>,
+    pub registry_codec_bytes: Omitted<Cow<'static, [u8]>>,
     #[pvn(751..759)]
-    pub v1_16_2_dimension_codec_bytes: Omitted<&'static [u8]>,
+    pub v1_16_2_dimension_codec_bytes: Omitted<Cow<'static, [u8]>>,
     #[pvn(759..)]
     pub v1_19_dimension_type: Identifier,
     #[pvn(..751)]
@@ -35,7 +36,7 @@ pub struct PostV1_16Data {
 
 impl Default for PostV1_16Data {
     fn default() -> Self {
-        let overworld = Identifier::minecraft("overworld");
+        let overworld = Identifier::vanilla_unchecked("overworld");
         Self {
             v1_16_2_is_hardcore: false,
             game_mode: 3,

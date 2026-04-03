@@ -22,7 +22,12 @@ impl PacketHandler for HandshakePacket {
             .set_protocol_version(self.get_protocol(server_state.allow_unsupported_versions()));
 
         self.get_next_state().map_or_else(
-            |_| Err(PacketHandlerError::invalid_state("Unsupported next state.")),
+            |err| {
+                Err(PacketHandlerError::invalid_state(&format!(
+                    "Unsupported next state {}",
+                    err.0
+                )))
+            },
             |next_state| {
                 client_state.set_state(next_state);
 
@@ -31,9 +36,7 @@ impl PacketHandler for HandshakePacket {
                         if server_state.reply_to_status() {
                             Ok(batch)
                         } else {
-                            Err(PacketHandlerError::invalid_state(
-                                "Ignoring status request.",
-                            ))
+                            Err(PacketHandlerError::disconnect("Ignoring status request"))
                         }
                     }
                     State::Login => {
@@ -46,10 +49,12 @@ impl PacketHandler for HandshakePacket {
                             begin_login(client_state, server_state, &self.hostname)?;
                             Ok(batch)
                         } else {
-                            Err(PacketHandlerError::invalid_state("Transfers disabled."))
+                            Err(PacketHandlerError::disconnect("Transfers disabled"))
                         }
                     }
-                    _ => Err(PacketHandlerError::invalid_state("Invalid intention.")),
+                    state => Err(PacketHandlerError::invalid_state(&format!(
+                        "Invalid intention {state}"
+                    ))),
                 }
             },
         )
@@ -62,9 +67,10 @@ fn begin_login(
     hostname: &str,
 ) -> Result<(), PacketHandlerError> {
     if client_state.protocol_version().is_unsupported() {
-        return Err(PacketHandlerError::invalid_state(
-            "Unsupported protocol version.",
-        ));
+        return Err(PacketHandlerError::invalid_state(&format!(
+            "Unsupported protocol version {}",
+            client_state.protocol_version()
+        )));
     }
     let forwarding_result = check_bungee_cord(server_state, hostname);
     match forwarding_result {
@@ -193,7 +199,10 @@ mod tests {
         let result = handshake_packet.handle(&mut client_state, &server_state());
 
         // Then
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
     }
 
     #[test]
@@ -255,7 +264,10 @@ mod tests {
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
         );
-        assert!(matches!(result, Err(PacketHandlerError::InvalidState(_))));
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
     }
 
     #[test]

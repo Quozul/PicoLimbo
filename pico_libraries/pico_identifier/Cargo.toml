@@ -1,0 +1,33 @@
+[package]
+name = "pico_identifier"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_test = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+serde = ["dep:serde"]
+default = ["serde"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Panics and unwraps
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+unreachable = "deny"
+unimplemented = "deny"
+todo = "warn"

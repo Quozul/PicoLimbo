@@ -8,6 +8,7 @@ use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBou
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
+use minecraft_packets::configuration::update_tags_packet::UpdateTagsPacket;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
@@ -40,6 +41,7 @@ use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnP
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
+use minecraft_packets::play::set_subtitle_text_packet::SetSubtitleTextPacket;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
@@ -178,6 +180,13 @@ pub enum PacketRegistry {
     #[protocol_id(
         state = "configuration",
         bound = "clientbound",
+        name = "minecraft:update_tags"
+    )]
+    UpdateTags(UpdateTagsPacket),
+
+    #[protocol_id(
+        state = "configuration",
+        bound = "clientbound",
         name = "minecraft:finish_configuration"
     )]
     FinishConfiguration(FinishConfigurationPacket),
@@ -312,7 +321,7 @@ pub enum PacketRegistry {
         bound = "clientbound",
         name = "minecraft:set_subtitle_text"
     )]
-    SetSubtitleText(SetTitleTextPacket),
+    SetSubtitleText(SetSubtitleTextPacket),
 
     #[protocol_id(
         state = "play",
