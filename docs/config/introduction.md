@@ -22,6 +22,7 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Tab List](./tab-list) - Configure the tab list
 - [Title](./title) - Configure titles
 - [World](./world) - Configure the world
+- [Pick Item From Block](./pick_item) - Configure the behavior of picking items from blocks
 
 ## Environment Variables
 
