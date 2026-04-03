@@ -1,13 +1,7 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Inventory {
     /// The currently selected hotbar slot (0-8).
     current_slot: i16,
-}
-
-impl Default for Inventory {
-    fn default() -> Self {
-        Self { current_slot: 0 }
-    }
 }
 
 impl Inventory {
