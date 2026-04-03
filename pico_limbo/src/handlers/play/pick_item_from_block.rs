@@ -1,4 +1,3 @@
-use crate::configuration::pick_item_config::PickItemConfig;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -133,45 +132,43 @@ impl PacketHandler for PickItemFromBlockPacket {
         client_state: &mut ClientState,
         server_state: &ServerState,
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
-        let config: &PickItemConfig = server_state.pick_item();
-
-        if !config.enabled {
+        if !server_state.pick_item().enabled {
             return Ok(Batch::new());
         }
 
-        let stack_size = config.stack_size;
+        let stack_size = server_state.pick_item().stack_size;
 
         let mut batch = Batch::new();
         let current_inventory_slot = client_state.inventory().current_slot();
 
         let mut packet = SetPlayerInventoryPacket::empty();
 
-        if let Some(world_context) = &server_state.world() {
-            if let Some(internal_id) = world_context.get_block_at(
+        if let Some(world_context) = &server_state.world()
+            && let Some(internal_id) = world_context.get_block_at(
                 self.location().x(),
                 self.location().y(),
                 self.location().z(),
-            ) {
-                let inventory_slot: i32 = current_inventory_slot as i32;
+            )
+        {
+            let inventory_slot: i32 = current_inventory_slot as i32;
 
-                packet.set_slot(inventory_slot);
-                if let Some(block_identifier) = INTERNAL_ID_TO_BLOCK_IDENTIFIER.get(&internal_id) {
-                    if let Some(item_id) =
-                        resolve_item_id_for_block(client_state.protocol_version(), block_identifier)
-                    {
-                        packet.set_slot_data_from_id(item_id, stack_size);
-                    } else {
-                        debug!(
-                            protocol_version = %client_state.protocol_version(),
-                            block_identifier,
-                            internal_id,
-                            "Unable to resolve item id for pick block"
-                        );
-                    }
+            packet.set_slot(inventory_slot);
+            if let Some(block_identifier) = INTERNAL_ID_TO_BLOCK_IDENTIFIER.get(&internal_id) {
+                if let Some(item_id) =
+                    resolve_item_id_for_block(client_state.protocol_version(), block_identifier)
+                {
+                    packet.set_slot_data_from_id(item_id, stack_size);
+                } else {
+                    debug!(
+                        protocol_version = %client_state.protocol_version(),
+                        block_identifier,
+                        internal_id,
+                        "Unable to resolve item id for pick block"
+                    );
                 }
-
-                let _ = self.include_data();
             }
+
+            let _ = self.include_data();
         }
 
         batch.queue(|| PacketRegistry::SetPlayerInventory(packet));
