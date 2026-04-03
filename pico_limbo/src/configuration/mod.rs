@@ -1,3 +1,4 @@
+pub mod pick_item_config;
 pub mod boss_bar;
 pub mod commands;
 mod compression;

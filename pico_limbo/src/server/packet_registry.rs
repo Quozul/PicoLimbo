@@ -39,6 +39,7 @@ use minecraft_packets::play::set_carried_item_packet::SetCarriedItemPacket;
 use minecraft_packets::play::set_chunk_cache_center_packet::SetCenterChunkPacket;
 use minecraft_packets::play::set_default_spawn_position_packet::SetDefaultSpawnPositionPacket;
 use minecraft_packets::play::set_entity_data_packet::SetEntityMetadataPacket;
+use minecraft_packets::play::set_player_inventory::SetPlayerInventoryPacket;
 use minecraft_packets::play::set_player_position_and_rotation_packet::SetPlayerPositionAndRotationPacket;
 use minecraft_packets::play::set_player_position_packet::SetPlayerPositionPacket;
 use minecraft_packets::play::set_subtitle_text_packet::SetSubtitleTextPacket;
@@ -367,6 +368,13 @@ pub enum PacketRegistry {
         name = "minecraft:set_carried_item"
     )]
     SetCarriedItem(SetCarriedItemPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:set_player_inventory"
+    )]
+    SetPlayerInventory(SetPlayerInventoryPacket),
 }
 
 impl PacketHandler for PacketRegistry {

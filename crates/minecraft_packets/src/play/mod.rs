@@ -21,6 +21,7 @@ pub mod set_carried_item_packet;
 pub mod set_chunk_cache_center_packet;
 pub mod set_default_spawn_position_packet;
 pub mod set_entity_data_packet;
+pub mod set_player_inventory;
 pub mod set_player_position_and_rotation_packet;
 pub mod set_player_position_packet;
 pub mod set_subtitle_text_packet;

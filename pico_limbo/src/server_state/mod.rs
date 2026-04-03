@@ -1,5 +1,6 @@
 use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
+use crate::configuration::pick_item_config::PickItemConfig;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -111,6 +112,7 @@ pub struct ServerState {
     allow_unsupported_versions: bool,
     allow_flight: bool,
     server_commands: ServerCommands,
+    pick_item: PickItemConfig,
 }
 
 impl ServerState {
@@ -269,6 +271,10 @@ impl ServerState {
     pub fn decrement(&self) {
         self.connected_clients.fetch_sub(1, Ordering::SeqCst);
     }
+
+    pub const fn pick_item(&self) -> &PickItemConfig {
+        &self.pick_item
+    }
 }
 
 #[derive(Default)]
@@ -303,6 +309,7 @@ pub struct ServerStateBuilder {
     allow_flight: bool,
     accept_transfers: bool,
     server_commands: ServerCommands,
+    pick_item: PickItemConfig,
 }
 
 #[derive(Debug, Error)]
@@ -574,6 +581,11 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn pick_item(&mut self, pick_item_config: PickItemConfig) -> &mut Self {
+        self.pick_item = pick_item_config;
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
         let world = if self.schematic_file_path.is_empty() {
@@ -619,6 +631,7 @@ impl ServerStateBuilder {
             allow_flight: self.allow_flight,
             accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
+            pick_item: self.pick_item,
         })
     }
 }
