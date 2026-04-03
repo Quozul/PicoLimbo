@@ -150,7 +150,7 @@ impl PacketHandler for PickItemFromBlockPacket {
                 self.location().z(),
             )
         {
-            let inventory_slot: i32 = current_inventory_slot as i32;
+            let inventory_slot: i32 = i32::from(current_inventory_slot);
 
             packet.set_slot(inventory_slot);
             if let Some(block_identifier) = INTERNAL_ID_TO_BLOCK_IDENTIFIER.get(&internal_id) {

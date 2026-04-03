@@ -581,7 +581,7 @@ impl ServerStateBuilder {
         self
     }
 
-    pub fn pick_item(&mut self, pick_item_config: PickItemConfig) -> &mut Self {
+    pub const fn pick_item(&mut self, pick_item_config: PickItemConfig) -> &mut Self {
         self.pick_item = pick_item_config;
         self
     }
