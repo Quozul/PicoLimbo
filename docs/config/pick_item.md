@@ -1,4 +1,4 @@
-# Pick Item From Block
+# Pick Item From Block <Badge type="warning" text="1.16+" />
 
 Representing the `[pick_item]` section in `server.toml`.
 
