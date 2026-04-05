@@ -11,6 +11,10 @@ use crate::cli::Cli;
 use clap::Parser;
 use std::ffi::{CStr, c_char, c_int};
 use std::slice;
+use std::sync::OnceLock;
+use tokio_util::sync::CancellationToken;
+
+static CANCEL_TOKEN: OnceLock<CancellationToken> = OnceLock::new();
 
 /// Some docs
 ///
@@ -43,6 +47,8 @@ pub unsafe extern "C" fn start_app(argc: c_int, argv: *const *const c_char) {
 
     match Cli::try_parse_from(&rust_args) {
         Ok(cli) => {
+            let token = CANCEL_TOKEN.get_or_init(|| CancellationToken::new());
+
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
@@ -51,10 +57,18 @@ pub unsafe extern "C" fn start_app(argc: c_int, argv: *const *const c_char) {
             let _ = rt.block_on(server::start_server::start_server(
                 cli.config_path,
                 cli.verbose,
+                token.clone(),
             ));
         }
         Err(e) => {
             e.print().expect("Failed to print error");
         }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn stop_app() {
+    if let Some(token) = CANCEL_TOKEN.get() {
+        token.cancel();
     }
 }
