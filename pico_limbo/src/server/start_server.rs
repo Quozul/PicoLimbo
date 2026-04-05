@@ -29,8 +29,8 @@ pub async fn start_server(
     match build_state(cfg) {
         Ok(server_state) => {
             tokio::select! {
-                _ = Server::new(&bind, server_state).run() => {}
-                _ = token.cancelled() => {
+                () = Server::new(&bind, server_state).run() => {}
+                () = token.cancelled() => {
                     tracing::info!("Shutdown signal received, stopping server...");
                 }
             }

@@ -47,7 +47,7 @@ pub unsafe extern "C" fn start_app(argc: c_int, argv: *const *const c_char) {
 
     match Cli::try_parse_from(&rust_args) {
         Ok(cli) => {
-            let token = CANCEL_TOKEN.get_or_init(|| CancellationToken::new());
+            let token = CANCEL_TOKEN.get_or_init(CancellationToken::new).clone();
 
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -57,7 +57,7 @@ pub unsafe extern "C" fn start_app(argc: c_int, argv: *const *const c_char) {
             let _ = rt.block_on(server::start_server::start_server(
                 cli.config_path,
                 cli.verbose,
-                token.clone(),
+                token,
             ));
         }
         Err(e) => {
@@ -66,6 +66,11 @@ pub unsafe extern "C" fn start_app(argc: c_int, argv: *const *const c_char) {
     }
 }
 
+/// Some docs
+///
+/// # Safety
+///
+/// Pretty safe actually
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn stop_app() {
     if let Some(token) = CANCEL_TOKEN.get() {
