@@ -8,6 +8,8 @@ import java.nio.file.Path;
 
 public class BungeeCordPlugin extends Plugin {
 
+    private PicoLimboRunner worker;
+
     @Override
     public void onEnable() {
         Path dataDirectory = getDataFolder().toPath();
@@ -21,8 +23,14 @@ public class BungeeCordPlugin extends Plugin {
         }
 
         Path configurationFile = dataDirectory.resolve("server.toml");
-        PicoLimboRunner worker = new PicoLimboRunner(configurationFile);
+        this.worker = new PicoLimboRunner(configurationFile);
 
         getProxy().getScheduler().runAsync(this, worker);
+    }
+
+    @Override
+    public void onDisable() {
+        if (worker != null)
+            worker.stop();
     }
 }

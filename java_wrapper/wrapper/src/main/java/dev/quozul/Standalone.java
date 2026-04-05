@@ -13,31 +13,35 @@ public class Standalone {
     public interface RustLib extends Library {
         // void start_app(int argc, char** argv);
         byte start_app(int argc, String[] argv);
+
+        void stop_app();
+    }
+
+    public static RustLib loadLib() throws Exception {
+        String libName = BuildConstants.LIB_NAME;
+        String resourcePath = getResourcePath(libName);
+
+        String extension = resourcePath.substring(resourcePath.lastIndexOf('.'));
+        File tempLib = File.createTempFile(libName, extension);
+        tempLib.deleteOnExit();
+
+        try (InputStream in = Standalone.class.getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                throw new RuntimeException("Library file not found in JAR: " + resourcePath);
+            }
+            Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return Native.load(tempLib.getAbsolutePath(), RustLib.class);
     }
 
     public static void main(String[] args) {
         try {
-            String libName = BuildConstants.LIB_NAME;
-            String resourcePath = getResourcePath(libName);
-
-            String extension = resourcePath.substring(resourcePath.lastIndexOf('.'));
-            File tempLib = File.createTempFile(libName, extension);
-            tempLib.deleteOnExit();
-
-            try (InputStream in = Standalone.class.getResourceAsStream(resourcePath)) {
-                if (in == null) {
-                    throw new RuntimeException("Library file not found in JAR: " + resourcePath);
-                }
-                Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            RustLib lib = Native.load(tempLib.getAbsolutePath(), RustLib.class);
-
             String[] effectiveArgs = new String[args.length + 1];
             effectiveArgs[0] = "pico_limbo_java_wrapper";
             System.arraycopy(args, 0, effectiveArgs, 1, args.length);
 
-            byte exitCode = lib.start_app(effectiveArgs.length, effectiveArgs);
+            byte exitCode = loadLib().start_app(effectiveArgs.length, effectiveArgs);
             System.exit(exitCode);
 
         } catch (Exception e) {
