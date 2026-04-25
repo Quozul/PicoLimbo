@@ -1,5 +1,5 @@
 use minecraft_protocol::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 use std::num::TryFromIntError;
 
 /// This packet exists for all versions of the game from 1.7.2 to the latest at the time (1.21.4).

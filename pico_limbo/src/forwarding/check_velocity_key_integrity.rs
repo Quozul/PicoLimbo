@@ -1,4 +1,5 @@
 use crate::forwarding::forwarding_result::ModernForwardingResult;
+use hmac::KeyInit;
 use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
 use minecraft_packets::login::Property;

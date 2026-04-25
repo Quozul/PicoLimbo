@@ -12,7 +12,7 @@ use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_protocol::prelude::ProtocolVersion;
-use rand::Rng;
+use rand::RngExt;
 
 impl PacketHandler for LoginStartPacket {
     fn handle(

@@ -25,35 +25,35 @@ members = [
 ]
 
 [workspace.dependencies]
-anyhow = "1.0.100"
+anyhow = "1.0.102"
 base64 = "0.22.1"
 byteorder = "1.5.0"
-clap = { version = "4.5.53", features = ["derive"] }
-flate2 = "1.1.5"
-futures = "0.3.31"
-hmac = "0.12.1"
-indexmap = { version = "2.12.1", features = ["serde"] }
-md5 = { package = "md-5", version = "0.10.6" }
+clap = { version = "4.6.1", features = ["derive"] }
+flate2 = "1.1.9"
+futures = "0.3.32"
+hmac = "0.13.0"
+indexmap = { version = "2.14.0", features = ["serde"] }
+md5 = { package = "md-5", version = "0.11.0" }
 phf = { version = "0.13.1", features = ["macros"] }
 phf_codegen = "0.13.1"
-proc-macro2 = "1.0.103"
-quick-xml = "0.38.4"
-quote = "1.0.42"
-rand = "0.9.3"
-rayon = "1.11.0"
-regex = "1.12.2"
-reqwest = { version = "0.12.26", default-features = false, features = ["json", "rustls-tls-native-roots", "http2"] }
+proc-macro2 = "1.0.106"
+quick-xml = "0.39.2"
+quote = "1.0.45"
+rand = "0.10.1"
+rayon = "1.12.0"
+regex = "1.12.3"
+reqwest = { version = "0.13.2", default-features = false, features = ["json", "rustls", "http2"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_bytes = "0.11.19"
-serde_json = "1.0.145"
+serde_json = "1.0.149"
 serde_test = "1.0.177"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 subtle = "2.6.1"
-syn = { version = "2.0.111", features = ["full"] }
-thiserror = "2.0.17"
-tokio = { version = "1.48.0", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
-toml = "0.9.10"
+syn = { version = "2.0.117", features = ["full"] }
+thiserror = "2.0.18"
+tokio = { version = "1.52.1", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
+toml = "1.1.2"
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
-uuid = { version = "1.19.0", features = ["v4"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+uuid = { version = "1.23.1", features = ["v4"] }
 walkdir = "2.5.0"
