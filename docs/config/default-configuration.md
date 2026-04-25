@@ -105,5 +105,9 @@ spawn = "spawn"
 fly = "fly"
 fly_speed = "flyspeed"
 transfer = "transfer"
+
+[pick_item]
+enabled = true
+stack_size = 1
 ```
 :::

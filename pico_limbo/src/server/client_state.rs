@@ -1,4 +1,4 @@
-use crate::server::game_profile::GameProfile;
+use crate::server::{game_profile::GameProfile, inventory::Inventory};
 use minecraft_packets::login::Property;
 use minecraft_protocol::prelude::{ProtocolVersion, State, Uuid};
 use tracing::info;
@@ -23,6 +23,7 @@ impl Default for ClientState {
             is_flight_allowed: false,
             is_flying: false,
             flying_speed: 0.05,
+            inventory: Inventory::default(),
         }
     }
 }
@@ -38,6 +39,7 @@ pub struct ClientState {
     is_flight_allowed: bool,
     is_flying: bool,
     flying_speed: f32,
+    inventory: Inventory,
 }
 
 impl ClientState {
@@ -176,5 +178,11 @@ impl ClientState {
 
     pub const fn set_flying_speed(&mut self, flying_speed: f32) {
         self.flying_speed = flying_speed;
+    }
+
+    // Inventory
+
+    pub const fn inventory(&mut self) -> &mut Inventory {
+        &mut self.inventory
     }
 }

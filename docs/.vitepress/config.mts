@@ -47,6 +47,7 @@ export default defineConfig({
 					{ text: "Tab List", link: "/config/tab-list.html" },
 					{ text: "Title", link: "/config/title.html" },
 					{ text: "World", link: "/config/world.html" },
+					{ text: "Pick Item From Block", link: "/config/pick_item.html" },
 					{
 						text: "Default Configuration",
 						link: "/config/default-configuration.html",

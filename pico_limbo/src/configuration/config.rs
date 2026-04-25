@@ -4,6 +4,7 @@ use crate::configuration::compression::CompressionConfig;
 use crate::configuration::env_placeholders::{EnvPlaceholderError, expand_env_placeholders};
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
+use crate::configuration::pick_item_config::PickItemConfig;
 use crate::configuration::server_list::ServerListConfig;
 use crate::configuration::tab_list::TabListConfig;
 use crate::configuration::title::TitleConfig;
@@ -77,6 +78,8 @@ pub struct Config {
     pub title: TitleConfig,
 
     pub commands: CommandsConfig,
+
+    pub pick_item: PickItemConfig,
 }
 
 impl Default for Config {
@@ -100,6 +103,7 @@ impl Default for Config {
             allow_flight: false,
             accept_transfers: false,
             commands: CommandsConfig::default(),
+            pick_item: PickItemConfig::default(),
         }
     }
 }
