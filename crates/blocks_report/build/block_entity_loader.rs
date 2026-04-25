@@ -74,6 +74,6 @@ pub fn load_block_entity_data() -> anyhow::Result<Vec<BlockEntityReport>> {
         })
         .collect();
 
-    reports.sort_by(|a, b| a.protocol_version.cmp(&b.protocol_version));
+    reports.sort_by_key(|a| a.protocol_version);
     Ok(reports)
 }

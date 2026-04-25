@@ -79,6 +79,6 @@ pub fn load_block_data() -> anyhow::Result<Vec<BlocksReport>> {
         })
         .collect();
 
-    block_data_list.sort_by(|a, b| a.protocol_version.cmp(&b.protocol_version));
+    block_data_list.sort_by_key(|a| a.protocol_version);
     Ok(block_data_list)
 }
