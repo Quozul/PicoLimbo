@@ -96,8 +96,11 @@ imports = [
 
     settings = {
       bind = "0.0.0.0:25565";
-      max_players = 50;
+
       welcome_message = "<red>You were spawned in Limbo.</red>";
+      server_list = {
+        max_players = 50;
+      };
     };
   };
 }
@@ -109,7 +112,6 @@ It is recommended to store secrets (e.g. for forwarding) using `sops-nix` or wit
 {
   services.picolimbo.settings = {
     bind = "0.0.0.0:25565";
-    online_mode = false;
 
     forwarding = {
       method = "MODERN";
