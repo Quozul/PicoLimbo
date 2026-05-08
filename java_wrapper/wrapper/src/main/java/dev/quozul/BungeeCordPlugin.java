@@ -5,6 +5,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.logging.Level;
 
 public class BungeeCordPlugin extends Plugin {
 
@@ -23,14 +24,18 @@ public class BungeeCordPlugin extends Plugin {
         }
 
         Path configurationFile = dataDirectory.resolve("server.toml");
-        this.worker = new PicoLimboRunner(configurationFile);
-
-        getProxy().getScheduler().runAsync(this, worker);
+        try {
+            worker = new PicoLimboRunner(configurationFile);
+            getProxy().getScheduler().runAsync(this, worker);
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error initializing PicoLimbo", e);
+        }
     }
 
     @Override
     public void onDisable() {
-        if (worker != null)
+        if (worker != null) {
             worker.stop();
+        }
     }
 }

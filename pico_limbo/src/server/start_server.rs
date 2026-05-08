@@ -17,7 +17,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 pub async fn start_server(
     config_path: PathBuf,
     logging_level: u8,
-    token: CancellationToken,
+    token: Option<&CancellationToken>,
 ) -> ExitCode {
     enable_logging(logging_level);
     let Some(cfg) = load_configuration(&config_path) else {
@@ -28,12 +28,7 @@ pub async fn start_server(
 
     match build_state(cfg) {
         Ok(server_state) => {
-            tokio::select! {
-                () = Server::new(&bind, server_state).run() => {}
-                () = token.cancelled() => {
-                    tracing::info!("Shutdown signal received, stopping server...");
-                }
-            }
+            Server::new(&bind, server_state).run(token).await;
             ExitCode::SUCCESS
         }
         Err(err) => {
