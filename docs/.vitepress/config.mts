@@ -71,6 +71,7 @@ export default defineConfig({
 				text: "Developer",
 				items: [
 					{ text: "Customizing Server Brand", link: "/developer/customizing-server-brand.html" },
+					{ text: "Building Java Wrapper", link: "/developer/building-java-wrapper.html" },
 				],
 			},
 		],
