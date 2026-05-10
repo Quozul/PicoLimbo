@@ -284,11 +284,18 @@ async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessin
         (client.protocol_version(), client.state())
     };
 
-    if state == State::Play {
-        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
-        let raw_packet = packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-    }
+    let packet = match state {
+        State::Configuration => PacketRegistry::ConfigurationClientBoundKeepAlive(
+            ClientBoundKeepAlivePacket::random()?,
+        ),
+        State::Play => {
+            PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?)
+        }
+        _ => return Ok(()),
+    };
+
+    let raw_packet = packet.encode_packet(protocol_version)?;
+    client_data.write_packet(raw_packet).await?;
 
     Ok(())
 }
