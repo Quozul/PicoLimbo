@@ -37,6 +37,23 @@ impl PacketHandler for LoginAcknowledgedPacket {
     }
 }
 
+/// Returns the exact Mojang pack version string for the `minecraft:core` known
+/// pack that the client expects for a given protocol version. The client compares
+/// this string strictly; sending a less-specific version (e.g. `"26.1"` for a
+/// client running `26.1.2`) causes the client to reject the pack and respond with
+/// an empty `select_known_packs` list, forcing the server to send every registry
+/// instead of letting the client use its bundled vanilla data.
+///
+/// `ProtocolVersion::humanize()` returns `"26.1"` for `V26_1` because that's the
+/// minor name; the actual Mojang release tag is `"26.1.2"`. Any protocol version
+/// whose release tag differs from `humanize()` needs an arm here.
+fn known_pack_version(version: ProtocolVersion) -> &'static str {
+    match version {
+        ProtocolVersion::V26_1 => "26.1.2",
+        _ => version.humanize(),
+    }
+}
+
 /// Only for >= 1.20.2
 fn send_configuration_packets(
     batch: &mut Batch<PacketRegistry>,
@@ -50,7 +67,7 @@ fn send_configuration_packets(
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
         // Send Known Packs
-        let packet = ClientBoundKnownPacksPacket::new(protocol_version.humanize());
+        let packet = ClientBoundKnownPacksPacket::new(known_pack_version(protocol_version));
         batch.queue(|| PacketRegistry::ClientBoundKnownPacks(packet));
     }
 
