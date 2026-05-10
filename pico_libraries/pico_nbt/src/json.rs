@@ -1,14 +1,7 @@
 use crate::{Error, Result, Value};
 use serde_json::Value as JsonValue;
 
-/// Converts a JSON value to an NBT value.
-///
-/// # Errors
-/// Returns an error if:
-/// * The JSON contains a `null` value, which is not supported in NBT.
-/// * A number is invalid or cannot be represented in NBT types.
-/// * Array elements cannot be converted to NBT values.
-fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
+fn convert_array(arr: Vec<JsonValue>, options: crate::NbtOptions) -> Result<Value> {
     if arr.is_empty() {
         return Ok(Value::List(Vec::new()));
     }
@@ -44,7 +37,10 @@ fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
         }
     }
 
-    if is_byte {
+    // When numeric_widening is enabled, never emit ByteArray for integer arrays —
+    // Mojang/NumberOps emits IntArray (or LongArray on overflow). ByteArray remains
+    // possible only via the default (non-widening) code path.
+    if is_byte && !options.is_numeric_widening() {
         let mut bytes = Vec::with_capacity(arr.len());
         for elem in arr {
             if let JsonValue::Number(n) = elem {
@@ -85,12 +81,12 @@ fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
 
     let mut list = Vec::with_capacity(arr.len());
     for elem in arr {
-        list.push(json_to_nbt(elem)?);
+        list.push(json_to_nbt_with_options(elem, options)?);
     }
     Ok(Value::List(list))
 }
 
-/// Converts a JSON value to an NBT value.
+/// Converts a JSON value to an NBT value using default options.
 ///
 /// # Errors
 /// Returns an error if:
@@ -98,50 +94,71 @@ fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
 /// * A number is invalid or cannot be represented in NBT types.
 /// * Array elements cannot be converted to NBT values.
 pub fn json_to_nbt(json: JsonValue) -> Result<Value> {
+    json_to_nbt_with_options(json, crate::NbtOptions::new())
+}
+
+/// Converts a JSON value to an NBT value with caller-supplied options.
+///
+/// When `options.is_numeric_widening()` is true, integer JSON numbers are encoded
+/// as `Value::Int` if they fit in `i32`, `Value::Long` otherwise — matching
+/// Mojang's canonical NBT representation. Floating-point numbers are encoded as
+/// `Value::Float` (32-bit) always, even when precision is lost. Booleans
+/// (`JsonValue::Bool`) remain `Value::Byte(0/1)`. With the flag off, behavior is
+/// the legacy smallest-fitting downcast (`Byte` / `Short` / `Int` / `Long`,
+/// `Float` only when exact, `Double` otherwise).
+///
+/// # Errors
+/// Returns an error if:
+/// * The JSON contains a `null` value, which is not supported in NBT.
+/// * A number is invalid or cannot be represented in NBT types.
+/// * Array elements cannot be converted to NBT values.
+pub fn json_to_nbt_with_options(json: JsonValue, options: crate::NbtOptions) -> Result<Value> {
     match json {
         JsonValue::Null => Err(Error::Message("JSON null is not supported in NBT".into())),
         JsonValue::Bool(b) => Ok(Value::Byte(i8::from(b))),
-        JsonValue::Number(n) => n.as_i64().map_or_else(
-            || {
-                n.as_f64().map_or_else(
-                    || Err(Error::Message("Invalid JSON number".into())),
-                    |f| {
-                        #[allow(clippy::cast_possible_truncation)]
-                        // I cannot find a better solution than casting the double down to float
-                        let f32_val = f as f32;
-                        if (f64::from(f32_val) - f).abs() < f64::EPSILON {
-                            Ok(Value::Float(f32_val))
-                        } else {
-                            Ok(Value::Double(f))
-                        }
-                    },
-                )
-            },
-            |i| {
-                i8::try_from(i).map_or_else(
-                    |_| {
-                        i16::try_from(i).map_or_else(
-                            |_| {
-                                i32::try_from(i)
-                                    .map_or_else(|_| Ok(Value::Long(i)), |int| Ok(Value::Int(int)))
-                            },
-                            |s| Ok(Value::Short(s)),
-                        )
-                    },
-                    |s| Ok(Value::Byte(s)),
-                )
-            },
-        ),
+        JsonValue::Number(n) => convert_number(&n, options),
         JsonValue::String(s) => Ok(Value::String(s)),
-        JsonValue::Array(arr) => convert_array(arr),
+        JsonValue::Array(arr) => convert_array(arr, options),
         JsonValue::Object(obj) => {
             let mut map = indexmap::IndexMap::new();
             for (k, v) in obj {
-                map.insert(k, json_to_nbt(v)?);
+                map.insert(k, json_to_nbt_with_options(v, options)?);
             }
             Ok(Value::Compound(map))
         }
     }
+}
+
+fn convert_number(n: &serde_json::Number, options: crate::NbtOptions) -> Result<Value> {
+    if let Some(i) = n.as_i64() {
+        if options.is_numeric_widening() {
+            return Ok(i32::try_from(i).map_or(Value::Long(i), Value::Int));
+        }
+        // Legacy: smallest-fitting type.
+        return Ok(i8::try_from(i).map_or_else(
+            |_| {
+                i16::try_from(i).map_or_else(
+                    |_| i32::try_from(i).map_or(Value::Long(i), Value::Int),
+                    Value::Short,
+                )
+            },
+            Value::Byte,
+        ));
+    }
+    if let Some(f) = n.as_f64() {
+        #[allow(clippy::cast_possible_truncation)]
+        let f32_val = f as f32;
+        if options.is_numeric_widening() {
+            // Mojang's registry codecs expect Float strictly, even at the cost of
+            // precision (e.g. cubic_bezier ease curves in minecraft:timeline).
+            return Ok(Value::Float(f32_val));
+        }
+        if (f64::from(f32_val) - f).abs() < f64::EPSILON {
+            return Ok(Value::Float(f32_val));
+        }
+        return Ok(Value::Double(f));
+    }
+    Err(Error::Message("Invalid JSON number".into()))
 }
 
 #[cfg(test)]
@@ -313,5 +330,160 @@ mod tests {
     fn test_json_null_error() {
         let res = json_to_nbt(json!(null));
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn widening_zero_becomes_int() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(0), opts).unwrap(),
+            Value::Int(0),
+        );
+    }
+
+    #[test]
+    fn widening_short_range_becomes_int() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(1_000), opts).unwrap(),
+            Value::Int(1_000),
+        );
+    }
+
+    #[test]
+    fn widening_int_max_becomes_int() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(i32::MAX), opts).unwrap(),
+            Value::Int(i32::MAX),
+        );
+    }
+
+    #[test]
+    fn widening_overflow_becomes_long() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let big: i64 = i64::from(i32::MAX) + 1;
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(big), opts).unwrap(),
+            Value::Long(big),
+        );
+    }
+
+    #[test]
+    fn widening_negative_short_range_becomes_int() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(-1_000), opts).unwrap(),
+            Value::Int(-1_000),
+        );
+    }
+
+    #[test]
+    fn widening_bool_stays_byte() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(true), opts).unwrap(),
+            Value::Byte(1),
+        );
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(false), opts).unwrap(),
+            Value::Byte(0),
+        );
+    }
+
+    #[test]
+    fn widening_float_unchanged_when_exact() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(1.0_f64), opts).unwrap(),
+            Value::Float(1.0),
+        );
+    }
+
+    #[test]
+    fn widening_imprecise_double_collapses_to_float() {
+        // 0.362 cannot round-trip exactly between f64 and f32. Without widening,
+        // the legacy code keeps it as Double to preserve precision. With widening
+        // enabled, it must collapse to Float — Mojang's registry codecs expect
+        // Float strictly (e.g. cubic_bezier values in minecraft:timeline).
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let result =
+            crate::json::json_to_nbt_with_options(json!(0.362_f64), opts).unwrap();
+        let Value::Float(f) = result else {
+            panic!("expected Float under widening, got {result:?}");
+        };
+        assert!(
+            (f - 0.362_f32).abs() < f32::EPSILON,
+            "expected ~0.362 as Float, got {f}",
+        );
+    }
+
+    #[test]
+    fn default_options_keep_downcasting() {
+        let opts = crate::NbtOptions::new();
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(0), opts).unwrap(),
+            Value::Byte(0),
+        );
+        assert_eq!(
+            crate::json::json_to_nbt_with_options(json!(128), opts).unwrap(),
+            Value::Short(128),
+        );
+    }
+
+    #[test]
+    fn default_options_keep_double_when_imprecise() {
+        let opts = crate::NbtOptions::new();
+        let result =
+            crate::json::json_to_nbt_with_options(json!(0.362_f64), opts).unwrap();
+        assert!(
+            matches!(result, Value::Double(d) if (d - 0.362_f64).abs() < f64::EPSILON),
+            "expected Double under default options, got {result:?}",
+        );
+    }
+
+    #[test]
+    fn nested_compound_widens_recursively() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let json_obj = json!({"ticks": 18000, "show_in_commands": true});
+        let nbt = crate::json::json_to_nbt_with_options(json_obj, opts).unwrap();
+        let Value::Compound(map) = nbt else {
+            panic!("Expected Compound");
+        };
+        assert_eq!(map.get("ticks"), Some(&Value::Int(18000)));
+        assert_eq!(map.get("show_in_commands"), Some(&Value::Byte(1)));
+    }
+
+    #[test]
+    fn widening_byte_range_array_becomes_int_array() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let nbt = crate::json::json_to_nbt_with_options(json!([1, 2, 3]), opts).unwrap();
+        assert_eq!(nbt, Value::IntArray(vec![1, 2, 3]));
+    }
+
+    #[test]
+    fn widening_short_range_array_becomes_int_array() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let nbt =
+            crate::json::json_to_nbt_with_options(json!([1000, 2000, 3000]), opts).unwrap();
+        assert_eq!(nbt, Value::IntArray(vec![1000, 2000, 3000]));
+    }
+
+    #[test]
+    fn widening_overflow_array_becomes_long_array() {
+        let opts = crate::NbtOptions::new().numeric_widening(true);
+        let big: i64 = i64::from(i32::MAX) + 1;
+        let nbt = crate::json::json_to_nbt_with_options(json!([big, big]), opts).unwrap();
+        assert_eq!(nbt, Value::LongArray(vec![big, big]));
+    }
+
+    #[test]
+    fn default_byte_range_array_stays_byte_array() {
+        let opts = crate::NbtOptions::new();
+        let nbt = crate::json::json_to_nbt_with_options(json!([1, 2, 3]), opts).unwrap();
+        let Value::ByteArray(bytes) = nbt else {
+            panic!("expected ByteArray with default options, got {nbt:?}");
+        };
+        assert_eq!(bytes, vec![1, 2, 3]);
     }
 }
