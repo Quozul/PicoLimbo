@@ -2,9 +2,9 @@ use minecraft_protocol::prelude::*;
 
 #[derive(PacketIn, PacketOut)]
 pub struct KnownPack {
-    namespace: String,
-    id: String,
-    version: String,
+    pub namespace: String,
+    pub id: String,
+    pub version: String,
 }
 
 impl KnownPack {
