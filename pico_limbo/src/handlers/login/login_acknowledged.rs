@@ -92,7 +92,7 @@ fn send_configuration_packets(
     Ok(())
 }
 
-/// Sends the configuration packets that follow the optional KnownPacks handshake:
+/// Sends the configuration packets that follow the optional `KnownPacks` handshake:
 /// tags (`>= 1.21.6`), registry data (unless the client accepted vanilla), and
 /// `FinishConfiguration`.
 ///
