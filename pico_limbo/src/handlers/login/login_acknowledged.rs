@@ -28,6 +28,11 @@ impl PacketHandler for LoginAcknowledgedPacket {
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
             client_state.set_state(State::Configuration);
+            // Start the keep-alive ticker now: while the client is held in
+            // CONFIGURATION (e.g. by a proxy gating an auth flow) the server
+            // would otherwise stay silent on the backend connection, and
+            // Velocity's read-timeout (default 30s) would tear it down.
+            client_state.set_keep_alive_should_enable();
             send_configuration_packets(&mut batch, protocol_version)?;
             Ok(batch)
         } else {
@@ -237,6 +242,10 @@ mod tests {
 
         // Then
         assert_eq!(client_state.state(), State::Configuration);
+        assert!(
+            client_state.should_enable_keep_alive(),
+            "keep-alive must be requested as soon as CONFIGURATION starts",
+        );
         assert!(batch.next().await.is_some());
     }
 
