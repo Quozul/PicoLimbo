@@ -74,7 +74,9 @@ impl ClientData {
                 let period = Duration::from_secs(2);
                 self.interval().await.set_interval_at(start, period).await;
             } else {
-                let period = Duration::from_secs(15);
+                // 10 s gives a 3x safety margin under Velocity's default 30 s
+                // read-timeout, and matches the period used in CONFIGURATION state.
+                let period = Duration::from_secs(10);
                 self.interval().await.set_interval(period).await;
             }
             self.client().await.set_keep_alive_enabled();
