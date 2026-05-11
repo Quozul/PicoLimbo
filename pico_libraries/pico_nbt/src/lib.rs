@@ -12,7 +12,7 @@ pub use de::from_value;
 pub use error::{Error, Result};
 pub use indexmap::IndexMap;
 pub use io::{CompressionType, decode, encode};
-pub use json::json_to_nbt;
+pub use json::{json_to_nbt, json_to_nbt_with_options};
 pub use options::NbtOptions;
 pub use reader::{
     from_file, from_file_struct, from_path, from_path_struct, from_path_with_options, from_reader,
