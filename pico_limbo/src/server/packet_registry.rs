@@ -8,6 +8,7 @@ use minecraft_packets::configuration::client_bound_known_packs_packet::ClientBou
 use minecraft_packets::configuration::configuration_client_bound_plugin_message_packet::ConfigurationClientBoundPluginMessagePacket;
 use minecraft_packets::configuration::finish_configuration_packet::FinishConfigurationPacket;
 use minecraft_packets::configuration::registry_data_packet::RegistryDataPacket;
+use minecraft_packets::configuration::server_bound_known_packs_packet::ServerBoundKnownPacksPacket;
 use minecraft_packets::configuration::update_tags_packet::UpdateTagsPacket;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
@@ -153,6 +154,13 @@ pub enum PacketRegistry {
         name = "minecraft:finish_configuration"
     )]
     AcknowledgeConfiguration(AcknowledgeConfigurationPacket),
+
+    #[protocol_id(
+        state = "configuration",
+        bound = "serverbound",
+        name = "minecraft:select_known_packs"
+    )]
+    ServerBoundSelectKnownPacks(ServerBoundKnownPacksPacket),
 
     #[protocol_id(
         state = "configuration",
@@ -367,6 +375,7 @@ impl PacketHandler for PacketRegistry {
             Self::CustomQueryAnswer(packet) => packet.handle(client_state, server_state),
             Self::LoginAcknowledged(packet) => packet.handle(client_state, server_state),
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
+            Self::ServerBoundSelectKnownPacks(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPositionAndRotation(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPosition(packet) => packet.handle(client_state, server_state),
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
