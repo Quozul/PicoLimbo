@@ -214,7 +214,8 @@ async fn read(
 }
 
 async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>) {
-    let client_data = ClientData::new(socket);
+    let keep_alive_interval = server_state.read().await.keep_alive_interval();
+    let client_data = ClientData::new(socket, keep_alive_interval);
     let mut was_in_play_state = false;
 
     loop {
@@ -284,8 +285,17 @@ async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessin
         (client.protocol_version(), client.state())
     };
 
-    if state == State::Play {
-        let packet = PacketRegistry::ClientBoundKeepAlive(ClientBoundKeepAlivePacket::random()?);
+    let packet = match state {
+        State::Configuration => Some(PacketRegistry::ConfigurationClientBoundKeepAlive(
+            ClientBoundKeepAlivePacket::random()?,
+        )),
+        State::Play => Some(PacketRegistry::ClientBoundKeepAlive(
+            ClientBoundKeepAlivePacket::random()?,
+        )),
+        _ => None,
+    };
+
+    if let Some(packet) = packet {
         let raw_packet = packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
     }

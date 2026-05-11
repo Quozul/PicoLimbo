@@ -121,6 +121,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
+        .keep_alive_interval_secs(cfg.keep_alive_interval_seconds)
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)
         .set_player_listed(cfg.tab_list.player_listed)
