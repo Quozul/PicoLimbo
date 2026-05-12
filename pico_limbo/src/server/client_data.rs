@@ -15,10 +15,11 @@ pub struct ClientData {
     client_state: Arc<Mutex<ClientState>>,
     packet_stream: Arc<Mutex<PacketStream<TcpStream>>>,
     interval: Arc<Mutex<ControllableInterval>>,
+    keep_alive_interval: Duration,
 }
 
 impl ClientData {
-    pub fn new(socket: TcpStream) -> Self {
+    pub fn new(socket: TcpStream, keep_alive_interval: Duration) -> Self {
         let client_state = ClientState::default();
         let packet_stream = PacketStream::new(socket);
         let interval = ControllableInterval::new();
@@ -27,6 +28,7 @@ impl ClientData {
             client_state: Arc::new(Mutex::new(client_state)),
             packet_stream: Arc::new(Mutex::new(packet_stream)),
             interval: Arc::new(Mutex::new(interval)),
+            keep_alive_interval,
         }
     }
 
@@ -74,8 +76,10 @@ impl ClientData {
                 let period = Duration::from_secs(2);
                 self.interval().await.set_interval_at(start, period).await;
             } else {
-                let period = Duration::from_secs(15);
-                self.interval().await.set_interval(period).await;
+                self.interval()
+                    .await
+                    .set_interval(self.keep_alive_interval)
+                    .await;
             }
             self.client().await.set_keep_alive_enabled();
         }

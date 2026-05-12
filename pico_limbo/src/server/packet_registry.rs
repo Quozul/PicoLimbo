@@ -185,6 +185,13 @@ pub enum PacketRegistry {
     #[protocol_id(
         state = "configuration",
         bound = "clientbound",
+        name = "minecraft:keep_alive"
+    )]
+    ConfigurationClientBoundKeepAlive(ClientBoundKeepAlivePacket),
+
+    #[protocol_id(
+        state = "configuration",
+        bound = "clientbound",
         name = "minecraft:finish_configuration"
     )]
     FinishConfiguration(FinishConfigurationPacket),
