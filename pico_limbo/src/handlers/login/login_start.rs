@@ -72,6 +72,7 @@ pub fn fire_login_success(
     client_state.set_game_profile(game_profile);
 
     if !protocol_version.supports_configuration_state() {
+        client_state.set_keep_alive_should_enable();
         send_play_packets(batch, client_state, server_state)?;
     }
     Ok(())
