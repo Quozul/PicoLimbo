@@ -151,3 +151,18 @@ Whether players who have been transferred from another server via a [transfer pa
 accept_transfers = false
 ```
 :::
+
+## Keep Alive Interval <Badge type="warning" text="1.8+" />
+
+Interval, in seconds, between two `keep_alive` packets sent to a client.
+The default value of `15` matches the vanilla server.
+Lower it (e.g. `10`) if a proxy in front of PicoLimbo has a stricter read-timeout, or if your players have unreliable connections that benefit from more frequent pings.
+
+:::code-group
+```toml [server.toml]
+keep_alive_interval_seconds = 15
+```
+:::
+
+> [!NOTE]
+> Clients on Minecraft 1.7.x use a fixed 2-second ping required by the legacy protocol, regardless of this setting.
