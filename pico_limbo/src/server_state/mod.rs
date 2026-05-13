@@ -111,6 +111,7 @@ pub struct ServerState {
     allow_unsupported_versions: bool,
     allow_flight: bool,
     server_commands: ServerCommands,
+    keep_alive_interval_secs: u64,
 }
 
 impl ServerState {
@@ -192,6 +193,13 @@ impl ServerState {
 
     pub const fn view_distance(&self) -> i32 {
         self.view_distance
+    }
+
+    /// Keep-alive interval used for clients on 1.8+ (CONFIGURATION + PLAY).
+    /// Clients <= 1.7.6 use a hard-coded 2-second period required by the
+    /// legacy protocol, independent of this value.
+    pub const fn keep_alive_interval(&self) -> Duration {
+        Duration::from_secs(self.keep_alive_interval_secs)
     }
 
     pub fn world(&self) -> Option<Arc<World>> {
@@ -303,6 +311,7 @@ pub struct ServerStateBuilder {
     allow_flight: bool,
     accept_transfers: bool,
     server_commands: ServerCommands,
+    keep_alive_interval_secs: Option<u64>,
 }
 
 #[derive(Debug, Error)]
@@ -453,6 +462,13 @@ impl ServerStateBuilder {
 
     pub fn view_distance(&mut self, view_distance: i32) -> &mut Self {
         self.view_distance = view_distance.max(0);
+        self
+    }
+
+    /// Set the keep-alive interval, in seconds, for clients on 1.8+.
+    /// Defaults to 15 (vanilla) when this method is not called.
+    pub const fn keep_alive_interval_secs(&mut self, secs: u64) -> &mut Self {
+        self.keep_alive_interval_secs = Some(secs);
         self
     }
 
@@ -619,6 +635,7 @@ impl ServerStateBuilder {
             allow_flight: self.allow_flight,
             accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
+            keep_alive_interval_secs: self.keep_alive_interval_secs.unwrap_or(15),
         })
     }
 }

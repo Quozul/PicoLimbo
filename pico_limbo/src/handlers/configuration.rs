@@ -248,7 +248,6 @@ pub fn send_play_packets(
     }
 
     client_state.set_state(State::Play);
-    client_state.set_keep_alive_should_enable();
 
     Ok(())
 }

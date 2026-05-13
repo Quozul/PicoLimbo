@@ -27,6 +27,7 @@ impl PacketHandler for LoginAcknowledgedPacket {
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
             client_state.set_state(State::Configuration);
+            client_state.set_keep_alive_should_enable();
             send_configuration_packets(&mut batch, protocol_version)?;
             Ok(batch)
         } else {
@@ -162,6 +163,7 @@ mod tests {
 
         // Then
         assert_eq!(client_state.state(), State::Configuration);
+        assert!(client_state.should_enable_keep_alive());
         assert!(batch.next().await.is_some());
     }
 
