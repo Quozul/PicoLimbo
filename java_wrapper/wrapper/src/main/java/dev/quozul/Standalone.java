@@ -3,6 +3,9 @@ package dev.quozul;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -11,35 +14,49 @@ import java.nio.file.StandardCopyOption;
 public class Standalone {
 
     public interface RustLib extends Library {
-        // void start_app(int argc, char** argv);
-        byte start_app(int argc, String[] argv);
+
+        // C: void start_app(CancellationToken* ptr, int argc, char** argv);
+        void start_app(Pointer ptr, int argc, String[] argv);
+
+        // C: void stop_app(CancellationToken* ptr);
+        void stop_app(Pointer ptr);
+
+        // C: CancellationToken* get_cancellation_token();
+        @Nullable
+        Pointer get_cancellation_token();
+
+        // C: void cleanup_token(CancellationToken* ptr);
+        void cleanup_token(Pointer ptr);
+    }
+
+    public static RustLib loadLib() throws Exception {
+        String libName = BuildConstants.LIB_NAME;
+        String resourcePath = getResourcePath(libName);
+
+        String extension = resourcePath.substring(resourcePath.lastIndexOf('.'));
+        File tempLib = File.createTempFile(libName, extension);
+        tempLib.deleteOnExit();
+
+        try (InputStream in = Standalone.class.getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                throw new RuntimeException("Library file not found in JAR: " + resourcePath);
+            }
+            Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return Native.load(tempLib.getAbsolutePath(), RustLib.class);
     }
 
     public static void main(String[] args) {
         try {
-            String libName = BuildConstants.LIB_NAME;
-            String resourcePath = getResourcePath(libName);
-
-            String extension = resourcePath.substring(resourcePath.lastIndexOf('.'));
-            File tempLib = File.createTempFile(libName, extension);
-            tempLib.deleteOnExit();
-
-            try (InputStream in = Standalone.class.getResourceAsStream(resourcePath)) {
-                if (in == null) {
-                    throw new RuntimeException("Library file not found in JAR: " + resourcePath);
-                }
-                Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            RustLib lib = Native.load(tempLib.getAbsolutePath(), RustLib.class);
-
             String[] effectiveArgs = new String[args.length + 1];
             effectiveArgs[0] = "pico_limbo_java_wrapper";
             System.arraycopy(args, 0, effectiveArgs, 1, args.length);
 
-            byte exitCode = lib.start_app(effectiveArgs.length, effectiveArgs);
-            System.exit(exitCode);
-
+            RustLib lib = Standalone.loadLib();
+            Pointer token = lib.get_cancellation_token();
+            Runtime.getRuntime().addShutdownHook(new ShutdownHook(lib, token));
+            lib.start_app(token, effectiveArgs.length, effectiveArgs);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -83,5 +100,20 @@ public class Standalone {
         }
 
         return String.format("/%s/%s%s%s", platformPath, prefix, libName, extension);
+    }
+
+    private static class ShutdownHook extends Thread {
+        private final RustLib lib;
+        private final Pointer token;
+
+        public ShutdownHook(RustLib lib, Pointer token) {
+            this.lib = lib;
+            this.token = token;
+        }
+
+        @Override
+        public void run() {
+            lib.stop_app(token);
+        }
     }
 }
