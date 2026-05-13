@@ -8,6 +8,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
+import com.velocitypowered.api.scheduler.TaskStatus;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -49,11 +50,14 @@ public class VelocityPlugin {
         }
 
         Path configurationFile = dataDirectory.resolve("server.toml");
-        this.worker = new PicoLimboRunner(configurationFile);
-
-        this.task = server.getScheduler()
-                .buildTask(plugin, worker)
-                .schedule();
+        try {
+            this.worker = new PicoLimboRunner(configurationFile);
+            this.task = server.getScheduler()
+                    .buildTask(plugin, worker)
+                    .schedule();
+        } catch (Exception e) {
+            logger.error("Error initializing PicoLimbo", e);
+        }
     }
 
     @Subscribe
