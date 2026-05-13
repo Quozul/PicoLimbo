@@ -8,12 +8,17 @@ use crate::server::network::Server;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
 use std::process::ExitCode;
+use tokio_util::sync::CancellationToken;
 use tracing::{Level, debug, error};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-pub async fn start_server(config_path: PathBuf, logging_level: u8) -> ExitCode {
+pub async fn start_server(
+    config_path: PathBuf,
+    logging_level: u8,
+    token: Option<&CancellationToken>,
+) -> ExitCode {
     enable_logging(logging_level);
     let Some(cfg) = load_configuration(&config_path) else {
         return ExitCode::FAILURE;
@@ -23,7 +28,7 @@ pub async fn start_server(config_path: PathBuf, logging_level: u8) -> ExitCode {
 
     match build_state(cfg) {
         Ok(server_state) => {
-            Server::new(&bind, server_state).run().await;
+            Server::new(&bind, server_state).run(token).await;
             ExitCode::SUCCESS
         }
         Err(err) => {

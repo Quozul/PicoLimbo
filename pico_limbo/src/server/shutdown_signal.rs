@@ -1,4 +1,15 @@
-pub async fn shutdown_signal() {
+use tokio_util::sync::CancellationToken;
+
+pub async fn shutdown_signal(token: Option<&CancellationToken>) {
+    match token {
+        None => platform_signal().await,
+        Some(token) => {
+            token.cancelled().await;
+        }
+    }
+}
+
+async fn platform_signal() {
     #[cfg(unix)]
     {
         use tokio::signal::unix::{SignalKind, signal};

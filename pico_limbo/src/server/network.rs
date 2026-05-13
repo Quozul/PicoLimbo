@@ -17,6 +17,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, trace, warn};
 
 pub struct Server {
@@ -32,7 +33,7 @@ impl Server {
         }
     }
 
-    pub async fn run(self) {
+    pub async fn run(self, token: Option<&CancellationToken>) {
         let listener = match TcpListener::bind(&self.listen_address).await {
             Ok(sock) => sock,
             Err(err) => {
@@ -42,10 +43,10 @@ impl Server {
         };
 
         info!("Listening on: {}", self.listen_address);
-        self.accept(&listener).await;
+        self.accept(&listener, token).await;
     }
 
-    pub async fn accept(self, listener: &TcpListener) {
+    pub async fn accept(self, listener: &TcpListener, token: Option<&CancellationToken>) {
         loop {
             tokio::select! {
                  accept_result = listener.accept() => {
@@ -63,7 +64,7 @@ impl Server {
                     }
                 },
 
-                 () = shutdown_signal() => {
+                 () = shutdown_signal(token) => {
                     info!("Shutdown signal received, shutting down gracefully.");
                     break;
                 }

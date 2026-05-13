@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The plugin doesn't shutdown when shutting down the proxy
+- Do not send registry data starting 1.21.5, this should fix issues with PacketEvents some users were having
 - Send `keep_alive` packets while clients are in the CONFIGURATION state, preventing proxies (e.g. Velocity) from dropping connections with a `read timed out` error during long custom holds
 
 ## [1.12.2+mc26.1.2] - 2026-04-12
