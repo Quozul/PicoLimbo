@@ -46,10 +46,7 @@ impl PacketHandler for ServerBoundKnownPacksPacket {
     ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
-        let expected_version = protocol_version.humanize();
-        let client_accepted_vanilla_core = self.known_packs.inner().iter().any(|pack| {
-            pack.namespace == "minecraft" && pack.id == "core" && pack.version == expected_version
-        });
+        let client_accepted_vanilla_core = self.has_minecraft_core();
         send_post_known_packs_configuration_packets(
             &mut batch,
             protocol_version,
@@ -73,14 +70,13 @@ fn send_configuration_packets(
         // The remaining packets (tags, registries, finish) are emitted from the
         // `ServerBoundKnownPacksPacket` handler once we know whether the client
         // accepted the vanilla `minecraft:core` pack we offered.
-        let packet = ClientBoundKnownPacksPacket::new(protocol_version.humanize());
+        let known_packs = protocol_version.known_packs();
+        let packet = ClientBoundKnownPacksPacket::new(known_packs);
         batch.queue(|| PacketRegistry::ClientBoundKnownPacks(packet));
-        return Ok(());
+    } else {
+        send_post_known_packs_configuration_packets(batch, protocol_version, false)?;
     }
-
-    // For 1.20.2 .. 1.20.5, there is no Known Packs handshake — emit the full
-    // configuration burst in one shot (no registries can be skipped).
-    send_post_known_packs_configuration_packets(batch, protocol_version, false)
+    Ok(())
 }
 
 fn send_post_known_packs_configuration_packets(
@@ -125,32 +121,32 @@ fn send_post_known_packs_configuration_packets(
     // offer, since vanilla clients (and Paper-based servers) treat that as a signal
     // that the registries are already known.
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
-        let has_registry_data = protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4);
-        if !client_accepted_vanilla_core {
-            // Since 1.20.5, each registry is sent in its own packet
-            batch.chain_iter(
-                registry_provider
-                    .get_registry_data_v1_20_5()?
-                    .into_iter()
-                    .map(|(registry_id, registry_entries)| {
-                        let packet = RegistryDataPacket::registry(
-                            registry_id,
-                            registry_entries
-                                .iter()
-                                .map(|entry| {
-                                    let nbt_bytes = if has_registry_data {
-                                        Some(entry.nbt_bytes.clone())
-                                    } else {
-                                        None
-                                    };
-                                    RegistryEntry::new(entry.entry_id.clone(), nbt_bytes)
-                                })
-                                .collect(),
-                        );
-                        PacketRegistry::RegistryData(packet)
-                    }),
-            );
-        }
+        let omit_registry_data = protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5)
+            && client_accepted_vanilla_core;
+
+        // Since 1.20.5, each registry is sent in its own packet
+        batch.chain_iter(
+            registry_provider
+                .get_registry_data_v1_20_5()?
+                .into_iter()
+                .map(move |(registry_id, registry_entries)| {
+                    let packet = RegistryDataPacket::registry(
+                        registry_id,
+                        registry_entries
+                            .iter()
+                            .map(|entry| {
+                                let nbt_bytes = if omit_registry_data {
+                                    None
+                                } else {
+                                    Some(entry.nbt_bytes.clone())
+                                };
+                                RegistryEntry::new(entry.entry_id.clone(), nbt_bytes)
+                            })
+                            .collect(),
+                    );
+                    PacketRegistry::RegistryData(packet)
+                }),
+        );
     } else if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_2) {
         // Since 1.19, all registries are sent as a single NBT tag
         // Since 1.20.2, all registries are sent in their own packet during the configuration state, still as a single NBT tag
@@ -172,8 +168,7 @@ fn send_post_known_packs_configuration_packets(
 mod tests {
     use super::*;
     use futures::StreamExt;
-    use minecraft_packets::configuration::data::known_pack::KnownPack;
-    use minecraft_protocol::prelude::{LengthPaddedVec, ProtocolVersion};
+    use minecraft_protocol::prelude::ProtocolVersion;
 
     fn server_state() -> ServerState {
         ServerState::builder().build().unwrap()
@@ -294,58 +289,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_post_known_packs_when_vanilla_accepted_skips_registries() {
-        // Given
-        let mut batch = Batch::new();
-
-        // When
-        send_post_known_packs_configuration_packets(&mut batch, ProtocolVersion::V1_20_5, true)
-            .unwrap();
-        let mut batch = batch.into_stream();
-
-        // Then
-        assert!(matches!(
-            batch.next().await.unwrap(),
-            PacketRegistry::FinishConfiguration(_)
-        ));
-        assert!(batch.next().await.is_none());
-    }
-
-    #[tokio::test]
-    async fn test_known_packs_handler_with_matching_core_skips_registries() {
-        // Given
-        let mut client_state = client(ProtocolVersion::V1_20_5);
-        client_state.set_state(State::Configuration);
-        let server_state = server_state();
-        let pkt = ServerBoundKnownPacksPacket {
-            known_packs: LengthPaddedVec::new(vec![KnownPack {
-                namespace: "minecraft".to_string(),
-                id: "core".to_string(),
-                version: ProtocolVersion::V1_20_5.humanize().to_string(),
-            }]),
-        };
-
-        // When
-        let batch = pkt.handle(&mut client_state, &server_state).unwrap();
-        let mut batch = batch.into_stream();
-
-        // Then — no `RegistryData` packets, only `FinishConfiguration`
-        assert!(matches!(
-            batch.next().await.unwrap(),
-            PacketRegistry::FinishConfiguration(_)
-        ));
-        assert!(batch.next().await.is_none());
-    }
-
-    #[tokio::test]
     async fn test_known_packs_handler_with_empty_list_sends_registries() {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20_5);
         client_state.set_state(State::Configuration);
         let server_state = server_state();
-        let pkt = ServerBoundKnownPacksPacket {
-            known_packs: LengthPaddedVec::new(vec![]),
-        };
+        let pkt = ServerBoundKnownPacksPacket::new(Vec::new());
 
         // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();

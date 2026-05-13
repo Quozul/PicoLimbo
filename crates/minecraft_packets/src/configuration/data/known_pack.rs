@@ -2,9 +2,9 @@ use minecraft_protocol::prelude::*;
 
 #[derive(PacketIn, PacketOut)]
 pub struct KnownPack {
-    pub namespace: String,
-    pub id: String,
-    pub version: String,
+    namespace: String,
+    id: String,
+    version: String,
 }
 
 impl KnownPack {
@@ -14,5 +14,9 @@ impl KnownPack {
             id: "core".to_string(),
             version: version.to_string(),
         }
+    }
+
+    pub fn is_minecraft_core(&self) -> bool {
+        self.namespace == "minecraft" && self.id == "core"
     }
 }

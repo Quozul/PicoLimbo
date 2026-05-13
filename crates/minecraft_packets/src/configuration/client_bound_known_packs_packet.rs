@@ -7,9 +7,13 @@ pub struct ClientBoundKnownPacksPacket {
 }
 
 impl ClientBoundKnownPacksPacket {
-    pub fn new(version: &str) -> Self {
+    pub fn new(versions: &[&str]) -> Self {
+        let known_packs = versions
+            .iter()
+            .map(|version| KnownPack::new(version))
+            .collect::<Vec<_>>();
         Self {
-            known_packs: LengthPaddedVec::new(vec![KnownPack::new(version)]),
+            known_packs: LengthPaddedVec::new(known_packs),
         }
     }
 }

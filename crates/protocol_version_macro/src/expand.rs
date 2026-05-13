@@ -91,6 +91,12 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
         quote! { #enum_ident::#variant_ident => #enum_ident::#value }
     });
 
+    let known_packs_arms = parsed_variants.iter().map(|v| {
+        let variant_ident = v.ident;
+        let packs = &v.known_packs;
+        quote! { #enum_ident::#variant_ident => &[#(#packs),*] }
+    });
+
     let all_versions_arms = parsed_variants.iter().map(|v| {
         let variant_ident = v.ident;
         quote! { #enum_ident::#variant_ident }
@@ -162,6 +168,11 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             /// Returns the protocol version this version gets its data from.
             pub fn data(&self) -> ProtocolVersion {
                 match self { #(#data_arms),* }
+            }
+
+            /// Returns the known packs for this protocol version.
+            pub fn known_packs(&self) -> &'static [&'static str] {
+                match self { #(#known_packs_arms),* }
             }
 
             /// Returns the latest real protocol version (ignores special values like `Any`).

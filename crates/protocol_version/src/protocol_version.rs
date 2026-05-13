@@ -5,20 +5,27 @@ use std::cmp::PartialEq;
 #[repr(i32)]
 pub enum ProtocolVersion {
     #[default]
+    #[pvn(known_packs = ["26.1", "26.1.1", "26.1.2"])]
     V26_1 = 775,
-    #[pvn(packets = V1_21_9)]
+    #[pvn(packets = V1_21_9, known_packs = ["1.21.11"])]
     V1_21_11 = 774,
-    #[pvn(data = V1_21_6)]
+    #[pvn(data = V1_21_6, known_packs = ["1.21.9", "1.21.10"])]
     V1_21_9 = 773,
-    #[pvn(packets = V1_21_6, data = V1_21_6)]
+    #[pvn(packets = V1_21_6, data = V1_21_6, known_packs = ["1.21.7", "1.21.8"])]
     V1_21_7 = 772,
+    #[pvn(known_packs = ["1.21.6"])]
     V1_21_6 = 771,
+    #[pvn(known_packs = ["1.21.5"])]
     V1_21_5 = 770,
+    #[pvn(known_packs = ["1.21.4"])]
     V1_21_4 = 769,
     /// Docs: https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2780220
+    #[pvn(known_packs = ["1.21.2", "1.21.3"])]
     V1_21_2 = 768,
+    #[pvn(known_packs = ["1.21", "1.21.1"])]
     V1_21 = 767,
 
+    #[pvn(known_packs = ["1.20.5", "1.20.6"])]
     V1_20_5 = 766,
     #[pvn(data = V1_20_2)]
     V1_20_3 = 765,

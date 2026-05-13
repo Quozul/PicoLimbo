@@ -160,7 +160,7 @@ pub enum PacketRegistry {
         bound = "serverbound",
         name = "minecraft:select_known_packs"
     )]
-    ServerBoundSelectKnownPacks(ServerBoundKnownPacksPacket),
+    ServerBoundKnownPacks(ServerBoundKnownPacksPacket),
 
     #[protocol_id(
         state = "configuration",
@@ -375,12 +375,12 @@ impl PacketHandler for PacketRegistry {
             Self::CustomQueryAnswer(packet) => packet.handle(client_state, server_state),
             Self::LoginAcknowledged(packet) => packet.handle(client_state, server_state),
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
-            Self::ServerBoundSelectKnownPacks(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPositionAndRotation(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPosition(packet) => packet.handle(client_state, server_state),
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
+            Self::ServerBoundKnownPacks(packet) => packet.handle(client_state, server_state),
             _ => Err(PacketHandlerError::custom("Unhandled packet")),
         }
     }

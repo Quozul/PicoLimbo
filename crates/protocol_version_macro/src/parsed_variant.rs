@@ -9,6 +9,7 @@ pub struct ParsedVariant<'a> {
     pub humanized_string: LitStr,
     pub packets: Ident,
     pub data: Ident,
+    pub known_packs: Vec<String>,
 }
 
 impl<'a> ParsedVariant<'a> {
@@ -26,6 +27,8 @@ impl<'a> ParsedVariant<'a> {
 
         let data = pvn_attribute.data.unwrap_or_else(|| variant.ident.clone());
 
+        let known_packs = pvn_attribute.known_packs;
+
         Ok(Self {
             ident: &variant.ident,
             discriminant_expr,
@@ -33,6 +36,7 @@ impl<'a> ParsedVariant<'a> {
             humanized_string,
             packets,
             data,
+            known_packs,
         })
     }
 
@@ -102,6 +106,7 @@ impl<'a> ParsedVariant<'a> {
             Ok(PvnAttribute {
                 packets: None,
                 data: None,
+                known_packs: vec![],
             })
         }
     }
