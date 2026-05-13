@@ -55,6 +55,7 @@ fn send_configuration_packets(
     }
 
     // Send tags
+    // TODO: Move tags after registry data to match vanilla's behavior
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_6) {
         // Since 1.21.6, the Dialog tags should be sent to have server links working
         // Since 1.21.11, the Timeline tags should be sent to get the time of day working
@@ -86,18 +87,24 @@ fn send_configuration_packets(
 
     // Send Registry Data
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+        let has_registry_data = protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4);
         // Since 1.20.5, each registry is sent in its own packet
         batch.chain_iter(
             registry_provider
                 .get_registry_data_v1_20_5()?
                 .into_iter()
-                .map(|(registry_id, registry_entries)| {
+                .map(move |(registry_id, registry_entries)| {
                     let packet = RegistryDataPacket::registry(
                         registry_id,
                         registry_entries
                             .iter()
                             .map(|entry| {
-                                RegistryEntry::new(entry.entry_id.clone(), entry.nbt_bytes.clone())
+                                let nbt_bytes = if has_registry_data {
+                                    Some(entry.nbt_bytes.clone())
+                                } else {
+                                    None
+                                };
+                                RegistryEntry::new(entry.entry_id.clone(), nbt_bytes)
                             })
                             .collect(),
                     );

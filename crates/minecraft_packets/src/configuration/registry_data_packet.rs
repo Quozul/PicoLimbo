@@ -14,6 +14,7 @@ pub struct RegistryDataPacket {
 }
 
 impl RegistryDataPacket {
+    /// Since 1.20.2 until 1.20.4 (included)
     pub fn codec(registry_codec_bytes: Cow<'static, [u8]>) -> Self {
         Self {
             registry_id: Omitted::None,
@@ -22,6 +23,7 @@ impl RegistryDataPacket {
         }
     }
 
+    /// Since 1.20.5 (included)
     pub fn registry(registry_id: Identifier, entries: Vec<RegistryEntry>) -> Self {
         Self {
             registry_id: Omitted::Some(registry_id),
