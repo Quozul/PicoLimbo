@@ -17,7 +17,7 @@ impl PacketHandler for ChatCommandPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         run_command(client_state, server_state, self.get_command(), &mut batch);
         Ok(batch)
@@ -29,7 +29,7 @@ impl PacketHandler for ChatMessagePacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         if let Some(command) = self.get_command() {
             run_command(client_state, server_state, command, &mut batch);
@@ -44,7 +44,7 @@ fn run_command(
     client_state: &mut ClientState,
     server_state: &ServerState,
     command: &str,
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
 ) {
     info!(
         "{} issued server command: /{}",

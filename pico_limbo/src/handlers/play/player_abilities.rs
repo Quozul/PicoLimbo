@@ -10,7 +10,7 @@ impl PacketHandler for ServerBoundPlayerAbilitiesPacket {
         &self,
         client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         client_state.set_is_flying(self.is_flying());
         Ok(Batch::new())
     }

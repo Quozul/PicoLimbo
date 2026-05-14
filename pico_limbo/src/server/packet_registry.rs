@@ -373,7 +373,7 @@ impl PacketHandler for PacketRegistry {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         match self {
             Self::Handshake(packet) => packet.handle(client_state, server_state),
             Self::StatusRequest(packet) => packet.handle(client_state, server_state),

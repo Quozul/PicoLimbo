@@ -23,7 +23,7 @@ impl PacketHandler for LoginAcknowledgedPacket {
         &self,
         client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
@@ -59,7 +59,7 @@ impl PacketHandler for ServerBoundKnownPacksPacket {
 
 /// Only for >= 1.20.2
 fn send_configuration_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     protocol_version: ProtocolVersion,
 ) -> Result<(), PacketHandlerError> {
     // Send Server Brand

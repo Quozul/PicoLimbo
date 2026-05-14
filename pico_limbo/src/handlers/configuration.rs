@@ -45,7 +45,7 @@ impl PacketHandler for AcknowledgeConfigurationPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         send_play_packets(&mut batch, client_state, server_state)?;
         Ok(batch)
@@ -130,7 +130,7 @@ impl From<SchematicError> for PacketHandlerError {
 }
 
 pub fn send_play_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     client_state: &mut ClientState,
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
@@ -252,14 +252,14 @@ pub fn send_play_packets(
     Ok(())
 }
 
-fn send_tab_list_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
+fn send_tab_list_packets(batch: &mut Batch, server_state: &ServerState) {
     if let Some(TabList { header, footer }) = server_state.tab_list() {
         let packet = TabListPacket::new(header, footer);
         batch.queue(|| PacketRegistry::TabList(packet));
     }
 }
 
-fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &ServerState) {
+fn send_boss_bar_packets(batch: &mut Batch, server_state: &ServerState) {
     if let Some(boss_bar) = server_state.boss_bar() {
         let packet = BossBarPacket::add(
             &boss_bar.title,
@@ -272,7 +272,7 @@ fn send_boss_bar_packets(batch: &mut Batch<PacketRegistry>, server_state: &Serve
 }
 
 fn send_title_text_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     server_state: &ServerState,
     protocol_version: ProtocolVersion,
 ) {
@@ -328,7 +328,7 @@ fn send_title_text_packets(
 }
 
 fn send_action_bar_packet(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     server_state: &ServerState,
     protocol_version: ProtocolVersion,
 ) {
@@ -347,7 +347,7 @@ fn send_action_bar_packet(
 }
 
 fn send_skin_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     client_state: &ClientState,
     server_state: &ServerState,
 ) {
@@ -396,7 +396,7 @@ fn send_skin_packets(
 }
 
 fn send_commands_packet(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     protocol_version: ProtocolVersion,
     server_state: &ServerState,
 ) {
@@ -436,7 +436,7 @@ impl From<TryFromIntError> for PacketHandlerError {
 }
 
 pub fn send_message(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     component: &Component,
     protocol_version: ProtocolVersion,
 ) {

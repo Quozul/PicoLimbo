@@ -11,7 +11,7 @@ impl PacketHandler for PingRequestPacket {
         &self,
         _client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let packet = PongResponsePacket {
             timestamp: self.timestamp,

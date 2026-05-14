@@ -16,7 +16,7 @@ impl PacketHandler for HandshakePacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let batch = Batch::new();
         client_state
             .set_protocol_version(self.get_protocol(server_state.allow_unsupported_versions()));

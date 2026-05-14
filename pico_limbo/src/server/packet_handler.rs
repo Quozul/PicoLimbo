@@ -40,7 +40,7 @@ pub trait PacketHandler {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError>;
+    ) -> Result<Batch, PacketHandlerError>;
 }
 
 impl From<pico_registries::Error> for PacketHandlerError {

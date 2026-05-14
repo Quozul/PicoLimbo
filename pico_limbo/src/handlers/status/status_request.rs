@@ -13,7 +13,7 @@ impl PacketHandler for StatusRequestPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let client_protocol_version = client_state.protocol_version();
         let (version_string, version_number) =

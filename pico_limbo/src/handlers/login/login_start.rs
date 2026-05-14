@@ -19,7 +19,7 @@ impl PacketHandler for LoginStartPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         if server_state.is_modern_forwarding() {
             if client_state.protocol_version().is_modern() {
@@ -35,7 +35,7 @@ impl PacketHandler for LoginStartPacket {
     }
 }
 
-fn login_start_velocity(batch: &mut Batch<PacketRegistry>, client_state: &mut ClientState) {
+fn login_start_velocity(batch: &mut Batch, client_state: &mut ClientState) {
     let message_id = {
         let mut rng = rand::rng();
         rng.random()
@@ -46,7 +46,7 @@ fn login_start_velocity(batch: &mut Batch<PacketRegistry>, client_state: &mut Cl
 }
 
 pub fn fire_login_success(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     client_state: &mut ClientState,
     server_state: &ServerState,
     game_profile: GameProfile,

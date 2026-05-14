@@ -14,7 +14,7 @@ impl PacketHandler for SetPlayerPositionAndRotationPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         Ok(teleport_player_to_spawn_out_of_bounds(
             client_state,
             server_state,
@@ -27,7 +27,7 @@ pub fn teleport_player_to_spawn_out_of_bounds(
     client_state: &mut ClientState,
     server_state: &ServerState,
     feet_y: f64,
-) -> Batch<PacketRegistry> {
+) -> Batch {
     let mut batch = Batch::new();
     if let Some(Boundaries {
         teleport_message,
@@ -58,7 +58,7 @@ pub fn teleport_player_to_spawn_out_of_bounds(
 pub fn teleport_player_to_spawn(
     client_state: &mut ClientState,
     server_state: &ServerState,
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
 ) {
     let (x, y, z) = server_state.spawn_position();
     let (yaw, pitch) = server_state.spawn_rotation();
