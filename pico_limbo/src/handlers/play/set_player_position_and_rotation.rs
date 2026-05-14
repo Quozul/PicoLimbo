@@ -72,7 +72,7 @@ pub fn teleport_player_to_spawn(
 mod tests {
     use super::*;
     use futures::StreamExt;
-    use minecraft_protocol::prelude::{ProtocolVersion, State};
+    use minecraft_protocol::prelude::{Direction, ProtocolVersion, State};
 
     fn server_state_with_min_y(min_y: i32, message: Option<String>) -> ServerState {
         let mut builder = ServerState::builder();
@@ -89,7 +89,8 @@ mod tests {
     fn client_state() -> ClientState {
         let mut cs = ClientState::default();
         cs.set_protocol_version(ProtocolVersion::V1_20_5);
-        cs.set_state(State::Play);
+        cs.set_state(Direction::Clientbound, State::Play);
+        cs.set_state(Direction::Serverbound, State::Play);
         cs
     }
 
@@ -105,11 +106,11 @@ mod tests {
 
         // Then
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SystemChatMessage(_) | PacketRegistry::LegacyChatMessage(_)
         ));
         assert!(batch.next().await.is_none());
@@ -127,7 +128,7 @@ mod tests {
 
         // Then
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(batch.next().await.is_none());
@@ -187,7 +188,7 @@ mod tests {
 
         assert!(
             matches!(
-                stream2.next().await.unwrap(),
+                stream2.next().await.unwrap().unwrap_packet(),
                 PacketRegistry::SynchronizePlayerPosition(_)
             ),
             "Second packet should trigger a teleport"

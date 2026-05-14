@@ -59,6 +59,7 @@ pub fn fire_login_success(
         let threshold = compression_settings.threshold;
         let packet = SetCompressionPacket::new(i32::try_from(threshold)?);
         batch.queue(|| PacketRegistry::SetCompression(packet));
+        batch.queue_enable_compression();
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_2) {
@@ -82,7 +83,7 @@ pub fn fire_login_success(
 mod tests {
     use super::*;
     use futures::StreamExt;
-    use minecraft_protocol::prelude::{ProtocolVersion, State};
+    use minecraft_protocol::prelude::{Direction, ProtocolVersion, State};
 
     fn vanilla() -> ServerState {
         ServerState::builder().build().unwrap()
@@ -98,7 +99,8 @@ mod tests {
     pub fn client(protocol: ProtocolVersion) -> ClientState {
         let mut cs = ClientState::default();
         cs.set_protocol_version(protocol);
-        cs.set_state(State::Login);
+        cs.set_state(Direction::Clientbound, State::Login);
+        cs.set_state(Direction::Serverbound, State::Login);
         cs
     }
 
@@ -120,7 +122,10 @@ mod tests {
 
         // Then
         assert!(
-            matches!(batch.next().await.unwrap(), PacketRegistry::CustomQuery(_)),
+            matches!(
+                batch.next().await.unwrap().unwrap_packet(),
+                PacketRegistry::CustomQuery(_)
+            ),
             "first packet should be the velocity CustomQuery"
         );
         assert_ne!(client_state.get_velocity_login_message_id(), -1);
@@ -160,7 +165,10 @@ mod tests {
 
         // Then
         assert!(
-            matches!(batch.next().await.unwrap(), PacketRegistry::LoginSuccess(_)),
+            matches!(
+                batch.next().await.unwrap().unwrap_packet(),
+                PacketRegistry::LoginSuccess(_)
+            ),
             "first packet should be LoginSuccess for ≥ 1.21.2"
         );
     }
@@ -178,7 +186,10 @@ mod tests {
 
         // Then
         assert!(
-            matches!(batch.next().await.unwrap(), PacketRegistry::GameProfile(_)),
+            matches!(
+                batch.next().await.unwrap().unwrap_packet(),
+                PacketRegistry::GameProfile(_)
+            ),
             "first packet should be GameProfile for < 1.21.2"
         );
     }

@@ -41,7 +41,7 @@ mod tests {
 
         // Then
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::PongResponse(_)
         ));
         assert!(batch.next().await.is_none());

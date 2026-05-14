@@ -134,6 +134,7 @@ pub fn send_play_packets(
     client_state: &mut ClientState,
     server_state: &ServerState,
 ) -> Result<(), PacketHandlerError> {
+    batch.queue_both_state_change(State::Play);
     let protocol_version = client_state.protocol_version();
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
@@ -247,8 +248,6 @@ pub fn send_play_packets(
         batch.chain_iter(iter);
     }
 
-    client_state.set_state(State::Play);
-
     Ok(())
 }
 
@@ -346,11 +345,7 @@ fn send_action_bar_packet(
     }
 }
 
-fn send_skin_packets(
-    batch: &mut Batch,
-    client_state: &ClientState,
-    server_state: &ServerState,
-) {
+fn send_skin_packets(batch: &mut Batch, client_state: &ClientState, server_state: &ServerState) {
     let fetch_player_skins = server_state.fetch_player_skins();
     let is_player_listed = server_state.is_player_listed();
     let unique_id = client_state.get_unique_id();
@@ -435,11 +430,7 @@ impl From<TryFromIntError> for PacketHandlerError {
     }
 }
 
-pub fn send_message(
-    batch: &mut Batch,
-    component: &Component,
-    protocol_version: ProtocolVersion,
-) {
+pub fn send_message(batch: &mut Batch, component: &Component, protocol_version: ProtocolVersion) {
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         let packet = SystemChatMessagePacket::component(component);
         batch.queue(|| PacketRegistry::SystemChatMessage(packet));
@@ -452,12 +443,19 @@ pub fn send_message(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::server::batch::BatchStream;
     use futures::StreamExt;
+    use minecraft_protocol::prelude::Direction;
 
     fn server_state() -> ServerState {
         let mut builder = ServerState::builder();
         builder.view_distance(0).welcome_message("Hello, World!");
         builder.build().unwrap()
+    }
+
+    async fn assert_play_state(batch: &mut BatchStream) {
+        batch.assert_client_state(State::Play).await;
+        batch.assert_server_state(State::Play).await;
     }
 
     fn client(protocol: ProtocolVersion) -> ClientState {
@@ -468,7 +466,8 @@ mod tests {
         } else {
             State::Login
         };
-        cs.set_state(previous_state);
+        cs.set_state(Direction::Clientbound, previous_state);
+        cs.set_state(Direction::Serverbound, previous_state);
         cs
     }
 
@@ -484,48 +483,49 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        assert_play_state(&mut batch).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Login(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Commands(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SystemChatMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetEntityMetadata(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::GameEvent(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
         assert!(batch.next().await.is_none());
@@ -543,48 +543,49 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        assert_play_state(&mut batch).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Login(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetDefaultSpawnPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Commands(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::PlayClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SystemChatMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetEntityMetadata(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetCenterChunk(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
         assert!(batch.next().await.is_none());
@@ -602,36 +603,37 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        assert_play_state(&mut batch).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Login(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Commands(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::PlayClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::LegacyChatMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetEntityMetadata(_)
         ));
         assert!(batch.next().await.is_none());
@@ -649,28 +651,29 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        assert_play_state(&mut batch).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::Login(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ClientBoundPlayerAbilities(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SynchronizePlayerPosition(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::LegacyChatMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::UpdateTime(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetEntityMetadata(_)
         ));
         assert!(batch.next().await.is_none());

@@ -1,3 +1,4 @@
+use crate::server::batch::{Batch, BatchItem};
 use crate::server::client_data::ClientData;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::{
@@ -144,54 +145,88 @@ async fn process_packet(
     raw_packet: RawPacket,
     was_in_play_state: &mut bool,
 ) -> Result<(), PacketProcessingError> {
-    let mut client_state = client_data.client().await;
-    let protocol_version = client_state.protocol_version();
-    let state = client_state.state();
+    let (protocol_version, state) = {
+        let client_state = client_data.client().await;
+        (
+            client_state.protocol_version(),
+            client_state.serverbound_state(),
+        )
+    };
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
+    trace!(
+        packet_name = decoded_packet.packet_name(),
+        "Packet received"
+    );
 
-    let batch = {
+    let batch: Batch = {
         let server_state_guard = server_state.read().await;
+        let mut client_state = client_data.client().await;
         decoded_packet.handle(&mut client_state, &server_state_guard)?
     };
 
-    let protocol_version = client_state.protocol_version();
-    let state = client_state.state();
+    let (protocol_version, state) = {
+        let client_state = client_data.client().await;
+        (
+            client_state.protocol_version(),
+            client_state.serverbound_state(),
+        )
+    };
 
     if !*was_in_play_state && state == State::Play {
         *was_in_play_state = true;
         server_state.write().await.increment();
-        let username = client_state.get_username();
+        let username = {
+            let client_state = client_data.client().await;
+            client_state.get_username()
+        };
         debug!(
             "{} joined using version {}",
             username,
             protocol_version.humanize()
         );
-        info!("{} joined the game", username,);
+        info!("{} joined the game", username);
     }
 
     let mut stream = batch.into_stream();
     while let Some(pending_packet) = stream.next().await {
-        let enable_compression = matches!(pending_packet, PacketRegistry::SetCompression(..));
-        let raw_packet = pending_packet.encode_packet(protocol_version)?;
-        client_data.write_packet(raw_packet).await?;
-        if enable_compression
-            && let Some(compression_settings) = server_state.read().await.compression_settings()
-        {
-            let mut packet_stream = client_data.stream().await;
-            packet_stream
-                .set_compression(compression_settings.threshold, compression_settings.level);
+        match pending_packet {
+            BatchItem::Packet(packet) => {
+                trace!(packet_name = packet.packet_name(), "Sending packet");
+                let raw_packet = packet.encode_packet(protocol_version)?;
+                client_data.write_packet(raw_packet).await?;
+            }
+            BatchItem::StateChange(direction, new_state) => {
+                trace!(?direction, ?new_state, "Changing state");
+                let mut client_state = client_data.client().await;
+                client_state.set_state(direction, new_state);
+            }
+            BatchItem::EnableCompression => {
+                if let Some(compression_settings) = server_state.read().await.compression_settings()
+                {
+                    let mut packet_stream = client_data.stream().await;
+                    packet_stream.set_compression(
+                        compression_settings.threshold,
+                        compression_settings.level,
+                    );
+                } else {
+                    warn!("compression enabled but no settings were found");
+                }
+            }
         }
     }
 
-    if let Some(reason) = client_state.should_kick() {
-        drop(client_state);
+    let should_kick = {
+        let client_state = client_data.client().await;
+        client_state.should_kick()
+    };
+
+    if let Some(reason) = should_kick {
         kick_client(client_data, reason.clone())
             .await
             .map_err(|_| PacketProcessingError::Disconnected)?;
         return Err(PacketProcessingError::Disconnected);
     }
 
-    drop(client_state);
     client_data.enable_keep_alive_if_needed().await;
 
     Ok(())
@@ -252,7 +287,7 @@ async fn kick_client(
 ) -> Result<(), PacketProcessingError> {
     let (protocol_version, state) = {
         let state = client_data.client().await;
-        (state.protocol_version(), state.state())
+        (state.protocol_version(), state.clientbound_state())
     };
     let packet = match state {
         State::Login => {
@@ -283,7 +318,7 @@ async fn kick_client(
 async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessingError> {
     let (protocol_version, state) = {
         let client = client_data.client().await;
-        (client.protocol_version(), client.state())
+        (client.protocol_version(), client.clientbound_state())
     };
 
     let packet = match state {
@@ -297,6 +332,7 @@ async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessin
     };
 
     if let Some(packet) = packet {
+        trace!(?state, "sending keep alive");
         let raw_packet = packet.encode_packet(protocol_version)?;
         client_data.write_packet(raw_packet).await?;
     }
