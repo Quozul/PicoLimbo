@@ -15,4 +15,8 @@ impl KnownPack {
             version: version.to_string(),
         }
     }
+
+    pub fn is_minecraft_core(&self) -> bool {
+        self.namespace == "minecraft" && self.id == "core"
+    }
 }
