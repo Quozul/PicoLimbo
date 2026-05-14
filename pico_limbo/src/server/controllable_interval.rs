@@ -26,19 +26,12 @@ impl ControllableInterval {
         }
     }
 
-    /// Disables the interval and sets a new one whose first tick fires after
-    /// `period`, then once per `period` after that.
-    ///
-    /// Note: we deliberately avoid `tokio::time::interval`'s default behaviour
-    /// of firing the first tick immediately. An immediate first tick races
-    /// against in-flight state transitions (e.g. CONFIGURATION -> PLAY), which
-    /// can cause a `keep_alive` packet to be sent with the wrong state's
-    /// packet ID on a client that has already advanced locally.
+    /// Disables the interval and sets a new one that starts ticking immediately.
     ///
     /// Any task currently waiting on `tick()` will be woken up and will
     /// start waiting for the new interval.
     pub async fn set_interval(&self, period: Duration) {
-        let mut new_interval = tokio::time::interval_at(Instant::now() + period, period);
+        let mut new_interval = tokio::time::interval(period);
         new_interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
         self.state.lock().await.interval = Some(new_interval);
         self.notify.notify_waiters();
