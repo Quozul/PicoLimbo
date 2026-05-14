@@ -86,37 +86,6 @@ fn send_post_known_packs_configuration_packets(
 ) -> Result<(), PacketHandlerError> {
     let registry_provider = PrecomputedRegistries::new(protocol_version);
 
-    // Send tags
-    // TODO: Move tags after registry data to match vanilla's behavior
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_6) {
-        // Since 1.21.6, the Dialog tags should be sent to have server links working
-        // Since 1.21.11, the Timeline tags should be sent to get the time of day working
-        // All tags are sent in a single packet
-        // TODO: `wolf_variant` tags should probably be sent too?
-        let tagged_registries = registry_provider
-            .get_tagged_registries()?
-            .iter()
-            .map(|tagged_registry| {
-                TaggedRegistry::new(
-                    tagged_registry.registry_id.clone(),
-                    tagged_registry
-                        .tags
-                        .iter()
-                        .map(|registry_tag| {
-                            RegistryTag::new(
-                                registry_tag.identifier.clone(),
-                                registry_tag.ids.iter().map(VarInt::from).collect(),
-                            )
-                        })
-                        .collect(),
-                )
-            })
-            .collect();
-
-        let packet = UpdateTagsPacket::new(tagged_registries);
-        batch.queue(|| PacketRegistry::UpdateTags(packet));
-    }
-
     // Send Registry Data — skip when the client accepted our vanilla `minecraft:core`
     // offer, since vanilla clients (and Paper-based servers) treat that as a signal
     // that the registries are already known.
@@ -156,6 +125,36 @@ fn send_post_known_packs_configuration_packets(
     } else {
         // Registries are sent in the Join Game packet for versions prior to 1.20.2 since configuration state does not exist
         unreachable!();
+    }
+
+    // Send tags
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_6) {
+        // Since 1.21.6, the Dialog tags should be sent to have server links working
+        // Since 1.21.11, the Timeline tags should be sent to get the time of day working
+        // All tags are sent in a single packet
+        // TODO: `wolf_variant` tags should probably be sent too?
+        let tagged_registries = registry_provider
+            .get_tagged_registries()?
+            .iter()
+            .map(|tagged_registry| {
+                TaggedRegistry::new(
+                    tagged_registry.registry_id.clone(),
+                    tagged_registry
+                        .tags
+                        .iter()
+                        .map(|registry_tag| {
+                            RegistryTag::new(
+                                registry_tag.identifier.clone(),
+                                registry_tag.ids.iter().map(VarInt::from).collect(),
+                            )
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+
+        let packet = UpdateTagsPacket::new(tagged_registries);
+        batch.queue(|| PacketRegistry::UpdateTags(packet));
     }
 
     // Send Finished Configuration
