@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub use blocks_report_data::{
     block_state_builder::BlockStateLookup,
-    internal_mapping::{InternalId, InternalMapping, StateData},
+    internal_mapping::{InternalId, InternalMapping, InternalProperties, StateData},
     report_mapping::{BlocksReportId, ReportIdMapping},
 };
 
@@ -28,7 +28,26 @@ pub fn load_internal_mapping() -> Result<InternalMapping, BinaryReaderError> {
 pub fn get_block_report_id_mapping(
     protocol_version: ProtocolVersion,
 ) -> Result<Vec<BlocksReportId>, BlockReportIdMappingError> {
-    Ok(get_blocks_reports(protocol_version)?.into_inner())
+    let direct = get_blocks_reports(protocol_version);
+    if let Ok(mapping) = direct {
+        return Ok(mapping.into_inner());
+    }
+
+    let packets_version = protocol_version.packets();
+    if packets_version != protocol_version
+        && let Ok(mapping) = get_blocks_reports(packets_version)
+    {
+        return Ok(mapping.into_inner());
+    }
+
+    let data_version = protocol_version.data();
+    if data_version != protocol_version
+        && let Ok(mapping) = get_blocks_reports(data_version)
+    {
+        return Ok(mapping.into_inner());
+    }
+
+    direct.map(|mapping| mapping.into_inner())
 }
 
 pub fn get_block_id(
