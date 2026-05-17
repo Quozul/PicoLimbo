@@ -3,6 +3,7 @@
 /docs/.vitepress/cache
 /docs/.vitepress/dist
 /target
+/result
 node_modules/
 *.zst
 .DS_Store
