@@ -1,6 +1,6 @@
 use crate::server::game_profile::GameProfile;
 use minecraft_packets::login::Property;
-use minecraft_protocol::prelude::{ProtocolVersion, State, Uuid};
+use minecraft_protocol::prelude::{Direction, ProtocolVersion, State, Uuid};
 use tracing::info;
 
 #[derive(PartialEq, Eq)]
@@ -13,7 +13,8 @@ pub enum KeepAliveStatus {
 impl Default for ClientState {
     fn default() -> Self {
         Self {
-            state: State::Handshake,
+            clientbound_state: State::Handshake,
+            serverbound_state: State::Handshake,
             protocol_version: ProtocolVersion::Any,
             kick_message: None,
             message_id: -1,
@@ -28,7 +29,8 @@ impl Default for ClientState {
 }
 
 pub struct ClientState {
-    state: State,
+    clientbound_state: State,
+    serverbound_state: State,
     protocol_version: ProtocolVersion,
     kick_message: Option<String>,
     message_id: i32,
@@ -55,12 +57,23 @@ impl ClientState {
 
     // State
 
-    pub const fn state(&self) -> State {
-        self.state
+    pub const fn clientbound_state(&self) -> State {
+        self.clientbound_state
     }
 
-    pub const fn set_state(&mut self, new_state: State) {
-        self.state = new_state;
+    pub const fn serverbound_state(&self) -> State {
+        self.serverbound_state
+    }
+
+    pub const fn set_state(&mut self, direction: Direction, new_state: State) {
+        match direction {
+            Direction::Clientbound => {
+                self.clientbound_state = new_state;
+            }
+            Direction::Serverbound => {
+                self.serverbound_state = new_state;
+            }
+        }
     }
 
     // Protocol version

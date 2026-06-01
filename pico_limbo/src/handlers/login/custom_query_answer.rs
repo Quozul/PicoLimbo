@@ -6,7 +6,6 @@ use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::game_profile::GameProfile;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
-use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
 use minecraft_packets::login::custom_query_answer_packet::CustomQueryAnswerPacket;
 use minecraft_protocol::prelude::BinaryReader;
@@ -16,7 +15,7 @@ impl PacketHandler for CustomQueryAnswerPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let client_message_id = client_state.get_velocity_login_message_id();
 

@@ -16,7 +16,7 @@ pub mod prelude {
     pub use crate::packet_serializer::decode_packet::DecodePacket;
     pub use crate::packet_serializer::encode_packet::EncodePacket;
     pub use crate::packet_serializer::packet_id::Identifiable;
-    pub use crate::state::State;
+    pub use crate::state::{Direction, State};
     pub use macros::PacketIn;
     pub use macros::PacketOut;
     pub use pico_binutils::prelude::{

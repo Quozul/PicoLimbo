@@ -42,6 +42,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
 
     let decode_impl = generate_decode_impl(&variants, &protocol_data);
     let encode_impl = generate_encode_impl(enum_ident, &variants, &protocol_data);
+    let name_impl = generate_packet_name_impl(&variants);
 
     let expanded = quote! {
         #[derive(Debug, thiserror::Error)]
@@ -69,6 +70,7 @@ pub fn packet_report_derive(input: TokenStream) -> TokenStream {
         impl #enum_ident {
             #decode_impl
             #encode_impl
+            #name_impl
         }
     };
 
@@ -320,6 +322,25 @@ fn generate_encode_impl(
                 _ => return Err(PacketRegistryEncodeError::CannotBeEncoded),
             };
             Ok(raw_packet)
+        }
+    }
+}
+
+fn generate_packet_name_impl(variants: &[PacketVariantInfo]) -> proc_macro2::TokenStream {
+    let arms = variants.iter().map(|variant_info| {
+        let variant_ident = &variant_info.variant_ident;
+        let packet_name = &variant_info.name;
+
+        quote! {
+            Self::#variant_ident(_) => #packet_name,
+        }
+    });
+
+    quote! {
+        pub fn packet_name(&self) -> &'static str {
+            match self {
+                #(#arms)*
+            }
         }
     }
 }

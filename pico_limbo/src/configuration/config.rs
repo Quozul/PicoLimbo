@@ -60,6 +60,14 @@ pub struct Config {
 
     pub compression: CompressionConfig,
 
+    /// Interval between two `minecraft:keep_alive` packets sent to a client
+    /// while in CONFIGURATION or PLAY state, in seconds.
+    ///
+    /// Vanilla uses 15. Lower it (e.g. 10) if a proxy in front of `PicoLimbo`
+    /// has a stricter read-timeout. Has no effect on clients <= 1.7.6, which
+    /// use a fixed 2-second ping required by the legacy protocol.
+    pub keep_alive_interval_seconds: u64,
+
     pub tab_list: TabListConfig,
 
     pub fetch_player_skins: bool,
@@ -95,6 +103,7 @@ impl Default for Config {
             reduced_debug_info: false,
             boss_bar: BossBarConfig::default(),
             compression: CompressionConfig::default(),
+            keep_alive_interval_seconds: 15,
             title: TitleConfig::default(),
             allow_unsupported_versions: false,
             allow_flight: false,

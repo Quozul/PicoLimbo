@@ -23,11 +23,11 @@ impl PacketHandler for LoginAcknowledgedPacket {
         &self,
         client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
         if protocol_version.supports_configuration_state() {
-            client_state.set_state(State::Configuration);
+            client_state.set_keep_alive_should_enable();
             send_configuration_packets(&mut batch, protocol_version)?;
             Ok(batch)
         } else {
@@ -43,7 +43,7 @@ impl PacketHandler for ServerBoundKnownPacksPacket {
         &self,
         client_state: &mut ClientState,
         _server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let protocol_version = client_state.protocol_version();
         let client_accepted_vanilla_core = self.has_minecraft_core();
@@ -58,9 +58,11 @@ impl PacketHandler for ServerBoundKnownPacksPacket {
 
 /// Only for >= 1.20.2
 fn send_configuration_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     protocol_version: ProtocolVersion,
 ) -> Result<(), PacketHandlerError> {
+    batch.queue_both_state_change(State::Configuration);
+
     // Send Server Brand
     let packet = ConfigurationClientBoundPluginMessagePacket::brand(SERVER_BRAND);
     batch.queue(|| PacketRegistry::ConfigurationClientBoundPluginMessage(packet));
@@ -80,7 +82,7 @@ fn send_configuration_packets(
 }
 
 fn send_post_known_packs_configuration_packets(
-    batch: &mut Batch<PacketRegistry>,
+    batch: &mut Batch,
     protocol_version: ProtocolVersion,
     client_accepted_vanilla_core: bool,
 ) -> Result<(), PacketHandlerError> {
@@ -160,6 +162,7 @@ fn send_post_known_packs_configuration_packets(
     // Send Finished Configuration
     let packet = FinishConfigurationPacket {};
     batch.queue(|| PacketRegistry::FinishConfiguration(packet));
+    batch.queue_clientbound_state_change(State::Play);
     Ok(())
 }
 
@@ -167,7 +170,7 @@ fn send_post_known_packs_configuration_packets(
 mod tests {
     use super::*;
     use futures::StreamExt;
-    use minecraft_protocol::prelude::ProtocolVersion;
+    use minecraft_protocol::prelude::{Direction, ProtocolVersion};
 
     fn server_state() -> ServerState {
         ServerState::builder().build().unwrap()
@@ -176,7 +179,8 @@ mod tests {
     fn client(protocol: ProtocolVersion) -> ClientState {
         let mut cs = ClientState::default();
         cs.set_protocol_version(protocol);
-        cs.set_state(State::Login);
+        cs.set_state(Direction::Clientbound, State::Login);
+        cs.set_state(Direction::Serverbound, State::Login);
         cs
     }
 
@@ -196,7 +200,8 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
-        assert_eq!(client_state.state(), State::Configuration);
+        batch.assert_client_state(State::Configuration).await;
+        assert!(client_state.should_enable_keep_alive());
         assert!(batch.next().await.is_some());
     }
 
@@ -227,18 +232,21 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        batch.assert_client_state(State::Configuration).await;
+        batch.assert_server_state(State::Configuration).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ConfigurationClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::RegistryData(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::FinishConfiguration(_)
         ));
+        batch.assert_client_state(State::Play).await;
         assert!(batch.next().await.is_none());
     }
 
@@ -252,12 +260,14 @@ mod tests {
         let mut batch = batch.into_stream();
 
         // Then
+        batch.assert_client_state(State::Configuration).await;
+        batch.assert_server_state(State::Configuration).await;
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ConfigurationClientBoundPluginMessage(_)
         ));
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::ClientBoundKnownPacks(_)
         ));
         assert!(batch.next().await.is_none());
@@ -276,14 +286,15 @@ mod tests {
         // Then
         for _ in 0..4 {
             assert!(matches!(
-                batch.next().await.unwrap(),
+                batch.next().await.unwrap().unwrap_packet(),
                 PacketRegistry::RegistryData(_)
             ));
         }
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::FinishConfiguration(_)
         ));
+        batch.assert_client_state(State::Play).await;
         assert!(batch.next().await.is_none());
     }
 
@@ -291,7 +302,8 @@ mod tests {
     async fn test_known_packs_handler_with_empty_list_sends_registries() {
         // Given
         let mut client_state = client(ProtocolVersion::V1_20_5);
-        client_state.set_state(State::Configuration);
+        client_state.set_state(Direction::Clientbound, State::Configuration);
+        client_state.set_state(Direction::Serverbound, State::Configuration);
         let server_state = server_state();
         let pkt = ServerBoundKnownPacksPacket::new(Vec::new());
 
@@ -299,17 +311,18 @@ mod tests {
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then — registries first, then FinishConfiguration
+        // Then, registries first, then FinishConfiguration
         for _ in 0..4 {
             assert!(matches!(
-                batch.next().await.unwrap(),
+                batch.next().await.unwrap().unwrap_packet(),
                 PacketRegistry::RegistryData(_)
             ));
         }
         assert!(matches!(
-            batch.next().await.unwrap(),
+            batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::FinishConfiguration(_)
         ));
+        batch.assert_client_state(State::Play).await;
         assert!(batch.next().await.is_none());
     }
 }

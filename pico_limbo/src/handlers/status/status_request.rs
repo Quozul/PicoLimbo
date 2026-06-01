@@ -13,7 +13,7 @@ impl PacketHandler for StatusRequestPacket {
         &self,
         client_state: &mut ClientState,
         server_state: &ServerState,
-    ) -> Result<Batch<PacketRegistry>, PacketHandlerError> {
+    ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
         let client_protocol_version = client_state.protocol_version();
         let (version_string, version_number) =
@@ -82,8 +82,8 @@ mod tests {
         // Then
         let packet = batch.next().await.unwrap();
         assert!(matches!(
-          packet,
-          PacketRegistry::StatusResponse(ref status_packet)
+          packet.unwrap_packet(),
+          PacketRegistry::StatusResponse( status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
         assert!(batch.next().await.is_none());
@@ -106,8 +106,8 @@ mod tests {
         // Then
         let packet = batch.next().await.unwrap();
         assert!(matches!(
-          packet,
-          PacketRegistry::StatusResponse(ref status_packet)
+          packet.unwrap_packet(),
+          PacketRegistry::StatusResponse( status_packet)
            if status_packet.status_response().unwrap().version.protocol == expected_protocol
         ));
         assert!(batch.next().await.is_none());
@@ -130,8 +130,8 @@ mod tests {
         // Then
         let packet = batch.next().await.unwrap();
         assert!(matches!(
-          packet,
-          PacketRegistry::StatusResponse(ref status_packet)
+          packet.unwrap_packet(),
+          PacketRegistry::StatusResponse(status_packet)
            if status_packet.status_response().unwrap().version.protocol == ProtocolVersion::latest().version_number()
         ));
         assert!(batch.next().await.is_none());
@@ -156,8 +156,8 @@ mod tests {
             // Then
             let packet = batch.next().await.unwrap();
             assert!(matches!(
-                packet,
-                PacketRegistry::StatusResponse(ref status_packet)
+                packet.unwrap_packet(),
+                PacketRegistry::StatusResponse(status_packet)
                     if status_packet.status_response().unwrap().version.protocol ==
                         ProtocolVersion::V1_7_2.version_number()
             ));
