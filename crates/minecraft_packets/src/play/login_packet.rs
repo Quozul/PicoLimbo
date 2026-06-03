@@ -88,7 +88,7 @@ impl LoginPacket {
     /// This is the constructor for all versions from 1.7.2 to 1.15.2 included
     pub fn with_dimension_pre_v1_16(dimension: Dimension) -> Self {
         Self {
-            entity_id: 0,
+            entity_id: 1,
             data: LoginPacketData::PreV1_16(PreV1_16Data {
                 dimension: DimensionField(dimension.legacy_i8()),
                 ..PreV1_16Data::default()
