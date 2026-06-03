@@ -8,7 +8,7 @@ ARG TARGETPLATFORM
 ARG BINARY_NAME=pico_limbo
 
 WORKDIR /usr/src/app
-COPY --parents ./Cargo.toml ./Cargo.lock ./crates ./pico_limbo ./data/generated ./
+COPY --parents ./Cargo.toml ./Cargo.lock ./crates ./pico_libraries ./pico_limbo ./data/generated ./
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/app/target \

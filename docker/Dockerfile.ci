@@ -1,5 +1,14 @@
-# First, place the binary `pico_limbo` in the `docker` directory.
-# Build this Dockerfile using this command from the repository root:
+# This Dockerfile is only used in the CI as we already built the binary in a previous CI step,
+# we can simply copy the already compiled binary into the image. If you ever want to build this locally,
+# you can follow these steps:
+#
+# First, build PicoLimbo using the musl toolchain compatible with Alpine Linux:
+# cargo build --release --target x86_64-unknown-linux-musl --bin pico_limbo
+#
+# Next, place the binary `pico_limbo` in the `docker` directory:
+# cp target/x86_64-unknown-linux-musl/release/pico_limbo docker
+#
+# Finally, build this Dockerfile using this command from the repository root:
 # docker build -t picolimbo:latest -f docker/Dockerfile.ci docker
 
 FROM alpine AS build-env
