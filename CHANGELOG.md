@@ -9,20 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `keep_alive_interval_seconds` setting (defaults to 15, matching vanilla) to control how often the server sends `keep_alive` packets
+- New `keep_alive_interval_seconds` setting (defaults to 15, matching vanilla) to control how often the server sends `keep_alive` packets (PR #79)
 
 ### Fixed
 
-- The plugin doesn't shutdown when shutting down the proxy
-- PicoLimbo should wait for client known packs before sending registry data (starting 1.20.5)
-- Registry data can be omitted if it is known by the client (starting 1.21.5)
-- Send `keep_alive` packets while clients are in the CONFIGURATION state, preventing proxies (e.g. Velocity) from dropping connections with a `read timed out` error during long custom holds
+- The plugin doesn't shutdown when shutting down the proxy (PR #69)
+- PicoLimbo should wait for client known packs before sending registry data (starting 1.20.5) (PR #78)
+- Registry data can be omitted if it is known by the client (starting 1.21.5) (PR #75)
+- Fixed connection dropped while held in configuration state for too long (PR #79)
+- Fixed broken firework elytra boosting after changing server (PR #82)
+- Fixed the local Dockerfile build
 
 ## [1.12.2+mc26.1.2] - 2026-04-12
 
 ### Fixed
 
-- Cobblestone blocks being placed instead of air blocks outside of schematic range
+- Cobblestone blocks being placed instead of air blocks outside the schematic range
 
 ## [1.12.1+mc26.1.1] - 2026-04-03
 
