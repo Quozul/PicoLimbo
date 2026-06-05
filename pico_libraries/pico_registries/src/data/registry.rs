@@ -39,8 +39,8 @@ impl Registry {
     /// # Errors
     /// Returns an error if it fails to load a registry
     pub fn load(registry_keys: &RegistryKeys, resource_path: &Path) -> crate::Result<Self> {
-        let entries = Self::load_entries(registry_keys, resource_path)?;
-        let tags = Self::load_tags(registry_keys, resource_path)?;
+        let entries = Self::load_entries(registry_keys, resource_path).unwrap_or_default();
+        let tags = Self::load_tags(registry_keys, resource_path).unwrap_or_default();
         let key = RegistryKey::of_registry(registry_keys.id());
         Ok(Self { entries, key, tags })
     }
