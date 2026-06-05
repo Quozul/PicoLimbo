@@ -386,7 +386,7 @@ fn send_skin_packets(batch: &mut Batch, client_state: &ClientState, server_state
 
     // There are no skin layers before 1.8 so no need to send this packet
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8) {
-        let packet = SetEntityMetadataPacket::skin_layers(0);
+        let packet = SetEntityMetadataPacket::skin_layers(1);
         batch.queue(|| PacketRegistry::SetEntityMetadata(packet));
     }
 }
