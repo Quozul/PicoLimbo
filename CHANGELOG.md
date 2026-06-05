@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nix flake (PR #74)
 - Flying speed can be configured (PR #84)
 - Add a new CLI parameter to override port from the configuration file (PR #85)
+- Added support for 26.2
 
 ### Updated
 
