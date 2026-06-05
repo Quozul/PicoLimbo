@@ -17,7 +17,7 @@ use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
-use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
@@ -124,7 +124,7 @@ pub enum PacketRegistry {
         bound = "clientbound",
         name = "minecraft:login_finished"
     )]
-    LoginSuccess(LoginSuccessPacket),
+    LoginFinished(LoginFinishedPacket),
 
     #[protocol_id(
         state = "login",

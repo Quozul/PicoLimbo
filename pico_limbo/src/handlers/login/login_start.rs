@@ -9,7 +9,7 @@ use crate::server_state::ServerState;
 use minecraft_packets::login::custom_query_packet::CustomQueryPacket;
 use minecraft_packets::login::game_profile_packet::GameProfilePacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
-use minecraft_packets::login::login_success_packet::LoginSuccessPacket;
+use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_protocol::prelude::ProtocolVersion;
 use rand::RngExt;
@@ -63,8 +63,8 @@ pub fn fire_login_success(
     }
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_2) {
-        let packet = LoginSuccessPacket::new(game_profile.uuid(), game_profile.username());
-        batch.queue(|| PacketRegistry::LoginSuccess(packet));
+        let packet = LoginFinishedPacket::new(game_profile.uuid(), game_profile.username());
+        batch.queue(|| PacketRegistry::LoginFinished(packet));
     } else {
         let packet = GameProfilePacket::new(game_profile.uuid(), game_profile.username());
         batch.queue(|| PacketRegistry::GameProfile(packet));
@@ -167,7 +167,7 @@ mod tests {
         assert!(
             matches!(
                 batch.next().await.unwrap().unwrap_packet(),
-                PacketRegistry::LoginSuccess(_)
+                PacketRegistry::LoginFinished(_)
             ),
             "first packet should be LoginSuccess for ≥ 1.21.2"
         );
