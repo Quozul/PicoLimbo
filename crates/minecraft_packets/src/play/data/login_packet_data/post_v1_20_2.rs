@@ -26,6 +26,8 @@ pub struct PostV1_20_2Data {
     pub portal_cooldown: VarInt,
     #[pvn(768..)]
     pub v1_21_2_sea_level: VarInt,
+    #[pvn(776..)]
+    pub v26_2_online_mode: bool,
     #[pvn(766..)]
     pub v1_20_5_enforces_secure_chat: bool,
 }
@@ -50,6 +52,7 @@ impl Default for PostV1_20_2Data {
             death_location: Optional::None,
             portal_cooldown: VarInt::default(),
             v1_21_2_sea_level: VarInt::new(63),
+            v26_2_online_mode: false,
             v1_20_5_enforces_secure_chat: true,
             dimension_name: overworld.clone(),
             dimension_type: overworld,
