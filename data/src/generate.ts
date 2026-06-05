@@ -8,7 +8,6 @@ import {
 } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { exec } from "node:child_process";
-import { cleanDataDirectory } from "./clean/cleanData.ts";
 import { downloadServerJars } from "./fetch/serverJar.ts";
 import { fileExists } from "./fetch/fileExists.ts";
 
@@ -26,6 +25,7 @@ const execute = async (command: string, cwd: string): Promise<string> =>
     });
 
 const SUPPORTED_VERSIONS = [
+    "26.2-rc-2",
     "26.1",
     "1.21.11",
     "1.21.9",
