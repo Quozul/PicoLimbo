@@ -80,7 +80,7 @@ pub unsafe extern "C" fn start_app(
 
     match Cli::try_parse_from(&rust_args) {
         Ok(cli) => {
-            let token = unsafe { &*token_ptr };
+            let cancellation_token = unsafe { &*token_ptr };
 
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -88,9 +88,8 @@ pub unsafe extern "C" fn start_app(
                 .unwrap();
 
             let _ = rt.block_on(server::start_server::start_server(
-                cli.config_path,
-                cli.verbose,
-                Some(token),
+                &cli,
+                Some(cancellation_token),
             ));
         }
         Err(e) => {

@@ -24,7 +24,7 @@ impl Default for ServerListConfig {
         Self {
             reply_to_status: true,
             max_players: 20,
-            message_of_the_day: "A Minecraft Server".into(),
+            message_of_the_day: "A PicoLimbo Server".into(),
             show_online_player_count: true,
             server_icon: PathBuf::from("server-icon.png"),
         }

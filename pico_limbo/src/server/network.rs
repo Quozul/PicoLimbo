@@ -4,6 +4,7 @@ use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::{
     PacketRegistry, PacketRegistryDecodeError, PacketRegistryEncodeError,
 };
+use crate::server::server_address::ServerAddress;
 use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use futures::StreamExt;
@@ -23,19 +24,19 @@ use tracing::{debug, error, info, trace, warn};
 
 pub struct Server {
     state: Arc<RwLock<ServerState>>,
-    listen_address: String,
+    listen_address: ServerAddress,
 }
 
 impl Server {
-    pub fn new(listen_address: &impl ToString, state: ServerState) -> Self {
+    pub fn new(listen_address: &ServerAddress, state: ServerState) -> Self {
         Self {
             state: Arc::new(RwLock::new(state)),
-            listen_address: listen_address.to_string(),
+            listen_address: listen_address.clone(),
         }
     }
 
-    pub async fn run(self, token: Option<&CancellationToken>) {
-        let listener = match TcpListener::bind(&self.listen_address).await {
+    pub async fn run(self, cancellation_token: Option<&CancellationToken>) {
+        let listener = match TcpListener::bind(&self.listen_address.tuple()).await {
             Ok(sock) => sock,
             Err(err) => {
                 error!("Failed to bind to {}: {}", self.listen_address, err);
@@ -44,10 +45,14 @@ impl Server {
         };
 
         info!("Listening on: {}", self.listen_address);
-        self.accept(&listener, token).await;
+        self.accept(&listener, cancellation_token).await;
     }
 
-    pub async fn accept(self, listener: &TcpListener, token: Option<&CancellationToken>) {
+    pub async fn accept(
+        self,
+        listener: &TcpListener,
+        cancellation_token: Option<&CancellationToken>,
+    ) {
         loop {
             tokio::select! {
                  accept_result = listener.accept() => {
@@ -65,7 +70,7 @@ impl Server {
                     }
                 },
 
-                 () = shutdown_signal(token) => {
+                 () = shutdown_signal(cancellation_token) => {
                     info!("Shutdown signal received, shutting down gracefully.");
                     break;
                 }
