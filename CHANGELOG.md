@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `keep_alive_interval_seconds` setting (defaults to 15, matching vanilla) to control how often the server sends `keep_alive` packets (PR #79)
+- Nix flake (PR #74)
+- Flying speed can be configured (PR #84)
 
 ### Fixed
 

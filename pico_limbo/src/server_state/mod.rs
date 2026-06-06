@@ -1,5 +1,6 @@
 use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
+use crate::configuration::fly_config::FlyConfig;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -78,6 +79,22 @@ pub struct Title {
     pub fade_out: i32,
 }
 
+pub struct Fly {
+    pub allow_flight: bool,
+    pub flying: bool,
+    pub flying_speed: f32,
+}
+
+impl Default for Fly {
+    fn default() -> Self {
+        Self {
+            allow_flight: false,
+            flying: false,
+            flying_speed: 0.05,
+        }
+    }
+}
+
 #[derive(Default)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ServerState {
@@ -109,7 +126,7 @@ pub struct ServerState {
     reply_to_status: bool,
     accept_transfers: bool,
     allow_unsupported_versions: bool,
-    allow_flight: bool,
+    fly: Fly,
     server_commands: ServerCommands,
     keep_alive_interval_secs: u64,
 }
@@ -258,8 +275,8 @@ impl ServerState {
         self.allow_unsupported_versions
     }
 
-    pub const fn allow_flight(&self) -> bool {
-        self.allow_flight
+    pub const fn fly(&self) -> &Fly {
+        &self.fly
     }
 
     pub const fn accept_transfers(&self) -> bool {
@@ -308,7 +325,7 @@ pub struct ServerStateBuilder {
     is_player_listed: bool,
     reply_to_status: bool,
     allow_unsupported_versions: bool,
-    allow_flight: bool,
+    fly: Fly,
     accept_transfers: bool,
     server_commands: ServerCommands,
     keep_alive_interval_secs: Option<u64>,
@@ -435,8 +452,12 @@ impl ServerStateBuilder {
         self
     }
 
-    pub const fn set_allow_flight(&mut self, allow_flight: bool) -> &mut Self {
-        self.allow_flight = allow_flight;
+    pub const fn set_fly(&mut self, fly: &FlyConfig) -> &mut Self {
+        self.fly = Fly {
+            allow_flight: fly.allow_flight,
+            flying_speed: fly.flying_speed,
+            flying: fly.flying,
+        };
         self
     }
 
@@ -632,7 +653,7 @@ impl ServerStateBuilder {
             is_player_listed: self.is_player_listed,
             reply_to_status: self.reply_to_status,
             allow_unsupported_versions: self.allow_unsupported_versions,
-            allow_flight: self.allow_flight,
+            fly: self.fly,
             accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
             keep_alive_interval_secs: self.keep_alive_interval_secs.unwrap_or(15),

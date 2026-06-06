@@ -15,6 +15,7 @@ PicoLimbo uses a simple TOML configuration file to manage all server settings. T
 - [Boss Bar](./boss-bar) - Customize the boss bar
 - [Commands](./commands) - Configure the commands
 - [Compression](./compression) - Configure the compression
+- [Fly](./fly) - Configure flight settings
 - [Proxy Integration](./proxy-integration) - Configure proxy integration
 - [Schematic Loading](./schematic-loading) - Experimental features for world customization
 - [Server List](./server-list) - Customize your server's appearance in the Minecraft client

@@ -40,6 +40,7 @@ export default defineConfig({
 					{ text: "Boss Bar", link: "/config/boss-bar.html" },
 					{ text: "Commands", link: "/config/commands.html" },
 					{ text: "Compression", link: "/config/compression.html" },
+					{ text: "Fly", link: "/config/fly.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
