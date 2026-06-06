@@ -32,6 +32,14 @@ pico_limbo -v
 pico_limbo -vv
 ```
 
+### Port override
+
+Override the port configured in the configuration file:
+
+```bash
+pico_limbo --port 30066
+```
+
 ## Advanced Options
 
 ### Version Information

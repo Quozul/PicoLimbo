@@ -24,4 +24,13 @@ pub struct Cli {
         help = "Configuration file path"
     )]
     pub config_path: PathBuf,
+
+    /// Port to listen on. Defaults back to the port defined in the configuration file if not specified
+    #[arg(
+        short = 'p',
+        long = "port",
+        value_name = "PORT",
+        help = "Port to listen on"
+    )]
+    pub port: Option<u16>,
 }

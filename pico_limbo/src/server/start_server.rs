@@ -5,6 +5,7 @@ use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::server::network::Server;
+use crate::server::server_address::ServerAddress;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -15,20 +16,24 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 pub async fn start_server(
-    config_path: PathBuf,
-    logging_level: u8,
-    token: Option<&CancellationToken>,
+    cli: &crate::cli::Cli,
+    cancellation_token: Option<&CancellationToken>,
 ) -> ExitCode {
-    enable_logging(logging_level);
-    let Some(cfg) = load_configuration(&config_path) else {
+    enable_logging(cli.verbose);
+    let Some(cfg) = load_configuration(&cli.config_path) else {
         return ExitCode::FAILURE;
     };
 
-    let bind = cfg.bind.clone();
+    let mut bind = ServerAddress::parse(&cfg.bind).unwrap_or_default();
+    if let Some(port) = cli.port {
+        bind.set_port(port);
+    }
 
     match build_state(cfg) {
         Ok(server_state) => {
-            Server::new(&bind, server_state).run(token).await;
+            Server::new(&bind, server_state)
+                .run(cancellation_token)
+                .await;
             ExitCode::SUCCESS
         }
         Err(err) => {
