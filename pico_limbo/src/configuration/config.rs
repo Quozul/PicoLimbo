@@ -2,6 +2,7 @@ use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::compression::CompressionConfig;
 use crate::configuration::env_placeholders::{EnvPlaceholderError, expand_env_placeholders};
+use crate::configuration::fly_config::FlyConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
 use crate::configuration::server_list::ServerListConfig;
@@ -76,7 +77,7 @@ pub struct Config {
 
     pub allow_unsupported_versions: bool,
 
-    pub allow_flight: bool,
+    pub fly: FlyConfig,
 
     pub accept_transfers: bool,
 
@@ -106,7 +107,7 @@ impl Default for Config {
             keep_alive_interval_seconds: 15,
             title: TitleConfig::default(),
             allow_unsupported_versions: false,
-            allow_flight: false,
+            fly: FlyConfig::default(),
             accept_transfers: false,
             commands: CommandsConfig::default(),
         }

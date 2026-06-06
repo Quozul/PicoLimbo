@@ -163,12 +163,13 @@ pub fn send_play_packets(
     batch.queue(|| PacketRegistry::Login(Box::new(packet)));
 
     let is_flying = game_mode == GameMode::Spectator;
-    let allow_flying = server_state.allow_flight() || is_flying;
+    let fly = server_state.fly();
+    let allow_flying = fly.allow_flight || is_flying;
     let packet = ClientBoundPlayerAbilitiesPacket::builder()
         .allow_flying(allow_flying)
         .creative(game_mode == GameMode::Creative)
-        .flying(is_flying)
-        .flying_speed(client_state.get_flying_speed())
+        .flying(fly.flying || is_flying)
+        .flying_speed(fly.flying_speed)
         .build();
     batch.queue(|| PacketRegistry::ClientBoundPlayerAbilities(packet));
     client_state.set_is_flight_allowed(allow_flying);

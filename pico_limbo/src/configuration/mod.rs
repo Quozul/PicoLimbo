@@ -3,6 +3,7 @@ pub mod commands;
 mod compression;
 pub mod config;
 mod env_placeholders;
+pub mod fly_config;
 mod forwarding;
 mod game_mode_config;
 mod require_boolean;

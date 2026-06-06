@@ -19,11 +19,15 @@ hardcore = false
 fetch_player_skins = false
 reduced_debug_info = false
 allow_unsupported_versions = false
-allow_flight = false
 accept_transfers = false
 # Interval, in seconds, between two keep-alive packets sent to a client
 # (no effect on clients <= 1.7.6, which use a fixed 2s ping)
 keep_alive_interval_seconds = 15
+
+[fly]
+allow_flight = false
+flying = false
+flying_speed = 0.05
 
 [forwarding]
 # Disable forwarding

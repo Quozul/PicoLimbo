@@ -132,7 +132,7 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .set_player_listed(cfg.tab_list.player_listed)
         .set_reply_to_status(cfg.server_list.reply_to_status)
         .set_allow_unsupported_versions(cfg.allow_unsupported_versions)
-        .set_allow_flight(cfg.allow_flight)
+        .set_fly(&cfg.fly)
         .set_accept_transfers(cfg.accept_transfers)
         .server_commands(cfg.commands);
 
