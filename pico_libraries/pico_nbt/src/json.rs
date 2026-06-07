@@ -1,19 +1,51 @@
-use crate::{Error, Result, Value};
+use crate::{Error, NbtOptions, Result, Value};
 use serde_json::Value as JsonValue;
 
-/// Converts a JSON value to an NBT value.
-///
-/// # Errors
-/// Returns an error if:
-/// * The JSON contains a `null` value, which is not supported in NBT.
-/// * A number is invalid or cannot be represented in NBT types.
-/// * Array elements cannot be converted to NBT values.
-fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
+fn convert_number(n: &serde_json::Number, options: NbtOptions) -> Result<Value> {
+    if let Some(i) = n.as_i64() {
+        if options.is_numeric_widening() {
+            return i32::try_from(i)
+                .map_or_else(|_| Ok(Value::Long(i)), |int| Ok(Value::Int(int)));
+        }
+        return i8::try_from(i).map_or_else(
+            |_| {
+                i16::try_from(i).map_or_else(
+                    |_| {
+                        i32::try_from(i)
+                            .map_or_else(|_| Ok(Value::Long(i)), |int| Ok(Value::Int(int)))
+                    },
+                    |s| Ok(Value::Short(s)),
+                )
+            },
+            |s| Ok(Value::Byte(s)),
+        );
+    }
+
+    let f = n
+        .as_f64()
+        .ok_or_else(|| Error::Message("Invalid JSON number".into()))?;
+
+    #[allow(clippy::cast_possible_truncation)]
+    let f32_val = f as f32;
+
+    if options.is_numeric_widening() {
+        return Ok(Value::Float(f32_val));
+    }
+
+    if (f64::from(f32_val) - f).abs() < f64::EPSILON {
+        Ok(Value::Float(f32_val))
+    } else {
+        Ok(Value::Double(f))
+    }
+}
+
+fn convert_array(arr: Vec<JsonValue>, options: NbtOptions) -> Result<Value> {
     if arr.is_empty() {
         return Ok(Value::List(Vec::new()));
     }
 
-    let mut is_byte = true;
+    let widening = options.is_numeric_widening();
+    let mut is_byte = !widening;
     let mut is_int = true;
     let mut is_long = true;
 
@@ -85,12 +117,12 @@ fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
 
     let mut list = Vec::with_capacity(arr.len());
     for elem in arr {
-        list.push(json_to_nbt(elem)?);
+        list.push(json_to_nbt_with_options(elem, options)?);
     }
     Ok(Value::List(list))
 }
 
-/// Converts a JSON value to an NBT value.
+/// Converts a JSON value to an NBT value using the default options.
 ///
 /// # Errors
 /// Returns an error if:
@@ -98,46 +130,32 @@ fn convert_array(arr: Vec<JsonValue>) -> Result<Value> {
 /// * A number is invalid or cannot be represented in NBT types.
 /// * Array elements cannot be converted to NBT values.
 pub fn json_to_nbt(json: JsonValue) -> Result<Value> {
+    json_to_nbt_with_options(json, NbtOptions::new())
+}
+
+/// Converts a JSON value to an NBT value using the provided options.
+///
+/// With `NbtOptions::numeric_widening` enabled, integers are emitted as `Int`
+/// (or `Long` on `i32` overflow), floats as `Float`, and homogeneous integer
+/// arrays as `IntArray` / `LongArray` — matching what Mojang's `Codec` API
+/// produces against `NbtOps.INSTANCE` for canonical registry encoding.
+///
+/// # Errors
+/// Returns an error if:
+/// * The JSON contains a `null` value, which is not supported in NBT.
+/// * A number is invalid or cannot be represented in NBT types.
+/// * Array elements cannot be converted to NBT values.
+pub fn json_to_nbt_with_options(json: JsonValue, options: NbtOptions) -> Result<Value> {
     match json {
         JsonValue::Null => Err(Error::Message("JSON null is not supported in NBT".into())),
         JsonValue::Bool(b) => Ok(Value::Byte(i8::from(b))),
-        JsonValue::Number(n) => n.as_i64().map_or_else(
-            || {
-                n.as_f64().map_or_else(
-                    || Err(Error::Message("Invalid JSON number".into())),
-                    |f| {
-                        #[allow(clippy::cast_possible_truncation)]
-                        // I cannot find a better solution than casting the double down to float
-                        let f32_val = f as f32;
-                        if (f64::from(f32_val) - f).abs() < f64::EPSILON {
-                            Ok(Value::Float(f32_val))
-                        } else {
-                            Ok(Value::Double(f))
-                        }
-                    },
-                )
-            },
-            |i| {
-                i8::try_from(i).map_or_else(
-                    |_| {
-                        i16::try_from(i).map_or_else(
-                            |_| {
-                                i32::try_from(i)
-                                    .map_or_else(|_| Ok(Value::Long(i)), |int| Ok(Value::Int(int)))
-                            },
-                            |s| Ok(Value::Short(s)),
-                        )
-                    },
-                    |s| Ok(Value::Byte(s)),
-                )
-            },
-        ),
+        JsonValue::Number(n) => convert_number(&n, options),
         JsonValue::String(s) => Ok(Value::String(s)),
-        JsonValue::Array(arr) => convert_array(arr),
+        JsonValue::Array(arr) => convert_array(arr, options),
         JsonValue::Object(obj) => {
             let mut map = indexmap::IndexMap::new();
             for (k, v) in obj {
-                map.insert(k, json_to_nbt(v)?);
+                map.insert(k, json_to_nbt_with_options(v, options)?);
             }
             Ok(Value::Compound(map))
         }
@@ -148,6 +166,10 @@ pub fn json_to_nbt(json: JsonValue) -> Result<Value> {
 mod tests {
     use crate::*;
     use serde_json::json;
+
+    fn widening() -> NbtOptions {
+        NbtOptions::new().numeric_widening(true)
+    }
 
     #[test]
     fn bool_true() {
@@ -313,5 +335,145 @@ mod tests {
     fn test_json_null_error() {
         let res = json_to_nbt(json!(null));
         assert!(res.is_err());
+    }
+
+    // --- numeric_widening tests ---
+
+    #[test]
+    fn widening_zero_is_int() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(0), widening()).unwrap(),
+            Value::Int(0)
+        );
+    }
+
+    #[test]
+    fn widening_short_range_is_int() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(128), widening()).unwrap(),
+            Value::Int(128)
+        );
+    }
+
+    #[test]
+    fn widening_i32_max_is_int() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(i32::MAX), widening()).unwrap(),
+            Value::Int(i32::MAX)
+        );
+    }
+
+    #[test]
+    fn widening_overflow_is_long() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(2_147_483_649_u64), widening()).unwrap(),
+            Value::Long(2_147_483_649)
+        );
+    }
+
+    #[test]
+    fn widening_negative_is_int() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(-42), widening()).unwrap(),
+            Value::Int(-42)
+        );
+    }
+
+    #[test]
+    fn widening_bool_stays_byte() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(true), widening()).unwrap(),
+            Value::Byte(1)
+        );
+        assert_eq!(
+            json_to_nbt_with_options(json!(false), widening()).unwrap(),
+            Value::Byte(0)
+        );
+    }
+
+    #[test]
+    fn widening_float_exact_is_float() {
+        assert_eq!(
+            json_to_nbt_with_options(json!(std::f32::consts::PI), widening()).unwrap(),
+            Value::Float(std::f32::consts::PI)
+        );
+    }
+
+    #[test]
+    fn widening_float_lossy_is_float() {
+        // 0.362 is not exactly representable in f32, but Mojang's Codec.FLOAT
+        // still emits a FloatTag rather than promoting to DoubleTag.
+        let Value::Float(f) = json_to_nbt_with_options(json!(0.362), widening()).unwrap() else {
+            panic!("Expected Float");
+        };
+        assert!((f - 0.362_f32).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn widening_nested_compound() {
+        let json_data = json!({
+            "period_ticks": 24000,
+            "show_in_commands": true,
+            "ratio": 0.5
+        });
+        let nbt = json_to_nbt_with_options(json_data, widening()).unwrap();
+        let Value::Compound(map) = nbt else {
+            panic!("Expected Compound");
+        };
+        assert_eq!(map.get("period_ticks"), Some(&Value::Int(24000)));
+        assert_eq!(map.get("show_in_commands"), Some(&Value::Byte(1)));
+        assert_eq!(map.get("ratio"), Some(&Value::Float(0.5_f32)));
+    }
+
+    #[test]
+    fn default_options_unchanged_byte_path() {
+        // Default behavior (no widening) must still downcast small ints to Byte.
+        assert_eq!(
+            json_to_nbt_with_options(json!(0), NbtOptions::new()).unwrap(),
+            Value::Byte(0)
+        );
+        assert_eq!(
+            json_to_nbt_with_options(json!(128), NbtOptions::new()).unwrap(),
+            Value::Short(128)
+        );
+    }
+
+    #[test]
+    fn widening_byte_range_array_is_int_array() {
+        let nbt = json_to_nbt_with_options(json!([1, 2, 3]), widening()).unwrap();
+        let Value::IntArray(arr) = nbt else {
+            panic!("Expected IntArray, got {nbt:?}");
+        };
+        assert_eq!(arr, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn widening_short_range_array_is_int_array() {
+        let nbt = json_to_nbt_with_options(json!([1, 200, 30_000]), widening()).unwrap();
+        let Value::IntArray(arr) = nbt else {
+            panic!("Expected IntArray, got {nbt:?}");
+        };
+        assert_eq!(arr, vec![1, 200, 30_000]);
+    }
+
+    #[test]
+    fn widening_overflow_array_is_long_array() {
+        let nbt = json_to_nbt_with_options(
+            json!([1_i64, 10_000_000_000_i64]),
+            widening(),
+        )
+        .unwrap();
+        let Value::LongArray(arr) = nbt else {
+            panic!("Expected LongArray, got {nbt:?}");
+        };
+        assert_eq!(arr, vec![1, 10_000_000_000]);
+    }
+
+    #[test]
+    fn default_byte_array_still_byte() {
+        // Default behavior (no widening) must still produce ByteArray for tiny ints.
+        let nbt =
+            json_to_nbt_with_options(json!([1, 2, 3]), NbtOptions::new()).unwrap();
+        assert!(matches!(nbt, Value::ByteArray(_)));
     }
 }

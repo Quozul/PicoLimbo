@@ -6,6 +6,7 @@ pub struct NbtOptions {
 
 const NAMELESS_ROOT: u8 = 1 << 0;
 const DYNAMIC_LISTS: u8 = 1 << 1;
+const NUMERIC_WIDENING: u8 = 1 << 2;
 
 impl NbtOptions {
     /// Creates a new `NbtOptions` with default settings.
@@ -43,6 +44,32 @@ impl NbtOptions {
         self
     }
 
+    /// Sets whether to widen numeric JSON values to canonical Mojang NBT tags during
+    /// JSON-to-NBT conversion.
+    ///
+    /// When enabled:
+    /// * All JSON integers are emitted as `Int` (or `Long` when they overflow `i32`),
+    ///   never downcast to `Byte` or `Short`.
+    /// * All JSON floats that round-trip through `f32` are emitted as `Float`,
+    ///   matching what `Codec.FLOAT` produces against `NbtOps.INSTANCE`.
+    /// * Homogeneous integer arrays are emitted as `IntArray` / `LongArray`,
+    ///   never as `ByteArray`.
+    /// * JSON booleans remain `Byte(0/1)`, matching `NbtOps.createBoolean`.
+    ///
+    /// This mirrors the canonical encoding produced by Mojang's `Codec` API when
+    /// serializing registry classes via `NbtOps.INSTANCE`, and is required to match
+    /// the wire format that strict client codecs (e.g. `PacketEvents` 2.12.x) expect
+    /// for registry entries on 1.21.6+.
+    #[must_use]
+    pub const fn numeric_widening(mut self, enabled: bool) -> Self {
+        if enabled {
+            self.flags |= NUMERIC_WIDENING;
+        } else {
+            self.flags &= !NUMERIC_WIDENING;
+        }
+        self
+    }
+
     /// Checks if nameless root is enabled.
     #[must_use]
     pub const fn is_nameless_root(&self) -> bool {
@@ -53,5 +80,50 @@ impl NbtOptions {
     #[must_use]
     pub const fn is_dynamic_lists(&self) -> bool {
         (self.flags & DYNAMIC_LISTS) != 0
+    }
+
+    /// Checks if numeric widening is enabled.
+    #[must_use]
+    pub const fn is_numeric_widening(&self) -> bool {
+        (self.flags & NUMERIC_WIDENING) != 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn numeric_widening_default_false() {
+        assert!(!NbtOptions::new().is_numeric_widening());
+    }
+
+    #[test]
+    fn numeric_widening_can_be_enabled() {
+        assert!(NbtOptions::new().numeric_widening(true).is_numeric_widening());
+    }
+
+    #[test]
+    fn numeric_widening_can_be_disabled() {
+        let opts = NbtOptions::new()
+            .numeric_widening(true)
+            .numeric_widening(false);
+        assert!(!opts.is_numeric_widening());
+    }
+
+    #[test]
+    fn numeric_widening_does_not_collide_with_other_flags() {
+        let opts = NbtOptions::new()
+            .nameless_root(true)
+            .dynamic_lists(true)
+            .numeric_widening(true);
+        assert!(opts.is_nameless_root());
+        assert!(opts.is_dynamic_lists());
+        assert!(opts.is_numeric_widening());
+
+        let opts = opts.numeric_widening(false);
+        assert!(opts.is_nameless_root());
+        assert!(opts.is_dynamic_lists());
+        assert!(!opts.is_numeric_widening());
     }
 }
