@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flying speed can be configured (PR #84)
 - Add a new CLI parameter to override port from the configuration file (PR #85)
 
+### Updated
+
+- Updated to Rust 1.96.0 and updated dependencies
+
 ### Fixed
 
 - The plugin doesn't shutdown when shutting down the proxy (PR #69)
