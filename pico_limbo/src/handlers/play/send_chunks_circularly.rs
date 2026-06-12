@@ -1,9 +1,9 @@
 use crate::server::packet_registry::PacketRegistry;
-use blocks_report::get_block_report_id_mapping;
+use blocks_report::{BlocksReportId, InternalId, get_block_report_id_mapping};
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
+use minecraft_packets::play::legacy_chunk_data_packet::LegacyChunkDataPacket;
 use minecraft_packets::play::{VoidChunkContext, WorldContext};
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
-use pico_registries::registry_provider::DimensionInfo;
 use pico_structures::prelude::World;
 use std::sync::Arc;
 
@@ -101,6 +101,10 @@ pub struct CircularChunkPacketIterator {
     biome_index: i32,
     pub dimension_height: i32,
     pub dimension_min_y: i32,
+    has_sky_light: bool,
+    world: Option<Arc<World>>,
+    air_internal_id: Option<InternalId>,
+    report_id_mapping: Option<Arc<Vec<BlocksReportId>>>,
     schematic_context: Option<WorldContext>,
     spiral_iterator: SpiralIterator,
     protocol_version: ProtocolVersion,
@@ -112,25 +116,35 @@ impl CircularChunkPacketIterator {
         view_distance: i32,
         world: Option<Arc<World>>,
         biome_index: i32,
-        dimension_info: &DimensionInfo,
+        dimension_height: i32,
+        dimension_min_y: i32,
+        has_sky_light: bool,
         protocol_version: ProtocolVersion,
     ) -> Self {
         let (center_x, center_z) = center_chunk;
         let paste_origin = Coordinates::new_uniform(0);
 
-        let schematic_context: Option<WorldContext> = get_block_report_id_mapping(protocol_version)
-            .map_or(None, |report_id_mapping| {
-                world.map(|world_arc| WorldContext {
+        let report_id_mapping = get_block_report_id_mapping(protocol_version).ok();
+        let report_id_mapping = report_id_mapping.map(Arc::new);
+
+        let air_internal_id = world.as_ref().map(|world_arc| world_arc.air_internal_id());
+        let schematic_context: Option<WorldContext> =
+            report_id_mapping.as_ref().and_then(|report_id_mapping| {
+                world.as_ref().map(|world_arc| WorldContext {
                     paste_origin,
-                    world: world_arc,
-                    report_id_mapping: Arc::new(report_id_mapping),
+                    world: Arc::clone(world_arc),
+                    report_id_mapping: Arc::clone(report_id_mapping),
                 })
             });
 
         Self {
             biome_index,
-            dimension_height: dimension_info.height,
-            dimension_min_y: dimension_info.min_y,
+            dimension_height,
+            dimension_min_y,
+            has_sky_light,
+            world,
+            air_internal_id,
+            report_id_mapping,
             schematic_context,
             spiral_iterator: SpiralIterator::new(center_x, center_z, view_distance),
             protocol_version,
@@ -143,6 +157,32 @@ impl Iterator for CircularChunkPacketIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let (chunk_x, chunk_z) = self.spiral_iterator.next()?;
+
+        if self
+            .protocol_version
+            .is_before_inclusive(ProtocolVersion::V1_12_2)
+        {
+            let packet = match (
+                self.world.as_ref(),
+                self.air_internal_id,
+                self.report_id_mapping.as_ref(),
+            ) {
+                (Some(world), Some(air_internal_id), Some(report_id_mapping)) => {
+                    LegacyChunkDataPacket::from_structure(
+                        chunk_x,
+                        chunk_z,
+                        self.biome_index,
+                        world.as_ref(),
+                        air_internal_id,
+                        report_id_mapping.as_ref(),
+                        self.protocol_version,
+                        self.has_sky_light,
+                    )
+                }
+                _ => LegacyChunkDataPacket::void(chunk_x, chunk_z, self.biome_index),
+            };
+            return Some(PacketRegistry::LegacyChunkData(Box::new(packet)));
+        }
 
         let chunk_context = VoidChunkContext {
             chunk_x,
@@ -158,7 +198,7 @@ impl Iterator for CircularChunkPacketIterator {
                 context,
                 self.protocol_version,
             ),
-            None => ChunkDataAndUpdateLightPacket::void(chunk_context),
+            None => ChunkDataAndUpdateLightPacket::void(chunk_context, self.protocol_version),
         };
 
         Some(PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)))

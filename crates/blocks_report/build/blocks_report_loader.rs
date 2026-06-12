@@ -59,22 +59,18 @@ pub fn load_block_data() -> anyhow::Result<Vec<BlocksReport>> {
             ProtocolVersion::from_str(&name)
                 .ok()
                 .and_then(|protocol_version| {
-                    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
-                        let version_path = entry.path();
-                        let blocks_report_path = version_path.join("reports").join("blocks.json");
-                        fs::read_to_string(&blocks_report_path)
-                            .ok()
-                            .and_then(|blocks_str| {
-                                serde_json::from_str::<BlockData>(&blocks_str).ok().map(
-                                    |block_data| BlocksReport {
-                                        protocol_version,
-                                        block_data,
-                                    },
-                                )
-                            })
-                    } else {
-                        None
-                    }
+                    let version_path = entry.path();
+                    let blocks_report_path = version_path.join("reports").join("blocks.json");
+                    fs::read_to_string(&blocks_report_path)
+                        .ok()
+                        .and_then(|blocks_str| {
+                            serde_json::from_str::<BlockData>(&blocks_str)
+                                .ok()
+                                .map(|block_data| BlocksReport {
+                                    protocol_version,
+                                    block_data,
+                                })
+                        })
                 })
         })
         .collect();

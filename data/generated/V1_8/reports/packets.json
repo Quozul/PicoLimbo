@@ -41,6 +41,9 @@
       "minecraft:login": {
         "protocol_id": 1
       },
+      "minecraft:legacy_level_chunk": {
+        "protocol_id": 33
+      },
       "minecraft:player_position": {
         "protocol_id": 8
       },
