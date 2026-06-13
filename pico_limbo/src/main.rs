@@ -1,4 +1,5 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+mod banner;
 mod cli;
 mod configuration;
 mod forwarding;

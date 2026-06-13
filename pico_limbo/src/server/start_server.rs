@@ -1,3 +1,4 @@
+use crate::banner;
 use crate::configuration::TaggedForwarding;
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
@@ -31,6 +32,9 @@ pub async fn start_server(
 
     match build_state(cfg) {
         Ok(server_state) => {
+            if !cli.skip_banner {
+                banner::display_banner();
+            }
             Server::new(&bind, server_state)
                 .run(cancellation_token)
                 .await;

@@ -50,6 +50,15 @@ Display version information:
 pico_limbo --version
 ```
 
+### Hide Banner
+
+When PicoLimbo starts, a banner is displayed to inform users of the server version.
+You can hide this banner by passing the `--skip-banner` flag:
+
+```bash
+pico_limbo --skip-banner
+```
+
 ### Help
 
 Show all available options:

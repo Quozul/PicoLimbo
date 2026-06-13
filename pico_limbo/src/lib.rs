@@ -1,3 +1,4 @@
+mod banner;
 mod cli;
 mod configuration;
 mod forwarding;
