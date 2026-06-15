@@ -1,6 +1,7 @@
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::compression::CompressionConfig;
+use crate::configuration::connection_config::ConnectionConfig;
 use crate::configuration::env_placeholders::{EnvPlaceholderError, expand_env_placeholders};
 use crate::configuration::fly_config::FlyConfig;
 use crate::configuration::forwarding::ForwardingConfig;
@@ -47,6 +48,8 @@ pub struct Config {
 
     pub server_list: ServerListConfig,
 
+    pub connection: ConnectionConfig,
+
     /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
 
@@ -61,21 +64,11 @@ pub struct Config {
 
     pub compression: CompressionConfig,
 
-    /// Interval between two `minecraft:keep_alive` packets sent to a client
-    /// while in CONFIGURATION or PLAY state, in seconds.
-    ///
-    /// Vanilla uses 15. Lower it (e.g. 10) if a proxy in front of `PicoLimbo`
-    /// has a stricter read-timeout. Has no effect on clients <= 1.7.6, which
-    /// use a fixed 2-second ping required by the legacy protocol.
-    pub keep_alive_interval_seconds: u64,
-
     pub tab_list: TabListConfig,
 
     pub fetch_player_skins: bool,
 
     pub reduced_debug_info: bool,
-
-    pub allow_unsupported_versions: bool,
 
     pub fly: FlyConfig,
 
@@ -93,6 +86,7 @@ impl Default for Config {
         Self {
             bind: "0.0.0.0:25565".into(),
             server_list: ServerListConfig::default(),
+            connection: ConnectionConfig::default(),
             welcome_message: "Welcome to PicoLimbo!".into(),
             action_bar: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
@@ -104,9 +98,7 @@ impl Default for Config {
             reduced_debug_info: false,
             boss_bar: BossBarConfig::default(),
             compression: CompressionConfig::default(),
-            keep_alive_interval_seconds: 15,
             title: TitleConfig::default(),
-            allow_unsupported_versions: false,
             fly: FlyConfig::default(),
             accept_transfers: false,
             commands: CommandsConfig::default(),

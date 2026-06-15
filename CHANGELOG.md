@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 
 - Updated to Rust 1.96.0 and updated dependencies
+- Moved the `allow_unsupported_versions` setting to `connection` section
 
 ### Fixed
 

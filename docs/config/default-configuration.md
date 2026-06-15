@@ -18,11 +18,14 @@ hardcore = false
 # Set to true to fetch the skin textures from Mojang API
 fetch_player_skins = false
 reduced_debug_info = false
-allow_unsupported_versions = false
 accept_transfers = false
+
+[connection]
 # Interval, in seconds, between two keep-alive packets sent to a client
 # (no effect on clients <= 1.7.6, which use a fixed 2s ping)
 keep_alive_interval_seconds = 15
+# If set to true, PicoLimbo will attempt to use the latest protocol version for unsupported versions
+allow_unsupported_versions = false
 
 [fly]
 allow_flight = false

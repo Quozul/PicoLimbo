@@ -135,12 +135,12 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         .view_distance(cfg.world.experimental.view_distance)
         .schematic(cfg.world.experimental.schematic_file)
         .enable_compression(cfg.compression.threshold, cfg.compression.level)?
-        .keep_alive_interval_secs(cfg.keep_alive_interval_seconds)
+        .keep_alive_interval_secs(cfg.connection.keep_alive_interval_seconds)
         .fetch_player_skins(cfg.fetch_player_skins)
         .reduced_debug_info(cfg.reduced_debug_info)
         .set_player_listed(cfg.tab_list.player_listed)
         .set_reply_to_status(cfg.server_list.reply_to_status)
-        .set_allow_unsupported_versions(cfg.allow_unsupported_versions)
+        .set_allow_unsupported_versions(cfg.connection.allow_unsupported_versions)
         .set_fly(&cfg.fly)
         .set_accept_transfers(cfg.accept_transfers)
         .server_commands(cfg.commands);

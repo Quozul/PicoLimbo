@@ -2,6 +2,7 @@ pub mod boss_bar;
 pub mod commands;
 mod compression;
 pub mod config;
+mod connection_config;
 mod env_placeholders;
 pub mod fly_config;
 mod forwarding;

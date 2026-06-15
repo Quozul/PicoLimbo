@@ -108,16 +108,6 @@ reduced_debug_info = true
 ```
 :::
 
-## Allow Unsupported Versions
-
-If set to true, PicoLimbo will attempt to use the latest protocol version for unsupported versions. Useful for snapshots.
-
-:::code-group
-```toml [server.toml]
-allow_unsupported_versions = false
-```
-:::
-
 ## Fetch Player Skins <Badge type="warning" text="1.8+" />
 
 Set to true to fetch the player skin textures from Mojang API.  
@@ -141,18 +131,3 @@ Whether players who have been transferred from another server via a [transfer pa
 accept_transfers = false
 ```
 :::
-
-## Keep Alive Interval <Badge type="warning" text="1.8+" />
-
-Interval, in seconds, between two `keep_alive` packets sent to a client.
-The default value of `15` matches the vanilla server.
-Lower it (e.g. `10`) if a proxy in front of PicoLimbo has a stricter read-timeout, or if your players have unreliable connections that benefit from more frequent pings.
-
-:::code-group
-```toml [server.toml]
-keep_alive_interval_seconds = 15
-```
-:::
-
-> [!NOTE]
-> Clients on Minecraft 1.7.x use a fixed 2-second ping required by the legacy protocol, regardless of this setting.
