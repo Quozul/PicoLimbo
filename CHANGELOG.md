@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.13.0+mc26.2] - 2026-06-16
 
 ### Added
 
@@ -13,20 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nix flake (PR #74)
 - Flying speed can be configured (PR #84)
 - Add a new CLI parameter to override port from the configuration file (PR #85)
+- Added startup banner
 - Added support for 26.2
 
 ### Updated
 
 - Updated to Rust 1.96.0 and updated dependencies
 - Moved the `allow_unsupported_versions` setting to `connection` section
+- Switched entity ID to 1 instead of 0 for players which should fix broken firework elytra boosting after changing server (PR #82)
 
 ### Fixed
 
 - The plugin doesn't shutdown when shutting down the proxy (PR #69)
 - PicoLimbo should wait for client known packs before sending registry data (starting 1.20.5) (PR #78)
-- Registry data can be omitted if it is known by the client (starting 1.21.5) (PR #75)
+- Registries’ data is omitted if it is known by the client (starting 1.21.5) (PR #75)
 - Fixed connection dropped while held in configuration state for too long (PR #79)
-- Fixed broken firework elytra boosting after changing server (PR #82)
 - Fixed the local Dockerfile build
 
 ## [1.12.2+mc26.1.2] - 2026-04-12
