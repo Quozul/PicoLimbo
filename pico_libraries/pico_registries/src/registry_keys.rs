@@ -61,6 +61,13 @@ pub enum RegistryKeys {
     Custom(Identifier),
 }
 
+impl RegistryKeys {
+    #[must_use]
+    pub const fn is_tag_only(&self) -> bool {
+        matches!(self, Self::Block)
+    }
+}
+
 impl Display for RegistryKeys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.write_str(self.id().to_string().as_str())

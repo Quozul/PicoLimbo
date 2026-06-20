@@ -370,6 +370,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "data_generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "pico_nbt",
+ "pico_registries",
+ "protocol_version",
+ "reqwest",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1173,7 +1189,7 @@ dependencies = [
 
 [[package]]
 name = "pico_limbo"
-version = "1.13.2+mc26.2"
+version = "1.13.3-alpha.1+mc26.2"
 dependencies = [
  "base64 0.23.0",
  "blocks_report",

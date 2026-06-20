@@ -5,6 +5,7 @@ use pico_nbt::{CompressionType, NbtOptions};
 use protocol_version::protocol_version::ProtocolVersion;
 use std::borrow::Cow;
 
+#[derive(Clone)]
 pub struct RegistryDataEntry {
     pub entry_id: Identifier,
     pub nbt_bytes: Cow<'static, [u8]>,
@@ -24,11 +25,6 @@ pub fn get_registry_data_v1_20_5(
     registry_manager: &RegistryManager,
     protocol_version: ProtocolVersion,
 ) -> crate::Result<Vec<(Identifier, Vec<RegistryDataEntry>)>> {
-    crate::Error::incompatible_version(
-        protocol_version,
-        ProtocolVersion::V1_20_5,
-        ProtocolVersion::latest(),
-    )?;
     let registries = get_registry_keys(protocol_version)?;
 
     Ok(registries

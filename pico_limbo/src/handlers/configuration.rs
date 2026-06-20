@@ -1,5 +1,6 @@
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
 use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
+use crate::registry_provider::{DEFAULT_REGISTRY_PROVIDER_MODE, load_registry_provider};
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::game_mode::GameMode;
@@ -32,10 +33,8 @@ use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_protocol::prelude::{Dimension as ProtocolDimension, ProtocolVersion, State};
-use pico_precomputed_registries::PrecomputedRegistries;
 use pico_registries::Identifier;
 use pico_registries::registry_provider::Dimension as RegistryDimension;
-use pico_registries::registry_provider::RegistryProvider;
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use std::num::TryFromIntError;
@@ -56,7 +55,8 @@ fn build_login_packet(
     protocol_version: ProtocolVersion,
     spawn_dimension: ProtocolDimension,
 ) -> Result<LoginPacket, PacketHandlerError> {
-    let registry_provider = PrecomputedRegistries::new(protocol_version);
+    let registry_provider =
+        load_registry_provider(protocol_version, &DEFAULT_REGISTRY_PROVIDER_MODE)?;
     if protocol_version.between_inclusive(ProtocolVersion::V1_7_2, ProtocolVersion::V1_15_2) {
         Ok(LoginPacket::with_dimension_pre_v1_16(spawn_dimension))
     } else if protocol_version.between_inclusive(ProtocolVersion::V1_16, ProtocolVersion::V1_16_1)
@@ -139,7 +139,8 @@ pub fn send_play_packets(
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
     let reduced_debug_info = server_state.reduced_debug_info();
-    let registry_provider = PrecomputedRegistries::new(protocol_version);
+    let registry_provider =
+        load_registry_provider(protocol_version, &DEFAULT_REGISTRY_PROVIDER_MODE)?;
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();

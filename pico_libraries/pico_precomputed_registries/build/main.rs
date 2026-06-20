@@ -62,8 +62,11 @@ fn load_registry_provider(
     let start_dir = env::var_os("CARGO_MANIFEST_DIR")
         .map(PathBuf::from)
         .ok_or_else(|| anyhow::anyhow!("Missing `CARGO_MANIFEST_DIR`"))?
-        .join("../../data/generated");
-    Ok(RuntimeRegistryProvider::new(&start_dir, protocol_version)?)
+        .join("../../data_generator/data");
+    Ok(RuntimeRegistryProvider::new_from_nbt_file(
+        &start_dir,
+        protocol_version,
+    )?)
 }
 
 fn write_header(w: &mut impl Write) -> anyhow::Result<()> {

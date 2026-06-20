@@ -1,4 +1,5 @@
-use crate::data::registry_entry_value::{DimensionType, RegistryEntryValue};
+use crate::data::dimension_type::DimensionType;
+use crate::data::registry_entry_value::RegistryEntryValue;
 use crate::data::registry_key::RegistryKey;
 use pico_nbt::Value;
 use serde::Serialize;

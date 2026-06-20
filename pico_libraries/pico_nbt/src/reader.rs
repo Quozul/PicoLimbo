@@ -109,8 +109,9 @@ pub fn from_path_with_options<P: AsRef<Path>>(
 /// or deserialization fails.
 pub fn from_reader_struct<T: de::DeserializeOwned, R: Read>(
     reader: R,
+    options: NbtOptions,
 ) -> crate::Result<(String, T)> {
-    let mut decoder = NbtReader::new(reader);
+    let mut decoder = NbtReader::new_with_options(reader, options);
     let tag_id = decoder.reader.read_u8()?;
     if tag_id != 10 {
         return Err(Error::UnexpectedTag {
@@ -131,9 +132,12 @@ pub fn from_reader_struct<T: de::DeserializeOwned, R: Read>(
 /// # Errors
 /// Returns an error if reading fails, the root tag is not a compound,
 /// or deserialization fails.
-pub fn from_file_struct<T: de::DeserializeOwned>(file: File) -> crate::Result<(String, T)> {
+pub fn from_file_struct<T: de::DeserializeOwned>(
+    file: File,
+    options: NbtOptions,
+) -> crate::Result<(String, T)> {
     let reader = crate::io::decode(file)?;
-    from_reader_struct(reader)
+    from_reader_struct(reader, options)
 }
 
 /// Deserializes NBT data from a path into a Rust struct.
@@ -143,9 +147,12 @@ pub fn from_file_struct<T: de::DeserializeOwned>(file: File) -> crate::Result<(S
 /// # Errors
 /// Returns an error if reading fails, the root tag is not a compound,
 /// or deserialization fails.
-pub fn from_path_struct<T: de::DeserializeOwned>(path: &Path) -> crate::Result<(String, T)> {
+pub fn from_path_struct<T: de::DeserializeOwned>(
+    path: &Path,
+    options: NbtOptions,
+) -> crate::Result<(String, T)> {
     let file = File::open(path)?;
-    from_file_struct(file)
+    from_file_struct(file, options)
 }
 
 /// Deserializes NBT data from a byte slice into a Rust struct.
@@ -154,6 +161,9 @@ pub fn from_path_struct<T: de::DeserializeOwned>(path: &Path) -> crate::Result<(
 ///
 /// # Errors
 /// Returns an error if the root tag is not a compound or deserialization fails.
-pub fn from_slice_struct<T: de::DeserializeOwned>(bytes: &[u8]) -> crate::Result<(String, T)> {
-    from_reader_struct(io::Cursor::new(bytes))
+pub fn from_slice_struct<T: de::DeserializeOwned>(
+    bytes: &[u8],
+    options: NbtOptions,
+) -> crate::Result<(String, T)> {
+    from_reader_struct(io::Cursor::new(bytes), options)
 }

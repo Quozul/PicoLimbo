@@ -4,11 +4,42 @@ use crate::data::registry_key::RegistryKey;
 use crate::data::tag::Tag;
 use crate::registry_keys::RegistryKeys;
 use pico_identifier::Identifier;
-use serde::Serialize;
+use pico_nbt::{IndexMap, Value, from_value};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::DirEntry;
 use std::path::Path;
 use walkdir::WalkDir;
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct NbtRegistryEntry {
+    name: String,
+    id: i32,
+    element: Value,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct NbtRegistryData {
+    #[serde(rename = "type")]
+    registry_type: String,
+    value: Vec<NbtRegistryEntry>,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct NbtTagData {
+    #[serde(rename = "id")]
+    registry_id: String,
+    value: Vec<NbtTagEntry>,
+}
+
+#[derive(Deserialize)]
+pub struct NbtTagEntry {
+    identifier: String,
+    ids: Vec<i32>,
+}
 
 #[derive(Debug, Serialize)]
 pub struct Registry {
@@ -48,19 +79,116 @@ impl Registry {
     ///
     /// # Errors
     /// Returns an error if it fails to load a registry
-    pub fn load(
+    pub fn load_from_resource_path(
         registry_keys: &RegistryKeys,
         resource_path: &Path,
         report_protocol_ids: HashMap<Identifier, u32>,
     ) -> crate::Result<Self> {
-        let entries = Self::load_entries(registry_keys, resource_path).unwrap_or_default();
-        let tags = Self::load_tags(registry_keys, resource_path).unwrap_or_default();
+        let entries = if registry_keys.is_tag_only() {
+            HashMap::new()
+        } else {
+            Self::load_entries_from_resource_path(registry_keys, resource_path).unwrap_or_default()
+        };
+        let tags =
+            Self::load_tags_from_resource_path(registry_keys, resource_path).unwrap_or_default();
         let key = RegistryKey::of_registry(registry_keys.id());
         Ok(Self {
             entries,
             key,
             tags,
             report_protocol_ids,
+        })
+    }
+
+    /// Load the registry from NBT files
+    ///
+    /// # Errors
+    /// Returns an error if it fails to load a registry
+    pub fn load_from_nbt(
+        registry_keys: &RegistryKeys,
+        registries_data: &IndexMap<String, NbtRegistryData>,
+        tags_data: &IndexMap<String, NbtTagData>,
+    ) -> crate::Result<Self> {
+        let registry_id = registry_keys.id();
+        let registry_id_str = registry_id.to_string();
+
+        let mut id_to_identifier: HashMap<u32, Identifier> = HashMap::new();
+
+        let entries = if registry_keys.is_tag_only() {
+            HashMap::new()
+        } else {
+            let nbt_registry = registries_data.get(&registry_id_str).ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "Registry not found in NBT data",
+                )
+            })?;
+
+            let entries_vec: Vec<(Identifier, RegistryEntry)> = nbt_registry
+                .value
+                .iter()
+                .enumerate()
+                .map(
+                    |(protocol_id, entry)| -> crate::Result<(Identifier, RegistryEntry)> {
+                        let entry_id = Identifier::try_from(entry.name.as_str())?;
+                        let registry_key = RegistryKey::new(registry_id.clone(), entry_id.clone());
+                        let value = match registry_keys {
+                            RegistryKeys::DimensionType => {
+                                let dimension_type =
+                                    from_value::<crate::data::dimension_type::DimensionType>(
+                                        entry.element.clone(),
+                                    )?;
+                                RegistryEntryValue::DimensionType(dimension_type)
+                            }
+                            _ => RegistryEntryValue::Other,
+                        };
+                        let pid = u32::try_from(protocol_id).map_err(|e| {
+                            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
+                        })?;
+                        id_to_identifier.insert(pid, entry_id.clone());
+                        let entry =
+                            RegistryEntry::new(value, entry.element.clone(), registry_key, pid);
+                        Ok((entry_id, entry))
+                    },
+                )
+                .collect::<crate::Result<Vec<_>>>()?;
+
+            entries_vec.into_iter().collect()
+        };
+
+        let tags = tags_data
+            .get(&registry_id_str)
+            .map_or_else(HashMap::new, |nbt_tags| {
+                nbt_tags
+                    .value
+                    .iter()
+                    .filter_map(|tag_entry| {
+                        let Ok(tag_identifier) =
+                            Identifier::try_from(tag_entry.identifier.as_str())
+                        else {
+                            return None;
+                        };
+
+                        let values: Vec<Identifier> = tag_entry
+                            .ids
+                            .iter()
+                            .filter_map(|id| {
+                                let id_u32 = u32::try_from(*id).ok()?;
+                                id_to_identifier.get(&id_u32).cloned()
+                            })
+                            .collect();
+
+                        Some((tag_identifier, Tag::new(values)))
+                    })
+                    .collect()
+            });
+
+        let key = RegistryKey::of_registry(registry_keys.id());
+        Ok(Self {
+            entries,
+            key,
+            tags,
+            report_protocol_ids: HashMap::new(),
         })
     }
 
@@ -86,7 +214,7 @@ impl Registry {
 
     /// Whether this registry holds any entry.
     ///
-    /// A registry can end up empty because [`Self::load`] falls back to an empty
+    /// A registry can end up empty because [`Self::load_from_resource_path`] falls back to an empty
     /// map when no entry directory exists, which happens for registries that are
     /// only mapped to carry tags (for example `minecraft:block`).
     #[must_use]
@@ -114,7 +242,7 @@ impl Registry {
             .ok_or(crate::Error::UnknownTagEntry)
     }
 
-    fn load_entries(
+    fn load_entries_from_resource_path(
         registry_keys: &RegistryKeys,
         resource_path: &Path,
     ) -> crate::Result<HashMap<Identifier, RegistryEntry>> {
@@ -157,7 +285,7 @@ impl Registry {
             .collect()
     }
 
-    fn load_tags(
+    fn load_tags_from_resource_path(
         registry_keys: &RegistryKeys,
         resource_path: &Path,
     ) -> crate::Result<HashMap<Identifier, Tag>> {

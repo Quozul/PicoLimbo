@@ -2,6 +2,7 @@ use crate::registry_provider::registry_codec::get_registry_codec_v1_16;
 use crate::registry_provider::registry_data_v1_20_5::get_registry_data_v1_20_5;
 use crate::registry_provider::shared::{
     encode_nameless_compound_to_bytes, get_dimension, get_registry_keys, load_registry_manager,
+    load_registry_manager_from_nbt,
 };
 use crate::registry_provider::tagged_registries::get_tagged_registries;
 use crate::registry_provider::{
@@ -13,6 +14,7 @@ use protocol_version::protocol_version::ProtocolVersion;
 use std::borrow::Cow;
 use std::path::Path;
 
+/// Loads registries from data generated using the standard Minecraft's data generator system.
 pub struct RuntimeRegistryProvider {
     registry_manager: RegistryManager,
     protocol_version: ProtocolVersion,
@@ -22,10 +24,31 @@ impl RuntimeRegistryProvider {
     /// Initialize a new registry provider that reads the file system at runtime
     ///
     /// # Errors
-    pub fn new(base_path: &Path, protocol_version: ProtocolVersion) -> crate::Result<Self> {
+    pub fn new_from_data_generator(
+        base_path: &Path,
+        protocol_version: ProtocolVersion,
+    ) -> crate::Result<Self> {
         let registry_keys = get_registry_keys(protocol_version)?;
         Ok(Self {
             registry_manager: load_registry_manager(base_path, protocol_version, &registry_keys)?,
+            protocol_version,
+        })
+    }
+
+    /// Initialize a new registry provider that reads NBT files at runtime
+    ///
+    /// # Errors
+    pub fn new_from_nbt_file(
+        base_path: &Path,
+        protocol_version: ProtocolVersion,
+    ) -> crate::Result<Self> {
+        let registry_keys = get_registry_keys(protocol_version)?;
+        Ok(Self {
+            registry_manager: load_registry_manager_from_nbt(
+                base_path,
+                protocol_version,
+                &registry_keys,
+            )?,
             protocol_version,
         })
     }

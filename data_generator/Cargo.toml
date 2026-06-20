@@ -1,0 +1,16 @@
+[package]
+name = "data_generator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol_version = { path = "../crates/protocol_version" }
+pico_registries = { path = "../pico_libraries/pico_registries" }
+pico_nbt = { path = "../pico_libraries/pico_nbt" }
+clap = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

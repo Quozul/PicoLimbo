@@ -25,6 +25,24 @@ pub fn load_registry_manager(
         .load_from_resource_path(&resource_root))
 }
 
+pub fn load_registry_manager_from_nbt(
+    base_path: &Path,
+    protocol_version: ProtocolVersion,
+    registries: &[RegistryKeys],
+) -> crate::Result<RegistryManager> {
+    crate::Error::incompatible_version(
+        protocol_version,
+        ProtocolVersion::V1_16,
+        ProtocolVersion::latest(),
+    )?;
+
+    let resource_root = base_path.join(protocol_version.to_string().to_lowercase());
+
+    Ok(RegistryManager::builder()
+        .register_all(registries)
+        .load_from_nbt_files(&resource_root))
+}
+
 pub fn get_registry_keys(protocol_version: ProtocolVersion) -> crate::Result<Vec<RegistryKeys>> {
     crate::Error::incompatible_version(
         protocol_version,

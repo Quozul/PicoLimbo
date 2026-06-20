@@ -1,3 +1,4 @@
+use crate::registry_provider::{DEFAULT_REGISTRY_PROVIDER_MODE, load_registry_provider};
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
@@ -15,8 +16,7 @@ use minecraft_packets::configuration::update_tags_packet::{
 };
 use minecraft_packets::login::login_acknowledged_packet::LoginAcknowledgedPacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State, VarInt};
-use pico_precomputed_registries::PrecomputedRegistries;
-use pico_registries::registry_provider::RegistryProvider;
+use tracing::trace;
 
 impl PacketHandler for LoginAcknowledgedPacket {
     fn handle(
@@ -86,7 +86,8 @@ fn send_post_known_packs_configuration_packets(
     protocol_version: ProtocolVersion,
     client_accepted_vanilla_core: bool,
 ) -> Result<(), PacketHandlerError> {
-    let registry_provider = PrecomputedRegistries::new(protocol_version);
+    let registry_provider =
+        load_registry_provider(protocol_version, &DEFAULT_REGISTRY_PROVIDER_MODE)?;
 
     // Send Registry Data — skip when the client accepted our vanilla `minecraft:core`
     // offer, since vanilla clients (and Paper-based servers) treat that as a signal
@@ -101,6 +102,7 @@ fn send_post_known_packs_configuration_packets(
                 .get_registry_data_v1_20_5()?
                 .into_iter()
                 .map(move |(registry_id, registry_entries)| {
+                    trace!(?registry_id, "Sending registry data");
                     let packet = RegistryDataPacket::registry(
                         registry_id,
                         registry_entries

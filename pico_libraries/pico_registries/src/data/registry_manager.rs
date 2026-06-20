@@ -1,6 +1,7 @@
-use crate::data::registry::Registry;
+use crate::data::registry::{NbtRegistryData, NbtTagData, Registry};
 use crate::registry_keys::RegistryKeys;
 use crate::reports::registries_report::RegistriesReport;
+use pico_nbt::{IndexMap, NbtOptions, from_path_with_options, from_value};
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::debug;
@@ -90,18 +91,75 @@ impl RegistryManagerBuilder {
                     })
                     .unwrap_or_default();
 
-                Registry::load(registry_key, &data_path, report_protocol_ids).map_or_else(
-                    |_| {
-                        debug!(
-                            registry_key = ?registry_key,
-                            "Failed to load registry, skipping"
-                        );
-                        None
-                    },
-                    |registry| Some((registry_key.clone(), registry)),
-                )
+                Registry::load_from_resource_path(registry_key, &data_path, report_protocol_ids)
+                    .map_or_else(
+                        |_| {
+                            debug!(
+                                registry_key = ?registry_key,
+                                "Failed to load registry, skipping"
+                            );
+                            None
+                        },
+                        |registry| Some((registry_key.clone(), registry)),
+                    )
             })
             .collect();
+        RegistryManager { registries }
+    }
+
+    /// Build the `RegistryManager` by loading all registered registries from NBT files
+    #[must_use]
+    pub fn load_from_nbt_files(self, base_path: &Path) -> RegistryManager {
+        let nbt_options = NbtOptions::new().nameless_root(true);
+
+        let registries_data = {
+            let registries_nbt_path = base_path.join("registries.nbt");
+            match from_path_with_options(&registries_nbt_path, nbt_options) {
+                Ok((_name, value)) => from_value::<IndexMap<String, NbtRegistryData>>(value)
+                    .map_err(|e| debug!("Failed to parse registries NBT: {}", e))
+                    .ok(),
+                Err(e) => {
+                    debug!("Failed to load registries NBT: {}", e);
+                    None
+                }
+            }
+        };
+
+        let tags_data = {
+            let tags_nbt_path = base_path.join("tags.nbt");
+            match from_path_with_options(&tags_nbt_path, nbt_options) {
+                Ok((_name, value)) => from_value::<IndexMap<String, NbtTagData>>(value)
+                    .map_err(|e| debug!("Failed to parse tags NBT: {}", e))
+                    .ok(),
+                Err(e) => {
+                    debug!("Failed to load tags NBT: {}", e);
+                    None
+                }
+            }
+        };
+
+        let registries =
+            if let (Some(registries_data), Some(tags_data)) = (registries_data, tags_data) {
+                self.registry_keys
+                    .iter()
+                    .filter_map(|registry_key| {
+                        match Registry::load_from_nbt(registry_key, &registries_data, &tags_data) {
+                            Ok(registry) => Some((registry_key.clone(), registry)),
+                            Err(err) => {
+                                debug!(
+                                    registry_key = ?registry_key,
+                                    err = ?err,
+                                    "Failed to load registry from NBT, skipping"
+                                );
+                                None
+                            }
+                        }
+                    })
+                    .collect()
+            } else {
+                HashMap::new()
+            };
+
         RegistryManager { registries }
     }
 

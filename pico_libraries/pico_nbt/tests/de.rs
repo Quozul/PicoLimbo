@@ -157,7 +157,8 @@ fn test_bigtest_struct() {
     }
 
     // When
-    let (name, value) = from_path_struct::<BigTest>(&path).expect("Failed to parse bigtest.nbt");
+    let (name, value) =
+        from_path_struct::<BigTest>(&path, NbtOptions::new()).expect("Failed to parse bigtest.nbt");
 
     // Then
     assert_eq!(name, "Level");
@@ -288,7 +289,7 @@ fn test_hello_world_struct() {
 
     // When
     let bytes = fs::read(&path).expect("Failed to read hello_world.nbt");
-    let (name, hello) = from_slice_struct::<HelloWorld>(&bytes)
+    let (name, hello) = from_slice_struct::<HelloWorld>(&bytes, NbtOptions::new())
         .expect("Failed to parse hello_world.nbt into struct");
 
     // Then
@@ -338,7 +339,8 @@ fn test_deserialize_nested_value_struct() {
     ];
 
     // When
-    let (root_name, test) = from_slice_struct::<Test1>(&bytes).expect("Failed to read test data");
+    let (root_name, test) =
+        from_slice_struct::<Test1>(&bytes, NbtOptions::new()).expect("Failed to read test data");
 
     // Then
     assert_eq!(root_name, "");
@@ -365,7 +367,8 @@ fn test_deserialize_struct() {
     ];
 
     // When
-    let (root_name, test) = from_slice_struct::<Test2>(&bytes).expect("Failed to read test data");
+    let (root_name, test) =
+        from_slice_struct::<Test2>(&bytes, NbtOptions::new()).expect("Failed to read test data");
 
     // Then
     assert_eq!(root_name, "");

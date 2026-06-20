@@ -1,6 +1,6 @@
 [package]
 name = "pico_limbo"
-version = "1.13.2+mc26.2"
+version = "1.13.3-alpha.1+mc26.2"
 edition = "2024"
 
 [lib]

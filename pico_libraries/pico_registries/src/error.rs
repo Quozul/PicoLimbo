@@ -2,6 +2,7 @@ use protocol_version::protocol_version::ProtocolVersion;
 use std::fmt::Display;
 use std::io;
 use std::path::StripPrefixError;
+use tracing::error;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -24,6 +25,7 @@ pub enum Error {
     DimensionInfoUnsupportedVersion = 15,
     RegistryDataUnsupportedVersion = 16,
     TaggedRegistriesUnsupportedVersion = 17,
+    DimensionNotFound = 18,
 }
 
 impl Display for Error {
@@ -35,7 +37,8 @@ impl Display for Error {
 impl std::error::Error for Error {}
 
 impl From<io::Error> for Error {
-    fn from(_: io::Error) -> Self {
+    fn from(err: io::Error) -> Self {
+        error!("{:?}", err);
         Self::Io
     }
 }
@@ -53,7 +56,8 @@ impl From<serde_json::error::Error> for Error {
 }
 
 impl From<pico_nbt::Error> for Error {
-    fn from(_: pico_nbt::Error) -> Self {
+    fn from(err: pico_nbt::Error) -> Self {
+        error!("{:?}", err);
         Self::Nbt
     }
 }
