@@ -2,6 +2,7 @@ use crate::chunk_processor::{ChunkProcessor, ChunkProcessorError};
 use crate::internal_block_entity::BlockEntity;
 use crate::palette::Palette;
 use crate::prelude::Schematic;
+use blocks_report::InternalId;
 use minecraft_protocol::prelude::Coordinates;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::IntoParallelIterator;
@@ -18,6 +19,7 @@ pub type SkyLightSection = LightSection;
 pub struct World {
     world_sections: Vec<Palette>,
     size_in_chunks: Coordinates,
+    air_internal_id: InternalId,
     block_entities_by_chunk: Vec<Vec<BlockEntity>>,
     /// Sky light data indexed by chunk column (x, z), containing light for all Y sections
     sky_light_by_chunk: Vec<Vec<LightSection>>,
@@ -76,6 +78,7 @@ impl World {
         Ok(Self {
             world_sections: world_sections?,
             size_in_chunks,
+            air_internal_id: schematic.air_internal_id(),
             block_entities_by_chunk,
             sky_light_by_chunk,
             block_light_by_chunk,
@@ -439,5 +442,9 @@ impl World {
     /// Get the number of Y sections in the world
     pub fn get_section_count_y(&self) -> i32 {
         self.size_in_chunks.y()
+    }
+
+    pub fn air_internal_id(&self) -> InternalId {
+        self.air_internal_id
     }
 }

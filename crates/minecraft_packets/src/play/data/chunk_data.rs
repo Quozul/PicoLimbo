@@ -14,7 +14,7 @@ fn height_maps() -> Value {
 
 #[derive(PacketOut)]
 pub struct ChunkData {
-    #[pvn(..770)]
+    #[pvn(477..770)]
     height_maps: Value,
 
     #[pvn(770..)]
@@ -26,7 +26,7 @@ pub struct ChunkData {
     v1_16_2_biomes: LengthPaddedVec<VarInt>,
 
     /// This array is always of length 1024
-    #[pvn(..751)]
+    #[pvn(393..751)]
     biomes: Vec<i32>,
 
     data: EncodeAsBytes<Vec<ChunkSection>>,
@@ -41,10 +41,20 @@ pub struct ChunkData {
 }
 
 impl ChunkData {
-    pub fn void(context: VoidChunkContext) -> Self {
+    pub fn void(context: VoidChunkContext, protocol_version: ProtocolVersion) -> Self {
         let root_tag = height_maps();
 
         let section_count = context.dimension_height / ChunkSection::SECTION_SIZE;
+        let biome_count = if protocol_version.is_after_inclusive(ProtocolVersion::V1_15) {
+            1024
+        } else {
+            256
+        };
+        let chunk_sections = if protocol_version.is_after_inclusive(ProtocolVersion::V1_18) {
+            vec![ChunkSection::void(context.biome_index); section_count as usize]
+        } else {
+            Vec::new()
+        };
 
         Self {
             height_maps: root_tag,
@@ -53,11 +63,8 @@ impl ChunkData {
                 data: LengthPaddedVec::new(vec![0; 37]),
             }]),
             v1_16_2_biomes: LengthPaddedVec::new(vec![VarInt::new(context.biome_index); 1024]),
-            biomes: vec![context.biome_index; 1024],
-            data: EncodeAsBytes::new(vec![
-                ChunkSection::void(context.biome_index);
-                section_count as usize
-            ]),
+            biomes: vec![context.biome_index; biome_count],
+            data: EncodeAsBytes::new(chunk_sections),
             block_entities: LengthPaddedVec::default(),
             v1_18_block_entities: LengthPaddedVec::default(),
         }
@@ -69,6 +76,12 @@ impl ChunkData {
         protocol_version: ProtocolVersion,
     ) -> Self {
         let root_tag = height_maps();
+
+        let biome_count = if protocol_version.is_after_inclusive(ProtocolVersion::V1_15) {
+            1024
+        } else {
+            256
+        };
 
         let mut data = Vec::new();
         let negative_section_count =
@@ -107,7 +120,7 @@ impl ChunkData {
                 VarInt::new(chunk_context.biome_index);
                 1024
             ]),
-            biomes: vec![chunk_context.biome_index; 1024],
+            biomes: vec![chunk_context.biome_index; biome_count],
             data: EncodeAsBytes::new(data),
             block_entities: LengthPaddedVec::new(block_entities_legacy),
             v1_18_block_entities: LengthPaddedVec::new(block_entities),
