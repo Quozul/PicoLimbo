@@ -6,7 +6,7 @@ pub struct ParsedVariant<'a> {
     pub ident: &'a Ident,
     pub discriminant_expr: &'a Expr,
     pub discriminant_value: i32,
-    pub humanized_string: LitStr,
+    pub humanized_string: String,
     pub packets: Ident,
     pub data: Ident,
     pub known_packs: Vec<String>,
@@ -17,7 +17,6 @@ impl<'a> ParsedVariant<'a> {
     pub fn from_variant(variant: &'a Variant) -> Result<Self> {
         let discriminant_expr = Self::get_discriminant_expr(variant)?;
         let discriminant_value = Self::parse_discriminant_value(discriminant_expr)?;
-        let humanized_string = Self::humanize_variant_name(&variant.ident);
 
         let pvn_attribute = Self::parse_pvn_attribute(variant)?;
 
@@ -28,6 +27,9 @@ impl<'a> ParsedVariant<'a> {
         let data = pvn_attribute.data.unwrap_or_else(|| variant.ident.clone());
 
         let known_packs = pvn_attribute.known_packs;
+        let humanized_string = pvn_attribute
+            .humanized
+            .unwrap_or(Self::humanize_variant_name(&variant.ident).value());
 
         Ok(Self {
             ident: &variant.ident,
@@ -107,6 +109,7 @@ impl<'a> ParsedVariant<'a> {
                 packets: None,
                 data: None,
                 known_packs: vec![],
+                humanized: None,
             })
         }
     }

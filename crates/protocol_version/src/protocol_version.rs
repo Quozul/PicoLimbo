@@ -4,6 +4,8 @@ use std::cmp::PartialEq;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Pvn)]
 #[repr(i32)]
 pub enum ProtocolVersion {
+    #[pvn(known_packs = ["26.3-snapshot-1"], humanized = "26.3-snapshot-1")]
+    V26_3Snapshot1 = 1073742147,
     #[default]
     #[pvn(known_packs = ["26.2"])]
     V26_2 = 776,

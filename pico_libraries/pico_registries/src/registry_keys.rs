@@ -31,6 +31,8 @@ pub enum RegistryKeys {
     Dialog,
     #[registry(id = "minecraft:dimension_type", min_version = V1_16, is_mandatory = true)]
     DimensionType,
+    #[registry(id = "minecraft:decorated_pot_pattern", min_version = V26_3Snapshot1, is_mandatory = true)]
+    DecoratedPotPattern,
     #[registry(id = "minecraft:frog_variant", min_version = V1_21_5, is_mandatory = true)]
     FrogVariant,
     #[registry(id = "minecraft:instrument", min_version = V26_1, is_mandatory = true)]
