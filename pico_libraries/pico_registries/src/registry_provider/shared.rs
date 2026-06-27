@@ -36,7 +36,7 @@ pub fn load_registry_manager_from_nbt(
         ProtocolVersion::latest(),
     )?;
 
-    let resource_root = base_path.join(protocol_version.to_string().to_lowercase());
+    let resource_root = base_path.join(protocol_version.to_string());
 
     Ok(RegistryManager::builder()
         .register_all(registries)

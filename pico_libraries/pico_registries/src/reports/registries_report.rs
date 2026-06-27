@@ -30,7 +30,7 @@ pub struct Entry {
 
 impl RegistriesReport {
     pub fn from_resource_path(resource_path: &Path) -> crate::Result<Self> {
-        let registries_report_path = resource_path.join("reports").join("registries.json");
+        let registries_report_path = resource_path.join("registries.json");
         let json_str = std::fs::read_to_string(&registries_report_path)?;
         Ok(serde_json::from_str(&json_str)?)
     }

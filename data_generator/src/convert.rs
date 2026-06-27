@@ -50,9 +50,10 @@ pub fn convert_data(version: &str) -> anyhow::Result<()> {
     let registry_provider = load_registry_provider(protocol_version)?;
     let base_path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?)
         .join("data")
-        .join(protocol_version.to_string().to_lowercase());
+        .join(protocol_version.to_string());
     convert_registries(&base_path, &registry_provider)?;
     convert_tags(&base_path, &registry_provider)?;
+    move_reports(&base_path, protocol_version)?;
 
     Ok(())
 }
@@ -178,4 +179,32 @@ fn load_registry_provider(
         &start_dir,
         protocol_version,
     )?)
+}
+
+fn move_reports(base_path: &Path, protocol_version: ProtocolVersion) -> anyhow::Result<()> {
+    let start_dir = PathBuf::new()
+        .join("cache")
+        .join("generated")
+        .join(protocol_version.packets().to_string())
+        .join("reports");
+
+    let copy = |from: &Path, to: &Path, file: &str| -> anyhow::Result<()> {
+        let to = to.join(file);
+        if to.exists() {
+            info!(
+                "{} already exists, if you want to re-convert them, delete the file at: {}",
+                file,
+                to.display()
+            );
+            return Ok(());
+        }
+        let from = from.join(file);
+        std::fs::copy(from, to)?;
+        Ok(())
+    };
+    copy(&start_dir, base_path, "blocks.json")?;
+    copy(&start_dir, base_path, "registries.json")?;
+    copy(&start_dir, base_path, "packets.json")?;
+
+    Ok(())
 }

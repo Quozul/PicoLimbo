@@ -34,8 +34,8 @@ pub fn load_block_entity_data() -> anyhow::Result<Vec<BlockEntityReport>> {
         .unwrap()
         .parent()
         .unwrap()
-        .join("data")
-        .join("generated");
+        .join("data_generator")
+        .join("data");
 
     let mut reports: Vec<BlockEntityReport> = fs::read_dir(data_dir)?
         .filter_map(|result| result.ok())
@@ -46,7 +46,7 @@ pub fn load_block_entity_data() -> anyhow::Result<Vec<BlockEntityReport>> {
                 .and_then(|protocol_version| {
                     if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
                         let version_path = entry.path();
-                        let registries_path = version_path.join("reports").join("registries.json");
+                        let registries_path = version_path.join("registries.json");
 
                         fs::read_to_string(&registries_path)
                             .ok()

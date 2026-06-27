@@ -179,16 +179,16 @@ fn load_all_protocol_data() -> HashMap<String, RawPacketData> {
     let data_dir = manifest_dir
         .parent()
         .unwrap()
-        .join("data")
-        .join("generated");
+        .join("data_generator")
+        .join("data");
 
     let mut all_data = HashMap::new();
 
-    for entry in fs::read_dir(data_dir).expect("Failed to read data/generated directory") {
+    for entry in fs::read_dir(data_dir).expect("Failed to read data_generator/data directory") {
         let entry = entry.unwrap();
         if entry.file_type().unwrap().is_dir() {
             let version_name = entry.file_name().into_string().unwrap();
-            let report_path = entry.path().join("reports").join("packets.json");
+            let report_path = entry.path().join("packets.json");
 
             if report_path.exists() {
                 let content = fs::read_to_string(&report_path)
