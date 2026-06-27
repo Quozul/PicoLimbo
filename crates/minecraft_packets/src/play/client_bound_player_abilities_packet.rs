@@ -38,7 +38,6 @@ pub struct PlayerAbilitiesPacketBuilder {
     allow_flying: bool,
     creative: bool,
     flying_speed: f32,
-    field_of_view_modifier: f32,
 }
 
 impl PlayerAbilitiesPacketBuilder {
@@ -54,7 +53,6 @@ impl PlayerAbilitiesPacketBuilder {
             allow_flying: false,
             creative: false,
             flying_speed: 0.05,
-            field_of_view_modifier: 0.1,
         }
     }
 
@@ -83,11 +81,6 @@ impl PlayerAbilitiesPacketBuilder {
         self
     }
 
-    pub fn field_of_view_modifier(mut self, field_of_view_modifier: f32) -> Self {
-        self.field_of_view_modifier = field_of_view_modifier;
-        self
-    }
-
     pub fn build(self) -> ClientBoundPlayerAbilitiesPacket {
         let mut flags = 0i8;
 
@@ -107,7 +100,7 @@ impl PlayerAbilitiesPacketBuilder {
         ClientBoundPlayerAbilitiesPacket {
             flags,
             flying_speed: self.flying_speed,
-            field_of_view_modifier: self.field_of_view_modifier,
+            ..Default::default()
         }
     }
 }
