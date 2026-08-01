@@ -1,6 +1,6 @@
 use crate::prelude::EncodePacket;
 use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
-use pico_nbt::{NbtOptions, Value};
+use pico_nbt::{CompressionType, NbtOptions, Value};
 use protocol_version::protocol_version::ProtocolVersion;
 
 impl EncodePacket for Value {
@@ -9,9 +9,13 @@ impl EncodePacket for Value {
         writer: &mut BinaryWriter,
         protocol_version: ProtocolVersion,
     ) -> Result<(), BinaryWriterError> {
-        let nbt_bytes =
-            pico_nbt::to_bytes_with_options(self, None, from_protocol_version(protocol_version))
-                .map_err(|_| BinaryWriterError::UnsupportedOperation)?;
+        let nbt_bytes = self
+            .to_byte(
+                CompressionType::None,
+                from_protocol_version(protocol_version),
+                None,
+            )
+            .map_err(|_| BinaryWriterError::UnsupportedOperation)?;
         writer.write_bytes(&nbt_bytes)?;
         Ok(())
     }

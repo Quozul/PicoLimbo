@@ -15,8 +15,8 @@ pub struct ChunkDataAndUpdateLightPacket {
     full_chunk: bool,
 
     /// If false, the client will recalculate lighting based on the old/new chunk data
-    #[protocol_version(max = V1_16_1)]
-    ignore_old_data: bool,
+    #[protocol_version(min = V1_16, max = V1_16_1)]
+    v1_16_ignore_old_data: bool,
 
     /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
     /// Up until 1.17.1 included
@@ -31,9 +31,8 @@ pub struct ChunkDataAndUpdateLightPacket {
     /// If edges should be trusted for light updates.
     /// Up until 1.19.4 included
     #[protocol_version(min = V1_18, max = V1_19_4)]
-    trust_edges: bool,
+    v1_18_trust_edges: bool,
 
-    // TODO: Implement Update Light packet for versions prior to 1.18
     #[protocol_version(min = V1_18)]
     v1_18_light_data: LightData,
 }
@@ -45,11 +44,11 @@ impl ChunkDataAndUpdateLightPacket {
             chunk_x: context.chunk_x,
             chunk_z: context.chunk_z,
             v1_17_primary_bit_mask: LengthPaddedVec::default(),
-            primary_bit_mask: VarInt::default(),
+            primary_bit_mask: VarInt::new(0xffff),
             full_chunk: true,
-            ignore_old_data: false,
+            v1_16_ignore_old_data: false,
             chunk_data: ChunkData::void(context),
-            trust_edges: true,
+            v1_18_trust_edges: true,
             v1_18_light_data: LightData::new_void(dimension_height),
         }
     }
@@ -59,6 +58,8 @@ impl ChunkDataAndUpdateLightPacket {
         schematic_context: &WorldContext,
         protocol_version: ProtocolVersion,
     ) -> Self {
+        // FIXME: Is this all_sections_bit_mask still valid for 1.21.5 that uses known packs?
+        //  Since we with known packs we use the full dimension height of 384
         let all_sections_bit_mask = 0b1111_1111_1111_1111i32;
         let chunk_x = chunk_context.chunk_x;
         let chunk_z = chunk_context.chunk_z;
@@ -83,13 +84,13 @@ impl ChunkDataAndUpdateLightPacket {
             v1_17_primary_bit_mask: LengthPaddedVec::new(vec![all_sections_bit_mask as u64]),
             primary_bit_mask: VarInt::new(all_sections_bit_mask),
             full_chunk: true,
-            ignore_old_data: false,
+            v1_16_ignore_old_data: false,
             chunk_data: ChunkData::from_schematic(
                 chunk_context,
                 schematic_context,
                 protocol_version,
             ),
-            trust_edges: true,
+            v1_18_trust_edges: true,
             v1_18_light_data: light_data,
         }
     }

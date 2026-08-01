@@ -43,7 +43,7 @@ features:
     linkText: Read the documentation
   - icon: 🌍
     title: Schematic World (Experimental)
-    details: "Load a custom world from a schematic file and customize spawn location (1.16+ only)."
+    details: "Load a custom world from a schematic file and customize spawn location (1.13+ only)."
     link: /config/schematic-loading.html
     linkText: Read the documentation
 ---

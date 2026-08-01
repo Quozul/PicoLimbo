@@ -1,6 +1,6 @@
 use blocks_report::{BlocksReportId, InternalId, get_block_id};
 use minecraft_protocol::prelude::*;
-use pico_structures::prelude::{Palette, pack_direct};
+use pico_structures::prelude::{Palette, pack_compact};
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -37,7 +37,11 @@ impl PaletteContainer {
         }
     }
 
-    pub fn from_palette(palette: &Palette, report_id_mapping: &[BlocksReportId]) -> Self {
+    pub fn from_palette(
+        palette: &Palette,
+        report_id_mapping: &[BlocksReportId],
+        version: ProtocolVersion,
+    ) -> Self {
         const AIR_ID: BlocksReportId = 0;
 
         let map_id = |internal_id: &InternalId| -> i32 {
@@ -52,27 +56,38 @@ impl PaletteContainer {
             Palette::Paletted {
                 bits_per_entry,
                 internal_palette,
-                packed_data,
+                packed_data_modern,
+                packed_data_legacy,
             } => {
                 let global_palette = internal_palette
                     .iter()
                     .map(|id| VarInt::new(map_id(id)))
                     .collect();
 
+                let data = if version.is_after_inclusive(ProtocolVersion::V1_16) {
+                    packed_data_modern
+                } else {
+                    packed_data_legacy
+                };
+
                 Self::Indirect {
                     bits_per_entry: *bits_per_entry,
                     palette: LengthPaddedVec::new(global_palette),
-                    data: LengthPaddedVec::new(packed_data.clone()),
+                    data: LengthPaddedVec::new(data.clone()),
                 }
             }
             Palette::Direct { internal_data } => {
-                const BITS_PER_ENTRY: u8 = 15;
+                let bits_per_entry = if version.is_after_inclusive(ProtocolVersion::V1_16) {
+                    15
+                } else {
+                    14
+                };
 
                 let global_data_iter = internal_data.iter().map(|id| map_id(id) as u32);
 
                 Self::Direct {
-                    bits_per_entry: BITS_PER_ENTRY,
-                    data: LengthPaddedVec::new(pack_direct(global_data_iter, BITS_PER_ENTRY)),
+                    bits_per_entry,
+                    data: LengthPaddedVec::new(pack_compact(global_data_iter, bits_per_entry)),
                 }
             }
         }
@@ -90,10 +105,28 @@ impl EncodePacket for PaletteContainer {
                 bits_per_entry,
                 value,
             } => {
-                bits_per_entry.encode(writer, protocol_version)?;
-                value.encode(writer, protocol_version)?;
-                if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
-                    VarInt::new(0).encode(writer, protocol_version)?;
+                if protocol_version.is_before_inclusive(ProtocolVersion::V1_15_2) {
+                    const BITS_PER_ENTRY: u8 = 4;
+                    const DATA_ARRAY_LENGTH: usize = 4096 * BITS_PER_ENTRY as usize / 64;
+
+                    BITS_PER_ENTRY.encode(writer, protocol_version)?;
+
+                    // Indirect palette with one registry ID.
+                    VarInt::new(1).encode(writer, protocol_version)?;
+                    value.encode(writer, protocol_version)?;
+
+                    // All 4096 entries select palette index zero.
+                    VarInt::new(DATA_ARRAY_LENGTH as i32).encode(writer, protocol_version)?;
+                    for _ in 0..DATA_ARRAY_LENGTH {
+                        0u64.encode(writer, protocol_version)?;
+                    }
+                } else {
+                    bits_per_entry.encode(writer, protocol_version)?;
+                    value.encode(writer, protocol_version)?;
+
+                    if protocol_version.is_before_inclusive(ProtocolVersion::V1_21_4) {
+                        VarInt::new(0).encode(writer, protocol_version)?;
+                    }
                 }
             }
             PaletteContainer::Indirect {

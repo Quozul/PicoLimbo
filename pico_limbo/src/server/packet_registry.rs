@@ -47,6 +47,7 @@ use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlay
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::transfer_packet::TransferPacket;
+use minecraft_packets::play::update_light_packet::UpdateLightPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PongResponsePacket;
@@ -268,6 +269,9 @@ pub enum PacketRegistry {
         name = "minecraft:level_chunk_with_light"
     )]
     ChunkDataAndUpdateLight(Box<ChunkDataAndUpdateLightPacket>),
+
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:light_update")]
+    UpdateLight(Box<UpdateLightPacket>),
 
     #[protocol_id(
         state = "play",

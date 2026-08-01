@@ -6,6 +6,7 @@ use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
 use pico_registries::registry_provider::DimensionInfo;
 use pico_structures::prelude::World;
 use std::sync::Arc;
+use tracing::warn;
 
 #[derive(Copy, Clone)]
 enum Direction {
@@ -35,7 +36,7 @@ impl Direction {
     }
 }
 
-struct SpiralIterator {
+pub struct SpiralIterator {
     center_x: i32,
     center_y: i32,
     current_x: i32,
@@ -48,7 +49,7 @@ struct SpiralIterator {
 }
 
 impl SpiralIterator {
-    const fn new(center_x: i32, center_y: i32, max_radius: i32) -> Self {
+    pub const fn new(center_x: i32, center_y: i32, max_radius: i32) -> Self {
         Self {
             center_x,
             center_y,
@@ -127,6 +128,10 @@ impl CircularChunkPacketIterator {
                 })
             });
 
+        if schematic_context.is_none() {
+            warn!("No block mapping for version {protocol_version}");
+        }
+
         Self {
             biome_index,
             dimension_height: dimension_info.height,
@@ -150,6 +155,7 @@ impl Iterator for CircularChunkPacketIterator {
             biome_index: self.biome_index,
             dimension_height: self.dimension_height,
             dimension_min_y: self.dimension_min_y,
+            protocol_version: self.protocol_version,
         };
 
         let packet = match &self.schematic_context {

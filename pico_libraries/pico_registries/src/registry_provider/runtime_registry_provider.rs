@@ -91,6 +91,7 @@ impl RegistryProvider for RuntimeRegistryProvider {
         Ok(DimensionInfo {
             height: dimension.get_height(),
             min_y: dimension.get_min_height(),
+            legacy_protocol_id: i8::try_from(protocol_id).unwrap_or(0), // versions with registries don't use the legacy protocol id anyway
             protocol_id,
             registry_key,
         })

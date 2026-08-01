@@ -76,6 +76,12 @@
       },
       "minecraft:player_abilities": {
         "protocol_id": 49
+      },
+      "minecraft:level_chunk_with_light": {
+        "protocol_id": 33
+      },
+      "minecraft:light_update": {
+        "protocol_id": 36
       }
     },
     "serverbound": {

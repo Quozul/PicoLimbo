@@ -44,7 +44,7 @@ pub fn load_block_entity_data() -> anyhow::Result<Vec<BlockEntityReport>> {
             ProtocolVersion::from_str(&name)
                 .ok()
                 .and_then(|protocol_version| {
-                    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
+                    if protocol_version.is_after_inclusive(ProtocolVersion::V1_14) {
                         let version_path = entry.path();
                         let registries_path = version_path.join("registries.json");
 

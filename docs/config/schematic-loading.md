@@ -1,9 +1,9 @@
-# Schematic Loading <Badge type="warning" text="1.16+" />
+# Schematic Loading <Badge type="warning" text="1.13+" />
 
 PicoLimbo includes experimental world features that allow you to customize the spawn environment and load a custom structure using schematic files.
 
 > [!WARNING]
-> This feature is work in progress and **only works with Minecraft client version 1.16 and above** as of now. It may
+> This feature is work in progress and **only works with Minecraft client version 1.13 and above** as of now. It may
 > cause crashes or instability. While bug reports are welcome, expect issues and test thoroughly before production use.
 > Work on getting it to work for older version is still in progress.
 
@@ -12,8 +12,8 @@ PicoLimbo includes experimental world features that allow you to customize the s
 
 ## Schematic File
 
-Load `.schem` files to customize the spawn location. PicoLimbo implements version 2 of
-[SpongePowered's schematic specification](https://github.com/SpongePowered/Schematic-Specification).
+Load `.schem` files to customize the spawn location. PicoLimbo implements version 2 and version 3 of
+[SpongePowered's schematic specification](https://github.com/SpongePowered/Schematic-Specification). If you have an older schematic exported with MCEdit with the `.schematic` extension or a schematic file exported using Litematica for example, you will have to [convert it to a supported format first](../tutorials/schematic-conversion.md).
 
 :::code-group
 ```toml [server.toml] {2}
@@ -47,6 +47,7 @@ Here's a list of what does not work when loading a schematic:
 - **Movement mechanics**: Ladder climbing or elytra does not work
 - **Block interactions**: Opening a door only half-opens it, buttons and pressure plates does not reset
 - **Unknown blocks**: If your client doesn't support certain blocks (like newer ones or renamed types such as `grass` → `short_grass` in 1.20.3), they’ll appear as stone blocks instead
+- **Block entities**: May not load before 1.16
 
 ## View Distance
 

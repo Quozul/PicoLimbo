@@ -1,5 +1,5 @@
 use crate::handlers::play::fetch_minecraft_profile::fetch_minecraft_profile;
-use crate::handlers::play::send_chunks_circularly::CircularChunkPacketIterator;
+use crate::handlers::play::send_chunks_circularly::{CircularChunkPacketIterator, SpiralIterator};
 use crate::registry_provider::{DEFAULT_REGISTRY_PROVIDER_MODE, load_registry_provider};
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
@@ -31,10 +31,11 @@ use minecraft_packets::play::set_titles_animation::SetTitlesAnimationPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use minecraft_packets::play::system_chat_message_packet::SystemChatMessagePacket;
 use minecraft_packets::play::tab_list_packet::TabListPacket;
+use minecraft_packets::play::update_light_packet::UpdateLightPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
 use minecraft_protocol::prelude::{Dimension as ProtocolDimension, ProtocolVersion, State};
 use pico_registries::Identifier;
-use pico_registries::registry_provider::Dimension as RegistryDimension;
+use pico_registries::registry_provider::{Dimension as RegistryDimension, DimensionInfo};
 use pico_structures::prelude::SchematicError;
 use pico_text_component::prelude::Component;
 use std::num::TryFromIntError;
@@ -139,8 +140,6 @@ pub fn send_play_packets(
     let view_distance = server_state.view_distance();
     let dimension = server_state.spawn_dimension();
     let reduced_debug_info = server_state.reduced_debug_info();
-    let registry_provider =
-        load_registry_provider(protocol_version, &DEFAULT_REGISTRY_PROVIDER_MODE)?;
 
     let game_mode = {
         let expected_game_mode = server_state.game_mode();
@@ -219,37 +218,9 @@ pub fn send_play_packets(
         send_boss_bar_packets(batch, server_state);
     }
 
-    if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
-            // Send Game Event
-            let packet = GameEventPacket::start_waiting_for_chunks(0.0);
-            batch.queue(|| PacketRegistry::GameEvent(packet));
-        }
-
-        let center_chunk = world_position_to_chunk_position((x, z))?;
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
-            let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
-            batch.queue(|| PacketRegistry::SetCenterChunk(packet));
-        }
-
-        // Send Chunk Data and Update Light
-        let biome_id = registry_provider
-            .get_biome_protocol_id(&Identifier::vanilla_unchecked("plains"))
-            .unwrap_or(1); // Plains biome ID is 1 before 1.13
-        let dimension_info =
-            registry_provider.get_dimension_info(to_registry_dimension(dimension))?;
-
-        let iter = CircularChunkPacketIterator::new(
-            center_chunk,
-            view_distance,
-            server_state.world(),
-            i32::try_from(biome_id)?,
-            &dimension_info,
-            protocol_version,
-        );
-        batch.chain_iter(iter);
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_13) {
+        send_world(batch, protocol_version, server_state)?;
     }
-
     Ok(())
 }
 
@@ -426,12 +397,6 @@ fn send_commands_packet(
     batch.queue(|| PacketRegistry::Commands(packet));
 }
 
-impl From<TryFromIntError> for PacketHandlerError {
-    fn from(_: TryFromIntError) -> Self {
-        Self::custom("failed to cast int")
-    }
-}
-
 pub fn send_message(batch: &mut Batch, component: &Component, protocol_version: ProtocolVersion) {
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
         let packet = SystemChatMessagePacket::component(component);
@@ -439,6 +404,68 @@ pub fn send_message(batch: &mut Batch, component: &Component, protocol_version: 
     } else {
         let packet = LegacyChatMessagePacket::system(component);
         batch.queue(|| PacketRegistry::LegacyChatMessage(packet));
+    }
+}
+
+fn send_world(
+    batch: &mut Batch,
+    protocol_version: ProtocolVersion,
+    server_state: &ServerState,
+) -> Result<(), PacketHandlerError> {
+    let view_distance = server_state.view_distance();
+    let dimension = server_state.spawn_dimension();
+    let (x, _, z) = server_state.spawn_position();
+    let registry_provider =
+        load_registry_provider(protocol_version, &DEFAULT_REGISTRY_PROVIDER_MODE)?;
+
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_3) {
+        // Send Game Event
+        let packet = GameEventPacket::start_waiting_for_chunks(0.0);
+        batch.queue(|| PacketRegistry::GameEvent(packet));
+    }
+
+    let center_chunk = world_position_to_chunk_position((x, z))?;
+    if protocol_version.is_after_inclusive(ProtocolVersion::V1_19) {
+        let packet = SetCenterChunkPacket::new(center_chunk.0, center_chunk.1);
+        batch.queue(|| PacketRegistry::SetCenterChunk(packet));
+    }
+
+    // Send Chunk Data and Update Light
+    let biome_id = registry_provider
+        .get_biome_protocol_id(&Identifier::vanilla_unchecked("plains"))
+        .unwrap_or(1); // Plains biome ID is 1 before 1.13
+
+    let dimension_info = if protocol_version.is_after_inclusive(ProtocolVersion::V1_16) {
+        registry_provider.get_dimension_info(to_registry_dimension(dimension))?
+    } else {
+        DimensionInfo::new_legacy(dimension.legacy_i8(), dimension.identifier())
+    };
+
+    let chunk_data_iter = CircularChunkPacketIterator::new(
+        center_chunk,
+        view_distance,
+        server_state.world(),
+        i32::try_from(biome_id)?,
+        &dimension_info,
+        protocol_version,
+    );
+    batch.chain_iter(chunk_data_iter);
+
+    if protocol_version.between_inclusive(ProtocolVersion::V1_14, ProtocolVersion::V1_17_1) {
+        let light_iter = SpiralIterator::new(center_chunk.0, center_chunk.1, view_distance).map(
+            move |(chunk_x, chunk_z)| {
+                let packet = UpdateLightPacket::full_bright(chunk_x, chunk_z, protocol_version);
+                PacketRegistry::UpdateLight(Box::new(packet))
+            },
+        );
+        batch.chain_iter(light_iter);
+    }
+    Ok(())
+}
+
+impl From<TryFromIntError> for PacketHandlerError {
+    fn from(_: TryFromIntError) -> Self {
+        Self::custom("failed to cast int")
     }
 }
 
@@ -594,6 +621,62 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_v1_14_play_packets() {
+        // Given
+        let mut client_state = client(ProtocolVersion::V1_14);
+        let server_state = server_state();
+        let mut batch = Batch::new();
+
+        // When
+        send_play_packets(&mut batch, &mut client_state, &server_state).unwrap();
+        let mut batch = batch.into_stream();
+
+        // Then
+        assert_play_state(&mut batch).await;
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::Login(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::ClientBoundPlayerAbilities(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::SynchronizePlayerPosition(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::Commands(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::PlayClientBoundPluginMessage(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::LegacyChatMessage(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::UpdateTime(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::SetEntityMetadata(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::UpdateLight(_)
+        ));
+        assert!(batch.next().await.is_none());
+    }
+
+    #[tokio::test]
     async fn test_v1_13_play_packets() {
         // Given
         let mut client_state = client(ProtocolVersion::V1_13);
@@ -637,6 +720,10 @@ mod tests {
         assert!(matches!(
             batch.next().await.unwrap().unwrap_packet(),
             PacketRegistry::SetEntityMetadata(_)
+        ));
+        assert!(matches!(
+            batch.next().await.unwrap().unwrap_packet(),
+            PacketRegistry::ChunkDataAndUpdateLight(_)
         ));
         assert!(batch.next().await.is_none());
     }

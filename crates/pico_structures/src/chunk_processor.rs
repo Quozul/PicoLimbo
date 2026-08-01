@@ -1,4 +1,4 @@
-use crate::pack_direct::pack_direct;
+use crate::pack_direct::{pack_compact, pack_direct};
 use crate::palette::Palette;
 use crate::prelude::Schematic;
 use blocks_report::InternalId;
@@ -102,12 +102,14 @@ impl ChunkProcessor {
             let paletted_data = block_ids
                 .iter()
                 .map(|&id| self.id_to_palette_index[id as usize]);
-            let packed_data = pack_direct(paletted_data, bits_per_entry);
+            let packed_data_modern = pack_direct(paletted_data.clone(), bits_per_entry);
+            let packed_data_legacy = pack_compact(paletted_data, bits_per_entry);
 
             Ok(Palette::paletted(
                 bits_per_entry,
                 mem::take(&mut self.palette),
-                packed_data,
+                packed_data_modern,
+                packed_data_legacy,
             ))
         } else {
             Ok(Palette::direct(block_ids.to_vec()))

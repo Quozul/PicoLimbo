@@ -6,16 +6,39 @@ use minecraft_protocol::prelude::*;
 use pico_nbt::{IndexMap, Value};
 use serde::Serialize;
 
-fn height_maps() -> Value {
+/// Function to generate the height maps NBT from 1.14 to 1.21.4
+fn height_maps(version: ProtocolVersion) -> Value {
     let mut compound = IndexMap::new();
-    compound.insert("MOTION_BLOCKING".to_string(), Value::LongArray(vec![0; 37]));
+    let length = if version.is_after_inclusive(ProtocolVersion::V1_16) {
+        37
+    } else {
+        36
+    };
+    compound.insert(
+        "MOTION_BLOCKING".to_string(),
+        Value::LongArray(vec![0; length]),
+    );
     Value::Compound(compound)
 }
 
 #[derive(PacketOut)]
+struct LegacyV1_14ChunkPayload {
+    sections: Vec<ChunkSection>,
+    #[protocol_version(max = V1_14_4)]
+    biomes: Vec<i32>,
+}
+
+impl LegacyV1_14ChunkPayload {
+    fn new(sections: Vec<ChunkSection>, biome_id: i32) -> Self {
+        let biomes = vec![biome_id; 256];
+        Self { sections, biomes }
+    }
+}
+
+#[derive(PacketOut)]
 pub struct ChunkData {
-    #[protocol_version(max = V1_21_4)]
-    height_maps: Value,
+    #[protocol_version(min = V1_14, max = V1_21_4)]
+    v1_14_height_maps: Value,
 
     #[protocol_version(min = V1_21_5)]
     v1_21_5_height_maps: LengthPaddedVec<HeightMap>,
@@ -26,10 +49,10 @@ pub struct ChunkData {
     v1_16_2_biomes: LengthPaddedVec<VarInt>,
 
     /// This array is always of length 1024
-    #[protocol_version(max = V1_16_1)]
-    biomes: Vec<i32>,
+    #[protocol_version(min = V1_15, max = V1_16_1)]
+    v1_15_biomes: Vec<i32>,
 
-    data: EncodeAsBytes<Vec<ChunkSection>>,
+    data: EncodeAsBytes<LegacyV1_14ChunkPayload>,
 
     // 1.17 and below
     #[protocol_version(max = V1_17_1)]
@@ -42,22 +65,22 @@ pub struct ChunkData {
 
 impl ChunkData {
     pub fn void(context: VoidChunkContext) -> Self {
-        let root_tag = height_maps();
+        let root_tag = height_maps(context.protocol_version);
 
         let section_count = context.dimension_height / ChunkSection::SECTION_SIZE;
 
         Self {
-            height_maps: root_tag,
+            v1_14_height_maps: root_tag,
             v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
-                height_map_type: VarInt::new(4), // Motionblock type
-                data: LengthPaddedVec::new(vec![0; 37]),
+                height_map_type: VarInt::new(4),         // Motionblock type
+                data: LengthPaddedVec::new(vec![0; 37]), // Height map length is 37 starting 1.16, since this field is only sent starting 1.21.5, it is safe to hard-code to 37 here
             }]),
             v1_16_2_biomes: LengthPaddedVec::new(vec![VarInt::new(context.biome_index); 1024]),
-            biomes: vec![context.biome_index; 1024],
-            data: EncodeAsBytes::new(vec![
-                ChunkSection::void(context.biome_index);
-                section_count as usize
-            ]),
+            v1_15_biomes: vec![context.biome_index; 1024],
+            data: EncodeAsBytes::new(LegacyV1_14ChunkPayload::new(
+                vec![ChunkSection::void(context.biome_index); section_count as usize],
+                context.biome_index,
+            )),
             block_entities: LengthPaddedVec::default(),
             v1_18_block_entities: LengthPaddedVec::default(),
         }
@@ -68,7 +91,7 @@ impl ChunkData {
         schematic_context: &WorldContext,
         protocol_version: ProtocolVersion,
     ) -> Self {
-        let root_tag = height_maps();
+        let root_tag = height_maps(chunk_context.protocol_version);
 
         let mut data = Vec::new();
         let negative_section_count =
@@ -83,6 +106,7 @@ impl ChunkData {
                 schematic_context,
                 coordinates,
                 chunk_context.biome_index,
+                chunk_context.protocol_version,
             );
             data.push(section);
         }
@@ -98,7 +122,7 @@ impl ChunkData {
         );
 
         Self {
-            height_maps: root_tag,
+            v1_14_height_maps: root_tag,
             v1_21_5_height_maps: LengthPaddedVec::new(vec![HeightMap {
                 height_map_type: VarInt::new(4), // Motionblock type
                 data: LengthPaddedVec::new(vec![0; 37]),
@@ -107,8 +131,11 @@ impl ChunkData {
                 VarInt::new(chunk_context.biome_index);
                 1024
             ]),
-            biomes: vec![chunk_context.biome_index; 1024],
-            data: EncodeAsBytes::new(data),
+            v1_15_biomes: vec![chunk_context.biome_index; 1024],
+            data: EncodeAsBytes::new(LegacyV1_14ChunkPayload::new(
+                data,
+                chunk_context.biome_index,
+            )),
             block_entities: LengthPaddedVec::new(block_entities_legacy),
             v1_18_block_entities: LengthPaddedVec::new(block_entities),
         }

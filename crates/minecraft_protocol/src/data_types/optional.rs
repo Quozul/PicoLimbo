@@ -4,6 +4,7 @@ use protocol_version::protocol_version::ProtocolVersion;
 use std::fmt::Debug;
 
 /// A type used only to encode packets and skip a field.
+#[derive(Clone)]
 pub enum Omitted<T> {
     None,
     Some(T),

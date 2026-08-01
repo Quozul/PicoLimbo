@@ -74,6 +74,7 @@ impl RegistryProvider for PrecomputedRegistries {
         Ok(DimensionInfo {
             height: info.height,
             min_y: info.min_y,
+            legacy_protocol_id: i8::try_from(info.protocol_id).unwrap_or(0), // versions with registries don't use the legacy protocol id anyway
             protocol_id: info.protocol_id,
             registry_key: Identifier::vanilla_unchecked(info.registry_key),
         })

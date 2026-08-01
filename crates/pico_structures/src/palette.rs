@@ -7,7 +7,8 @@ pub enum Palette {
     Paletted {
         bits_per_entry: u8,
         internal_palette: Vec<InternalId>, // Only the internal palette must be remapped before sending
-        packed_data: Vec<u64>,
+        packed_data_modern: Vec<u64>,
+        packed_data_legacy: Vec<u64>,
     },
     Direct {
         internal_data: Vec<InternalId>, // Data must be remapped and packet before sending
@@ -22,12 +23,14 @@ impl Palette {
     pub fn paletted(
         bits_per_entry: u8,
         internal_palette: Vec<InternalId>,
-        packed_data: Vec<u64>,
+        packed_data_modern: Vec<u64>,
+        packed_data_legacy: Vec<u64>,
     ) -> Self {
         Self::Paletted {
             bits_per_entry,
             internal_palette,
-            packed_data,
+            packed_data_modern,
+            packed_data_legacy,
         }
     }
 

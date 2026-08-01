@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 /// Represents the data associated with a specific registry type.
 #[derive(Serialize)]
@@ -43,17 +43,19 @@ pub fn convert_data(version: &str) -> anyhow::Result<()> {
         ProtocolVersion::from_str(&sanitized_version)?
     };
 
-    if !protocol_version.has_registries() {
-        return Err(anyhow::anyhow!("{} does not have registries", version));
-    }
-
-    let registry_provider = load_registry_provider(protocol_version)?;
     let base_path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?)
         .join("data")
         .join(protocol_version.to_string());
+    move_reports(&base_path, protocol_version)?;
+
+    if !protocol_version.has_registries() {
+        warn!("{} does not have registries", version);
+        return Ok(());
+    }
+
+    let registry_provider = load_registry_provider(protocol_version)?;
     convert_registries(&base_path, &registry_provider)?;
     convert_tags(&base_path, &registry_provider)?;
-    move_reports(&base_path, protocol_version)?;
 
     Ok(())
 }
@@ -189,6 +191,14 @@ fn move_reports(base_path: &Path, protocol_version: ProtocolVersion) -> anyhow::
         .join("reports");
 
     let copy = |from: &Path, to: &Path, file: &str| -> anyhow::Result<()> {
+        let from = from.join(file);
+        if !from.exists() {
+            warn!("{} does not exists", file);
+            return Ok(());
+        }
+        if !to.exists() {
+            std::fs::create_dir_all(to)?;
+        }
         let to = to.join(file);
         if to.exists() {
             info!(
@@ -198,7 +208,6 @@ fn move_reports(base_path: &Path, protocol_version: ProtocolVersion) -> anyhow::
             );
             return Ok(());
         }
-        let from = from.join(file);
         std::fs::copy(from, to)?;
         Ok(())
     };
