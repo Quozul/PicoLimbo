@@ -3,12 +3,12 @@ use minecraft_protocol::prelude::*;
 #[derive(Default, PacketIn)]
 pub struct LoginStartPacket {
     pub name: String,
-    #[pvn(759..761)]
+    #[protocol_version(min = V1_19, max = V1_19_1)]
     #[allow(dead_code)]
     sig_data: Optional<SigData>,
-    #[pvn(761..764)]
+    #[protocol_version(min = V1_19_3, max = V1_20)]
     v1_19_3_player_uuid: Optional<Uuid>, // Really??
-    #[pvn(764..)]
+    #[protocol_version(min = V1_20_2)]
     v1_20_2_player_uuid: Uuid,
 }
 

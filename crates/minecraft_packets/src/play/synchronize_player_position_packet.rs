@@ -2,16 +2,16 @@ use minecraft_protocol::prelude::*;
 
 #[derive(PacketOut)]
 pub struct SynchronizePlayerPositionPacket {
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub v_1_21_2_teleport_id: VarInt,
     pub x: f64,
     pub y: f64,
     pub z: f64,
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub velocity_x: f64,
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub velocity_y: f64,
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub velocity_z: f64,
     pub yaw: f32,
     pub pitch: f32,
@@ -20,16 +20,16 @@ pub struct SynchronizePlayerPositionPacket {
     /// Z = 0x04,
     /// Yaw = 0x08,
     /// Pitch = 0x10,
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub v_1_21_2_flags: i32,
-    #[pvn(47..768)]
+    #[protocol_version(min = V1_8, max = V1_21)]
     pub flags: u8,
-    #[pvn(..47)]
+    #[protocol_version(max = V1_7_6)]
     pub on_ground: bool,
-    #[pvn(107..768)]
+    #[protocol_version(min = V1_9, max = V1_21)]
     pub teleport_id: VarInt,
     /// True if the player should dismount their vehicle.
-    #[pvn(755..762)]
+    #[protocol_version(min = V1_17, max = V1_19_3)]
     pub dismount_vehicle: bool,
 }
 

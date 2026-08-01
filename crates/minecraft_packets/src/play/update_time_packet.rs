@@ -29,11 +29,11 @@ impl EncodePacket for Holder {
 #[derive(PacketOut)]
 pub struct UpdateTimePacket {
     game_time: i64,
-    #[pvn(..775)]
+    #[protocol_version(max = V1_21_11)]
     time_of_day: i64,
-    #[pvn(768..775)]
+    #[protocol_version(min = V1_21_2, max = V1_21_11)]
     time_of_day_increasing: bool,
-    #[pvn(775..)]
+    #[protocol_version(min = V26_1)]
     clock_updates: HashMap<Holder, ClockNetworkState>,
 }
 

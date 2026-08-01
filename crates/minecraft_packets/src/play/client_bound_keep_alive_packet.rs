@@ -5,11 +5,11 @@ use std::num::TryFromIntError;
 /// This packet exists for all versions of the game from 1.7.2 to the latest at the time (1.21.4).
 #[derive(PacketOut)]
 pub struct ClientBoundKeepAlivePacket {
-    #[pvn(340..)]
+    #[protocol_version(min = V1_12_2)]
     v1_12_2_id: i64,
-    #[pvn(47..340)]
+    #[protocol_version(min = V1_8, max = V1_12_1)]
     v1_8_id: VarInt,
-    #[pvn(..47)]
+    #[protocol_version(max = V1_7_6)]
     id: i32,
 }
 

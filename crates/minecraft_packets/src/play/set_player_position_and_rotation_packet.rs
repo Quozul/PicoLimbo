@@ -7,8 +7,8 @@ pub struct SetPlayerPositionAndRotationPacket {
     pub z: f64,
     pub yaw: f32,
     pub pitch: f32,
-    #[pvn(769..)]
+    #[protocol_version(min = V1_21_4)]
     pub v1_21_4_flags: u8,
-    #[pvn(..769)]
+    #[protocol_version(max = V1_21_2)]
     pub on_ground: bool,
 }

@@ -5,17 +5,17 @@ use minecraft_protocol::prelude::*;
 pub struct PreV1_16Data {
     pub game_mode: u8,
     pub dimension: DimensionField,
-    #[pvn(573..)]
+    #[protocol_version(min = V1_15)]
     pub v1_15_hashed_seed: i64,
-    #[pvn(..477)]
+    #[protocol_version(max = V1_13_2)]
     pub difficulty: u8,
     pub max_players: u8,
     pub level_type: String,
-    #[pvn(477..)]
+    #[protocol_version(min = V1_14)]
     pub v1_14_view_distance: VarInt,
-    #[pvn(47..)]
+    #[protocol_version(min = V1_8)]
     pub v1_8_reduced_debug_info: bool,
-    #[pvn(573..)]
+    #[protocol_version(min = V1_15)]
     pub v1_15_enable_respawn_screen: bool,
 }
 

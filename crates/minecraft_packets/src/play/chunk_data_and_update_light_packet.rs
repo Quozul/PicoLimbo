@@ -11,30 +11,30 @@ pub struct ChunkDataAndUpdateLightPacket {
     chunk_x: i32,
     chunk_z: i32,
 
-    #[pvn(..755)]
+    #[protocol_version(max = V1_16_4)]
     full_chunk: bool,
 
     /// If false, the client will recalculate lighting based on the old/new chunk data
-    #[pvn(..751)]
+    #[protocol_version(max = V1_16_1)]
     ignore_old_data: bool,
 
     /// BitSet with bits (world height in blocks / 16) set to 1 for every 16×16×16 chunk section whose data is included in Data. The least significant bit represents the chunk section at the bottom of the chunk column (from the lowest y to 15 blocks above).
     /// Up until 1.17.1 included
-    #[pvn(755..757)]
+    #[protocol_version(min = V1_17, max = V1_17_1)]
     v1_17_primary_bit_mask: LengthPaddedVec<u64>, // availableSections bitset?
 
-    #[pvn(..755)]
+    #[protocol_version(max = V1_16_4)]
     primary_bit_mask: VarInt,
 
     chunk_data: ChunkData,
 
     /// If edges should be trusted for light updates.
     /// Up until 1.19.4 included
-    #[pvn(757..763)]
+    #[protocol_version(min = V1_18, max = V1_19_4)]
     trust_edges: bool,
 
     // TODO: Implement Update Light packet for versions prior to 1.18
-    #[pvn(757..)]
+    #[protocol_version(min = V1_18)]
     v1_18_light_data: LightData,
 }
 

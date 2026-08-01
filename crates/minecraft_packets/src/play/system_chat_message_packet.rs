@@ -6,9 +6,9 @@ use pico_text_component::prelude::Component;
 /// Introduced in 1.19
 #[derive(PacketOut)]
 pub struct SystemChatMessagePacket {
-    #[pvn(..765)]
+    #[protocol_version(max = V1_20_2)]
     content: String, // JSON encoded
-    #[pvn(765..)]
+    #[protocol_version(min = V1_20_3)]
     v1_20_3_content: Value, // Nbt starting from 1.20.3 included
     overlay: bool,
 }

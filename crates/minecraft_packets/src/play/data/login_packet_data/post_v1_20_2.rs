@@ -12,9 +12,9 @@ pub struct PostV1_20_2Data {
     pub reduced_debug_info: bool,
     pub enable_respawn_screen: bool,
     pub do_limited_crafting: bool,
-    #[pvn(766..)]
+    #[protocol_version(min = V1_20_5)]
     pub v1_20_5_dimension_type: VarInt,
-    #[pvn(..766)]
+    #[protocol_version(max = V1_20_3)]
     pub dimension_type: Identifier,
     pub dimension_name: Identifier,
     pub hashed_seed: i64,
@@ -24,11 +24,11 @@ pub struct PostV1_20_2Data {
     pub is_flat: bool,
     pub death_location: Optional<DeathLocation>,
     pub portal_cooldown: VarInt,
-    #[pvn(768..)]
+    #[protocol_version(min = V1_21_2)]
     pub v1_21_2_sea_level: VarInt,
-    #[pvn(776..)]
+    #[protocol_version(min = V26_2)]
     pub v26_2_online_mode: bool,
-    #[pvn(766..)]
+    #[protocol_version(min = V1_20_5)]
     pub v1_20_5_enforces_secure_chat: bool,
 }
 

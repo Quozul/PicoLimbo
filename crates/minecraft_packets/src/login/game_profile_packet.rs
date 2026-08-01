@@ -7,9 +7,9 @@ use minecraft_protocol::prelude::*;
 pub struct GameProfilePacket {
     uuid: UuidAsString,
     username: String,
-    #[pvn(759..)]
+    #[protocol_version(min = V1_19)]
     properties: LengthPaddedVec<Property>,
-    #[pvn(766..)]
+    #[protocol_version(min = V1_20_5)]
     strict_error_handling: bool,
 }
 

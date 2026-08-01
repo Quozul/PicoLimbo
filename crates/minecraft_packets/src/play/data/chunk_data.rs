@@ -14,29 +14,29 @@ fn height_maps() -> Value {
 
 #[derive(PacketOut)]
 pub struct ChunkData {
-    #[pvn(..770)]
+    #[protocol_version(max = V1_21_4)]
     height_maps: Value,
 
-    #[pvn(770..)]
+    #[protocol_version(min = V1_21_5)]
     v1_21_5_height_maps: LengthPaddedVec<HeightMap>,
 
     /// Biome IDs, ordered by x then z then y, in 4×4×4 blocks.
     /// Up until 1.17.1 included
-    #[pvn(751..757)]
+    #[protocol_version(min = V1_16_2, max = V1_17_1)]
     v1_16_2_biomes: LengthPaddedVec<VarInt>,
 
     /// This array is always of length 1024
-    #[pvn(..751)]
+    #[protocol_version(max = V1_16_1)]
     biomes: Vec<i32>,
 
     data: EncodeAsBytes<Vec<ChunkSection>>,
 
     // 1.17 and below
-    #[pvn(..757)]
+    #[protocol_version(max = V1_17_1)]
     block_entities: LengthPaddedVec<Value>,
 
     // 1.18+
-    #[pvn(757..)]
+    #[protocol_version(min = V1_18)]
     v1_18_block_entities: LengthPaddedVec<ChunkBlockEntity>,
 }
 

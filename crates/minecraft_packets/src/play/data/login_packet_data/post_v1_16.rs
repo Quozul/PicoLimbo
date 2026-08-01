@@ -6,31 +6,31 @@ use std::borrow::Cow;
 /// Max protocol version for this is 763 or 1.20 included
 #[derive(PacketOut)]
 pub struct PostV1_16Data {
-    #[pvn(751..)]
+    #[protocol_version(min = V1_16_2)]
     pub v1_16_2_is_hardcore: bool,
     pub game_mode: u8,
     pub previous_game_mode: i8,
     pub dimension_names: LengthPaddedVec<Identifier>,
     pub registry_codec_bytes: Omitted<Cow<'static, [u8]>>,
-    #[pvn(751..759)]
+    #[protocol_version(min = V1_16_2, max = V1_18_2)]
     pub v1_16_2_dimension_codec_bytes: Omitted<Cow<'static, [u8]>>,
-    #[pvn(759..)]
+    #[protocol_version(min = V1_19)]
     pub v1_19_dimension_type: Identifier,
-    #[pvn(..751)]
+    #[protocol_version(max = V1_16_1)]
     pub dimension_name: Identifier,
     pub world_name: Identifier,
     pub hashed_seed: i64,
     pub max_players: VarInt,
     pub view_distance: VarInt,
-    #[pvn(757..)]
+    #[protocol_version(min = V1_18)]
     pub v1_18_simulation_distance: VarInt,
     pub reduced_debug_info: bool,
     pub enable_respawn_screen: bool,
     pub is_debug: bool,
     pub is_flat: bool,
-    #[pvn(759..)]
+    #[protocol_version(min = V1_19)]
     pub v1_19_has_death_location: Optional<DeathLocation>,
-    #[pvn(763..)]
+    #[protocol_version(min = V1_20)]
     pub v1_20_portal_cooldown: VarInt,
 }
 

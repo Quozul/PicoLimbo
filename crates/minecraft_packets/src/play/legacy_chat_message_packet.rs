@@ -11,10 +11,10 @@ pub struct LegacyChatMessagePacket {
     /// JSON encoded text component
     content: String,
     /// 0: chat (chat box), 1: system message (chat box), 2: game info (above hotbar)
-    #[pvn(47..)]
+    #[protocol_version(min = V1_8)]
     position: u8,
     /// Used by the Notchian client for the disableChat launch option. Setting both longs to 0 will always display the message regardless of the setting.
-    #[pvn(735..)]
+    #[protocol_version(min = V1_16)]
     sender: UuidAsString,
 }
 

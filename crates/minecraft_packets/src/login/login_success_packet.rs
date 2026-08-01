@@ -6,9 +6,9 @@ use minecraft_protocol::prelude::*;
 pub struct LoginFinishedPacket {
     uuid: UuidAsString,
     username: String,
-    #[pvn(735..)]
+    #[protocol_version(min = V1_16)]
     properties: LengthPaddedVec<Property>,
-    #[pvn(776..)]
+    #[protocol_version(min = V26_2)]
     session_id: UuidAsLongs,
 }
 

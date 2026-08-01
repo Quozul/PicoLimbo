@@ -5,11 +5,11 @@ use std::borrow::Cow;
 /// This packet is to use with >= 1.20.2
 #[derive(PacketOut)]
 pub struct RegistryDataPacket {
-    #[pvn(766..)]
+    #[protocol_version(min = V1_20_5)]
     registry_id: Omitted<Identifier>,
-    #[pvn(766..)]
+    #[protocol_version(min = V1_20_5)]
     entries: Omitted<LengthPaddedVec<RegistryEntry>>,
-    #[pvn(764..766)]
+    #[protocol_version(min = V1_20_2, max = V1_20_3)]
     registry_codec_bytes: Omitted<Cow<'static, [u8]>>,
 }
 

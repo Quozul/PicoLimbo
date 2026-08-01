@@ -4,10 +4,10 @@ use pico_text_component::prelude::Component;
 
 #[derive(PacketOut)]
 pub struct PlayerInfoUpdatePacket {
-    #[pvn(..761)]
+    #[protocol_version(max = V1_19_1)]
     action: VarInt,
 
-    #[pvn(761..)]
+    #[protocol_version(min = V1_19_3)]
     v1_19_3_mask: u8,
     players: LengthPaddedVec<Player>,
 }
@@ -59,9 +59,9 @@ impl PlayerInfoUpdatePacket {
 #[derive(PacketOut)]
 struct Player {
     uuid: UuidAsLongs,
-    #[pvn(..761)]
+    #[protocol_version(max = V1_19_1)]
     action: AddPlayer,
-    #[pvn(761..)]
+    #[protocol_version(min = V1_19_3)]
     actions: Vec<PlayerActions>,
 }
 
@@ -69,13 +69,13 @@ struct Player {
 struct AddPlayer {
     name: String,
     properties: LengthPaddedVec<Property>,
-    #[pvn(..761)]
+    #[protocol_version(max = V1_19_1)]
     game_mode: VarInt,
-    #[pvn(..761)]
+    #[protocol_version(max = V1_19_1)]
     ping: VarInt,
-    #[pvn(..761)]
+    #[protocol_version(max = V1_19_1)]
     display_name: Optional<Component>,
-    #[pvn(759..761)]
+    #[protocol_version(min = V1_19, max = V1_19_1)]
     sig_data: Optional<SigData>,
 }
 
