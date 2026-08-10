@@ -15,10 +15,16 @@ struct Style {
 
 #[derive(Debug, Error)]
 pub enum MiniMessageError {
-    #[error(transparent)]
-    QuickXml(#[from] quick_xml::Error),
-    #[error(transparent)]
-    Encoding(#[from] quick_xml::encoding::EncodingError),
+    #[error("Failed to parse MiniMessage: {source}. Input: {input}")]
+    QuickXml {
+        source: quick_xml::Error,
+        input: String,
+    },
+    #[error("Encoding error while parsing MiniMessage: {source}. Input: {input}")]
+    Encoding {
+        source: quick_xml::encoding::EncodingError,
+        input: String,
+    },
 }
 
 fn is_styling_tag(tag: &str) -> bool {
@@ -63,7 +69,12 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
     let mut style_stack: Vec<Style> = vec![Style::default()];
 
     loop {
-        match reader.read_event()? {
+        match reader
+            .read_event()
+            .map_err(|e| MiniMessageError::QuickXml {
+                source: e,
+                input: input.to_string(),
+            })? {
             Event::Start(e) => {
                 let tag_name = String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default();
 
@@ -105,7 +116,13 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
                 }
             }
             Event::Text(e) => {
-                let text = e.decode()?.to_string();
+                let text = e
+                    .decode()
+                    .map_err(|e| MiniMessageError::Encoding {
+                        source: e,
+                        input: input.to_string(),
+                    })?
+                    .to_string();
                 if text.is_empty() {
                     continue;
                 }

@@ -9,3 +9,10 @@ velocity-servers:
   default: 775
   limbo: -1
 ```
+
+## MiniMessage Parsing Error
+
+If you see an error like `Failed to parse MiniMessage: ill-formed document: entity or character reference not closed: ; not found before end of input`, it is likely caused by an unescaped `&` symbol in your configuration.
+
+MiniMessage uses `&` for entity references. To use a literal `&` symbol, you must escape it as `&amp;`.
+
