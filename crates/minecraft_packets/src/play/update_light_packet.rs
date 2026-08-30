@@ -4,6 +4,7 @@ use minecraft_protocol::prelude::*;
 pub struct UpdateLightPacketV1_16 {
     chunk_x: VarInt,
     chunk_z: VarInt,
+    #[protocol_version(min = V1_16)]
     trust_edges: bool,
     sky_light_mask: VarInt,
     block_light_mask: VarInt,
