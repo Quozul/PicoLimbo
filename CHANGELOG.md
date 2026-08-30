@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Lighting set to full bright for 1.16 and 1.17
+- Invalid palette parsing
 
 ### Updated
 
