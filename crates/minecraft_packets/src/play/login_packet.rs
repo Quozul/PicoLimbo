@@ -1,5 +1,5 @@
 use crate::play::data::login_packet_data::post_v1_16::PostV1_16Data;
-use crate::play::data::login_packet_data::post_v1_20_2::PostV1_20_2Data;
+use crate::play::data::login_packet_data::post_v1_20_2::{CommonPlayerSpawnInfo, PostV1_20_2Data};
 use crate::play::data::login_packet_data::pre_v1_16::{DimensionField, PreV1_16Data};
 use minecraft_protocol::prelude::*;
 use std::borrow::Cow;
@@ -52,7 +52,7 @@ impl LoginPacket {
         }
     }
 
-    /// This is the constructor for 1.16, 1.16.1 and 1.19 up to 1.20 included
+    /// This is the constructor for 1.16, 1.16.1, and 1.19 up to 1.20 included
     pub fn with_registry_codec(
         dimension: Dimension,
         registry_codec_bytes: Cow<'static, [u8]>,
@@ -78,8 +78,11 @@ impl LoginPacket {
             entity_id: 1,
             data: LoginPacketData::PostV1_20_2(PostV1_20_2Data {
                 dimension_names: LengthPaddedVec::new(vec![iden.clone()]),
-                dimension_name: iden.clone(),
-                dimension_type: iden.clone(),
+                common_player_spawn_info: CommonPlayerSpawnInfo {
+                    dimension_name: iden.clone(),
+                    dimension_type: iden.clone(),
+                    ..CommonPlayerSpawnInfo::default()
+                },
                 ..PostV1_20_2Data::default()
             }),
         }
@@ -103,8 +106,12 @@ impl LoginPacket {
             entity_id: 1,
             data: LoginPacketData::PostV1_20_2(PostV1_20_2Data {
                 dimension_names: LengthPaddedVec::new(vec![iden.clone()]),
-                dimension_name: iden.clone(),
-                v1_20_5_dimension_type: dimension_index.into(),
+                common_player_spawn_info: CommonPlayerSpawnInfo {
+                    dimension_name: iden.clone(),
+                    dimension_type: iden.clone(),
+                    v1_20_5_dimension_type: dimension_index.into(),
+                    ..CommonPlayerSpawnInfo::default()
+                },
                 ..PostV1_20_2Data::default()
             }),
         }
@@ -133,7 +140,8 @@ impl LoginPacket {
                 value.v1_16_2_is_hardcore = is_hard_core;
             }
             LoginPacketData::PostV1_20_2(value) => {
-                value.game_mode = game_mode;
+                value.common_player_spawn_info.game_mode = game_mode;
+                value.common_player_spawn_info.v26_3_game_mode = VarInt::new(game_mode as i32);
                 value.is_hardcore = is_hard_core;
             }
         }

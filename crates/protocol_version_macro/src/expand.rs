@@ -35,16 +35,6 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
             Err(err) => return err.to_compile_error().into(),
         };
 
-    let max_value = ParsedVariant::from_variant(
-        data_enum
-            .variants
-            .iter()
-            .find(|v| v.ident == *max_variant_ident)
-            .unwrap(),
-    )
-    .unwrap()
-    .discriminant_value;
-
     let min_value = ParsedVariant::from_variant(
         data_enum
             .variants
@@ -138,14 +128,18 @@ pub fn expand_protocol_version_derive(input: TokenStream) -> TokenStream {
         impl #enum_ident {
             pub const ALL_VERSION: &'static [ProtocolVersion] = &[#(#all_versions_arms),*];
 
+            /// Maps a raw protocol number to a known version.
+            ///
+            /// Exact matches are returned as-is. Unknown numbers are guessed:
+            /// anything older than every supported version maps to the oldest
+            /// one, everything else to the latest one. This is the fallback
+            /// used when `allow_unsupported_versions` is enabled.
             pub fn from(value: i32) -> Self {
                 Self::try_from(value).unwrap_or_else(|_| {
-                    if value > #max_value {
-                        #enum_ident::#max_variant_ident
-                    } else if value < #min_value {
+                    if value < #min_value {
                         #enum_ident::#min_variant_ident
                     } else {
-                        Self::default()
+                        #enum_ident::#max_variant_ident
                     }
                 })
             }

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - File logging (#53)
 - Schematic support for 1.13 onwards
+- Support for Minecraft 26.3-pre-2
 
 ### Fixed
 

@@ -62,14 +62,18 @@ impl RegistryManagerBuilder {
     #[must_use]
     pub fn load_from_resource_path(self, resource_path: &Path) -> RegistryManager {
         let data_path = resource_path.join("data");
+        let reports_path = resource_path.join("reports");
 
         // Parsed once for the whole manager, not per registry - the report is a
         // few hundred kilobytes. Missing or unreadable reports are not fatal:
         // registries that have an entry directory work without it, only tags on
         // directory-less registries lose their IDs.
-        let report = RegistriesReport::from_resource_path(resource_path).map_or_else(
+        let report = RegistriesReport::from_resource_path(&reports_path).map_or_else(
             |error| {
-                debug!(?error, "Failed to load registries report, continuing without");
+                debug!(
+                    ?error,
+                    "Failed to load registries report, continuing without"
+                );
                 None
             },
             Some,

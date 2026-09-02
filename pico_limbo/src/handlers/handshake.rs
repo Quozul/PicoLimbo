@@ -9,6 +9,7 @@ use crate::server_state::ServerState;
 use minecraft_packets::handshaking::handshake_packet::HandshakePacket;
 use minecraft_protocol::prelude::{ProtocolVersion, State};
 use thiserror::Error;
+use tracing::debug;
 
 impl PacketHandler for HandshakePacket {
     fn handle(
@@ -17,8 +18,9 @@ impl PacketHandler for HandshakePacket {
         server_state: &ServerState,
     ) -> Result<Batch, PacketHandlerError> {
         let mut batch = Batch::new();
-        client_state
-            .set_protocol_version(self.get_protocol(server_state.allow_unsupported_versions()));
+        let protocol_version = self.get_protocol(server_state.allow_unsupported_versions());
+        debug!("Client requested protocol version {}", protocol_version);
+        client_state.set_protocol_version(protocol_version);
 
         self.get_next_state().map_or_else(
             |err| {
@@ -226,6 +228,56 @@ mod tests {
 
         // Then
         assert_eq!(client_state.protocol_version(), ProtocolVersion::V1_15_2);
+    }
+
+    #[test]
+    fn test_handshake_handler_should_guess_latest_version_when_unsupported_versions_are_allowed() {
+        // Given: a client whose protocol number is not supported yet (e.g. a
+        // brand-new stable release), with `allow_unsupported_versions` enabled.
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.set_allow_unsupported_versions(true);
+        let server_state = server_state_builder.build().unwrap();
+
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(777),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &server_state);
+
+        // Then: the latest supported implementation is used instead of a rejection.
+        assert!(result.is_ok());
+        assert_eq!(client_state.protocol_version(), ProtocolVersion::latest());
+    }
+
+    #[test]
+    fn test_handshake_handler_should_kick_when_unsupported_versions_are_not_allowed() {
+        // Given: the same unknown protocol number, with the default settings.
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(777),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &server_state());
+
+        // Then: login is refused.
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
+        assert_eq!(
+            client_state.protocol_version(),
+            ProtocolVersion::Unsupported
+        );
     }
 
     #[tokio::test]

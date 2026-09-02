@@ -4,8 +4,8 @@ use std::cmp::PartialEq;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Pvn)]
 #[repr(i32)]
 pub enum ProtocolVersion {
-    #[pvn(known_packs = ["26.3-snapshot-1"], humanized = "26.3-snapshot-1")]
-    V26_3Snapshot1 = 1073742147,
+    #[pvn(known_packs = ["26.3-pre-2"], humanized = "26.3-pre-2")]
+    V26_3 = 1073742158,
     #[default]
     #[pvn(known_packs = ["26.2"])]
     V26_2 = 776,
@@ -180,6 +180,26 @@ mod tests {
 
         assert_eq!(v1_7_6.packets(), v1_7_2);
         assert_eq!(v1_7_2.packets(), v1_7_2);
+    }
+
+    #[test]
+    fn test_unknown_versions_fall_back_to_latest() {
+        // A snapshot/pre-release newer than the latest known one.
+        assert_eq!(ProtocolVersion::from(i32::MAX), ProtocolVersion::latest());
+        // A brand-new stable release (the number right after the latest stable),
+        // served with the latest implementation until support is added.
+        assert_eq!(ProtocolVersion::from(999), ProtocolVersion::latest());
+    }
+
+    #[test]
+    fn test_unknown_versions_older_than_everything_fall_back_to_oldest() {
+        assert_eq!(ProtocolVersion::from(3), ProtocolVersion::oldest());
+    }
+
+    #[test]
+    fn test_strict_lookup_rejects_unknown_versions() {
+        // The path used when `allow_unsupported_versions` is disabled.
+        assert!(ProtocolVersion::try_from(999).is_err());
     }
 
     #[test]

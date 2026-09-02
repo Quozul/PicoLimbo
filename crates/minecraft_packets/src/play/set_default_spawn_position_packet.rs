@@ -1,20 +1,6 @@
 use crate::play::data::block_pos::BlockPos;
+use crate::play::data::global_pos::GlobalPos;
 use minecraft_protocol::prelude::*;
-
-#[derive(PacketOut)]
-struct GlobalPos {
-    dimension: Identifier,
-    block_pos: BlockPos,
-}
-
-impl GlobalPos {
-    fn new(dimension: Identifier, block_pos: BlockPos) -> Self {
-        Self {
-            dimension,
-            block_pos,
-        }
-    }
-}
 
 /// This packet is only required starting from 1.19.
 #[derive(PacketOut)]

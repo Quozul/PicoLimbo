@@ -484,4 +484,5 @@ jobs:
           tag_name: ${{ steps.release_info.outputs.tag_name }}
           name: ${{ steps.release_info.outputs.release_name }}
           draft: false
+          prerelease: ${{ contains(steps.release_info.outputs.tag_name, '-beta') || contains(steps.release_info.outputs.tag_name, '-alpha') }}
           files: ./artifacts/*
