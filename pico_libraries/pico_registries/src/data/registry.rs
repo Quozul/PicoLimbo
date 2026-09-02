@@ -16,6 +16,16 @@ pub struct Registry {
     key: RegistryKey,
     /// Name of the tag mapped to the tag
     tags: HashMap<Identifier, Tag>,
+    /// Protocol IDs taken from `reports/registries.json`.
+    ///
+    /// Not every registry is datapack driven, so not every registry has an entry
+    /// directory to load from. `minecraft:block` is the prominent one. Those
+    /// entries never make it into `entries`, and tags pointing at them cannot be
+    /// resolved from there. The generated report knows every entry of every
+    /// registry together with its real protocol ID, which is exactly what tags
+    /// need.
+    #[serde(skip_serializing)]
+    report_protocol_ids: HashMap<Identifier, u32>,
 }
 
 impl Registry {
@@ -38,11 +48,33 @@ impl Registry {
     ///
     /// # Errors
     /// Returns an error if it fails to load a registry
-    pub fn load(registry_keys: &RegistryKeys, resource_path: &Path) -> crate::Result<Self> {
+    pub fn load(
+        registry_keys: &RegistryKeys,
+        resource_path: &Path,
+        report_protocol_ids: HashMap<Identifier, u32>,
+    ) -> crate::Result<Self> {
         let entries = Self::load_entries(registry_keys, resource_path).unwrap_or_default();
         let tags = Self::load_tags(registry_keys, resource_path).unwrap_or_default();
         let key = RegistryKey::of_registry(registry_keys.id());
-        Ok(Self { entries, key, tags })
+        Ok(Self {
+            entries,
+            key,
+            tags,
+            report_protocol_ids,
+        })
+    }
+
+    /// Protocol ID of an entry, falling back to the generated registries report.
+    ///
+    /// Loaded entries win so datapack driven registries keep the IDs derived from
+    /// their directory order; the report only fills in registries that have no
+    /// entry directory at all.
+    #[must_use]
+    pub fn protocol_id_of(&self, registry_ref: &Identifier) -> Option<u32> {
+        self.entries
+            .get(registry_ref)
+            .map(RegistryEntry::get_protocol_id)
+            .or_else(|| self.report_protocol_ids.get(registry_ref).copied())
     }
 
     #[must_use]

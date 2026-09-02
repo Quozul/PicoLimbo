@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)] // TODO: This is currently unused, but should become used later on
 pub struct RegistriesReport {
     #[serde(flatten)]
     pub registries: HashMap<Identifier, Registry>,
@@ -12,23 +11,24 @@ pub struct RegistriesReport {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)] // TODO: This is currently unused, but should become used later on
 pub struct Registry {
+    // Both are only here because `deny_unknown_fields` requires every key of the
+    // report to be modelled; nothing reads them yet.
     #[serde(default)]
+    #[allow(dead_code)]
     pub default: Option<String>,
     pub entries: HashMap<Identifier, Entry>,
+    #[allow(dead_code)]
     pub protocol_id: u32,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)] // TODO: This is currently unused, but should become used later on
 pub struct Entry {
     pub protocol_id: u32,
 }
 
 impl RegistriesReport {
-    #[allow(dead_code)] // TODO: This is currently unused, but should become used later on
     pub fn from_resource_path(resource_path: &Path) -> crate::Result<Self> {
         let registries_report_path = resource_path.join("reports").join("registries.json");
         let json_str = std::fs::read_to_string(&registries_report_path)?;

@@ -1,4 +1,3 @@
-use crate::data::registry_entry::RegistryEntry;
 use crate::{Registry, RegistryKeys, RegistryManager};
 use pico_identifier::Identifier;
 use std::borrow::Cow;
@@ -58,11 +57,7 @@ fn evaluate_tags(registry: &Registry, tag_name: &Identifier) -> crate::Result<Ve
                 evaluate_tags(registry, &identifier.normalize())
             } else {
                 // If it is not a tag, then we should get the protocol ID of the actual value from the registry
-                Ok(registry
-                    .try_get(identifier)
-                    .into_iter()
-                    .map(RegistryEntry::get_protocol_id)
-                    .collect())
+                Ok(registry.protocol_id_of(identifier).into_iter().collect())
             }
         })
         .flatten()

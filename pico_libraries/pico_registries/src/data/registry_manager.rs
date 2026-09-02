@@ -1,5 +1,6 @@
 use crate::data::registry::Registry;
 use crate::registry_keys::RegistryKeys;
+use crate::reports::registries_report::RegistriesReport;
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::debug;
@@ -60,11 +61,36 @@ impl RegistryManagerBuilder {
     #[must_use]
     pub fn load_from_resource_path(self, resource_path: &Path) -> RegistryManager {
         let data_path = resource_path.join("data");
+
+        // Parsed once for the whole manager, not per registry - the report is a
+        // few hundred kilobytes. Missing or unreadable reports are not fatal:
+        // registries that have an entry directory work without it, only tags on
+        // directory-less registries lose their IDs.
+        let report = RegistriesReport::from_resource_path(resource_path).map_or_else(
+            |error| {
+                debug!(?error, "Failed to load registries report, continuing without");
+                None
+            },
+            Some,
+        );
+
         let registries = self
             .registry_keys
             .iter()
             .filter_map(|registry_key| {
-                Registry::load(registry_key, &data_path).map_or_else(
+                let report_protocol_ids = report
+                    .as_ref()
+                    .and_then(|report| report.registries.get(&registry_key.id()))
+                    .map(|registry| {
+                        registry
+                            .entries
+                            .iter()
+                            .map(|(identifier, entry)| (identifier.clone(), entry.protocol_id))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                Registry::load(registry_key, &data_path, report_protocol_ids).map_or_else(
                     |_| {
                         debug!(
                             registry_key = ?registry_key,
