@@ -22,7 +22,7 @@ repositories {
 
     maven {
         name = "bungeecord-repo"
-        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
     }
 }
 

@@ -1,6 +1,6 @@
 [versions]
 jna = "5.19.1"
-velocity = "4.1.0-SNAPSHOT"
+velocity = "4.1.1"
 bungeecord = "26.1-R0.1-SNAPSHOT"
 
 [libraries]
