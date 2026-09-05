@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.14.0-beta.1+mc26.3-pre-2] - 2026-09-05
 
 ### Added
 
 - File logging (#53)
-- Schematic support for 1.13 onwards
+- Schematic support from 1.13.x, 1.14.x, and 1.15.x
 - Support for Minecraft 26.3-pre-2
+- New data generator written in Rust
 
 ### Fixed
 
@@ -20,14 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated
 
-- Updated to Rust 1.97.0
+- Updated to Rust 1.98.1
+- Registries are now saved as NBT binaries instead of JSON files
+- Updated to Velocity 4.1.1
+
+### Removed
+
+- JSON registry files
+- TypeScript data generator
 
 ## [1.13.2+mc26.2] - 2026-07-24
 
 ### Updated
 
 - Updated Java Wrapper's minimum Java version to 25
-- Updated Java Wrapper's Velocity, Bungeecord and JNA versions
+- Updated Java Wrapper's Velocity, Bungeecord, and JNA versions
 
 ### Fixed
 
@@ -129,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add skylight and block light calculation for schematics (1.18+)
 - Allow renaming and disabling commands
 - Allow player to toggle fly and change flyspeed
-- Java wrapper to run PicoLimbo as a Velocity plugin, BungeeCord plugin or standalone using the Java runtime
+- Java wrapper to run PicoLimbo as a Velocity plugin, BungeeCord plugin, or standalone using the Java runtime
 
 ### Updated
 
