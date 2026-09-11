@@ -475,4 +475,10 @@ jobs:
           name: ${{ steps.release_info.outputs.release_name }}
           draft: false
           prerelease: ${{ contains(steps.release_info.outputs.tag_name, '-beta') || contains(steps.release_info.outputs.tag_name, '-alpha') }}
+          body: |
+            Check the changelog at https://github.com/Quozul/PicoLimbo/blob/master/CHANGELOG.md
+
+            The Java Wrapper can be downloaded on Modrinth: https://modrinth.com/plugin/picolimbo-java-wrapper
+
+            Pterodactyl eggs can be found at https://github.com/Quozul/PicoLimbo/tree/master/pterodactyl/eggs
           files: ./artifacts/*
