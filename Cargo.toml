@@ -38,7 +38,7 @@ md5 = { package = "md-5", version = "0.11.0" }
 phf = { version = "0.14.0", features = ["macros"] }
 phf_codegen = "0.14.0"
 proc-macro2 = "1.0.107"
-quick-xml = "0.41.0"
+quick-xml = "0.42.0"
 quote = "1.0.47"
 rand = "0.10.2"
 rayon = "1.12.0"
