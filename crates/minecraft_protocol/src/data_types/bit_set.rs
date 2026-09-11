@@ -5,7 +5,7 @@ use crate::prelude::*;
 /// Wire format history:
 /// - Up to 26.2 (` FriendlyByteBuf.readBitSet`): VarInt long count followed by
 ///   big-endian longs (`BitSet.valueOf(long[])`).
-/// - 26.3-pre-2 and later (`ByteBufCodecs.BIT_SET`): VarInt byte count followed
+/// - 26.3 and later (`ByteBufCodecs.BIT_SET`): VarInt byte count followed
 ///   by a byte array where byte `i` holds bits `8i..8i+7`
 ///   (`BitSet.valueOf(byte[])`, see `BitSet.toByteArray()`).
 #[derive(Default, Clone)]
@@ -30,7 +30,7 @@ impl BitSet {
         self.data.encode(writer, protocol_version)
     }
 
-    /// Encodes the bitset in the 26.3-pre-2+ format: VarInt byte count followed
+    /// Encodes the bitset in the 26.3+ format: VarInt byte count followed
     /// by the minimal little-endian byte array, matching Java's
     /// `BitSet.toByteArray()`.
     fn encode_as_bytes(
