@@ -289,16 +289,6 @@ jobs:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
         run: ./gradlew :wrapper:modrinth -x :wrapper:jar
 
-      - name: Rename and Prepare Artifact
-        run: |
-          mv wrapper/build/libs/pico_limbo_java_wrapper.jar ../${{ env.BINARY_NAME }}_java_wrapper.jar
-
-      - name: Upload Java Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ env.BINARY_NAME }}_java_wrapper
-          path: ${{ env.BINARY_NAME }}_java_wrapper.jar
-
   build-docker:
     strategy:
       fail-fast: false
