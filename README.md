@@ -109,6 +109,11 @@ website.
 - [NanoLimbo](https://github.com/Nan1t/NanoLimbo): Actively maintained
   (see [BoomEaro's fork](https://github.com/BoomEaro/NanoLimbo))
 
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=quozul/picolimbo&type=date&legend=top-left)](https://www.star-history.com/?repos=quozul%2Fpicolimbo&type=date&legend=top-left)
 ## Contributing
 
 Contributions are welcome! If you encounter any issues or have suggestions for improvement, please submit an issue or
