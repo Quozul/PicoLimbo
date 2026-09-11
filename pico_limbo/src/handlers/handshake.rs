@@ -241,7 +241,7 @@ mod tests {
 
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
-            protocol: VarInt::new(777),
+            protocol: VarInt::new(999),
             hostname: String::new(),
             next_state: VarInt::new(2),
             port: 25565,
@@ -260,7 +260,7 @@ mod tests {
         // Given: the same unknown protocol number, with the default settings.
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
-            protocol: VarInt::new(777),
+            protocol: VarInt::new(999),
             hostname: String::new(),
             next_state: VarInt::new(2),
             port: 25565,

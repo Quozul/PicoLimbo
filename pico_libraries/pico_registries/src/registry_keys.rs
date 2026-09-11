@@ -31,10 +31,10 @@ pub enum RegistryKeys {
     DamageType,
     #[registry(id = "minecraft:dialog", min_version = V1_21_6, is_mandatory = true)]
     Dialog,
-    #[registry(id = "minecraft:dimension_type", min_version = V1_16, is_mandatory = true)]
-    DimensionType,
     #[registry(id = "minecraft:decorated_pot_pattern", min_version = V26_3, is_mandatory = true)]
     DecoratedPotPattern,
+    #[registry(id = "minecraft:dimension_type", min_version = V1_16, is_mandatory = true)]
+    DimensionType,
     #[registry(id = "minecraft:frog_variant", min_version = V1_21_5, is_mandatory = true)]
     FrogVariant,
     #[registry(id = "minecraft:instrument", min_version = V26_1, is_mandatory = true)]
