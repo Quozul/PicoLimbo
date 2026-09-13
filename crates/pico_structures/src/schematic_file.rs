@@ -1,12 +1,11 @@
 use minecraft_protocol::prelude::{Coordinates, InvalidCoordinateVec};
-use pico_nbt::{NbtOptions, Value, from_path_struct};
+use pico_nbt::{NbtOptions, Value, from_path_with_options, from_value};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
+#[derive(Debug)]
 pub enum SchematicFile {
     V3(SchematicV3Wrapper),
     V2(SchematicV2),
@@ -44,7 +43,7 @@ struct BlockContainer {
     palette: HashMap<String, i32>,
     #[serde(deserialize_with = "deserialize_var_int_array")]
     data: Vec<i32>,
-    #[serde(default)]
+    #[serde(skip)]
     block_entities: Option<Vec<BlockEntity>>,
 }
 
@@ -76,7 +75,7 @@ pub struct SchematicV2 {
     palette: HashMap<String, i32>,
     #[serde(alias = "BlockData", deserialize_with = "deserialize_var_int_array")]
     block_data: Vec<i32>,
-    #[serde(alias = "TileEntities", default)]
+    #[serde(skip)]
     block_entities: Option<Vec<BlockEntity>>,
     #[serde(default)]
     entities: Option<Vec<Value>>,
@@ -102,13 +101,10 @@ struct Metadata {
     required_mods: Option<Vec<String>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct BlockEntity {
-    #[serde(rename = "Pos")]
     position: Vec<i32>,
-    #[serde(rename = "Id")]
     identifier: String,
-    #[serde(flatten)]
     data: Value,
 }
 
@@ -167,8 +163,98 @@ where
 
 impl SchematicFile {
     pub fn from_path(path: &Path) -> pico_nbt::Result<Self> {
-        let (_, schematic) = from_path_struct::<SchematicFile>(path, NbtOptions::default())?;
+        let (_, value) = from_path_with_options(path, NbtOptions::new().dynamic_lists(true))?;
+        Self::from_nbt(value)
+    }
+
+    pub fn from_nbt(mut value: Value) -> pico_nbt::Result<Self> {
+        fn compound(value: &mut Value) -> pico_nbt::Result<&mut pico_nbt::IndexMap<String, Value>> {
+            match value {
+                Value::Compound(map) => Ok(map),
+                _ => Err(pico_nbt::Error::Message(
+                    "Expected schematic compound".into(),
+                )),
+            }
+        }
+
+        let root = compound(&mut value)?;
+        let is_v3 = root.contains_key("Schematic");
+        let container = if is_v3 {
+            let schematic = compound(root.get_mut("Schematic").unwrap())?;
+            compound(
+                schematic
+                    .get_mut("Blocks")
+                    .ok_or_else(|| pico_nbt::Error::Message("Missing Blocks compound".into()))?,
+            )?
+        } else {
+            root
+        };
+        let entities = container
+            .swap_remove("BlockEntities")
+            .or_else(|| container.swap_remove("TileEntities"));
+        let entities = match entities {
+            None => None,
+            Some(Value::List(entities)) => Some(
+                entities
+                    .into_iter()
+                    .map(|mut entity| {
+                        let fields = compound(&mut entity)?;
+                        let position = from_value(fields.swap_remove("Pos").ok_or_else(|| {
+                            pico_nbt::Error::Message("Missing block entity Pos".into())
+                        })?)?;
+                        let identifier =
+                            from_value(fields.swap_remove("Id").ok_or_else(|| {
+                                pico_nbt::Error::Message("Missing block entity Id".into())
+                            })?)?;
+                        // Keep raw NBT types, including UUID int arrays and item counts.
+                        let data = if is_v3 {
+                            fields
+                                .swap_remove("Data")
+                                .unwrap_or_else(|| Value::Compound(Default::default()))
+                        } else {
+                            entity
+                        };
+                        if data.get_compound().is_none() {
+                            return Err(pico_nbt::Error::Message(
+                                "Expected block entity Data compound".into(),
+                            ));
+                        }
+                        Ok(BlockEntity {
+                            position,
+                            identifier,
+                            data,
+                        })
+                    })
+                    .collect::<pico_nbt::Result<Vec<_>>>()?,
+            ),
+            Some(_) => {
+                return Err(pico_nbt::Error::Message(
+                    "Expected BlockEntities list".into(),
+                ));
+            }
+        };
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Format {
+            V3(SchematicV3Wrapper),
+            V2(SchematicV2),
+        }
+        let mut schematic = match from_value::<Format>(value)? {
+            Format::V3(wrapper) => Self::V3(wrapper),
+            Format::V2(schematic) => Self::V2(schematic),
+        };
+        match &mut schematic {
+            Self::V3(wrapper) => wrapper.schematic.blocks.block_entities = entities,
+            Self::V2(schematic) => schematic.block_entities = entities,
+        }
         Ok(schematic)
+    }
+
+    pub fn get_data_version(&self) -> Option<i32> {
+        match self {
+            Self::V3(wrapper) => Some(wrapper.schematic.data_version),
+            Self::V2(schematic) => schematic.data_version,
+        }
     }
 
     pub fn get_version(&self) -> u8 {

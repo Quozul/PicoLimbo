@@ -9,7 +9,7 @@ impl GenericBlockEntity {
     /// Removes the additional fields from the Value stored in the schematic that are used to know
     /// where the block entity is.
     pub fn from_nbt(entity_nbt: &Value) -> Self {
-        const KEYS_TO_REMOVE: &[&str] = &["Id", "Pos", "x", "y", "z", "keepPacked"];
+        const KEYS_TO_REMOVE: &[&str] = &["id", "Id", "Pos", "x", "y", "z", "keepPacked"];
         let nbt = if let Some(value) = entity_nbt.get_compound() {
             let mut cloned = value.clone();
             for key in KEYS_TO_REMOVE {
