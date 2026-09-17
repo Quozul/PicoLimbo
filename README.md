@@ -57,6 +57,26 @@ Integrates with all major Minecraft proxies:
 - BungeeCord (Legacy Forwarding)
 - BungeeGuard & BungeeGuardPlus authentication
 
+### 🌉 Geyser / Floodgate Support
+
+PicoLimbo can natively accept Floodgate data from Geyser without installing Geyser or Floodgate in PicoLimbo.
+
+Add these options to your TOML configuration:
+
+```toml
+floodgate = true
+edufloodgate = true
+floodgatekey = "key.pem"
+floodgate_username_prefix = "."
+edufloodgate_username_prefix = "+"
+floodgate_replace_spaces = true
+edufloodgate_uuid_legacy = false
+```
+
+`floodgatekey` may point to the Floodgate `key.pem` file. The same AES key must be used by the Geyser/Floodgate side. Standard Floodgate uses 12-field encrypted Bedrock data; EduGeyser/EduFloodgate uses the 15-field education format. Education identity UUIDs use the modern Entra OID scheme by default.
+
+The Floodgate key is sensitive and must not be shared.
+
 ### ⚙️ Highly Configurable
 
 Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list

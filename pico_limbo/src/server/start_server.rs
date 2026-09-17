@@ -6,6 +6,7 @@ use crate::configuration::config::{Config, ConfigError, load_or_create};
 use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
+use crate::floodgate::FloodgateConfig;
 use crate::server::network::Server;
 use crate::server::server_address::ServerAddress;
 use crate::server_state::{ServerState, ServerStateBuilderError};
@@ -71,6 +72,19 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     let mut server_state_builder = ServerState::builder();
 
     let forwarding: TaggedForwarding = cfg.forwarding.into();
+
+    let floodgate = FloodgateConfig::from_settings(
+        cfg.floodgate,
+        cfg.edufloodgate,
+        &cfg.floodgatekey,
+        cfg.floodgate_username_prefix,
+        cfg.edufloodgate_username_prefix,
+        cfg.floodgate_replace_spaces,
+        cfg.edufloodgate_uuid_legacy,
+    )
+    .map_err(ServerStateBuilderError::Floodgate)?;
+
+    server_state_builder.floodgate(floodgate);
 
     match forwarding {
         TaggedForwarding::None => {
