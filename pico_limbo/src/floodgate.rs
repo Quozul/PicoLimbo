@@ -33,6 +33,20 @@ pub struct FloodgateData {
     pub ad_role: i32,
 }
 
+impl Default for FloodgateConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            education_enabled: false,
+            key: None,
+            username_prefix: ".".to_string(),
+            education_prefix: "+".to_string(),
+            replace_spaces: true,
+            education_uuid_legacy: false,
+        }
+    }
+}
+
 impl FloodgateConfig {
     pub fn from_settings(
         enabled: bool,
