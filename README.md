@@ -64,16 +64,19 @@ PicoLimbo can natively accept Floodgate data from Geyser without installing Geys
 Add these options to your TOML configuration:
 
 ```toml
-floodgate = true
-edufloodgate = true
-floodgatekey = "key.pem"
-floodgate_username_prefix = "."
-edufloodgate_username_prefix = "+"
-floodgate_replace_spaces = true
-edufloodgate_uuid_legacy = false
+[floodgate]
+enabled = true
+key = "key.pem"
+username_prefix = "."
+replace_spaces = true
+
+[floodgate.education]
+enabled = true
+username_prefix = "+"
+uuid_legacy = false
 ```
 
-`floodgatekey` may point to the Floodgate `key.pem` file. The same AES key must be used by the Geyser/Floodgate side. Standard Floodgate uses 12-field encrypted Bedrock data; EduGeyser/EduFloodgate uses the 15-field education format. Education identity UUIDs use the modern Entra OID scheme by default.
+`floodgate.key` points to the Floodgate `key.pem` file. The same AES key must be used by the Geyser/Floodgate side. Standard Floodgate uses 12-field encrypted Bedrock data; EduGeyser/EduFloodgate uses the 15-field education format. Education identity UUIDs use the modern Entra OID scheme by default.
 
 The Floodgate key is sensitive and must not be shared.
 
