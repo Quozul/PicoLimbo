@@ -75,19 +75,30 @@ impl FloodgateConfig {
     }
 
     pub fn parse_hostname(&self, hostname: &str) -> Result<(String, Option<FloodgateData>), String> {
-        let Some(index) = hostname.find('\0') else {
-            return Ok((hostname.to_string(), None));
-        };
-
         if !(self.enabled || self.education_enabled) {
             return Ok((hostname.to_string(), None));
         }
 
-        let base = hostname[..index].to_string();
-        let encoded = &hostname[index + 1..];
-        let key = self.key.as_ref().ok_or_else(|| "Floodgate key is not configured".to_string())?;
-        let decrypted = decrypt(key, encoded)?;
-        let data = parse_data(&decrypted)?;
+        let key = self
+            .key
+            .as_ref()
+            .ok_or_else(|| "Floodgate key is not configured".to_string())?;
+
+        let mut clean_parts = Vec::new();
+        let mut floodgate_data = None;
+
+        for part in hostname.split('\\0') {
+            if floodgate_data.is_none() && part.as_bytes().starts_with(HEADER) {
+                let decrypted = decrypt(key, part)?;
+                floodgate_data = Some(parse_data(&decrypted)?);
+            } else {
+                clean_parts.push(part);
+            }
+        }
+
+        let Some(data) = floodgate_data else {
+            return Ok((hostname.to_string(), None));
+        };
 
         if data.education {
             if !self.education_enabled {
@@ -97,7 +108,7 @@ impl FloodgateConfig {
             return Err("Floodgate data received but floodgate is disabled".to_string());
         }
 
-        Ok((base, Some(data)))
+        Ok((clean_parts.join("\\0"), Some(data)))
     }
 
     pub fn game_profile(&self, data: &FloodgateData) -> Result<(String, Uuid), String> {
