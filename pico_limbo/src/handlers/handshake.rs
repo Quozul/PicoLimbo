@@ -73,7 +73,12 @@ fn begin_login(
             client_state.protocol_version()
         )));
     }
-    let forwarding_result = check_bungee_cord(server_state, hostname);
+    let (clean_hostname, floodgate_data) = server_state
+        .floodgate()
+        .parse_hostname(hostname)
+        .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+
+    let forwarding_result = check_bungee_cord(server_state, &clean_hostname);
     match forwarding_result {
         LegacyForwardingResult::Invalid => {
             client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
@@ -87,9 +92,25 @@ fn begin_login(
         } => {
             let game_profile = GameProfile::anonymous(player_uuid, textures);
             client_state.set_game_profile(game_profile);
+            if let Some(data) = floodgate_data {
+                let (username, uuid) = server_state
+                    .floodgate()
+                    .game_profile(&data)
+                    .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+                client_state.set_game_profile(GameProfile::new(&username, uuid, None));
+            }
             Ok(())
         }
-        LegacyForwardingResult::NoForwarding => Ok(()),
+        LegacyForwardingResult::NoForwarding => {
+            if let Some(data) = floodgate_data {
+                let (username, uuid) = server_state
+                    .floodgate()
+                    .game_profile(&data)
+                    .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+                client_state.set_game_profile(GameProfile::new(&username, uuid, None));
+            }
+            Ok(())
+        }
     }
 }
 
