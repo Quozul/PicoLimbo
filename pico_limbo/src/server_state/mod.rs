@@ -2,6 +2,7 @@ use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::fly_config::FlyConfig;
 use crate::server::game_mode::GameMode;
+use crate::floodgate::FloodgateConfig;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
@@ -99,6 +100,7 @@ impl Default for Fly {
 #[allow(clippy::struct_excessive_bools)]
 pub struct ServerState {
     forwarding_mode: ForwardingMode,
+    floodgate: FloodgateConfig,
     spawn_dimension: Dimension,
     motd: Component,
     time_world: i64,
@@ -135,6 +137,10 @@ impl ServerState {
     /// Start building a new `ServerState`.
     pub fn builder() -> ServerStateBuilder {
         ServerStateBuilder::default()
+    }
+
+    pub const fn floodgate(&self) -> &FloodgateConfig {
+        &self.floodgate
     }
 
     pub const fn is_legacy_forwarding(&self) -> bool {
@@ -300,6 +306,7 @@ impl ServerState {
 #[allow(clippy::struct_excessive_bools)]
 pub struct ServerStateBuilder {
     forwarding_mode: ForwardingMode,
+    floodgate: Option<FloodgateConfig>,
     dimension: Option<Dimension>,
     time_world: i64,
     lock_time: bool,
@@ -350,6 +357,11 @@ pub enum ServerStateBuilderError {
 }
 
 impl ServerStateBuilder {
+    pub fn floodgate(&mut self, config: FloodgateConfig) -> &mut Self {
+        self.floodgate = Some(config);
+        self
+    }
+
     pub fn enable_legacy_forwarding(&mut self) -> &mut Self {
         self.forwarding_mode = ForwardingMode::Legacy;
         self
@@ -627,6 +639,15 @@ impl ServerStateBuilder {
 
         Ok(ServerState {
             forwarding_mode: self.forwarding_mode,
+            floodgate: self.floodgate.unwrap_or(FloodgateConfig {
+                enabled: false,
+                education_enabled: false,
+                key: None,
+                username_prefix: ".".to_string(),
+                education_prefix: "+".to_string(),
+                replace_spaces: true,
+                education_uuid_legacy: false,
+            }),
             spawn_dimension: self.dimension.unwrap_or_default(),
             motd: parse_mini_message(&self.description_text)?,
             time_world: self.time_world,
