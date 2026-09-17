@@ -28,7 +28,9 @@ impl PacketHandler for LoginStartPacket {
                 client_state.kick(CLIENT_MODERN_FORWARDING_NOT_SUPPORTED_KICK_MESSAGE);
             }
         } else {
-            let game_profile: GameProfile = self.into();
+            let game_profile = client_state
+                .game_profile()
+                .unwrap_or_else(|| self.into());
             fire_login_success(&mut batch, client_state, server_state, game_profile)?;
         }
         Ok(batch)
