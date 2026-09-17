@@ -148,8 +148,12 @@ impl FloodgateConfig {
                 Uuid::from_u64_pair(EDUCATION_UUID_MSB, (upper << 4) | lower)
             }
         } else {
-            let xuid = data.xuid.parse::<u64>()
-                .map_err(|_| "Floodgate xuid is not a valid unsigned 64-bit integer".to_string())?;
+            let xuid = data
+                .xuid
+                .parse::<i64>()
+                .map(|value| value as u64)
+                .or_else(|_| data.xuid.parse::<u64>())
+                .map_err(|_| "Floodgate xuid is not a valid 64-bit integer".to_string())?;
             Uuid::from_u64_pair(0, xuid)
         };
 
