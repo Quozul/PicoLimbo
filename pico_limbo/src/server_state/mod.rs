@@ -352,6 +352,8 @@ pub enum ServerStateBuilderError {
     InvalidSpawnPosition,
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error("Floodgate configuration error: {0}")]
+    Floodgate(String),
     #[error(transparent)]
     TryFromInt(#[from] TryFromIntError),
 }
