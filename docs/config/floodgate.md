@@ -25,7 +25,7 @@ Geyser + Floodgate
 PicoLimbo
 ```
 
-Geyser and Floodgate stay installed on the proxy. **Do not install Geyser or Floodgate in PicoLimbo.** PicoLimbo implements the backend-side Floodgate data handling itself.
+Geyser and Floodgate stay installed on the proxy. **Do not code Geyser or Floodgate in PicoLimbo.** PicoLimbo implements the backend-side Floodgate data handling itself.
 
 This is especially useful for networks where the proxy needs to forward Floodgate data to a backend that cannot have the normal platform-specific Floodgate plugin installed.
 
