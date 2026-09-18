@@ -54,6 +54,10 @@ pub fn fire_login_success(
     game_profile: GameProfile,
 ) -> Result<(), PacketHandlerError> {
     let protocol_version = client_state.protocol_version();
+    let game_profile = match client_state.game_profile() {
+        Some(profile) if !profile.is_anonymous() => profile,
+        _ => game_profile,
+    };
 
     if protocol_version.is_after_inclusive(ProtocolVersion::V1_8)
         && let Some(compression_settings) = server_state.compression_settings()
@@ -110,19 +114,15 @@ mod tests {
         LoginStartPacket::default()
     }
 
-    // modern forwarding
     #[tokio::test]
     async fn test_login_start_velocity_happy_path() {
-        // Given
         let server_state = velocity();
-        let mut client_state = client(ProtocolVersion::V1_13); // ≥ 1.13
+        let mut client_state = client(ProtocolVersion::V1_13);
         let pkt = packet();
 
-        // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then
         assert!(
             matches!(
                 batch.next().await.unwrap().unwrap_packet(),
@@ -137,15 +137,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_login_start_velocity_kicks_old_client() {
-        // Given
         let server_state = velocity();
-        let mut client_state = client(ProtocolVersion::V1_12_2); // < 1.13
+        let mut client_state = client(ProtocolVersion::V1_12_2);
         let pkt = packet();
 
-        // When
         let result = pkt.handle(&mut client_state, &server_state);
 
-        // Then
         assert!(result.is_ok());
         assert_eq!(
             client_state.should_kick(),
@@ -153,19 +150,15 @@ mod tests {
         );
     }
 
-    // vanilla login
     #[tokio::test]
     async fn test_login_start_vanilla_newer_than_1_21_2() {
-        // Given
         let server_state = vanilla();
         let mut client_state = client(ProtocolVersion::V1_21_2);
         let pkt = packet();
 
-        // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then
         assert!(
             matches!(
                 batch.next().await.unwrap().unwrap_packet(),
@@ -177,16 +170,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_login_start_vanilla_before_1_21_2() {
-        // Given
         let server_state = vanilla();
         let mut client_state = client(ProtocolVersion::V1_20_2);
         let pkt = packet();
 
-        // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then
         assert!(
             matches!(
                 batch.next().await.unwrap().unwrap_packet(),
@@ -198,32 +188,26 @@ mod tests {
 
     #[tokio::test]
     async fn test_should_not_send_play_packets_when_configuration_state_was_introduced() {
-        // Given
         let server_state = vanilla();
         let mut client_state = client(ProtocolVersion::V1_20_2);
         let pkt = packet();
 
-        // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then
         let _ = batch.next().await.unwrap();
         assert!(batch.next().await.is_none());
     }
 
     #[tokio::test]
     async fn test_should_send_play_packets_for_versions_prior_to_configuration_state() {
-        // Given
         let server_state = vanilla();
         let mut client_state = client(ProtocolVersion::V1_20);
         let pkt = packet();
 
-        // When
         let batch = pkt.handle(&mut client_state, &server_state).unwrap();
         let mut batch = batch.into_stream();
 
-        // Then
         let _ = batch.next().await.unwrap();
         assert!(batch.next().await.is_some());
     }

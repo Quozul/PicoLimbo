@@ -1,8 +1,17 @@
+use crate::configuration::require_boolean::{require_false, require_true};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-#[serde(default)]
-pub struct FloodgateConfig {
+#[serde(untagged)]
+pub enum FloodgateConfig {
+    Enabled(EnabledFloodgateConfig),
+    Disabled(DisabledFloodgateConfig),
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct EnabledFloodgateConfig {
+    #[serde(deserialize_with = "require_true")]
     pub enabled: bool,
     pub key_file: String,
     pub username_prefix: String,
@@ -12,16 +21,14 @@ pub struct FloodgateConfig {
     pub education_uuid_legacy: bool,
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct DisabledFloodgateConfig {
+    #[serde(deserialize_with = "require_false")]
+    pub enabled: bool,
+}
+
 impl Default for FloodgateConfig {
     fn default() -> Self {
-        Self {
-            enabled: false,
-            key_file: "key.pem".into(),
-            username_prefix: ".".into(),
-            replace_spaces: true,
-            education: false,
-            education_username_prefix: "+".into(),
-            education_uuid_legacy: false,
-        }
+        Self::Disabled(DisabledFloodgateConfig { enabled: false })
     }
 }

@@ -53,8 +53,6 @@ pub struct Config {
 
     pub connection: ConnectionConfig,
 
-    pub floodgate: FloodgateConfig,
-
     /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
 
