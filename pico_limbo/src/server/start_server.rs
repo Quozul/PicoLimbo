@@ -3,9 +3,11 @@ use crate::cli::Cli;
 use crate::configuration::TaggedForwarding;
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
+use crate::configuration::floodgate::FloodgateConfig;
 use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
+use crate::floodgate::FloodgateSettings;
 use crate::server::network::Server;
 use crate::server::server_address::ServerAddress;
 use crate::server_state::{ServerState, ServerStateBuilderError};
@@ -71,6 +73,15 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     let mut server_state_builder = ServerState::builder();
 
     let forwarding: TaggedForwarding = cfg.forwarding.into();
+
+    match cfg.floodgate {
+        FloodgateConfig::Enabled(config) => {
+            let floodgate =
+                FloodgateSettings::from_config(&config).map_err(ServerStateBuilderError::Floodgate)?;
+            server_state_builder.floodgate(floodgate);
+        }
+        FloodgateConfig::Disabled(_) => {}
+    }
 
     match forwarding {
         TaggedForwarding::None => {

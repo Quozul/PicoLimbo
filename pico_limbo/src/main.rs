@@ -2,6 +2,7 @@
 mod banner;
 mod cli;
 mod configuration;
+mod floodgate;
 mod forwarding;
 mod handlers;
 mod kick_messages;
