@@ -31,24 +31,22 @@ This is especially useful for networks where the proxy needs to forward Floodgat
 
 ## Configuration
 
-Floodgate support is disabled by default. Enable the native PicoLimbo implementation with:
+Floodgate support is disabled by default. Enable it with:
 
 ```toml
 [floodgate]
-method = "ENABLED"
+enabled = true
 key_file = "key.pem"
 username_prefix = "."
 replace_spaces = true
-
-[floodgate.education]
-enabled = false
-username_prefix = "+"
-uuid_legacy = false
+education = false
 ```
 
 The `key_file` must contain the same Floodgate key used by the proxy-side Floodgate installation. GeyserMC requires the key to match between Floodgate instances when Floodgate data is forwarded. Treat this file as a secret and never commit or distribute it.
 
-### Standard Floodgate
+Set `education = true` when the proxy is forwarding EduGeyser/EduFloodgate data.
+
+## Standard Floodgate
 
 For a normal Geyser/Floodgate proxy setup:
 
@@ -59,10 +57,6 @@ For a normal Geyser/Floodgate proxy setup:
 5. Send the proxy connection to PicoLimbo.
 
 The important difference is that PicoLimbo does **not** need the Floodgate plugin installed. It handles the forwarded Floodgate payload natively.
-
-### Education / EduFloodgate
-
-Set `floodgate.education.enabled = true` when the proxy is forwarding EduGeyser/EduFloodgate data. The education username prefix and legacy UUID behavior can be configured independently.
 
 ## Proxy forwarding
 
@@ -90,7 +84,7 @@ For an integration test, use a real Geyser/Floodgate proxy setup and test:
 2. A Bedrock player joining through Geyser/Floodgate with `send-floodgate-data` enabled.
 3. A Bedrock player with normal BungeeCord or Velocity forwarding enabled at the same time.
 4. A Bedrock username containing spaces when `replace_spaces` is enabled.
-5. An EduGeyser/EduFloodgate player with education mode enabled.
+5. An EduGeyser/EduFloodgate player with `education` enabled.
 6. A malformed Floodgate payload.
 7. A payload encrypted with the wrong key.
 8. A connection without Floodgate data, which should continue to work normally.
