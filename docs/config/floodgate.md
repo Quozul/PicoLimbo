@@ -40,11 +40,13 @@ key_file = "key.pem"
 username_prefix = "."
 replace_spaces = true
 education = false
+education_username_prefix = "+"
+education_uuid_legacy = false
 ```
 
 The `key_file` must contain the same Floodgate key used by the proxy-side Floodgate installation. GeyserMC requires the key to match between Floodgate instances when Floodgate data is forwarded. Treat this file as a secret and never commit or distribute it.
 
-Set `education = true` when the proxy is forwarding EduGeyser/EduFloodgate data.
+Set `education = true` when the proxy is forwarding EduGeyser/EduFloodgate data. `education_username_prefix` controls the prefix applied to education players, and `education_uuid_legacy` enables the legacy education UUID format.
 
 ## Standard Floodgate
 
