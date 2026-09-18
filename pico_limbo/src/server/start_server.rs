@@ -3,10 +3,11 @@ use crate::cli::Cli;
 use crate::configuration::TaggedForwarding;
 use crate::configuration::boss_bar::BossBarConfig;
 use crate::configuration::config::{Config, ConfigError, load_or_create};
+use crate::configuration::floodgate::FloodgateConfig as FloodgateSettings;
 use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
-use crate::floodgate::FloodgateConfig;
+use crate::floodgate::FloodgateConfig as FloodgateRuntimeConfig;
 use crate::server::network::Server;
 use crate::server::server_address::ServerAddress;
 use crate::server_state::{ServerState, ServerStateBuilderError};
@@ -73,19 +74,29 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
 
     let forwarding: TaggedForwarding = cfg.forwarding.into();
 
-    let floodgate = FloodgateConfig::from_settings(
-        cfg.floodgate,
-        cfg.edufloodgate,
-        &cfg.floodgatekey,
-        cfg.floodgate_username_prefix,
-        cfg.edufloodgate_username_prefix,
-        cfg.floodgate_replace_spaces,
-        cfg.edufloodgate_uuid_legacy,
-    )
-    .map_err(ServerStateBuilderError::Floodgate)?;
-
-    server_state_builder.floodgate(floodgate);
-
+    match &cfg.floodgate {
+        FloodgateSettings::Disabled => {
+            server_state_builder.floodgate(FloodgateRuntimeConfig::default());
+        }
+        FloodgateSettings::Enabled {
+            key_file,
+            username_prefix,
+            replace_spaces,
+            education,
+        } => {
+            let floodgate = FloodgateRuntimeConfig::from_settings(
+                true,
+                education.enabled,
+                key_file,
+                username_prefix.clone(),
+                education.username_prefix.clone(),
+                *replace_spaces,
+                education.uuid_legacy,
+            )
+            .map_err(ServerStateBuilderError::Floodgate)?;
+            server_state_builder.floodgate(floodgate);
+        }
+    }
     match forwarding {
         TaggedForwarding::None => {
             server_state_builder.disable_forwarding();
