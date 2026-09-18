@@ -3,6 +3,7 @@ use crate::configuration::commands::CommandsConfig;
 use crate::configuration::compression::CompressionConfig;
 use crate::configuration::connection_config::ConnectionConfig;
 use crate::configuration::env_placeholders::{EnvPlaceholderError, expand_env_placeholders};
+use crate::configuration::floodgate::FloodgateConfig;
 use crate::configuration::fly_config::FlyConfig;
 use crate::configuration::forwarding::ForwardingConfig;
 use crate::configuration::game_mode_config::GameModeConfig;
@@ -90,13 +91,7 @@ impl Default for Config {
             welcome_message: "Welcome to PicoLimbo!".into(),
             action_bar: "Welcome to PicoLimbo!".into(),
             forwarding: ForwardingConfig::default(),
-            floodgate: false,
-            edufloodgate: false,
-            floodgatekey: "key.pem".into(),
-            floodgate_username_prefix: ".".into(),
-            edufloodgate_username_prefix: "+".into(),
-            floodgate_replace_spaces: true,
-            edufloodgate_uuid_legacy: false,
+            floodgate: FloodgateConfig::default(),
             default_game_mode: GameModeConfig::default(),
             world: WorldConfig::default(),
             hardcore: false,
