@@ -8,7 +8,7 @@
 
 [![GitHub CI](https://img.shields.io/github/actions/workflow/status/Quozul/PicoLimbo/.github%2Fworkflows%2Fci.yml?branch=master)](https://github.com/Quozul/PicoLimbo/actions)
 [![Latest Release](https://img.shields.io/github/v/release/Quozul/PicoLimbo)](https://github.com/Quozul/PicoLimbo/releases)
-[![License](https://img.shields.io/github/license/Quozul/PicoLimbo)](LICENSE)
+[![License](https://img.shields.io/github/license/Quozul/PicoLimbo)](https://github.com/Quozul/PicoLimbo/blob/master/LICENSE)
 [![Discord](https://img.shields.io/discord/1373364651118694585)](https://discord.gg/M2a9dxJPRy)
 
 [⭐ Star this repo](https://github.com/Quozul/PicoLimbo) • [💬 Join Discord](https://discord.gg/M2a9dxJPRy) • [📖 Read Docs](https://picolimbo.quozul.dev/)
@@ -57,28 +57,7 @@ Integrates with all major Minecraft proxies:
 - BungeeCord (Legacy Forwarding)
 - BungeeGuard & BungeeGuardPlus authentication
 
-### 🌉 Geyser / Floodgate Support
-
-PicoLimbo can natively accept Floodgate data from Geyser without installing Geyser or Floodgate in PicoLimbo.
-
-Add these options to your TOML configuration:
-
-```toml
-[floodgate]
-enabled = true
-key = "key.pem"
-username_prefix = "."
-replace_spaces = true
-
-[floodgate.education]
-enabled = true
-username_prefix = "+"
-uuid_legacy = false
-```
-
-`floodgate.key` points to the Floodgate `key.pem` file. The same AES key must be used by the Geyser/Floodgate side. Standard Floodgate uses 12-field encrypted Bedrock data; EduGeyser/EduFloodgate uses the 15-field education format. Education identity UUIDs use the modern Entra OID scheme by default.
-
-The Floodgate key is sensitive and must not be shared.
+PicoLimbo also supports Floodgate data forwarded from a proxy using Geyser/Floodgate. See the [Floodgate documentation](./docs/config/floodgate.md) for configuration and testing instructions.
 
 ### ⚙️ Highly Configurable
 
