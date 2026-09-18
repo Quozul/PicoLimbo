@@ -8,6 +8,8 @@ pub struct FloodgateConfig {
     pub username_prefix: String,
     pub replace_spaces: bool,
     pub education: bool,
+    pub education_username_prefix: String,
+    pub education_uuid_legacy: bool,
 }
 
 impl Default for FloodgateConfig {
@@ -18,6 +20,8 @@ impl Default for FloodgateConfig {
             username_prefix: ".".into(),
             replace_spaces: true,
             education: false,
+            education_username_prefix: "+".into(),
+            education_uuid_legacy: false,
         }
     }
 }
