@@ -42,7 +42,6 @@ export default defineConfig({
 					{ text: "Compression", link: "/config/compression.html" },
 					{ text: "Connection", link: "/config/connection.html" },
 					{ text: "Fly", link: "/config/fly.html" },
-					{ text: "Floodgate", link: "/config/floodgate.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
 					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
 					{ text: "Server List", link: "/config/server-list.html" },

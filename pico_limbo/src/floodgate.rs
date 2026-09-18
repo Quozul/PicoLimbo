@@ -35,10 +35,8 @@ pub struct FloodgateSettings {
 pub struct FloodgateData {
     pub username: String,
     pub xuid: String,
-    pub ip: String,
     pub education: bool,
     pub tenant_id: String,
-    pub ad_role: i32,
 }
 
 impl Default for FloodgateSettings {
@@ -239,21 +237,11 @@ fn parse_data(data: &str) -> Result<FloodgateData, String> {
     } else {
         String::new()
     };
-    let ad_role = if education {
-        fields[14]
-            .parse::<i32>()
-            .map_err(|_| "Invalid Floodgate ad role".to_string())?
-    } else {
-        -1
-    };
-
     Ok(FloodgateData {
         username: fields[1].to_string(),
         xuid: fields[2].to_string(),
-        ip: fields[7].to_string(),
         education,
         tenant_id,
-        ad_role,
     })
 }
 

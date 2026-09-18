@@ -14,5 +14,4 @@ pub mod tab_list;
 pub mod title;
 pub mod world_config;
 
-pub use floodgate::FloodgateConfig;
 pub use forwarding::TaggedForwarding;
