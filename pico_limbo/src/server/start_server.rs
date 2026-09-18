@@ -79,9 +79,9 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
         cfg.floodgate.education,
         &cfg.floodgate.key_file,
         cfg.floodgate.username_prefix,
-        "+".into(),
+        cfg.floodgate.education_username_prefix,
         cfg.floodgate.replace_spaces,
-        false,
+        cfg.floodgate.education_uuid_legacy,
     )
     .map_err(ServerStateBuilderError::Floodgate)?;
     server_state_builder.floodgate(floodgate);
