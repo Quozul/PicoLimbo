@@ -375,7 +375,8 @@ mod tests {
         .unwrap();
 
         let (_, uuid) = settings([3u8; 16]).game_profile(&data).unwrap();
-        assert_eq!(uuid.most_significant_bits(), Some(EDUCATION_UUID_MSB));
+        let expected = modern_education_uuid("00000000-0000-4000-8000-000000000001").unwrap();
+        assert_eq!(uuid, expected);
     }
 
     #[test]
