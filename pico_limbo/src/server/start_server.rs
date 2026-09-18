@@ -74,29 +74,18 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
 
     let forwarding: TaggedForwarding = cfg.forwarding.into();
 
-    match &cfg.floodgate {
-        FloodgateSettings::Disabled => {
-            server_state_builder.floodgate(FloodgateRuntimeConfig::default());
-        }
-        FloodgateSettings::Enabled {
-            key_file,
-            username_prefix,
-            replace_spaces,
-            education,
-        } => {
-            let floodgate = FloodgateRuntimeConfig::from_settings(
-                true,
-                education.enabled,
-                key_file,
-                username_prefix.clone(),
-                education.username_prefix.clone(),
-                *replace_spaces,
-                education.uuid_legacy,
-            )
-            .map_err(ServerStateBuilderError::Floodgate)?;
-            server_state_builder.floodgate(floodgate);
-        }
-    }
+    let floodgate = FloodgateRuntimeConfig::from_settings(
+        cfg.floodgate.enabled,
+        cfg.floodgate.education,
+        &cfg.floodgate.key_file,
+        cfg.floodgate.username_prefix,
+        "+".into(),
+        cfg.floodgate.replace_spaces,
+        false,
+    )
+    .map_err(ServerStateBuilderError::Floodgate)?;
+    server_state_builder.floodgate(floodgate);
+
     match forwarding {
         TaggedForwarding::None => {
             server_state_builder.disable_forwarding();
