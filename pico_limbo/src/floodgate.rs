@@ -87,7 +87,7 @@ impl FloodgateConfig {
         let mut clean_parts = Vec::new();
         let mut floodgate_data = None;
 
-        for part in hostname.split('\\0') {
+        for part in hostname.split('\0') {
             if floodgate_data.is_none() && part.as_bytes().starts_with(HEADER) {
                 let decrypted = decrypt(key, part)?;
                 floodgate_data = Some(parse_data(&decrypted)?);
@@ -108,7 +108,7 @@ impl FloodgateConfig {
             return Err("Floodgate data received but floodgate is disabled".to_string());
         }
 
-        Ok((clean_parts.join("\\0"), Some(data)))
+        Ok((clean_parts.join("\0"), Some(data)))
     }
 
     pub fn game_profile(&self, data: &FloodgateData) -> Result<(String, Uuid), String> {
