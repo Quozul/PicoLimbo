@@ -45,6 +45,8 @@ pub struct Config {
 
     pub forwarding: ForwardingConfig,
 
+    pub floodgate: FloodgateConfig,
+
     pub world: WorldConfig,
 
     pub server_list: ServerListConfig,
