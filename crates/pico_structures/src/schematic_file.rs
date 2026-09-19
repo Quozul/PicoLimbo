@@ -189,13 +189,13 @@ impl SchematicFile {
         } else {
             root
         };
-        let entities = container
+        let block_entities = container
             .swap_remove("BlockEntities")
             .or_else(|| container.swap_remove("TileEntities"));
-        let entities = match entities {
+        let block_entities = match block_entities {
             None => None,
-            Some(Value::List(entities)) => Some(
-                entities
+            Some(Value::List(block_entities)) => Some(
+                block_entities
                     .into_iter()
                     .map(|mut entity| {
                         let fields = compound(&mut entity)?;
@@ -244,8 +244,8 @@ impl SchematicFile {
             Format::V2(schematic) => Self::V2(schematic),
         };
         match &mut schematic {
-            Self::V3(wrapper) => wrapper.schematic.blocks.block_entities = entities,
-            Self::V2(schematic) => schematic.block_entities = entities,
+            Self::V3(wrapper) => wrapper.schematic.blocks.block_entities = block_entities,
+            Self::V2(schematic) => schematic.block_entities = block_entities,
         }
         Ok(schematic)
     }

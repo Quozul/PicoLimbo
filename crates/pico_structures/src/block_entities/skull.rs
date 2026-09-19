@@ -19,6 +19,9 @@ impl SkullBlockEntity {
         let Value::Compound(fields) = &mut data else {
             return data;
         };
+        if let Some(owner) = fields.swap_remove("Owner") {
+            fields.entry("SkullOwner".into()).or_insert(owner);
+        }
         if version.is_after_inclusive(ProtocolVersion::V1_20_5) {
             if !fields.contains_key("profile")
                 && let Some(owner) = fields
@@ -64,6 +67,9 @@ impl SkullBlockEntity {
                     _ => {}
                 }
             }
+        }
+        if !version.is_after_inclusive(ProtocolVersion::V1_16) {
+            rename(fields, "SkullOwner", "Owner");
         }
         data
     }

@@ -109,19 +109,40 @@ fn schematic_versions_preserve_head_profiles_and_nbt_types() {
             ProtocolVersion::V1_20_5,
             ProtocolVersion::V1_21_5,
             ProtocolVersion::V26_1,
+            ProtocolVersion::V26_3,
         ] {
             assert_eq!(transmitted(&schematic, version), data);
         }
-        let old = transmitted(&schematic, ProtocolVersion::V1_15);
-        assert!(field(field(&old, "SkullOwner"), "Id").get_str().is_some());
-        let old = load(
-            format,
-            2230,
-            "minecraft:skull",
-            "minecraft:player_head[rotation=7]",
-            old,
-        );
-        assert_eq!(transmitted(&old, ProtocolVersion::V1_20_5), data);
+        for version in [
+            ProtocolVersion::V1_14,
+            ProtocolVersion::V1_15,
+            ProtocolVersion::V1_16,
+        ] {
+            let old = transmitted(&schematic, version);
+            let (owner_key, other_key) = if version.is_after_inclusive(ProtocolVersion::V1_16) {
+                ("SkullOwner", "Owner")
+            } else {
+                ("Owner", "SkullOwner")
+            };
+            let owner = field(&old, owner_key);
+            assert!(!old.get_compound().unwrap().contains_key(other_key));
+            if version.is_after_inclusive(ProtocolVersion::V1_16) {
+                assert_eq!(field(owner, "Id"), field(field(&data, "profile"), "id"));
+            } else {
+                assert_eq!(
+                    field(owner, "Id").get_str().unwrap(),
+                    "00000001-ffff-fffe-0000-0003fffffffc"
+                );
+            }
+            let old = load(
+                format,
+                2230,
+                "minecraft:skull",
+                "minecraft:player_head[rotation=7]",
+                old,
+            );
+            assert_eq!(transmitted(&old, ProtocolVersion::V1_20_5), data);
+        }
         let legacy = transmitted(&schematic, ProtocolVersion::V1_20);
         let owner = field(&legacy, "SkullOwner");
         assert_eq!(field(owner, "Id"), field(field(&data, "profile"), "id"));
@@ -194,6 +215,7 @@ fn legacy_signs_keep_formatted_text_without_optional_color_or_glow() {
             ProtocolVersion::V1_21_4,
             ProtocolVersion::V1_21_5,
             ProtocolVersion::V26_1,
+            ProtocolVersion::V26_3,
         ] {
             let data = transmitted(&schematic, version);
             let lines = field(field(&data, "front_text"), "messages")
