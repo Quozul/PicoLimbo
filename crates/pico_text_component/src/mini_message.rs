@@ -5,6 +5,7 @@ use thiserror::Error;
 
 #[derive(Default, Clone)]
 struct Style {
+    tag: String,
     color: Option<String>,
     bold: bool,
     italic: bool,
@@ -93,6 +94,7 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
                     }
                 } else if is_styling_tag(&tag_name) {
                     let mut new_style = style_stack.last().cloned().unwrap_or_default();
+                    new_style.tag = tag_name.clone();
                     match tag_name.as_str() {
                         "black" | "dark_blue" | "dark_green" | "dark_aqua" | "dark_red"
                         | "dark_purple" | "gold" | "gray" | "dark_gray" | "blue" | "green"
@@ -111,8 +113,10 @@ pub fn parse_mini_message(input: &str) -> Result<Component, MiniMessageError> {
             }
             Event::End(e) => {
                 let tag_name = e.name().as_ref().to_string();
-                if is_styling_tag(&tag_name) && style_stack.len() > 1 {
-                    style_stack.pop();
+                if is_styling_tag(&tag_name)
+                    && let Some(pos) = style_stack.iter().rposition(|s| s.tag == tag_name)
+                {
+                    style_stack.truncate(pos);
                 }
             }
             Event::Text(e) => {
