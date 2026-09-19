@@ -4,7 +4,6 @@ use crate::play::data::encode_as_bytes::EncodeAsBytes;
 use blocks_report::{BlockEntityTypeLookup, get_block_entity_lookup};
 use minecraft_protocol::prelude::*;
 use pico_nbt::{IndexMap, Value};
-use serde::Serialize;
 
 /// Function to generate the height maps NBT from 1.14 to 1.21.4
 fn height_maps(version: ProtocolVersion) -> Value {
@@ -166,7 +165,9 @@ impl ChunkData {
                 continue;
             };
 
-            let nbt = entity_data.to_nbt(protocol_version);
+            let Ok(nbt) = entity_data.to_nbt(protocol_version) else {
+                continue;
+            };
 
             let coordinates = entity_data.get_position() + schematic_context.paste_origin;
 
@@ -178,29 +179,15 @@ impl ChunkData {
                     VarInt::new(protocol_id),
                     nbt,
                 ));
-            } else {
-                #[derive(Serialize)]
-                struct ChunkBlockEntity {
-                    id: String,
-                    x: i32,
-                    y: i32,
-                    z: i32,
-                    #[serde(flatten)]
-                    data: Value,
-                }
-
-                let nbt_fields = ChunkBlockEntity {
-                    id: entity_data.block_entity_type.to_string(),
-                    x: coordinates.x(),
-                    y: coordinates.y(),
-                    z: coordinates.z(),
-                    data: nbt,
-                };
-
-                block_entities.push(
-                    pico_nbt::to_value(nbt_fields)
-                        .expect("Failed to convert block entity to nbt value"),
+            } else if let Value::Compound(mut fields) = nbt {
+                fields.insert(
+                    "id".into(),
+                    entity_data.block_entity_type.to_string().into(),
                 );
+                fields.insert("x".into(), Value::Int(coordinates.x()));
+                fields.insert("y".into(), Value::Int(coordinates.y()));
+                fields.insert("z".into(), Value::Int(coordinates.z()));
+                block_entities.push(Value::Compound(fields));
             }
         }
 

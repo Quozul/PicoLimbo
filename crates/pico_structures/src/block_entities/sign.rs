@@ -1,271 +1,173 @@
+use crate::block_entities::generic::GenericBlockEntity;
 use minecraft_protocol::prelude::ProtocolVersion;
-use pico_nbt::{IndexMap, Value, to_value};
-use serde::{Deserialize, Deserializer, Serialize};
+use pico_nbt::{IndexMap, Value};
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-#[serde(untagged)]
-pub enum Component {
-    String(String),
-}
-
-impl Default for Component {
-    fn default() -> Self {
-        Component::String("".to_owned())
-    }
-}
-
-impl Component {
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap()
-    }
-
-    pub fn to_value(&self) -> Value {
-        match self {
-            Component::String(s) => Value::String(s.to_owned()),
-        }
-    }
-}
-
-/// Wrapper enum for deserializing sign messages in both JSON (pre-1.21.5) and NBT (1.21.5+) formats.
-#[derive(Deserialize, Clone)]
-#[serde(untagged)]
-enum SignMessage {
-    /// NBT compound format (1.21.5+)
-    Nbt(Component),
-    /// JSON string format (pre-1.21.5)
-    Json(String),
-}
-
-impl SignMessage {
-    fn into_component(self) -> Component {
-        match self {
-            SignMessage::Nbt(c) => c,
-            SignMessage::Json(json) => serde_json::from_str(&json).unwrap_or_default(),
-        }
-    }
-}
-
-/// Deserializes a single sign message from either JSON string or NBT compound.
-fn deserialize_message<'de, D>(deserializer: D) -> Result<Component, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    SignMessage::deserialize(deserializer).map(|msg| msg.into_component())
-}
-
-/// Deserializes a vector of sign messages from either JSON strings or NBT compounds.
-fn deserialize_messages<'de, D>(deserializer: D) -> Result<Vec<Component>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(Vec::<SignMessage>::deserialize(deserializer)
-        .map(|messages| {
-            messages
-                .into_iter()
-                .map(|msg| msg.into_component())
-                .collect()
-        })
-        .unwrap_or_default())
-}
-
-#[derive(Default, Deserialize, Serialize, Clone)]
-pub enum SignColor {
-    #[default]
-    #[serde(rename = "black")]
-    Black,
-    #[serde(rename = "white")]
-    White,
-    #[serde(rename = "orange")]
-    Orange,
-    #[serde(rename = "magenta")]
-    Magenta,
-    #[serde(rename = "light_blue")]
-    LightBlue,
-    #[serde(rename = "yellow")]
-    Yellow,
-    #[serde(rename = "lime")]
-    Lime,
-    #[serde(rename = "pink")]
-    Pink,
-    #[serde(rename = "gray")]
-    Gray,
-    #[serde(rename = "light_gray")]
-    LightGray,
-    #[serde(rename = "cyan")]
-    Cyan,
-    #[serde(rename = "purple")]
-    Purple,
-    #[serde(rename = "blue")]
-    Blue,
-    #[serde(rename = "brown")]
-    Brown,
-    #[serde(rename = "green")]
-    Green,
-    #[serde(rename = "red")]
-    Red,
-}
-
-#[derive(Deserialize, Clone, Default)]
-pub struct SignFace {
-    #[serde(default)]
-    has_glowing_text: i8,
-    #[serde(default)]
-    color: SignColor,
-    #[serde(default, deserialize_with = "deserialize_messages")]
-    messages: Vec<Component>,
-}
-
-impl SignFace {
-    /// Converts this `SignFace` to an NBT `Value`, encoding messages based on protocol version.
-    ///
-    /// - Before 1.21.5: messages are encoded as JSON strings
-    /// - 1.21.5+: messages are encoded as NBT compounds
-    pub fn to_value(&self, protocol_version: ProtocolVersion) -> Value {
-        let mut map = IndexMap::new();
-        map.insert(
-            "has_glowing_text".into(),
-            Value::Byte(self.has_glowing_text),
-        );
-        map.insert("color".into(), to_value(&self.color).unwrap());
-
-        let messages: Vec<Value> = if protocol_version.is_after_inclusive(ProtocolVersion::V1_21_5)
-        {
-            self.messages
-                .iter()
-                .map(|c: &Component| c.to_value())
-                .collect()
-        } else {
-            self.messages
-                .iter()
-                .map(|c: &Component| Value::String(c.to_json()))
-                .collect()
-        };
-        map.insert("messages".into(), Value::List(messages));
-
-        Value::Compound(map)
-    }
-}
-
-#[derive(Deserialize, Clone)]
-#[serde(untagged)]
-pub enum SignBlockEntity {
-    Legacy {
-        #[serde(alias = "GlowingText")]
-        glowing_text: i8,
-        #[serde(alias = "Color")]
-        color: SignColor,
-        #[serde(alias = "Text1", deserialize_with = "deserialize_message")]
-        text_1: Component,
-        #[serde(alias = "Text2", deserialize_with = "deserialize_message")]
-        text_2: Component,
-        #[serde(alias = "Text3", deserialize_with = "deserialize_message")]
-        text_3: Component,
-        #[serde(alias = "Text4", deserialize_with = "deserialize_message")]
-        text_4: Component,
-    },
-    /// This is the format used starting 1.20
-    Modern {
-        #[serde(default)]
-        is_waxed: i8,
-        #[serde(default)]
-        front_text: SignFace,
-        #[serde(default)]
-        back_text: SignFace,
-    },
+#[derive(Clone)]
+pub struct SignBlockEntity {
+    data: IndexMap<String, Value>,
+    native_components: bool,
 }
 
 impl SignBlockEntity {
-    pub fn to_version_value(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
-        if protocol_version.is_after_inclusive(ProtocolVersion::V1_20) {
-            let modern = self.to_modern();
-            match modern {
-                Self::Modern {
-                    is_waxed,
-                    front_text,
-                    back_text,
-                } => {
-                    let mut map = IndexMap::new();
-                    map.insert("is_waxed".into(), Value::Byte(is_waxed));
-                    map.insert("front_text".into(), front_text.to_value(protocol_version));
-                    map.insert("back_text".into(), back_text.to_value(protocol_version));
-                    Ok(Value::Compound(map))
+    pub fn from_nbt(value: &Value, data_version: Option<i32>) -> pico_nbt::Result<Self> {
+        let data = GenericBlockEntity::from_nbt(value);
+        let data = data
+            .to_nbt()
+            .get_compound()
+            .ok_or_else(|| pico_nbt::Error::Message("Expected sign compound".into()))?
+            .clone();
+        Ok(Self {
+            data,
+            // 1.21.5 stores text components as NBT instead of JSON strings.
+            native_components: data_version.is_some_and(|version| version >= 4325),
+        })
+    }
+
+    pub fn to_version_value(&self, version: ProtocolVersion) -> pico_nbt::Result<Value> {
+        let mut data = self.data.clone();
+        let modern = data.contains_key("front_text") || data.contains_key("back_text");
+        let target_modern = version.is_after_inclusive(ProtocolVersion::V1_20);
+        let target_native = version.is_after_inclusive(ProtocolVersion::V1_21_5);
+        if target_modern {
+            if !modern {
+                let mut face = IndexMap::new();
+                face.insert(
+                    "color".into(),
+                    data.swap_remove("Color").unwrap_or_else(|| "black".into()),
+                );
+                face.insert(
+                    "has_glowing_text".into(),
+                    data.swap_remove("GlowingText").unwrap_or(Value::Byte(0)),
+                );
+                for (prefix, key) in [("Text", "messages"), ("FilteredText", "filtered_messages")] {
+                    let mut lines = Vec::new();
+                    let mut has_lines = false;
+                    for line in 1..=4 {
+                        let value = data.swap_remove(&format!("{prefix}{line}"));
+                        has_lines |= value.is_some();
+                        lines.push(value.unwrap_or_else(|| Value::String("\"\"".into())));
+                    }
+                    if has_lines || key == "messages" {
+                        face.insert(key.into(), Value::List(lines));
+                    }
                 }
-                _ => unreachable!(),
+                data.insert("front_text".into(), Value::Compound(face));
+            }
+            for key in ["front_text", "back_text"] {
+                let face = data
+                    .entry(key.into())
+                    .or_insert_with(|| Value::Compound(IndexMap::new()));
+                let Value::Compound(face) = face else {
+                    return Err(pico_nbt::Error::Message(
+                        "Expected sign face compound".into(),
+                    ));
+                };
+                face.entry("color".into()).or_insert_with(|| "black".into());
+                face.entry("has_glowing_text".into())
+                    .or_insert(Value::Byte(0));
+                for key in ["messages", "filtered_messages"] {
+                    if key == "filtered_messages" && !face.contains_key(key) {
+                        continue;
+                    }
+                    let messages = face.get(key).and_then(Value::get_list).unwrap_or_default();
+                    let lines = (0..4)
+                        .map(|line| self.convert_message(messages.get(line), target_native))
+                        .collect::<pico_nbt::Result<Vec<_>>>()?;
+                    face.insert(key.into(), Value::List(lines));
+                }
+            }
+            data.entry("is_waxed".into()).or_insert(Value::Byte(0));
+        } else if modern {
+            let front = data.swap_remove("front_text");
+            let face = front.as_ref().and_then(Value::get_compound);
+            data.swap_remove("back_text");
+            data.swap_remove("is_waxed");
+            data.insert(
+                "Color".into(),
+                face.and_then(|face| face.get("color"))
+                    .cloned()
+                    .unwrap_or_else(|| "black".into()),
+            );
+            data.insert(
+                "GlowingText".into(),
+                face.and_then(|face| face.get("has_glowing_text"))
+                    .cloned()
+                    .unwrap_or(Value::Byte(0)),
+            );
+            for (key, prefix) in [("messages", "Text"), ("filtered_messages", "FilteredText")] {
+                let messages = face
+                    .and_then(|face| face.get(key))
+                    .and_then(Value::get_list);
+                if key == "filtered_messages" && messages.is_none() {
+                    continue;
+                }
+                for line in 0..4 {
+                    data.insert(
+                        format!("{prefix}{}", line + 1),
+                        self.convert_message(
+                            messages.and_then(|messages| messages.get(line)),
+                            false,
+                        )?,
+                    );
+                }
             }
         } else {
-            let legacy = self.to_legacy();
-            match legacy {
-                Self::Legacy {
-                    glowing_text,
-                    color,
-                    text_1,
-                    text_2,
-                    text_3,
-                    text_4,
-                } => {
-                    let mut map = IndexMap::new();
-                    map.insert("GlowingText".into(), Value::Byte(glowing_text));
-                    map.insert("Color".into(), to_value(&color)?);
-                    map.insert("Text1".into(), Value::String(text_1.to_json()));
-                    map.insert("Text2".into(), Value::String(text_2.to_json()));
-                    map.insert("Text3".into(), Value::String(text_3.to_json()));
-                    map.insert("Text4".into(), Value::String(text_4.to_json()));
-                    Ok(Value::Compound(map))
-                }
-                _ => unreachable!(),
+            for line in 1..=4 {
+                let key = format!("Text{line}");
+                let message = self.convert_message(data.get(&key), false)?;
+                data.insert(key, message);
             }
         }
+        Ok(Value::Compound(data))
     }
 
-    fn to_legacy(&self) -> Self {
-        match self {
-            SignBlockEntity::Legacy { .. } => self.clone(),
-            SignBlockEntity::Modern { front_text, .. } => {
-                let text_1 = front_text.messages.first().cloned().unwrap_or_default();
-                let text_2 = front_text.messages.get(1).cloned().unwrap_or_default();
-                let text_3 = front_text.messages.get(2).cloned().unwrap_or_default();
-                let text_4 = front_text.messages.get(3).cloned().unwrap_or_default();
-
-                SignBlockEntity::Legacy {
-                    glowing_text: front_text.has_glowing_text,
-                    color: front_text.color.clone(),
-                    text_1,
-                    text_2,
-                    text_3,
-                    text_4,
-                }
+    fn convert_message(
+        &self,
+        value: Option<&Value>,
+        target_native: bool,
+    ) -> pico_nbt::Result<Value> {
+        let Some(value) = value else {
+            return Ok(Value::String(
+                if target_native { "" } else { "\"\"" }.into(),
+            ));
+        };
+        if self.native_components == target_native {
+            return Ok(value.clone());
+        }
+        if target_native {
+            match value {
+                Value::String(json) => match serde_json::from_str(json) {
+                    Ok(json) => pico_nbt::json_to_nbt(json),
+                    Err(_) => Ok(value.clone()),
+                },
+                _ => Ok(value.clone()),
             }
+        } else {
+            let mut json = serde_json::to_value(value)
+                .map_err(|error| pico_nbt::Error::Message(error.to_string()))?;
+            restore_json_booleans(&mut json);
+            Ok(Value::String(json.to_string()))
         }
     }
+}
 
-    fn to_modern(&self) -> Self {
-        match self {
-            SignBlockEntity::Modern { .. } => self.clone(),
-            SignBlockEntity::Legacy {
-                glowing_text,
-                color,
-                text_1,
-                text_2,
-                text_3,
-                text_4,
-            } => {
-                let front_messages = vec![
-                    text_1.clone(),
-                    text_2.clone(),
-                    text_3.clone(),
-                    text_4.clone(),
-                ];
-
-                SignBlockEntity::Modern {
-                    is_waxed: 0,
-                    front_text: SignFace {
-                        has_glowing_text: *glowing_text,
-                        color: color.clone(),
-                        messages: front_messages,
-                    },
-                    back_text: SignFace::default(),
+// NBT represents text style booleans as bytes; JSON components require booleans.
+fn restore_json_booleans(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(fields) => {
+            for (key, value) in fields {
+                if matches!(
+                    key.as_str(),
+                    "bold" | "italic" | "underlined" | "strikethrough" | "obfuscated" | "interpret"
+                ) && let Some(number) = value.as_i64()
+                {
+                    *value = serde_json::Value::Bool(number != 0);
+                } else {
+                    restore_json_booleans(value);
                 }
             }
         }
+        serde_json::Value::Array(values) => values.iter_mut().for_each(restore_json_booleans),
+        _ => {}
     }
 }
