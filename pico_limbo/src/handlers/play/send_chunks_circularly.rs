@@ -102,6 +102,7 @@ pub struct CircularChunkPacketIterator {
     biome_index: i32,
     pub dimension_height: i32,
     pub dimension_min_y: i32,
+    has_sky_light: bool,
     schematic_context: Option<WorldContext>,
     spiral_iterator: SpiralIterator,
     protocol_version: ProtocolVersion,
@@ -136,6 +137,7 @@ impl CircularChunkPacketIterator {
             biome_index,
             dimension_height: dimension_info.height,
             dimension_min_y: dimension_info.min_y,
+            has_sky_light: dimension_info.legacy_protocol_id == 0,
             schematic_context,
             spiral_iterator: SpiralIterator::new(center_x, center_z, view_distance),
             protocol_version,
@@ -155,6 +157,7 @@ impl Iterator for CircularChunkPacketIterator {
             biome_index: self.biome_index,
             dimension_height: self.dimension_height,
             dimension_min_y: self.dimension_min_y,
+            has_sky_light: self.has_sky_light,
             protocol_version: self.protocol_version,
         };
 

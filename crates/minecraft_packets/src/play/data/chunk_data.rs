@@ -78,7 +78,10 @@ impl ChunkData {
             v1_16_2_biomes: LengthPaddedVec::new(vec![VarInt::new(context.biome_index); 1024]),
             v1_15_biomes: vec![context.biome_index; 1024],
             data: EncodeAsBytes::new(LegacyV1_14ChunkPayload::new(
-                vec![ChunkSection::void(context.biome_index); section_count as usize],
+                vec![
+                    ChunkSection::void(context.biome_index, context.has_sky_light);
+                    section_count as usize
+                ],
                 context.biome_index,
             )),
             block_entities: LengthPaddedVec::default(),
@@ -107,6 +110,7 @@ impl ChunkData {
                 coordinates,
                 chunk_context.biome_index,
                 chunk_context.protocol_version,
+                chunk_context.has_sky_light,
             );
             data.push(section);
         }
@@ -252,6 +256,78 @@ impl ChunkBlockEntity {
             y: world_y as i16,
             block_entity_type,
             data,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn encoded_void(version: ProtocolVersion, has_sky_light: bool) -> Vec<u8> {
+        let chunk = ChunkData::void(VoidChunkContext {
+            chunk_x: 0,
+            chunk_z: 0,
+            biome_index: 1,
+            dimension_height: 256,
+            dimension_min_y: 0,
+            has_sky_light,
+            protocol_version: version,
+        });
+        let mut writer = BinaryWriter::new();
+        chunk.encode(&mut writer, version).unwrap();
+        writer.into_inner()
+    }
+
+    #[test]
+    fn legacy_chunk_sections_and_biomes_stay_aligned_without_skylight() {
+        for version in [
+            ProtocolVersion::V1_13,
+            ProtocolVersion::V1_13_1,
+            ProtocolVersion::V1_13_2,
+        ] {
+            for has_sky_light in [false, true] {
+                let bytes = encoded_void(version, has_sky_light);
+                let mut reader = BinaryReader::new(&bytes);
+                let payload_size = reader.read::<VarInt>().unwrap();
+                let payload_start = reader.position();
+                for _ in 0..16 {
+                    assert_eq!(reader.read::<u8>().unwrap(), 4);
+                    assert_eq!(reader.read::<VarInt>().unwrap(), VarInt::new(1));
+                    assert_eq!(reader.read::<VarInt>().unwrap(), VarInt::new(0));
+                    assert_eq!(reader.read::<VarInt>().unwrap(), VarInt::new(256));
+                    for _ in 0..256 {
+                        assert_eq!(reader.read::<u64>().unwrap(), 0);
+                    }
+                    let mut light = [0u8; 2048];
+                    assert_eq!(reader.read_bytes(&mut light).unwrap(), light.len());
+                    assert!(light.iter().all(|&value| value == 0));
+                    if has_sky_light {
+                        assert_eq!(reader.read_bytes(&mut light).unwrap(), light.len());
+                        assert!(light.iter().all(|&value| value == 0xff));
+                    }
+                }
+                for _ in 0..256 {
+                    assert_eq!(reader.read::<i32>().unwrap(), 1);
+                }
+                assert_eq!(
+                    payload_size,
+                    VarInt::new((reader.position() - payload_start) as i32)
+                );
+                assert_eq!(reader.read::<VarInt>().unwrap(), VarInt::new(0));
+                assert_eq!(reader.remaining(), 0);
+            }
+        }
+    }
+
+    #[test]
+    fn modern_chunk_data_omits_inline_light_in_every_dimension() {
+        for version in [
+            ProtocolVersion::V1_14,
+            ProtocolVersion::V1_18,
+            ProtocolVersion::V26_3,
+        ] {
+            assert_eq!(encoded_void(version, false), encoded_void(version, true));
         }
     }
 }

@@ -25,14 +25,18 @@ pub struct ChunkSection {
 impl ChunkSection {
     pub const SECTION_SIZE: i32 = 16;
 
-    pub fn void(biome_id: i32) -> Self {
+    pub fn void(biome_id: i32, has_sky_light: bool) -> Self {
         Self {
             block_count: 0,
             fluid_count: 0,
             block_states: PaletteContainer::blocks_void(),
             biomes: PaletteContainer::single_valued(biome_id),
             block_light: vec![0; 2048],
-            sky_light: Omitted::Some(vec![0xFF; 2048]),
+            sky_light: if has_sky_light {
+                Omitted::Some(vec![0xFF; 2048])
+            } else {
+                Omitted::None
+            },
         }
     }
 
@@ -41,6 +45,7 @@ impl ChunkSection {
         section_position: Coordinates,
         biome_id: i32,
         version: ProtocolVersion,
+        has_sky_light: bool,
     ) -> ChunkSection {
         if let Some(palette) = context.world.get_section(&section_position) {
             let block_states = PaletteContainer::from_palette(
@@ -56,10 +61,14 @@ impl ChunkSection {
                 block_states,
                 biomes,
                 block_light: vec![0; 2048],
-                sky_light: Omitted::Some(vec![0xFF; 2048]),
+                sky_light: if has_sky_light {
+                    Omitted::Some(vec![0xFF; 2048])
+                } else {
+                    Omitted::None
+                },
             }
         } else {
-            Self::void(biome_id)
+            Self::void(biome_id, has_sky_light)
         }
     }
 }
@@ -108,7 +117,7 @@ mod tests {
 
     fn create_packet() -> ChunkSection {
         let biome_id = 127;
-        ChunkSection::void(biome_id)
+        ChunkSection::void(biome_id, true)
     }
 
     #[test]
