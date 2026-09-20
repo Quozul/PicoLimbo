@@ -29,7 +29,7 @@ pub enum TaggedForwarding {
     #[serde(alias = "none")]
     None,
 
-    #[serde(alias = "legacy", alias = "bungee")]
+    #[serde(alias = "legacy", alias = "bungee", alias = "BUNGEE")]
     Legacy,
 
     #[serde(alias = "bungee_guard")]
