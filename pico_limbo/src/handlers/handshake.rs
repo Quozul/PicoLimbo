@@ -105,16 +105,7 @@ fn begin_login(
 
             Ok(())
         }
-        LegacyForwardingResult::NoForwarding => {
-            if let Some(data) = floodgate_data {
-                let (username, uuid) = server_state
-                    .floodgate()
-                    .game_profile(&data)
-                    .map_err(|error| PacketHandlerError::invalid_state(&error))?;
-                client_state.replace_game_profile(GameProfile::new(&username, uuid, None));
-            }
-            Ok(())
-        }
+        LegacyForwardingResult::NoForwarding => Ok(()),
     }
 }
 
