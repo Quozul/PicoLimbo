@@ -27,15 +27,16 @@ pub struct StructuredForwarding {
 pub enum TaggedForwarding {
     #[default]
     #[serde(alias = "none")]
+    #[serde(alias = "disabled", alias = "off", alias = "DISABLED", alias = "OFF")]
     None,
 
-    #[serde(alias = "legacy", alias = "bungee", alias = "BUNGEE")]
+    #[serde(alias = "legacy", alias = "bungee", alias = "BUNGEE", alias = "BUNGEECORD", alias = "BUNGECORD", alias = "BUNGEE_CORD", alias = "BUNGEE_LEGACY", alias = "LEGACY_FORWARDING")]
     Legacy,
 
     #[serde(alias = "bungee_guard")]
     BungeeGuard { tokens: Vec<String> },
 
-    #[serde(alias = "modern")]
+    #[serde(alias = "modern", alias = "velocity", alias = "VELOCITY", alias = "VELOCITY_MODERN", alias = "MODERN_FORWARDING", alias = "VELOCITY_FORWARDING")]
     Modern { secret: String },
 }
 
