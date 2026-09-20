@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ModernForwardingConfig {
     enabled: bool,
     secret: String,
 }
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct BungeeCordForwardingConfig {
     enabled: bool,
     bungee_guard: bool,
@@ -14,6 +16,7 @@ pub struct BungeeCordForwardingConfig {
 }
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct StructuredForwarding {
     velocity: ModernForwardingConfig,
     bungee_cord: BungeeCordForwardingConfig,
@@ -26,7 +29,7 @@ pub enum TaggedForwarding {
     #[serde(alias = "none")]
     None,
 
-    #[serde(alias = "legacy")]
+    #[serde(alias = "legacy", alias = "bungee")]
     Legacy,
 
     #[serde(alias = "bungee_guard")]
