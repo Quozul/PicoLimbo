@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct ModernForwardingConfig {
     enabled: bool,
     secret: String,
 }
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct BungeeCordForwardingConfig {
     enabled: bool,
     bungee_guard: bool,
@@ -14,6 +16,7 @@ pub struct BungeeCordForwardingConfig {
 }
 
 #[derive(Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct StructuredForwarding {
     velocity: ModernForwardingConfig,
     bungee_cord: BungeeCordForwardingConfig,
@@ -24,15 +27,16 @@ pub struct StructuredForwarding {
 pub enum TaggedForwarding {
     #[default]
     #[serde(alias = "none")]
+    #[serde(alias = "disabled", alias = "off", alias = "DISABLED", alias = "OFF")]
     None,
 
-    #[serde(alias = "legacy")]
+    #[serde(alias = "legacy", alias = "bungee", alias = "BUNGEE", alias = "BUNGEECORD", alias = "BUNGECORD", alias = "BUNGEE_CORD", alias = "BUNGEE_LEGACY", alias = "LEGACY_FORWARDING", alias = "BUNGEE_FORWARDING")]
     Legacy,
 
-    #[serde(alias = "bungee_guard")]
+    #[serde(alias = "bungee_guard", alias = "BUNGEGUARD", alias = "BUNGE_GUARD", alias = "BUNGEEGUARD", alias = "BUNGEE_GUARD_FORWARDING")]
     BungeeGuard { tokens: Vec<String> },
 
-    #[serde(alias = "modern")]
+    #[serde(alias = "modern", alias = "velocity", alias = "VELOCITY", alias = "VELOCITY_MODERN", alias = "MODERN_FORWARDING", alias = "VELOCITY_FORWARDING", alias = "VELOCITY_MODERN_FORWARDING", alias = "MODERN")]
     Modern { secret: String },
 }
 

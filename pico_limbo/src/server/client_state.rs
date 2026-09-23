@@ -45,8 +45,6 @@ pub struct ClientState {
 impl ClientState {
     const ANONYMOUS: &'static str = "Anonymous";
 
-    // Kick
-
     pub fn kick(&mut self, kick_message: &str) {
         self.kick_message = Some(kick_message.to_string());
     }
@@ -54,8 +52,6 @@ impl ClientState {
     pub fn should_kick(&self) -> Option<String> {
         self.kick_message.clone()
     }
-
-    // State
 
     pub const fn clientbound_state(&self) -> State {
         self.clientbound_state
@@ -76,8 +72,6 @@ impl ClientState {
         }
     }
 
-    // Protocol version
-
     pub const fn protocol_version(&self) -> ProtocolVersion {
         self.protocol_version
     }
@@ -85,8 +79,6 @@ impl ClientState {
     pub const fn set_protocol_version(&mut self, new_protocol_version: ProtocolVersion) {
         self.protocol_version = new_protocol_version;
     }
-
-    // Velocity
 
     pub const fn set_velocity_login_message_id(&mut self, message_id: i32) {
         self.message_id = message_id;
@@ -96,8 +88,6 @@ impl ClientState {
         self.message_id
     }
 
-    // Game profile
-
     pub fn set_game_profile(&mut self, game_profile: GameProfile) {
         if let Some(ref mut existing_game_profile) = self.game_profile {
             existing_game_profile.set_name(&game_profile.username());
@@ -105,6 +95,15 @@ impl ClientState {
             self.game_profile = Some(game_profile);
         }
 
+        self.log_game_profile();
+    }
+
+    pub fn replace_game_profile(&mut self, game_profile: GameProfile) {
+        self.game_profile = Some(game_profile);
+        self.log_game_profile();
+    }
+
+    fn log_game_profile(&self) {
         if let Some(ref existing_game_profile) = self.game_profile
             && !existing_game_profile.is_anonymous()
         {
@@ -137,8 +136,6 @@ impl ClientState {
             .and_then(|profile| profile.textures().cloned())
     }
 
-    // Keep alive
-
     pub fn should_enable_keep_alive(&self) -> bool {
         self.keep_alive_enabled == KeepAliveStatus::ShouldEnable
     }
@@ -155,8 +152,6 @@ impl ClientState {
         }
     }
 
-    // Position
-
     pub const fn get_y_position(&self) -> f64 {
         self.feet_y
     }
@@ -164,8 +159,6 @@ impl ClientState {
     pub const fn set_feet_position(&mut self, feet_y: f64) {
         self.feet_y = feet_y;
     }
-
-    // Movement
 
     pub const fn is_flight_allowed(&self) -> bool {
         self.is_flight_allowed

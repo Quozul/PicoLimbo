@@ -73,7 +73,22 @@ fn begin_login(
             client_state.protocol_version()
         )));
     }
-    let forwarding_result = check_bungee_cord(server_state, hostname);
+
+    let (clean_hostname, floodgate_data) = server_state
+        .floodgate()
+        .parse_hostname(hostname)
+        .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+
+    if let Some(data) = floodgate_data {
+        let (username, uuid) = server_state
+            .floodgate()
+            .game_profile(&data)
+            .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+        client_state.replace_game_profile(GameProfile::new(&username, uuid, None));
+        return Ok(());
+    }
+
+    let forwarding_result = check_bungee_cord(server_state, &clean_hostname);
     match forwarding_result {
         LegacyForwardingResult::Invalid => {
             client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
@@ -87,6 +102,7 @@ fn begin_login(
         } => {
             let game_profile = GameProfile::anonymous(player_uuid, textures);
             client_state.set_game_profile(game_profile);
+
             Ok(())
         }
         LegacyForwardingResult::NoForwarding => Ok(()),
@@ -147,7 +163,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_handshake_handler_should_update_client_state_to_login() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(-1),
@@ -156,20 +171,17 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let mut batch = handshake_packet
             .handle(&mut client_state, &server_state())
             .unwrap()
             .into_stream();
 
-        // Then
         batch.assert_client_state(State::Login).await;
         batch.assert_server_state(State::Login).await;
     }
 
     #[tokio::test]
     async fn test_handshake_handler_should_update_client_state_to_status() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(-1),
@@ -178,20 +190,17 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let mut batch = handshake_packet
             .handle(&mut client_state, &server_state())
             .unwrap()
             .into_stream();
 
-        // Then
         batch.assert_client_state(State::Status).await;
         batch.assert_server_state(State::Status).await;
     }
 
     #[test]
     fn test_handshake_handler_should_kick_when_received_unknown_state() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(-1),
@@ -200,10 +209,7 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let result = handshake_packet.handle(&mut client_state, &server_state());
-
-        // Then
         assert!(matches!(
             result,
             Err(PacketHandlerError::InvalidState(_, _))
@@ -212,7 +218,6 @@ mod tests {
 
     #[test]
     fn test_handshake_handler_should_update_client_protocol_version() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
@@ -221,19 +226,15 @@ mod tests {
             port: 25565,
         };
 
-        // When
         handshake_packet
             .handle(&mut client_state, &server_state())
             .unwrap();
 
-        // Then
         assert_eq!(client_state.protocol_version(), ProtocolVersion::V1_15_2);
     }
 
     #[test]
     fn test_handshake_handler_should_guess_latest_version_when_unsupported_versions_are_allowed() {
-        // Given: a client whose protocol number is not supported yet (e.g. a
-        // brand-new stable release), with `allow_unsupported_versions` enabled.
         let mut server_state_builder = ServerState::builder();
         server_state_builder.set_reply_to_status(true);
         server_state_builder.set_allow_unsupported_versions(true);
@@ -247,17 +248,14 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let result = handshake_packet.handle(&mut client_state, &server_state);
 
-        // Then: the latest supported implementation is used instead of a rejection.
         assert!(result.is_ok());
         assert_eq!(client_state.protocol_version(), ProtocolVersion::latest());
     }
 
     #[test]
     fn test_handshake_handler_should_kick_when_unsupported_versions_are_not_allowed() {
-        // Given: the same unknown protocol number, with the default settings.
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(999),
@@ -266,10 +264,8 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let result = handshake_packet.handle(&mut client_state, &server_state());
 
-        // Then: login is refused.
         assert!(matches!(
             result,
             Err(PacketHandlerError::InvalidState(_, _))
@@ -282,7 +278,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_handshake_handler_should_change_state_when_bungee_cord_handshake_is_valid() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
@@ -291,20 +286,17 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let mut batch = handshake_packet
             .handle(&mut client_state, &bungee_cord())
             .unwrap()
             .into_stream();
 
-        // Then
         batch.assert_client_state(State::Login).await;
         batch.assert_server_state(State::Login).await;
     }
 
     #[test]
     fn test_handshake_handler_should_kick_when_bungee_cord_handshake_is_invalid() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
@@ -313,10 +305,8 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let result = handshake_packet.handle(&mut client_state, &bungee_cord());
 
-        // Then
         assert_eq!(
             client_state.should_kick(),
             Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
@@ -329,7 +319,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_handshake_handler_update_state_to_status_when_bungee_cord_is_enabled() {
-        // Given
         let mut client_state = ClientState::default();
         let handshake_packet = HandshakePacket {
             protocol: VarInt::new(578),
@@ -338,13 +327,11 @@ mod tests {
             port: 25565,
         };
 
-        // When
         let mut batch = handshake_packet
             .handle(&mut client_state, &bungee_cord())
             .unwrap()
             .into_stream();
 
-        // Then
         batch.assert_client_state(State::Status).await;
         batch.assert_server_state(State::Status).await;
     }
