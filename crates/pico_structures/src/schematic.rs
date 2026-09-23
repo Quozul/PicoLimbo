@@ -52,7 +52,7 @@ impl Schematic {
             .get_block_entities()
             .unwrap_or(&Vec::new())
             .iter()
-            .filter_map(BlockEntity::from_nbt)
+            .filter_map(|entity| BlockEntity::from_nbt(entity, schematic_file.get_data_version()))
             .collect::<Vec<_>>();
         debug!("Loaded {} block entities", block_entities.len());
 
