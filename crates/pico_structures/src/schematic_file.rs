@@ -5,7 +5,8 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
 pub enum SchematicFile {
     V3(SchematicV3Wrapper),
     V2(SchematicV2),
@@ -178,16 +179,14 @@ impl SchematicFile {
         }
 
         let root = compound(&mut value)?;
-        let is_v3 = root.contains_key("Schematic");
-        let container = if is_v3 {
-            let schematic = compound(root.get_mut("Schematic").unwrap())?;
-            compound(
-                schematic
+        let (container, is_v3) = match root.get_mut("Schematic") {
+            Some(schematic) => {
+                let blocks = compound(schematic)?
                     .get_mut("Blocks")
-                    .ok_or_else(|| pico_nbt::Error::Message("Missing Blocks compound".into()))?,
-            )?
-        } else {
-            root
+                    .ok_or_else(|| pico_nbt::Error::Message("Missing Blocks compound".into()))?;
+                (compound(blocks)?, true)
+            }
+            None => (root, false),
         };
         let block_entities = container
             .swap_remove("BlockEntities")
@@ -233,16 +232,7 @@ impl SchematicFile {
                 ));
             }
         };
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Format {
-            V3(SchematicV3Wrapper),
-            V2(SchematicV2),
-        }
-        let mut schematic = match from_value::<Format>(value)? {
-            Format::V3(wrapper) => Self::V3(wrapper),
-            Format::V2(schematic) => Self::V2(schematic),
-        };
+        let mut schematic = from_value::<Self>(value)?;
         match &mut schematic {
             Self::V3(wrapper) => wrapper.schematic.blocks.block_entities = block_entities,
             Self::V2(schematic) => schematic.block_entities = block_entities,
