@@ -439,7 +439,6 @@ jobs:
       - build-linux-gnu
       - build-macos
       - build-windows
-      - build-publish-java
 
     steps:
       - name: Checkout
@@ -482,3 +481,13 @@ jobs:
 
             Pterodactyl eggs can be found at https://github.com/Quozul/PicoLimbo/tree/master/pterodactyl/eggs
           files: ./artifacts/*
+
+      - name: Notify Discord
+        env:
+          WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
+          TAG_NAME: ${{ steps.release_info.outputs.tag_name }}
+        run: |
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG_NAME}"
+          MESSAGE=$(printf '# PicoLimbo [Release %s](%s)\n\n:link: **Download & More Info**: [GitHub](https://github.com/%s) | [Documentation](https://picolimbo.quozul.dev) | [Changelog](https://github.com/%s/blob/master/CHANGELOG.md) | [Modrinth](https://modrinth.com/plugin/picolimbo-java-wrapper)\n\n<@&1373588060352020682>' "$TAG_NAME" "$RELEASE_URL" "$GITHUB_REPOSITORY" "$GITHUB_REPOSITORY")
+          PAYLOAD=$(jq -n --arg content "$MESSAGE" '{content: $content}')
+          curl -fsS -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL"
