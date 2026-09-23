@@ -120,18 +120,18 @@ impl CircularChunkPacketIterator {
         let (center_x, center_z) = center_chunk;
         let paste_origin = Coordinates::new_uniform(0);
 
-        let schematic_context: Option<WorldContext> = get_block_report_id_mapping(protocol_version)
-            .map_or(None, |report_id_mapping| {
+        let report_id_mapping = get_block_report_id_mapping(protocol_version)
+            .inspect_err(|_| warn!("No block mapping for version {protocol_version}"))
+            .ok();
+
+        let schematic_context: Option<WorldContext> =
+            report_id_mapping.and_then(|report_id_mapping| {
                 world.map(|world_arc| WorldContext {
                     paste_origin,
                     world: world_arc,
                     report_id_mapping: Arc::new(report_id_mapping),
                 })
             });
-
-        if schematic_context.is_none() {
-            warn!("No block mapping for version {protocol_version}");
-        }
 
         Self {
             biome_index,

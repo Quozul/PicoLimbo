@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix(minimessage): handle closing tags in MiniMessage (#99)
 - fix(chunks): omit legacy skylight outside the overworld (#100)
 - fix(structures): preserve player heads, signs, and block entity data (#96)
+- fix(chunks): only warn when no block mapping exists for version (#101)
 
 ## [1.14.0+mc26.3] - 2026-09-18
 
