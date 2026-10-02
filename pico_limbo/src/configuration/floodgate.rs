@@ -37,6 +37,7 @@ impl Default for EnabledFloodgateConfig {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools, dead_code)]
 pub struct DisabledFloodgateConfig {
     #[serde(deserialize_with = "require_false")]
     pub enabled: bool,
