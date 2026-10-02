@@ -102,10 +102,10 @@ impl FloodgateSettings {
             floodgate_data = Some(data);
         }
 
-        match floodgate_data {
-            Some(data) => Ok((clean_parts.join("\0"), Some(data))),
-            None => Ok((hostname.to_owned(), None)),
-        }
+        floodgate_data.map_or_else(
+            || Ok((hostname.to_owned(), None)),
+            |data| Ok((clean_parts.join("\0"), Some(data))),
+        )
     }
 
     pub fn game_profile(&self, data: &FloodgateData) -> Result<(String, Uuid), String> {
@@ -136,7 +136,7 @@ impl FloodgateSettings {
                 .xuid
                 .parse::<i64>()
                 .map_err(|_| "Floodgate xuid is not a valid 64-bit integer".to_string())?;
-            Uuid::from_u64_pair(0, xuid as u64)
+            Uuid::from_u64_pair(0, xuid.cast_unsigned())
         };
 
         Ok((username, uuid))
@@ -242,7 +242,7 @@ fn education_uuid(oid: &str) -> Result<Uuid, String> {
         .map_err(|_| "EduFloodgate xuid is not a valid Entra OID".to_string())?;
     let value = parsed.as_u128();
     let msb = (value >> 64) as u64;
-    let lsb = value as u64;
+    let lsb = u64::try_from(value & u128::from(u64::MAX)).expect("value was masked to 64 bits");
 
     let upper = ((msb >> 16) << 12) | (msb & 0xFFF);
     let lower = (lsb << 2) >> 60;
