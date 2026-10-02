@@ -2,153 +2,146 @@
 
 Representing the `[floodgate]` section in `server.toml`.
 
-PicoLimbo can validate and accept the authenticated Floodgate data that Geyser forwards to a backend server. PicoLimbo does not need Geyser or Floodgate installed itself; it only needs the shared Floodgate key when this integration is enabled.
-
-## Disabled
-
-Floodgate support is disabled by default:
-
-~~~toml [server.toml]
-[floodgate]
-enabled = false
-~~~
+PicoLimbo supports Floodgate for Bedrock Edition players and EduFloodgate for Education Edition players. Floodgate is handled by the proxy, while PicoLimbo uses the shared `key.pem` to accept the forwarded player data.
 
 ## Enabled
 
-When setting `enabled` to `true`, PicoLimbo loads the shared Floodgate key and accepts authenticated Floodgate handshake data:
+Floodgate support is disabled by default.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {2}
 [floodgate]
 enabled = true
-key_file = "key.pem"
-username_prefix = "."
-replace_spaces = true
-education = false
-education_username_prefix = "+"
-education_uuid_legacy = false
-~~~
+```
+:::
 
-All properties other than `enabled` have defaults, so they may be omitted.
+When enabled, PicoLimbo uses the other Floodgate settings with their default values unless you override them.
 
 ## Key File
 
-The `key_file` option points to the same Floodgate `key.pem` used by the Geyser/Floodgate proxy.
+The `key_file` setting specifies the Floodgate key file used by PicoLimbo.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {3}
 [floodgate]
 enabled = true
 key_file = "key.pem"
-~~~
+```
+:::
 
-The key is a shared secret used to authenticate the encrypted Floodgate player data. Floodgate uses a 128-bit AES key, so PicoLimbo expects the key file to contain the same raw 16-byte key as the proxy. Geyser loads the Floodgate key from the configured key path and uses it for Floodgate encryption. See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation for the shared-key setup.
+The path is relative to the PicoLimbo server's working directory. It is **not** a path to a file on your proxy.
 
-**Never commit or distribute this key to untrusted systems.** Geyser requires backend and proxy Floodgate keys to be identical when Floodgate data is forwarded to a backend. See the [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/) documentation.
+For example, if your PicoLimbo server is running with this layout:
+
+```text
+PicoLimbo/
+├── server.toml
+├── key.pem
+└── PicoLimbo
+```
+
+then `key_file = "key.pem"` will use the `key.pem` stored beside `server.toml`.
+
+Copy the `key.pem` from your Floodgate proxy to the PicoLimbo server, then point `key_file` to the local copy. The file contents must be the same key used by the proxy.
+
+> [!WARNING]
+> Keep your Floodgate key private. Anyone who obtains it can forge Floodgate player data.
+
+See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation for the proxy-side setup.
 
 ## Username Prefix
 
-The `username_prefix` is added to normal Bedrock usernames.
+The prefix added to normal Bedrock usernames.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {3}
 [floodgate]
 enabled = true
 username_prefix = "."
-~~~
+```
+:::
 
-The default is `.`, so a Bedrock player named `Steve` becomes `.Steve`.
+The default is `.`.
+
+For example, a Bedrock player named `Steve` will appear as `.Steve`.
 
 ## Replace Spaces
 
-Set `replace_spaces` to `true` to replace spaces in Bedrock usernames with underscores.
+Whether spaces in Bedrock usernames are replaced with underscores.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {3}
 [floodgate]
 enabled = true
 replace_spaces = true
-~~~
+```
+:::
 
 The default is `true`.
 
 ## Education Edition
 
-Set `education` to `true` to accept EduGeyser/EduFloodgate Education Edition player data:
+Enable support for players connecting from Minecraft Education Edition through EduGeyser/EduFloodgate.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {3}
 [floodgate]
 enabled = true
 education = true
+```
+:::
+
+Normal Bedrock players continue to work when Education support is enabled.
+
+## Education Username Prefix
+
+The prefix added to Education Edition usernames.
+
+:::code-group
+```toml [server.toml] {3}
+[floodgate]
+enabled = true
 education_username_prefix = "+"
-education_uuid_legacy = false
-~~~
+```
+:::
 
-Education Edition players use a separate username prefix. The default is `+`.
-
-EduFloodgate uses the extended Floodgate player-data format for both ordinary Bedrock and Education players. The Education flag in that payload is `0` for a normal Bedrock player and `1` for an Education player. Therefore, enabling or disabling Education support does **not** prevent ordinary Bedrock players from joining.
+The default is `+`.
 
 ## Education UUID Scheme
 
-The `education_uuid_legacy` option selects the UUID scheme used for Education Edition players.
+Select which UUID scheme PicoLimbo uses for Education Edition players.
 
-~~~toml [server.toml]
+:::code-group
+```toml [server.toml] {3}
 [floodgate]
 enabled = true
-education = true
 education_uuid_legacy = false
-~~~
+```
+:::
 
-When `false`, PicoLimbo uses the modern Microsoft-verified identity scheme. When `true`, it uses the legacy tenant-and-username scheme.
+The default is `false`, which uses the current Education UUID scheme. Set it to `true` to use the legacy scheme.
 
-This setting must match the UUID scheme configured by EduGeyser/EduFloodgate. Changing the scheme can change the Java UUID used for Education players, so existing player data may no longer match.
+> [!WARNING]
+> This setting must match the UUID scheme configured by EduGeyser/EduFloodgate. Changing it can change the UUID used for Education Edition players and may affect existing player data.
 
 ## Proxy Setup
 
-Floodgate data is sent by the proxy to the backend server through the Minecraft handshake.
+Floodgate must be configured on the proxy that handles Bedrock connections.
 
-### Geyser and Floodgate on Velocity
+On the proxy:
 
-Install Geyser and Floodgate on the Velocity proxy and configure Geyser to use Floodgate authentication.
+1. Install and configure Geyser with Floodgate authentication.
+2. Enable `send-floodgate-data` in the Floodgate configuration.
+3. Copy the proxy's `key.pem` to the PicoLimbo server.
+4. Set `key_file` to the local copy on PicoLimbo.
 
-When Floodgate data needs to be forwarded to PicoLimbo, enable `send-floodgate-data` in the proxy Floodgate configuration and copy the proxy `key.pem` to the PicoLimbo server. The same key must be used on both sides. See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation.
+The proxy and PicoLimbo must use the same Floodgate key.
 
-PicoLimbo validates and removes the authenticated Floodgate payload before the remaining hostname is processed.
+See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation for the proxy configuration.
 
-### Velocity Modern Forwarding
+## Velocity Modern Forwarding
 
-Floodgate can be used together with Velocity Modern Forwarding.
+Floodgate is compatible with Velocity Modern Forwarding.
 
-With Modern Forwarding enabled, PicoLimbo performs the Velocity forwarding exchange during login. The final Java profile comes from the authenticated Velocity forwarding response; the Floodgate payload is still validated during the initial handshake.
+Configure Velocity Modern Forwarding as described in [Proxy Integration](./proxy-integration.html). Floodgate and Velocity forwarding can be enabled together.
 
-This means `education = true` is still required when EduGeyser/EduFloodgate sends an Education player, even when Modern Forwarding is enabled.
-
-For the Velocity Modern Forwarding configuration itself, see the [Proxy Integration](./proxy-integration.html) documentation.
-
-## Security
-
-Floodgate data is authenticated with the shared key before PicoLimbo accepts the player identity. PicoLimbo does not trust a Bedrock username or XUID supplied without a valid Floodgate payload.
-
-Keep the Floodgate key private. Anyone who obtains it can forge authenticated Floodgate player data.
-
-## Troubleshooting
-
-### `Floodgate authentication failed`
-
-Check that `key_file` points to the exact same `key.pem` used by the proxy Floodgate installation.
-
-### `Invalid Education Floodgate flag`
-
-Check that the forwarded EduFloodgate payload uses `0` for ordinary Bedrock or `1` for Education Edition. Ordinary Bedrock players using the extended 15-field format are valid with `education = false`.
-
-### Education players are rejected
-
-Set:
-
-~~~toml [server.toml]
-[floodgate]
-enabled = true
-education = true
-~~~
-
-Also make sure the Education UUID scheme matches the scheme used by EduGeyser/EduFloodgate.
-
-### Floodgate data is not received
-
-On the proxy, verify that Floodgate has `send-floodgate-data` enabled when the backend is expected to receive Floodgate data.
