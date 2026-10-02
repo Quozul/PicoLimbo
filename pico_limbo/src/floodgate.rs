@@ -409,11 +409,13 @@ mod tests {
     }
 
     #[test]
-    fn accepts_non_education_15_field_payload() {
+    fn accepts_non_education_15_field_payload_when_education_disabled() {
         let key = [7u8; 16];
         let encoded = encrypted_hostname(key, &bedrock_data_with_education_fields());
+        let mut settings = settings(key);
+        settings.education_enabled = false;
 
-        let (_, parsed) = settings(key).parse_hostname(&encoded).unwrap();
+        let (_, parsed) = settings.parse_hostname(&encoded).unwrap();
         let data = parsed.unwrap();
 
         assert_eq!(data.username, "Player");
