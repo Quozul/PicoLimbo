@@ -201,7 +201,7 @@ fn decrypt(key: &[u8; 16], value: &str) -> Result<String, String> {
         Aes128Gcm::new_from_slice(key).map_err(|_| "Invalid Floodgate AES key".to_string())?;
     let nonce = Nonce::try_from(&iv[..]).map_err(|_| "Invalid Floodgate IV length".to_string())?;
     let plaintext = cipher
-        .decrypt(nonce, ciphertext.as_ref())
+        .decrypt(&nonce, ciphertext.as_ref())
         .map_err(|_| "Floodgate authentication failed".to_string())?;
 
     String::from_utf8(plaintext).map_err(|_| "Floodgate data is not valid UTF-8".to_string())
@@ -310,7 +310,7 @@ mod tests {
         let cipher = Aes128Gcm::new_from_slice(&key).unwrap();
         let iv = [7u8; IV_LENGTH];
         let nonce = Nonce::try_from(&iv[..]).expect("valid test nonce");
-        let ciphertext = cipher.encrypt(nonce, data.as_bytes()).unwrap();
+        let ciphertext = cipher.encrypt(&nonce, data.as_bytes()).unwrap();
 
         format!(
             "{}{}!{}",
