@@ -37,7 +37,7 @@ The key file is sensitive. Do not commit it to your repository or distribute it.
 
 ## Proxy setup
 
-Install Geyser and Floodgate on the proxy and configure Geyser to use Floodgate authentication. For proxy-to-backend Floodgate data, enable `send-floodgate-data` in Floodgate and use the same `key.pem` on the proxy and PicoLimbo. GeyserMC documents this backend setup and the shared-key requirement in its Floodgate setup guide. cite_placeholder
+Install Geyser and Floodgate on the proxy and configure Geyser to use Floodgate authentication. For proxy-to-backend Floodgate data, enable `send-floodgate-data` in Floodgate and use the same `key.pem` on the proxy and PicoLimbo. GeyserMC documents this backend setup and the shared-key requirement in its Floodgate setup guide.
 
 PicoLimbo removes the authenticated Floodgate payload from the hostname before normal proxy forwarding is processed. This means the remaining hostname is still available to the existing BungeeCord forwarding parser.
 
