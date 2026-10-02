@@ -1,5 +1,4 @@
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
-use crate::floodgate::FloodgateSettings;
 use crate::forwarding::forwarding_result::LegacyForwardingResult;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::batch::Batch;
@@ -74,7 +73,21 @@ fn begin_login(
             client_state.protocol_version()
         )));
     }
-    let forwarding_result = check_bungee_cord(server_state, hostname);
+    let (clean_hostname, floodgate_data) = server_state
+        .floodgate()
+        .parse_hostname(hostname)
+        .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+
+    if let Some(data) = floodgate_data {
+        let (username, uuid) = server_state
+            .floodgate()
+            .game_profile(&data)
+            .map_err(|error| PacketHandlerError::invalid_state(&error))?;
+        client_state.replace_game_profile(GameProfile::new(&username, uuid, None));
+        return Ok(());
+    }
+
+    let forwarding_result = check_bungee_cord(server_state, &clean_hostname);
     match forwarding_result {
         LegacyForwardingResult::Invalid => {
             client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
