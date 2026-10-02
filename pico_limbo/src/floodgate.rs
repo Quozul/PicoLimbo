@@ -217,19 +217,25 @@ fn parse_data(data: &str) -> Result<FloodgateData, String> {
         ));
     }
 
-    if fields.len() == 15 && fields[12] != "1" {
-        return Err("Invalid Education Floodgate flag".into());
-    }
-
     if fields[9] != "0" && fields[9] != "1" {
         return Err("Invalid Floodgate proxy flag".into());
     }
 
+    let education = if fields.len() == 15 {
+        match fields[12] {
+            "0" => false,
+            "1" => true,
+            _ => return Err("Invalid Education Floodgate flag".into()),
+        }
+    } else {
+        false
+    };
+
     Ok(FloodgateData {
         username: fields[1].to_owned(),
         xuid: fields[2].to_owned(),
-        education: fields.len() == 15,
-        tenant_id: if fields.len() == 15 {
+        education,
+        tenant_id: if education {
             fields[13].to_owned()
         } else {
             String::new()
@@ -359,6 +365,27 @@ mod tests {
         .join("\0")
     }
 
+    fn bedrock_data_with_education_fields() -> String {
+        [
+            "0",
+            "Player",
+            "123456789",
+            "1",
+            "en_US",
+            "0",
+            "1",
+            "127.0.0.1",
+            "",
+            "0",
+            "123",
+            "verify",
+            "0",
+            "",
+            "-1",
+        ]
+        .join("\0")
+    }
+
     #[test]
     fn decrypts_standard_floodgate_payload() {
         let key = [1u8; 16];
@@ -379,6 +406,24 @@ mod tests {
                 tenant_id: String::new(),
             }
         );
+    }
+
+    #[test]
+    fn accepts_non_education_15_field_payload() {
+        let key = [7u8; 16];
+        let encoded = encrypted_hostname(key, &bedrock_data_with_education_fields());
+
+        let (_, parsed) = settings(key).parse_hostname(&encoded).unwrap();
+        let data = parsed.unwrap();
+
+        assert_eq!(data.username, "Player");
+        assert_eq!(data.xuid, "123456789");
+        assert!(!data.education);
+        assert!(data.tenant_id.is_empty());
+
+        let (username, uuid) = settings(key).game_profile(&data).unwrap();
+        assert_eq!(username, ".Player");
+        assert_eq!(uuid, Uuid::from_u64_pair(0, 123_456_789));
     }
 
     #[test]
