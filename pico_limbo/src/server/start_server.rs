@@ -155,3 +155,33 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
 
     server_state_builder.build()
 }
+
+fn enable_logging(cli: &Cli) -> Option<WorkerGuard> {
+    let log_level = match cli.verbose {
+        0 => Level::INFO,
+        1 => Level::DEBUG,
+        _ => Level::TRACE,
+    };
+
+    let registry = tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env().add_directive(log_level.into()))
+        .with(tracing_subscriber::fmt::layer().with_target(false));
+
+    if let Some(log_path) = &cli.log_path {
+        let file_appender = tracing_appender::rolling::daily(log_path, "picolimbo.log");
+        let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+
+        registry
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .with_target(false)
+                    .with_ansi(false)
+                    .with_writer(non_blocking),
+            )
+            .init();
+        Some(guard)
+    } else {
+        registry.init();
+        None
+    }
+}
