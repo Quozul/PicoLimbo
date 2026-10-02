@@ -10,6 +10,7 @@ pub enum FloodgateConfig {
 
 #[derive(Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct EnabledFloodgateConfig {
     #[serde(deserialize_with = "require_true")]
     pub enabled: bool,
@@ -79,9 +80,9 @@ mod tests {
     #[test]
     fn enabled_config_fills_missing_values_from_defaults() {
         let config: FloodgateConfig = toml::from_str(
-            r#"
+            r"
             enabled = true
-            "#,
+            ",
         )
         .unwrap();
 
