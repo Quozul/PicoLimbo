@@ -1,4 +1,5 @@
 use crate::forwarding::check_bungee_cord::check_bungee_cord;
+use crate::floodgate::FloodgateSettings;
 use crate::forwarding::forwarding_result::LegacyForwardingResult;
 use crate::kick_messages::PROXY_REQUIRED_KICK_MESSAGE;
 use crate::server::batch::Batch;
@@ -73,22 +74,7 @@ fn begin_login(
             client_state.protocol_version()
         )));
     }
-
-    let (clean_hostname, floodgate_data) = server_state
-        .floodgate()
-        .parse_hostname(hostname)
-        .map_err(|error| PacketHandlerError::invalid_state(&error))?;
-
-    if let Some(data) = floodgate_data {
-        let (username, uuid) = server_state
-            .floodgate()
-            .game_profile(&data)
-            .map_err(|error| PacketHandlerError::invalid_state(&error))?;
-        client_state.replace_game_profile(GameProfile::new(&username, uuid, None));
-        return Ok(());
-    }
-
-    let forwarding_result = check_bungee_cord(server_state, &clean_hostname);
+    let forwarding_result = check_bungee_cord(server_state, hostname);
     match forwarding_result {
         LegacyForwardingResult::Invalid => {
             client_state.kick(PROXY_REQUIRED_KICK_MESSAGE);
@@ -102,9 +88,265 @@ fn begin_login(
         } => {
             let game_profile = GameProfile::anonymous(player_uuid, textures);
             client_state.set_game_profile(game_profile);
-
             Ok(())
         }
         LegacyForwardingResult::NoForwarding => Ok(()),
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("unknown state {0}")]
+struct UnknownStateError(i32);
+
+trait GetStateProtocol {
+    fn get_next_state(&self) -> Result<State, UnknownStateError>;
+    fn get_protocol(&self, allow_unsupported_versions: bool) -> ProtocolVersion;
+}
+
+impl GetStateProtocol for HandshakePacket {
+    fn get_next_state(&self) -> Result<State, UnknownStateError> {
+        let state = self.next_state.inner();
+        match state {
+            1 => Ok(State::Status),
+            2 => Ok(State::Login),
+            3 => Ok(State::Transfer),
+            _ => Err(UnknownStateError(state)),
+        }
+    }
+
+    fn get_protocol(&self, allow_unsupported_versions: bool) -> ProtocolVersion {
+        if self.protocol.inner() == -1 {
+            ProtocolVersion::Any
+        } else {
+            let pvn = self.protocol.inner();
+            if allow_unsupported_versions {
+                ProtocolVersion::from(pvn)
+            } else {
+                ProtocolVersion::try_from(pvn).unwrap_or(ProtocolVersion::Unsupported)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use minecraft_protocol::prelude::VarInt;
+
+    fn server_state() -> ServerState {
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.build().unwrap()
+    }
+
+    fn bungee_cord() -> ServerState {
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.enable_legacy_forwarding();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.build().unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_handshake_handler_should_update_client_state_to_login() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(-1),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let mut batch = handshake_packet
+            .handle(&mut client_state, &server_state())
+            .unwrap()
+            .into_stream();
+
+        // Then
+        batch.assert_client_state(State::Login).await;
+        batch.assert_server_state(State::Login).await;
+    }
+
+    #[tokio::test]
+    async fn test_handshake_handler_should_update_client_state_to_status() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(-1),
+            hostname: String::new(),
+            next_state: VarInt::new(1),
+            port: 25565,
+        };
+
+        // When
+        let mut batch = handshake_packet
+            .handle(&mut client_state, &server_state())
+            .unwrap()
+            .into_stream();
+
+        // Then
+        batch.assert_client_state(State::Status).await;
+        batch.assert_server_state(State::Status).await;
+    }
+
+    #[test]
+    fn test_handshake_handler_should_kick_when_received_unknown_state() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(-1),
+            hostname: String::new(),
+            next_state: VarInt::new(42),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &server_state());
+
+        // Then
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
+    }
+
+    #[test]
+    fn test_handshake_handler_should_update_client_protocol_version() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(578),
+            hostname: String::new(),
+            next_state: VarInt::new(1),
+            port: 25565,
+        };
+
+        // When
+        handshake_packet
+            .handle(&mut client_state, &server_state())
+            .unwrap();
+
+        // Then
+        assert_eq!(client_state.protocol_version(), ProtocolVersion::V1_15_2);
+    }
+
+    #[test]
+    fn test_handshake_handler_should_guess_latest_version_when_unsupported_versions_are_allowed() {
+        // Given: a client whose protocol number is not supported yet (e.g. a
+        // brand-new stable release), with `allow_unsupported_versions` enabled.
+        let mut server_state_builder = ServerState::builder();
+        server_state_builder.set_reply_to_status(true);
+        server_state_builder.set_allow_unsupported_versions(true);
+        let server_state = server_state_builder.build().unwrap();
+
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(999),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &server_state);
+
+        // Then: the latest supported implementation is used instead of a rejection.
+        assert!(result.is_ok());
+        assert_eq!(client_state.protocol_version(), ProtocolVersion::latest());
+    }
+
+    #[test]
+    fn test_handshake_handler_should_kick_when_unsupported_versions_are_not_allowed() {
+        // Given: the same unknown protocol number, with the default settings.
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(999),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &server_state());
+
+        // Then: login is refused.
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
+        assert_eq!(
+            client_state.protocol_version(),
+            ProtocolVersion::Unsupported
+        );
+    }
+
+    #[tokio::test]
+    async fn test_handshake_handler_should_change_state_when_bungee_cord_handshake_is_valid() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(578),
+            hostname: "localhost\x00127.0.0.1\x006856201a9c1f49978608371019daf15e".to_string(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let mut batch = handshake_packet
+            .handle(&mut client_state, &bungee_cord())
+            .unwrap()
+            .into_stream();
+
+        // Then
+        batch.assert_client_state(State::Login).await;
+        batch.assert_server_state(State::Login).await;
+    }
+
+    #[test]
+    fn test_handshake_handler_should_kick_when_bungee_cord_handshake_is_invalid() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(578),
+            hostname: String::new(),
+            next_state: VarInt::new(2),
+            port: 25565,
+        };
+
+        // When
+        let result = handshake_packet.handle(&mut client_state, &bungee_cord());
+
+        // Then
+        assert_eq!(
+            client_state.should_kick(),
+            Some(PROXY_REQUIRED_KICK_MESSAGE.to_string())
+        );
+        assert!(matches!(
+            result,
+            Err(PacketHandlerError::InvalidState(_, _))
+        ));
+    }
+
+    #[tokio::test]
+    async fn test_handshake_handler_update_state_to_status_when_bungee_cord_is_enabled() {
+        // Given
+        let mut client_state = ClientState::default();
+        let handshake_packet = HandshakePacket {
+            protocol: VarInt::new(578),
+            hostname: String::new(),
+            next_state: VarInt::new(1),
+            port: 25565,
+        };
+
+        // When
+        let mut batch = handshake_packet
+            .handle(&mut client_state, &bungee_cord())
+            .unwrap()
+            .into_stream();
+
+        // Then
+        batch.assert_client_state(State::Status).await;
+        batch.assert_server_state(State::Status).await;
     }
 }
