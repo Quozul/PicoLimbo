@@ -43,6 +43,7 @@ export default defineConfig({
 					{ text: "Connection", link: "/config/connection.html" },
 					{ text: "Fly", link: "/config/fly.html" },
 					{ text: "Proxy Integration", link: "/config/proxy-integration.html" },
+					{ text: "Floodgate", link: "/config/floodgate.html" },
 					{ text: "Schematic Loading", link: "/config/schematic-loading.html" },
 					{ text: "Server List", link: "/config/server-list.html" },
 					{ text: "Server Settings", link: "/config/server-settings.html" },
