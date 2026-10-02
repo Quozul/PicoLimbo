@@ -49,7 +49,11 @@ fn test_dynamic_lists_enabled() {
     }
 
     let s = Hetero {
-        list: vec![Value::Int(1), Value::String("test".into())],
+        list: vec![
+            Value::Int(1),
+            Value::String("test".into()),
+            Value::Compound(pico_nbt::IndexMap::from([("text".into(), "styled".into())])),
+        ],
     };
 
     let options = NbtOptions::new().nameless_root(false).dynamic_lists(true);
@@ -62,6 +66,10 @@ fn test_dynamic_lists_enabled() {
     // List Tag ID should be 9 (List)
     // Element Type should be 10 (Compound) because it's heterogenous
 
+    let (_, raw) = from_reader_with_options(&mut Cursor::new(&buf), NbtOptions::new()).unwrap();
+    let raw_list = raw.get_compound().unwrap()["list"].get_list().unwrap();
+    assert_eq!(raw_list[0].get_compound().unwrap()[""], Value::Int(1));
+    assert_eq!(raw_list[2], s.list[2]);
     let (name, value) = from_reader_with_options(&mut Cursor::new(buf), options).unwrap();
     assert_eq!(name, "root");
     let Value::Compound(root) = value else {
@@ -71,22 +79,7 @@ fn test_dynamic_lists_enabled() {
         panic!("Expected List")
     };
 
-    assert_eq!(list.len(), 2);
-    // Elements should be Compounds wrapping the values
-    match &list[0] {
-        Value::Compound(c) => {
-            assert_eq!(c.len(), 1);
-            assert_eq!(c.get(""), Some(&Value::Int(1)));
-        }
-        _ => panic!("Expected Compound wrapper 1"),
-    }
-    match &list[1] {
-        Value::Compound(c) => {
-            assert_eq!(c.len(), 1);
-            assert_eq!(c.get(""), Some(&Value::String("test".into())));
-        }
-        _ => panic!("Expected Compound wrapper 2"),
-    }
+    assert_eq!(*list, s.list);
 }
 
 #[test]

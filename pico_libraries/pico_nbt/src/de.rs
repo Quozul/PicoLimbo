@@ -90,7 +90,15 @@ impl<R: Read> NbtReader<R> {
                     .map_err(|_| Error::Message("Invalid list length".into()))?;
                 let mut list = Vec::with_capacity(len);
                 for _ in 0..len {
-                    list.push(self.read_value(elem_type)?);
+                    let mut value = self.read_value(elem_type)?;
+                    if self.options.is_dynamic_lists()
+                        && let Value::Compound(fields) = &mut value
+                        && fields.len() == 1
+                        && let Some(inner) = fields.swap_remove("")
+                    {
+                        value = inner;
+                    }
+                    list.push(value);
                 }
                 Ok(Value::List(list))
             }

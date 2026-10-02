@@ -65,7 +65,11 @@ impl<W: Write> NbtWriter<W> {
                             self.writer.write_i32::<BigEndian>(len)?;
 
                             for elem in list {
-                                // Wrap in Compound: { "": elem }
+                                if matches!(elem, Value::Compound(_)) {
+                                    self.write_value(elem)?;
+                                    continue;
+                                }
+                                // Wrap non-compound elements in { "": elem }
                                 // Compound structure: TagID, Name, Value, TAG_End
 
                                 // 1. Write Tag ID of element

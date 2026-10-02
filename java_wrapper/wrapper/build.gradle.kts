@@ -93,6 +93,7 @@ modrinth {
         }
     )
     uploadFile.set(tasks.jar)
+    changelog.set("Check the changelog at https://github.com/Quozul/PicoLimbo/blob/master/CHANGELOG.md")
     gameVersions.addAll(
         "1.7.2", "1.7.3", "1.7.4", "1.7.5", "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10",
         "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9",
@@ -111,7 +112,7 @@ modrinth {
         "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11",
         "26.1", "26.1.1", "26.1.2",
         "26.2",
-        "26.3-pre-2"
+        "26.3"
     )
     loaders.addAll("velocity", "bungeecord", "java-agent")
 }

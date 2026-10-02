@@ -48,10 +48,10 @@ flying_speed = 0.05
 
 ### Prevent Falling in Survival/Creative/Adventure
 
-To players from falling, set `allow_flight = false` and `flying = true`.
+To prevent players from falling, set `allow_flight = false` and `flying = true`.
 
 :::code-group
-```toml [server.toml] {2}
+```toml [server.toml] {4,5}
 default_game_mode = "adventure"
 
 [fly]
@@ -71,7 +71,7 @@ fly_speed = ""
 To freeze players in place, set `allow_flight = false`, `flying = true`, and `flying_speed = 0.0`.
 
 :::code-group
-```toml [server.toml] {2}
+```toml [server.toml] {5-7}
 # It is recommended to set the default game mode to spectator with this configuration
 default_game_mode = "spectator"
 

@@ -32,7 +32,8 @@ impl NbtOptions {
     ///
     /// Since Minecraft 1.21.5, lists can contain elements of different types.
     /// If this is true, heterogeneous lists are encoded as a list of compounds,
-    /// where each compound has a single empty key containing the value.
+    /// Non-compound elements are wrapped under an empty key; compounds stay unchanged.
+    /// During decoding, single empty-key wrappers in lists are unwrapped.
     #[must_use]
     pub const fn dynamic_lists(mut self, enabled: bool) -> Self {
         if enabled {

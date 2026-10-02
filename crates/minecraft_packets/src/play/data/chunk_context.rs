@@ -9,6 +9,7 @@ pub struct VoidChunkContext {
     pub biome_index: i32,
     pub dimension_height: i32,
     pub dimension_min_y: i32,
+    pub has_sky_light: bool,
     pub protocol_version: ProtocolVersion,
 }
 

@@ -3,7 +3,6 @@
 //! Reads a Schematic file (compressed or uncompressed) and prints it as SNBT.
 //! Only supports Sponge V2 and V3 formats.
 use clap::Parser;
-use pico_nbt::{NbtOptions, from_path_struct};
 use pico_structures::prelude::SchematicFile;
 use std::path::PathBuf;
 
@@ -33,7 +32,7 @@ fn print_summary(schematic: &SchematicFile) {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    let (_, schematic) = from_path_struct::<SchematicFile>(&cli.input, NbtOptions::new())?;
+    let schematic = SchematicFile::from_path(&cli.input)?;
 
     if cli.full {
         println!("{schematic:#?}");

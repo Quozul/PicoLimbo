@@ -1,9 +1,10 @@
 use crate::block_entities::generic::GenericBlockEntity;
 use crate::block_entities::sign::SignBlockEntity;
+use crate::block_entities::skull::SkullBlockEntity;
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
 use pico_nbt::Value;
 use std::fmt::Display;
-use tracing::debug;
+use tracing::{debug, warn};
 
 #[derive(Clone)]
 pub enum BlockEntityType {
@@ -26,9 +27,13 @@ impl Display for BlockEntityType {
 impl From<&str> for BlockEntityType {
     fn from(type_id: &str) -> Self {
         match type_id {
-            "sign" => BlockEntityType::Sign,
-            "minecraft:hanging_sign" => BlockEntityType::HangingSign,
-            other => BlockEntityType::Generic(other.to_string()),
+            "sign" | "minecraft:sign" => BlockEntityType::Sign,
+            "hanging_sign" | "minecraft:hanging_sign" => BlockEntityType::HangingSign,
+            other => BlockEntityType::Generic(if other.contains(':') {
+                other.to_string()
+            } else {
+                format!("minecraft:{other}")
+            }),
         }
     }
 }
@@ -41,12 +46,17 @@ pub struct BlockEntity {
 }
 
 impl BlockEntity {
-    pub fn from_nbt(entity_nbt: &crate::schematic_file::BlockEntity) -> Option<Self> {
+    pub fn from_nbt(
+        entity_nbt: &crate::schematic_file::BlockEntity,
+        data_version: Option<i32>,
+    ) -> Option<Self> {
         if let Ok(position) = entity_nbt.position() {
             let block_entity_type = BlockEntityType::from(entity_nbt.identifier());
             let value = entity_nbt.data();
-            let block_entity_data = BlockEntityData::from_nbt(entity_nbt.identifier(), value)
-                .expect("Failed to load block entity");
+            let block_entity_data =
+                BlockEntityData::from_nbt(&block_entity_type.to_string(), value, data_version)
+                    .map_err(|error| debug!(%error, "Failed to load block entity"))
+                    .ok()?;
             Some(Self {
                 position,
                 block_entity_data,
@@ -58,10 +68,10 @@ impl BlockEntity {
         }
     }
 
-    pub fn to_nbt(&self, protocol_version: ProtocolVersion) -> Value {
-        self.block_entity_data
-            .value(protocol_version)
-            .expect("Failed to get Value")
+    pub fn to_nbt(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
+        self.block_entity_data.value(protocol_version).inspect_err(|error| {
+            warn!(%error, entity_type = %self.block_entity_type, "Skipping invalid block entity data");
+        })
     }
 
     pub fn get_block_entity_type(&self) -> &BlockEntityType {
@@ -76,21 +86,25 @@ impl BlockEntity {
 #[derive(Clone)]
 pub enum BlockEntityData {
     Sign(Box<SignBlockEntity>),
+    Skull(SkullBlockEntity),
     Generic { entity: GenericBlockEntity },
 }
 
 impl BlockEntityData {
-    fn from_nbt(id_tag: &str, entity_nbt: &Value) -> pico_nbt::Result<Self> {
-        let entity_nbt = remove_string_tag_quote(entity_nbt);
-
+    fn from_nbt(
+        id_tag: &str,
+        entity_nbt: &Value,
+        data_version: Option<i32>,
+    ) -> pico_nbt::Result<Self> {
         match id_tag {
             "minecraft:sign" | "minecraft:hanging_sign" => {
-                let sign_block_entity = pico_nbt::from_value::<SignBlockEntity>(entity_nbt)?;
+                let sign_block_entity = SignBlockEntity::from_nbt(entity_nbt, data_version)?;
                 Ok(Self::Sign(Box::new(sign_block_entity)))
             }
 
+            "minecraft:skull" => Ok(Self::Skull(SkullBlockEntity::from_nbt(entity_nbt))),
             _ => Ok(Self::Generic {
-                entity: GenericBlockEntity::from_nbt(&entity_nbt),
+                entity: GenericBlockEntity::from_nbt(entity_nbt),
             }),
         }
     }
@@ -98,27 +112,8 @@ impl BlockEntityData {
     pub fn value(&self, protocol_version: ProtocolVersion) -> pico_nbt::Result<Value> {
         match self {
             BlockEntityData::Sign(entity) => entity.to_version_value(protocol_version),
+            BlockEntityData::Skull(entity) => Ok(entity.to_version_value(protocol_version)),
             BlockEntityData::Generic { entity } => Ok(entity.to_nbt().clone()),
         }
-    }
-}
-
-fn remove_string_tag_quote(value: &Value) -> Value {
-    match value {
-        Value::String(value) => {
-            if value.starts_with('"') && value.ends_with('"') {
-                Value::String(value[1..value.len() - 1].to_string())
-            } else {
-                Value::String(value.clone())
-            }
-        }
-        Value::List(values) => Value::List(values.iter().map(remove_string_tag_quote).collect()),
-        Value::Compound(values) => Value::Compound(
-            values
-                .iter()
-                .map(|(key, value)| (key.clone(), remove_string_tag_quote(value)))
-                .collect(),
-        ),
-        value => value.clone(),
     }
 }
