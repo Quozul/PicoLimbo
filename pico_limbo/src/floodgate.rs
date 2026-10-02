@@ -18,7 +18,7 @@ const MAX_PAYLOAD_BYTES: usize = 8192;
 const MAX_CIPHERTEXT_BYTES: usize = 4096;
 const MAX_USERNAME_BYTES: usize = 16;
 const MAX_USERNAME_PREFIX_BYTES: usize = 16;
-const EDUCATION_UUID_MSB: u64 = 0x0000000100000001;
+const EDUCATION_UUID_MSB: u64 = 0x0000_0001_0000_0001;
 
 #[derive(Clone)]
 pub struct FloodgateSettings {
@@ -199,7 +199,7 @@ fn decrypt(key: &[u8; 16], value: &str) -> Result<String, String> {
 
     let cipher =
         Aes128Gcm::new_from_slice(key).map_err(|_| "Invalid Floodgate AES key".to_string())?;
-    let nonce = Nonce::from_slice(&iv);
+    let nonce = Nonce::try_from(&iv[..]).map_err(|_| "Invalid Floodgate IV length".to_string())?;
     let plaintext = cipher
         .decrypt(nonce, ciphertext.as_ref())
         .map_err(|_| "Floodgate authentication failed".to_string())?;
@@ -309,7 +309,7 @@ mod tests {
     fn encrypted_hostname(key: [u8; 16], data: &str) -> String {
         let cipher = Aes128Gcm::new_from_slice(&key).unwrap();
         let iv = [7u8; IV_LENGTH];
-        let nonce = Nonce::from_slice(&iv);
+        let nonce = Nonce::try_from(&iv[..]).expect("valid test nonce");
         let ciphertext = cipher.encrypt(nonce, data.as_bytes()).unwrap();
 
         format!(
@@ -324,7 +324,7 @@ mod tests {
         [
             "0",
             "Player",
-            "123456789",
+            "123_456_789",
             "1",
             "en_US",
             "0",
