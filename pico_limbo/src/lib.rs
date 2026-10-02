@@ -81,16 +81,7 @@ pub unsafe extern "C" fn start_app(
         }
     }
 
-    let mut filtered_args = Vec::with_capacity(rust_args.len());
-    for arg in rust_args {
-        if arg == "nogui" || arg == "--nogui" {
-            eprintln!("Warning: ignoring unsupported Java wrapper argument '{arg}'");
-        } else {
-            filtered_args.push(arg);
-        }
-    }
-
-    match Cli::try_parse_from(&filtered_args) {
+    match Cli::try_parse_from(&rust_args) {
         Ok(cli) => {
             let cancellation_token = unsafe { &*token_ptr };
 
