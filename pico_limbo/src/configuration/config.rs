@@ -31,16 +31,11 @@ pub enum ConfigError {
     EnvPlaceholder(#[from] EnvPlaceholderError),
 }
 
-/// Application configuration, serializable to/from TOML.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 #[serde(deny_unknown_fields)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Config {
-    /// Server listening address and port.
-    ///
-    /// Specify the IP address and port the server should bind to.
-    /// Use 0.0.0.0 to listen on all network interfaces.
     pub bind: String,
 
     pub forwarding: ForwardingConfig,
@@ -53,16 +48,12 @@ pub struct Config {
 
     pub connection: ConnectionConfig,
 
-    /// Message sent to the player after spawning in the world.
     pub welcome_message: String,
 
     pub action_bar: String,
 
-    /// Sets the default game mode for players
-    /// Valid values are: "survival", "creative", "adventure" or "spectator"
     pub default_game_mode: GameModeConfig,
 
-    /// If set to true, will spawn the player in hardcode mode
     pub hardcore: bool,
 
     pub compression: CompressionConfig,
@@ -108,35 +99,4 @@ impl Default for Config {
             commands: CommandsConfig::default(),
         }
     }
-}
-
-/// Loads a `Config` from the given path.
-/// If the file does not exist, it will be created (parent dirs too)
-/// and populated with default values.
-pub fn load_or_create<P: AsRef<Path>>(path: P) -> Result<Config, ConfigError> {
-    let path = path.as_ref();
-
-    if path.exists() {
-        let raw_toml_str = fs::read_to_string(path)?;
-
-        if raw_toml_str.trim().is_empty() {
-            create_default_config(path)
-        } else {
-            let expanded_toml_str = expand_env_placeholders(&raw_toml_str)?;
-            let cfg: Config = toml::from_str(expanded_toml_str.as_ref())?;
-            Ok(cfg)
-        }
-    } else {
-        if let Some(dir) = path.parent() {
-            fs::create_dir_all(dir)?;
-        }
-        create_default_config(path)
-    }
-}
-
-fn create_default_config<P: AsRef<Path>>(path: P) -> Result<Config, ConfigError> {
-    let cfg = Config::default();
-    let toml_str = toml::to_string_pretty(&cfg)?;
-    fs::write(path, toml_str)?;
-    Ok(cfg)
 }
