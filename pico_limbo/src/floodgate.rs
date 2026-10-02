@@ -1,6 +1,6 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit},
     Aes128Gcm, Nonce,
+    aead::{Aead, KeyInit},
 };
 use base64::Engine;
 use minecraft_protocol::prelude::Uuid;
@@ -94,7 +94,8 @@ impl FloodgateSettings {
 
             if data.education && !self.education_enabled {
                 return Err(
-                    "Education Floodgate data was received but education support is disabled".into(),
+                    "Education Floodgate data was received but education support is disabled"
+                        .into(),
                 );
             }
 
@@ -321,7 +322,18 @@ mod tests {
 
     fn standard_data() -> String {
         [
-            "0", "Player", "123456789", "1", "en_US", "0", "1", "127.0.0.1", "", "0", "123", "verify",
+            "0",
+            "Player",
+            "123456789",
+            "1",
+            "en_US",
+            "0",
+            "1",
+            "127.0.0.1",
+            "",
+            "0",
+            "123",
+            "verify",
         ]
         .join("\0")
     }
@@ -373,9 +385,11 @@ mod tests {
     fn rejects_multiple_payloads() {
         let key = [2u8; 16];
         let encoded = encrypted_hostname(key, &standard_data());
-        assert!(settings(key)
-            .parse_hostname(&format!("{encoded}\0{encoded}"))
-            .is_err());
+        assert!(
+            settings(key)
+                .parse_hostname(&format!("{encoded}\0{encoded}"))
+                .is_err()
+        );
     }
 
     #[test]
@@ -412,10 +426,7 @@ mod tests {
         settings.education_uuid_legacy = true;
         let data = parse_data(&education_data()).unwrap();
         let (_, uuid) = settings.game_profile(&data).unwrap();
-        assert_eq!(
-            uuid,
-            legacy_education_uuid("tenant", "Student")
-        );
+        assert_eq!(uuid, legacy_education_uuid("tenant", "Student"));
     }
 
     #[test]
