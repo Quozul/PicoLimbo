@@ -40,9 +40,9 @@ enabled = true
 key_file = "key.pem"
 ~~~
 
-The key is a shared secret used to authenticate the encrypted Floodgate player data. Floodgate uses a 128-bit AES key, so PicoLimbo expects the key file to contain the same raw 16-byte key as the proxy. Geyser loads the Floodgate key from the configured key path and uses it for Floodgate encryption. citeturn448733search0turn448733search3turn261574search0
+The key is a shared secret used to authenticate the encrypted Floodgate player data. Floodgate uses a 128-bit AES key, so PicoLimbo expects the key file to contain the same raw 16-byte key as the proxy. Geyser loads the Floodgate key from the configured key path and uses it for Floodgate encryption. See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation for the shared-key setup.
 
-**Never commit or distribute this key to untrusted systems.** Geyser requires backend and proxy Floodgate keys to be identical when Floodgate data is forwarded to a backend. citeturn448733search0
+**Never commit or distribute this key to untrusted systems.** Geyser requires backend and proxy Floodgate keys to be identical when Floodgate data is forwarded to a backend. See the [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/) documentation.
 
 ## Username Prefix
 
@@ -107,7 +107,7 @@ Floodgate data is sent by the proxy to the backend server through the Minecraft 
 
 Install Geyser and Floodgate on the Velocity proxy and configure Geyser to use Floodgate authentication.
 
-When Floodgate data needs to be forwarded to PicoLimbo, enable `send-floodgate-data` in the proxy Floodgate configuration and copy the proxy `key.pem` to the PicoLimbo server. The same key must be used on both sides. citeturn448733search0turn448733search1
+When Floodgate data needs to be forwarded to PicoLimbo, enable `send-floodgate-data` in the proxy Floodgate configuration and copy the proxy `key.pem` to the PicoLimbo server. The same key must be used on both sides. See the [Floodgate proxy setup](https://geysermc.org/wiki/floodgate/setup/proxy-servers/) documentation.
 
 PicoLimbo validates and removes the authenticated Floodgate payload before the remaining hostname is processed.
 
@@ -125,7 +125,7 @@ For the Velocity Modern Forwarding configuration itself, see the [Proxy Integrat
 
 Floodgate data is authenticated with the shared key before PicoLimbo accepts the player identity. PicoLimbo does not trust a Bedrock username or XUID supplied without a valid Floodgate payload.
 
-Keep the Floodgate key private. Anyone who obtains it can forge authenticated Floodgate player data. citeturn448733search0
+Keep the Floodgate key private. Anyone who obtains it can forge authenticated Floodgate player data.
 
 ## Troubleshooting
 
@@ -151,4 +151,4 @@ Also make sure the Education UUID scheme matches the scheme used by EduGeyser/Ed
 
 ### Floodgate data is not received
 
-On the proxy, verify that Floodgate has `send-floodgate-data` enabled when the backend is expected to receive Floodgate data. citeturn448733search0turn448733search3
+On the proxy, verify that Floodgate has `send-floodgate-data` enabled when the backend is expected to receive Floodgate data.
