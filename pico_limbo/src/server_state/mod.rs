@@ -1,8 +1,8 @@
 use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::fly_config::FlyConfig;
-use crate::server::game_mode::GameMode;
 use crate::floodgate::FloodgateSettings;
+use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
 use minecraft_packets::play::boss_bar_packet::{BossBarColor, BossBarDivision};
