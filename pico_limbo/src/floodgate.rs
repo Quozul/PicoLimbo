@@ -408,7 +408,7 @@ mod tests {
         let (username, uuid) = settings.game_profile(&data).unwrap();
 
         assert_eq!(username, ".Player");
-        assert_eq!(uuid, Uuid::from_u64_pair(0, 123456789));
+        assert_eq!(uuid, Uuid::from_u64_pair(0, 123_456_789));
     }
 
     #[test]
