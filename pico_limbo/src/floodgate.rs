@@ -423,7 +423,7 @@ mod tests {
         assert!(!data.education);
         assert!(data.tenant_id.is_empty());
 
-        let (username, uuid) = settings(key).game_profile(&data).unwrap();
+        let (username, uuid) = settings.game_profile(&data).unwrap();
         assert_eq!(username, ".Player");
         assert_eq!(uuid, Uuid::from_u64_pair(0, 123_456_789));
     }
