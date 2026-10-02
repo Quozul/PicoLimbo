@@ -57,7 +57,9 @@ Integrates with all major Minecraft proxies:
 - BungeeCord (Legacy Forwarding)
 - BungeeGuard & BungeeGuardPlus authentication
 
-PicoLimbo also supports Floodgate data forwarded from a proxy using Geyser/Floodgate. See the [Floodgate documentation](https://picolimbo.quozul.dev/config/floodgate.html) for configuration and testing instructions.
+PicoLimbo also supports native Floodgate data forwarded by a proxy using Geyser/Floodgate, including Education Edition connections through EduGeyser/EduFloodgate. Floodgate support is handled directly by PicoLimbo and does not require Floodgate to be installed on the PicoLimbo server itself.
+
+See the [Floodgate documentation](https://picolimbo.quozul.dev/config/floodgate.html) for configuration details and proxy setup.
 
 ### ⚙️ Highly Configurable
 
