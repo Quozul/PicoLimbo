@@ -119,7 +119,7 @@ With Modern Forwarding enabled, PicoLimbo performs the Velocity forwarding excha
 
 This means `education = true` is still required when EduGeyser/EduFloodgate sends an Education player, even when Modern Forwarding is enabled.
 
-For the Velocity Modern Forwarding configuration itself, see the [Proxy Integration](./proxy-integration.md) documentation.
+For the Velocity Modern Forwarding configuration itself, see the [Proxy Integration](./proxy-integration.html) documentation.
 
 ## Security
 
