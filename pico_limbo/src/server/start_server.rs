@@ -75,8 +75,8 @@ fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
     let forwarding: TaggedForwarding = cfg.forwarding.into();
 
     if let FloodgateConfig::Enabled(config) = cfg.floodgate {
-        let floodgate =
-            FloodgateSettings::from_config(&config).map_err(ServerStateBuilderError::Floodgate)?;
+        let floodgate = FloodgateSettings::from_config(&config)
+            .map_err(|error| ServerStateBuilderError::Floodgate(error.to_string()))?;
         server_state_builder.floodgate(floodgate);
     }
 
