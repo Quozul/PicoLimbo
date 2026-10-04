@@ -157,10 +157,7 @@ impl FloodgateSettings {
         )
     }
 
-    pub fn game_profile(
-        &self,
-        data: &FloodgateData,
-    ) -> Result<(String, Uuid), FloodgateError> {
+    pub fn game_profile(&self, data: &FloodgateData) -> Result<(String, Uuid), FloodgateError> {
         let prefix = if data.education {
             &self.education_prefix
         } else {
@@ -248,8 +245,7 @@ fn decrypt(key: &[u8; 16], value: &str) -> Result<String, FloodgateError> {
         return Err(FloodgateError::InvalidCiphertextLength);
     }
 
-    let cipher =
-        Aes128Gcm::new_from_slice(key).map_err(|_| FloodgateError::InvalidAesKey)?;
+    let cipher = Aes128Gcm::new_from_slice(key).map_err(|_| FloodgateError::InvalidAesKey)?;
     let nonce = Nonce::try_from(&iv[..]).map_err(|_| FloodgateError::InvalidIvLength)?;
     let plaintext = cipher
         .decrypt(&nonce, ciphertext.as_ref())
