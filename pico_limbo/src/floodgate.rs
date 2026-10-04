@@ -291,7 +291,7 @@ fn education_uuid(oid: &str) -> Result<Uuid, FloodgateError> {
     let parsed = uuid::Uuid::parse_str(oid)?;
     let value = parsed.as_u128();
     let msb = (value >> 64) as u64;
-    let lsb = (value & u128::from(u64::MAX)) as u64;
+    let lsb = u64::try_from(value & u128::from(u64::MAX)).unwrap_or_default();
 
     let upper = ((msb >> 16) << 12) | (msb & 0xFFF);
     let lower = (lsb << 2) >> 60;
