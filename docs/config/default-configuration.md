@@ -36,6 +36,10 @@ flying_speed = 0.05
 # Disable forwarding
 method = "NONE"
 
+[floodgate]
+# Enable authenticated Floodgate data forwarding
+enabled = false
+
 [world]
 # Custom spawn position as [x, y, z] coordinates
 spawn_position = [0.0, 320.0, 0.0]

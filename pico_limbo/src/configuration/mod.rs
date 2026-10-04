@@ -4,6 +4,7 @@ mod compression;
 pub mod config;
 mod connection_config;
 mod env_placeholders;
+pub mod floodgate;
 pub mod fly_config;
 mod forwarding;
 mod game_mode_config;
