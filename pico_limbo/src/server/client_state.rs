@@ -116,19 +116,6 @@ impl ClientState {
         }
     }
 
-    pub fn replace_game_profile(&mut self, game_profile: GameProfile) {
-        self.game_profile = Some(game_profile);
-        if let Some(ref existing_game_profile) = self.game_profile
-            && !existing_game_profile.is_anonymous()
-        {
-            info!(
-                "UUID of player {} is {}",
-                existing_game_profile.username(),
-                existing_game_profile.uuid()
-            );
-        }
-    }
-
     pub fn game_profile(&self) -> Option<GameProfile> {
         self.game_profile.clone()
     }
