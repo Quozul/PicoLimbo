@@ -83,7 +83,7 @@ fn begin_login(
             .floodgate()
             .game_profile(&data)
             .map_err(|error| PacketHandlerError::invalid_state(&error))?;
-        client_state.replace_game_profile(GameProfile::new(&username, uuid, None));
+        client_state.set_game_profile(GameProfile::new(&username, uuid, None));
         return Ok(());
     }
 
