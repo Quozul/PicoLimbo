@@ -37,39 +37,14 @@ impl Default for EnabledFloodgateConfig {
 }
 
 #[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-#[allow(clippy::struct_excessive_bools, dead_code)]
 pub struct DisabledFloodgateConfig {
     #[serde(deserialize_with = "require_false")]
     pub enabled: bool,
-
-    // These fields existed in the original PR schema. Keep accepting them while disabled so
-    // existing configs can be upgraded without silently changing the rest of PicoLimbo's config.
-    #[serde(default, skip_serializing)]
-    pub key_file: String,
-    #[serde(default, skip_serializing)]
-    pub username_prefix: String,
-    #[serde(default, skip_serializing)]
-    pub replace_spaces: bool,
-    #[serde(default, skip_serializing)]
-    pub education: bool,
-    #[serde(default, skip_serializing)]
-    pub education_username_prefix: String,
-    #[serde(default, skip_serializing)]
-    pub education_uuid_legacy: bool,
 }
 
 impl Default for FloodgateConfig {
     fn default() -> Self {
-        Self::Disabled(DisabledFloodgateConfig {
-            enabled: false,
-            key_file: "key.pem".into(),
-            username_prefix: ".".into(),
-            replace_spaces: true,
-            education: false,
-            education_username_prefix: "+".into(),
-            education_uuid_legacy: false,
-        })
+        Self::Disabled(DisabledFloodgateConfig { enabled: false })
     }
 }
 
@@ -99,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn disabled_config_migrates_old_optional_fields() {
+    fn disabled_config_accepts_legacy_fields() {
         let config: FloodgateConfig = toml::from_str(
             r#"
             enabled = false
@@ -114,8 +89,9 @@ mod tests {
         .unwrap();
 
         assert!(matches!(config, FloodgateConfig::Disabled(_)));
-
-        let serialized = toml::to_string_pretty(&config).unwrap();
-        assert_eq!(serialized.trim(), "enabled = false");
+        assert_eq!(
+            toml::to_string_pretty(&config).unwrap().trim(),
+            "enabled = false"
+        );
     }
 }
