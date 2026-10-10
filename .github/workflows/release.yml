@@ -484,7 +484,7 @@ jobs:
 
       - name: Notify Discord
         env:
-          WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TAG_NAME: ${{ steps.release_info.outputs.tag_name }}
         run: |
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG_NAME}"
