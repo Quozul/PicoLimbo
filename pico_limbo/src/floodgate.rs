@@ -464,7 +464,7 @@ mod tests {
         assert_eq!(data.username, "Player");
         assert_eq!(data.xuid, "123456789");
         assert!(!data.education);
-        assert!(data.tenant_id.is_empty());
+        assert_eq!(data.tenant_id, "");
 
         let (username, uuid) = settings.game_profile(&data).unwrap();
         assert_eq!(username, ".Player");

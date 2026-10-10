@@ -44,7 +44,7 @@ pub async fn start_server(cli: &Cli, cancellation_token: Option<&CancellationTok
         }
         Err(err) => {
             error!("Failed to start PicoLimbo: {err}");
-            ExitCode::SUCCESS
+            ExitCode::FAILURE
         }
     }
 }

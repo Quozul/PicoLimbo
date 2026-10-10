@@ -257,7 +257,7 @@ fn test_player_nan() {
     let (name, value) = from_path(&path).expect("Failed to parse Player-nan-value.dat");
 
     // Then
-    assert!(name.is_empty());
+    assert_eq!(name, "");
 
     let y = value
         .get_compound()
@@ -309,7 +309,7 @@ fn test_nameless_root_hello_world_decode() {
     let (name, value) = from_path_with_options(&path, options).expect("Failed to parse");
 
     // Then
-    assert!(name.is_empty());
+    assert_eq!(name, "");
     assert_eq!(
         value,
         Value::Compound(IndexMap::from([(
