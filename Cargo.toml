@@ -30,7 +30,7 @@ aes-gcm = "0.11.1"
 anyhow = "1.0.104"
 base64 = "0.23.1"
 byteorder = "1.5.0"
-clap = { version = "4.6.6", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 flate2 = "1.1.10"
 futures = "0.3.34"
 hmac = "0.13.0"
@@ -41,23 +41,23 @@ phf_codegen = "0.14.0"
 proc-macro2 = "1.0.107"
 quick-xml = "0.42.0"
 quote = "1.0.47"
-rand = "0.10.2"
+rand = "0.10.3"
 rayon = "1.12.0"
 regex = "1.13.1"
-reqwest = { version = "0.13.4", default-features = false, features = ["json", "rustls", "http2"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls", "http2"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_bytes = "0.11.19"
 serde_json = "1.0.151"
 serde_test = "1.0.177"
 sha2 = "0.11.0"
 subtle = "2.6.1"
-syn = { version = "3.0.5", features = ["full"] }
-thiserror = "2.0.20"
-tokio = { version = "1.53.1", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
-toml = "1.1.5"
+syn = { version = "3.0.7", features = ["full"] }
+thiserror = "2.0.21"
+tokio = { version = "1.53.2", features = ["rt", "rt-multi-thread", "macros", "io-util", "net", "time", "sync", "signal"] }
+toml = "1.1.8"
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-uuid = { version = "1.26.0", features = ["v4"] }
+uuid = { version = "1.28.0", features = ["v4"] }
 walkdir = "2.5.0"
-tokio-util = { version = "0.7.19", features = ["rt"] }
+tokio-util = { version = "0.7.20", features = ["rt"] }

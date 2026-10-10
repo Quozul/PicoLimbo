@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for Floodgate/EduFloodgate
 
+### Updated
+
+- Upgraded to Rust 1.99.0 and updated dependencies
+
 ## [1.14.1+mc26.3] - 2026-09-23
 
 ### Fixed
