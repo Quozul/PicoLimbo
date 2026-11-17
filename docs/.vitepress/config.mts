@@ -74,6 +74,7 @@ export default defineConfig({
 				text: "Developer",
 				items: [
 					{ text: "Plugin Development", link: "/developer/plugins.html" },
+					{ text: "Plugin API Expansion", link: "/developer/plugin-api-expansion.html" },
 					{ text: "Customizing Server Brand", link: "/developer/customizing-server-brand.html" },
 					{ text: "Building Java Wrapper", link: "/developer/building-java-wrapper.html" },
 				],

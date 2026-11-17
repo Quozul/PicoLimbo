@@ -12,7 +12,6 @@ use thiserror::Error;
 use tracing::{error, info, warn};
 
 const PLUGIN_API_VERSION: u32 = 1;
-const MAX_PLUGINS: usize = 64;
 const MAX_MANIFEST_BYTES: u64 = 16 * 1024;
 const MAX_SCRIPT_BYTES: u64 = 256 * 1024;
 const MAX_OPERATIONS: u64 = 100_000;
@@ -107,10 +106,9 @@ impl PluginManager {
             .collect::<Vec<_>>();
         entries.sort();
 
-        let total_entries = entries.len();
         let mut manager = Self::default();
         let mut registered_commands = HashSet::new();
-        for path in entries.into_iter().take(MAX_PLUGINS) {
+        for path in entries {
             match Self::load_plugin(&path) {
                 Ok(plugin) => {
                     if let Some(command) = plugin
@@ -140,14 +138,6 @@ impl PluginManager {
                     "Skipping PicoLimbo plugin"
                 ),
             }
-        }
-
-        if total_entries > MAX_PLUGINS {
-            warn!(
-                total = total_entries,
-                limit = MAX_PLUGINS,
-                "PicoLimbo plugin limit reached; additional plugins were ignored"
-            );
         }
 
         Ok(manager)
@@ -589,6 +579,31 @@ fn on_command(command, player, args) {
             manager.execute_command("count", "PicoPlayer"),
             Some("again".to_owned())
         );
+        drop(manager);
+        fs::remove_dir_all(directory).expect("remove temporary directory");
+    }
+
+    #[test]
+    fn loads_more_than_sixty_four_plugins_without_an_arbitrary_count_limit() {
+        let directory = temporary_directory();
+        fs::create_dir_all(&directory).expect("create plugin directory");
+
+        for index in 0..65 {
+            let id = format!("plugin-{index:02}");
+            let plugin_directory = directory.join(&id);
+            fs::create_dir_all(&plugin_directory).expect("create plugin directory");
+            fs::write(
+                plugin_directory.join("plugin.toml"),
+                format!("id = \"{id}\"\nname = \"{id}\"\nversion = \"1.0.0\"\napi_version = 1\n"),
+            )
+            .expect("write manifest");
+            fs::write(plugin_directory.join("main.rhai"), "fn on_enable() { }")
+                .expect("write script");
+        }
+
+        let manager = PluginManager::load(&directory).expect("load plugin directory");
+        assert_eq!(manager.len(), 65);
+
         drop(manager);
         fs::remove_dir_all(directory).expect("remove temporary directory");
     }

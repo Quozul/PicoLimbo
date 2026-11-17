@@ -4,6 +4,8 @@ PicoLimbo has a small embedded plugin runtime. A fresh installation creates a `p
 
 The first runtime is [Rhai](https://rhai.rs/), a Rust-embedded scripting language with a syntax that is approachable for people and code-generation tools. The host API is versioned separately from PicoLimbo's Minecraft protocol support.
 
+The current runtime is an initial foundation, not a Bukkit-equivalent API yet. The [Plugin API Expansion architecture](/developer/plugin-api-expansion.html) documents the intended multi-runtime API, raw packet access, networking capabilities, mutable world API, JVM plugins, compatibility ports, and implementation stages. It clearly separates implemented features from the expansion target.
+
 ## Install a plugin
 
 Create one directory per plugin under `plugins/`. The directory name must match the plugin ID.
