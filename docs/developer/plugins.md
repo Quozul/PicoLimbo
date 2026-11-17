@@ -127,8 +127,9 @@ The v1 runtime exposes only a deliberately small host API:
 | `commands.register` | Allows the plugin to declare manifest commands |
 | `player.read` | Makes the invoking player's username available to `on_command` and adds `player` / `uuid` to player event payloads |
 | `player.message` | Allows a command callback's returned MiniMessage to be sent to the player |
-| `server.info` | `server_api_version()` host helper |
+| `server.info` | `server_api_version()`, `server_online_players()` |
 | `services` | `service_register(name, value)` and `service_get(name)` for cross-plugin string services |
+| `scheduler` | `schedule_later(ms, fn_name)` and `schedule_every(ms, fn_name)` |
 
 No filesystem, network, process execution, native library loading, or dynamic module resolver is exposed to scripts. Permissions are default-deny. Do not assume a permission exists just because a future API version may add it.
 
@@ -143,3 +144,25 @@ A plugin must declare the exact Plugin API version it targets. PicoLimbo skips p
 ## Contributing
 
 Community plugins can be maintained in their own repositories and shared through the PicoLimbo community projects page. Keep optional functionality in plugins instead of adding feature-specific code to PicoLimbo's core.
+
+
+## Scheduler
+
+With the `scheduler` permission, Rhai plugins can register named callbacks:
+
+```rhai
+fn on_enable() {
+    schedule_later(5000, "later_hello");
+    schedule_every(30000, "heartbeat");
+}
+
+fn later_hello() {
+    log_info("5 seconds later");
+}
+
+fn heartbeat() {
+    log_info("heartbeat; online=" + server_online_players());
+}
+```
+
+Tasks are owned by the plugin id. Failing callbacks disable the plugin. The host drains due tasks on the keep-alive path.

@@ -246,6 +246,7 @@ async fn read(
             process_packet(client_data, server_state, raw_packet, was_in_play_state).await?;
         }
         () = client_data.keep_alive_tick() => {
+            server_state.read().await.tick_plugins();
             send_keep_alive(client_data).await?;
         }
     }

@@ -326,6 +326,15 @@ impl ServerState {
     pub fn decrement(&self) {
         self.connected_clients.fetch_sub(1, Ordering::SeqCst);
     }
+
+    pub fn tick_plugins(&self) {
+        let count = self.connected_clients.load(Ordering::SeqCst);
+        crate::plugins::PluginManager::set_online_players(count);
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .tick();
+    }
 }
 
 #[derive(Default)]

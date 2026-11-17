@@ -30,6 +30,26 @@ fn shared_services() -> &'static std::sync::Mutex<std::collections::HashMap<Stri
     SERVICES.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
+fn shared_online_players() -> &'static std::sync::atomic::AtomicU32 {
+    static COUNT: std::sync::OnceLock<std::sync::atomic::AtomicU32> = std::sync::OnceLock::new();
+    COUNT.get_or_init(|| std::sync::atomic::AtomicU32::new(0))
+}
+
+#[derive(Clone)]
+struct ScheduledTask {
+    plugin_id: String,
+    function_name: String,
+    run_at: Instant,
+    interval: Option<Duration>,
+}
+
+fn shared_schedule() -> &'static std::sync::Mutex<Vec<ScheduledTask>> {
+    static TASKS: std::sync::OnceLock<std::sync::Mutex<Vec<ScheduledTask>>> =
+        std::sync::OnceLock::new();
+    TASKS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
+
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PluginManifest {
@@ -119,6 +139,7 @@ struct PluginPermissions {
     player_message: bool,
     server_info: bool,
     services: bool,
+    scheduler: bool,
 }
 
 struct PluginHooks {
@@ -286,6 +307,26 @@ impl PluginRuntime {
             }
         }
     }
+
+    fn call_named(&mut self, name: &str) -> Result<(), String> {
+        match self {
+            Self::Rhai { engine, ast, scope } => engine
+                .call_fn::<()>(scope, ast, name, ())
+                .map_err(|error| error.to_string()),
+            #[cfg(feature = "plugin-lua")]
+            Self::Lua {
+                lua,
+                operation_budget,
+            } => {
+                operation_budget.store(0, Ordering::Relaxed);
+                let function = lua
+                    .globals()
+                    .get::<mlua::Function>(name)
+                    .map_err(|error| error.to_string())?;
+                function.call::<()>(()).map_err(|error| error.to_string())
+            }
+        }
+    }
 }
 
 /// Owns the scripts loaded by one `PicoLimbo` server instance.
@@ -446,6 +487,10 @@ impl PluginManager {
                     .permissions
                     .iter()
                     .any(|permission| permission == "services"),
+                scheduler: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "scheduler"),
             },
             hooks: PluginHooks {
                 on_event: has_on_event,
@@ -544,6 +589,60 @@ impl PluginManager {
             .filter(|plugin| plugin.enabled)
             .map(|plugin| (plugin.id.clone(), plugin.name.clone(), plugin.version.clone()))
             .collect()
+    }
+
+    /// Update the process-local online player counter used by `server.info` helpers.
+    pub fn set_online_players(count: u32) {
+        shared_online_players().store(count, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    /// Run due scheduled tasks. Safe to call frequently (e.g. keep-alive path).
+    pub fn tick(&mut self) {
+        let now = Instant::now();
+        let Ok(mut tasks) = shared_schedule().lock() else {
+            return;
+        };
+        let mut due = Vec::new();
+        let mut remaining = Vec::new();
+        for task in tasks.drain(..) {
+            if task.run_at <= now {
+                due.push(task);
+            } else {
+                remaining.push(task);
+            }
+        }
+        *tasks = remaining;
+        drop(tasks);
+
+        for task in due {
+            let Some(plugin) = self
+                .plugins
+                .iter_mut()
+                .find(|plugin| plugin.enabled && plugin.id == task.plugin_id)
+            else {
+                continue;
+            };
+            if let Err(err) = plugin.runtime.call_named(&task.function_name) {
+                warn!(
+                    plugin = %plugin.id,
+                    function = %task.function_name,
+                    error = %err,
+                    "Scheduled plugin callback failed; disabling plugin"
+                );
+                plugin.enabled = false;
+                continue;
+            }
+            if let Some(interval) = task.interval {
+                if let Ok(mut tasks) = shared_schedule().lock() {
+                    tasks.push(ScheduledTask {
+                        plugin_id: task.plugin_id,
+                        function_name: task.function_name,
+                        run_at: Instant::now() + interval,
+                        interval: Some(interval),
+                    });
+                }
+            }
+        }
     }
 
     /// Command names registered by enabled plugins.
@@ -904,6 +1003,37 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
 
     if permissions.iter().any(|permission| permission == "server.info") {
         engine.register_fn("server_api_version", || PLUGIN_API_VERSION as i64);
+        engine.register_fn("server_online_players", || {
+            shared_online_players().load(std::sync::atomic::Ordering::SeqCst) as i64
+        });
+    }
+
+    if permissions.iter().any(|permission| permission == "scheduler") {
+        let id = plugin_id.to_owned();
+        engine.register_fn("schedule_later", move |delay_ms: i64, function_name: &str| {
+            let delay_ms = delay_ms.max(0) as u64;
+            if let Ok(mut tasks) = shared_schedule().lock() {
+                tasks.push(ScheduledTask {
+                    plugin_id: id.clone(),
+                    function_name: function_name.to_owned(),
+                    run_at: Instant::now() + Duration::from_millis(delay_ms),
+                    interval: None,
+                });
+            }
+        });
+        let id = plugin_id.to_owned();
+        engine.register_fn("schedule_every", move |interval_ms: i64, function_name: &str| {
+            let interval_ms = interval_ms.max(1) as u64;
+            let interval = Duration::from_millis(interval_ms);
+            if let Ok(mut tasks) = shared_schedule().lock() {
+                tasks.push(ScheduledTask {
+                    plugin_id: id.clone(),
+                    function_name: function_name.to_owned(),
+                    run_at: Instant::now() + interval,
+                    interval: Some(interval),
+                });
+            }
+        });
     }
 
     engine
