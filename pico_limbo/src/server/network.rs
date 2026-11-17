@@ -218,6 +218,16 @@ async fn process_packet(
         }
     }
 
+    {
+        let mut client_state = client_data.client().await;
+        let username = client_state.get_username();
+        if !username.is_empty() {
+            if let Some(reason) = server_state.read().await.take_plugin_kick(&username) {
+                client_state.kick(&reason);
+            }
+        }
+    }
+
     let should_kick = {
         let client_state = client_data.client().await;
         client_state.should_kick()

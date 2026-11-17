@@ -49,6 +49,14 @@ fn shared_schedule() -> &'static std::sync::Mutex<Vec<ScheduledTask>> {
     TASKS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
 }
 
+fn shared_kick_requests() -> &'static std::sync::Mutex<std::collections::HashMap<String, String>> {
+    static KICKS: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashMap<String, String>>,
+    > = std::sync::OnceLock::new();
+    KICKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -137,6 +145,7 @@ struct LoadedPlugin {
 struct PluginPermissions {
     player_read: bool,
     player_message: bool,
+    player_kick: bool,
     server_info: bool,
     services: bool,
     scheduler: bool,
@@ -246,7 +255,8 @@ impl PluginRuntime {
         }
     }
 
-    fn on_event(&mut self, event: &str, player: Option<(&str, &str)>) -> Result<(), String> {
+    /// Returns Ok(true) when the handler cancelled the event.
+    fn on_event(&mut self, event: &str, player: Option<(&str, &str)>) -> Result<bool, String> {
         match self {
             Self::Rhai { engine, ast, scope } => {
                 let mut payload = Map::new();
@@ -255,9 +265,36 @@ impl PluginRuntime {
                     payload.insert("player".into(), Dynamic::from(name.to_owned()));
                     payload.insert("uuid".into(), Dynamic::from(uuid.to_owned()));
                 }
-                engine
-                    .call_fn::<()>(scope, ast, "on_event", (payload,))
-                    .map_err(|error| error.to_string())
+                match engine.call_fn::<Dynamic>(scope, ast, "on_event", (payload,)) {
+                    Ok(value) => Ok(value.as_bool().unwrap_or(false)),
+                    Err(error) => {
+                        // Backward compatible: void handlers that return nothing.
+                        let message = error.to_string();
+                        if message.contains("Function not found") {
+                            return Err(message);
+                        }
+                        // Rhai unit return often fails bool cast; treat non-bool success as not cancelled.
+                        // Re-run is expensive; interpret common unit-return error as Ok(false).
+                        if message.contains("Output type") || message.contains("cast") {
+                            // Prefer best-effort non-cancel when return type mismatches.
+                            Ok(false)
+                        } else {
+                            // Try calling as () for legacy scripts.
+                            engine
+                                .call_fn::<()>(scope, ast, "on_event", ({
+                                    let mut payload = Map::new();
+                                    payload.insert("event".into(), Dynamic::from(event.to_owned()));
+                                    if let Some((name, uuid)) = player {
+                                        payload.insert("player".into(), Dynamic::from(name.to_owned()));
+                                        payload.insert("uuid".into(), Dynamic::from(uuid.to_owned()));
+                                    }
+                                    payload
+                                },))
+                                .map(|_| false)
+                                .map_err(|error| error.to_string())
+                        }
+                    }
+                }
             }
             #[cfg(feature = "plugin-lua")]
             Self::Lua {
@@ -281,9 +318,19 @@ impl PluginRuntime {
                         .set("uuid", uuid)
                         .map_err(|error| error.to_string())?;
                 }
-                function
-                    .call::<()>(payload)
-                    .map_err(|error| error.to_string())
+                match function.call::<Option<bool>>(payload) {
+                    Ok(Some(cancelled)) => Ok(cancelled),
+                    Ok(None) => Ok(false),
+                    Err(error) => {
+                        // Legacy void handlers.
+                        let message = error.to_string();
+                        if message.contains("nil") || message.contains("convert") {
+                            Ok(false)
+                        } else {
+                            Err(message)
+                        }
+                    }
+                }
             }
         }
     }
@@ -491,6 +538,10 @@ impl PluginManager {
                     .permissions
                     .iter()
                     .any(|permission| permission == "scheduler"),
+                player_kick: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "player.kick"),
             },
             hooks: PluginHooks {
                 on_event: has_on_event,
@@ -545,7 +596,8 @@ impl PluginManager {
     }
 
     /// Dispatch a server event to every enabled plugin with an `on_event(event)` function.
-    pub fn emit_player_event(&mut self, event: &str, player_name: &str, player_uuid: &str) {
+    /// Dispatch a player-scoped event. Returns `true` if any handler cancelled it.
+    pub fn emit_player_event(&mut self, event: &str, player_name: &str, player_uuid: &str) -> bool {
         // Deterministic order: higher EventPriority first, then plugin id.
         let mut order: Vec<usize> = (0..self.plugins.len()).collect();
         order.sort_by(|&a, &b| {
@@ -555,23 +607,47 @@ impl PluginManager {
                 .then_with(|| self.plugins[a].id.cmp(&self.plugins[b].id))
         });
 
+        let mut cancelled = false;
         for index in order {
             let plugin = &mut self.plugins[index];
             if !plugin.enabled || !plugin.hooks.on_event {
                 continue;
             }
+            // Monitor priority observes only; cannot cancel.
+            let can_cancel = plugin.event_priority != EventPriority::Monitor;
             let player = plugin
                 .permissions
                 .player_read
                 .then_some((player_name, player_uuid));
-            if let Err(err) = plugin.runtime.on_event(event, player) {
-                warn!(
-                    plugin = %plugin.id,
-                    error = %err,
-                    "PicoLimbo plugin event handler failed; disabling plugin"
-                );
-                plugin.enabled = false;
+            match plugin.runtime.on_event(event, player) {
+                Ok(true) if can_cancel => {
+                    cancelled = true;
+                }
+                Ok(_) => {}
+                Err(err) => {
+                    warn!(
+                        plugin = %plugin.id,
+                        error = %err,
+                        "PicoLimbo plugin event handler failed; disabling plugin"
+                    );
+                    plugin.enabled = false;
+                }
             }
+        }
+        cancelled
+    }
+
+    /// Take a pending plugin kick reason for `player_name`, if any.
+    pub fn take_kick_request(player_name: &str) -> Option<String> {
+        shared_kick_requests()
+            .lock()
+            .ok()
+            .and_then(|mut map| map.remove(player_name))
+    }
+
+    pub fn request_kick(player_name: impl Into<String>, reason: impl Into<String>) {
+        if let Ok(mut map) = shared_kick_requests().lock() {
+            map.insert(player_name.into(), reason.into());
         }
     }
 
@@ -822,7 +898,13 @@ fn build_lua_runtime(
             .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
-    if permissions.iter().any(|permission| permission == "scheduler") {
+    if permissions.iter().any(|permission| permission == "player.kick") {
+        engine.register_fn("player_kick", |player_name: &str, reason: &str| {
+            PluginManager::request_kick(player_name, reason);
+        });
+    }
+
+        if permissions.iter().any(|permission| permission == "scheduler") {
         let plugin_id = id.to_owned();
         lua.globals()
             .set(
@@ -1089,6 +1171,26 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
                 .ok()
                 .and_then(|guard| guard.get(name).cloned())
                 .unwrap_or_default()
+        });
+        engine.register_fn("service_list", || -> rhai::Array {
+            shared_services()
+                .lock()
+                .ok()
+                .map(|guard| {
+                    guard
+                        .keys()
+                        .cloned()
+                        .map(Dynamic::from)
+                        .collect::<rhai::Array>()
+                })
+                .unwrap_or_default()
+        });
+        engine.register_fn("service_remove", |name: &str| -> bool {
+            shared_services()
+                .lock()
+                .ok()
+                .map(|mut guard| guard.remove(name).is_some())
+                .unwrap_or(false)
         });
     }
 

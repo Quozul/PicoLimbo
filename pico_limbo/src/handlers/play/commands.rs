@@ -103,13 +103,23 @@ fn run_command(
                 }
             }
         }
-    } else if let Some(response) =
-        server_state.execute_plugin_command(command, &client_state.get_username())
-        && !response.is_empty()
-    {
-        match parse_mini_message(&response) {
-            Ok(component) => send_message(batch, &component, client_state.protocol_version()),
-            Err(err) => warn!(error = %err, "Plugin command returned invalid MiniMessage"),
+    } else {
+        let username = client_state.get_username();
+        let uuid = client_state
+            .game_profile()
+            .map(|profile| profile.uuid().to_string())
+            .unwrap_or_default();
+        // Cancellable player_command event before plugin command dispatch.
+        if server_state.emit_player_plugin_event("player_command", &username, &uuid) {
+            return;
+        }
+        if let Some(response) = server_state.execute_plugin_command(command, &username)
+            && !response.is_empty()
+        {
+            match parse_mini_message(&response) {
+                Ok(component) => send_message(batch, &component, client_state.protocol_version()),
+                Err(err) => warn!(error = %err, "Plugin command returned invalid MiniMessage"),
+            }
         }
     }
 }

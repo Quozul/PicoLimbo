@@ -95,7 +95,9 @@ fn on_disable() {
 
 Every plugin receives a mutable `state` map. Values persist between that plugin's callbacks for the lifetime of the server process, but are reset when PicoLimbo restarts. Use it for counters, settings and other small in-memory plugin state; it is not a disk-backed database.
 
-Current events: `player_login`, `player_quit`.
+Current events: `player_login`, `player_quit`, `player_command`.
+
+Handlers may return `true` to cancel the event (ignored for Monitor priority). Void/legacy handlers are treated as not cancelling.
 
 Event handlers run in priority order (Highest → Lowest). Script plugins currently share Normal priority; load order is influenced by `depends_on` / `soft_depends`.
 
@@ -128,8 +130,9 @@ The v1 runtime exposes only a deliberately small host API:
 | `player.read` | Makes the invoking player's username available to `on_command` and adds `player` / `uuid` to player event payloads |
 | `player.message` | Allows a command callback's returned MiniMessage to be sent to the player |
 | `server.info` | `server_api_version()`, `server_online_players()` |
-| `services` | `service_register(name, value)` and `service_get(name)` for cross-plugin string services |
+| `services` | `service_register`, `service_get`, `service_list`, `service_remove` (string KV, namespaced by plugin on register) |
 | `scheduler` | `schedule_later(ms, fn_name)` and `schedule_every(ms, fn_name)` |
+| `player.kick` | `player_kick(name, reason)` queues a disconnect processed on the client loop |
 
 No filesystem, network, process execution, native library loading, or dynamic module resolver is exposed to scripts. Permissions are default-deny. Do not assume a permission exists just because a future API version may add it.
 
@@ -166,3 +169,15 @@ fn heartbeat() {
 ```
 
 Tasks are owned by the plugin id. Failing callbacks disable the plugin. The host drains due tasks on the keep-alive path.
+
+
+## Player facade (limbo-scoped)
+
+Limbo does not expose inventory/world mutation. Available player interactions:
+
+- Event payload fields `player` / `uuid` when `player.read` is granted
+- Command reply MiniMessage when `player.message` is granted
+- `player_kick(name, reason)` when `player.kick` is granted (applied on the next client processing tick)
+- Built-in `/transfer` remains a server command, not a plugin host helper yet
+
+World/packet interception APIs are intentionally out of scope for this foundation.
