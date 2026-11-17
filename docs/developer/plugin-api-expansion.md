@@ -27,7 +27,7 @@ Use runtime adapters over one host API. A plugin manifest selects its runtime an
 | Java API | JVM plugins and a practical path for ports of Java projects | .jar |
 | Native Rust/C ABI | Expert-only, explicitly trusted extensions | Platform binary |
 
-Rhai remains the lightweight default. Lua is a strong second scripting runtime because mlua supports multiple Lua versions, Luau, async functions, userdata, and feature selection. JavaScript is an optional runtime: Boa is embeddable but its own documentation describes it as experimental, so it must not become a default dependency until its maturity and performance are evaluated. Wasmtime is the isolation boundary for portable compiled plugins; its fuel and resource-limiter facilities can enforce CPU and linear-memory budgets.
+Rhai remains the lightweight default. The current branch also implements Lua 5.4 as an optional `plugin-lua` runtime using mlua, with a safe standard-library set, a VM memory limit, and an instruction budget. Lua is a strong second scripting runtime because mlua supports multiple Lua versions, Luau, async functions, userdata, and feature selection. JavaScript is an optional runtime: Boa is embeddable but its own documentation describes it as experimental, so it must not become a default dependency until its maturity and performance are evaluated. Wasmtime is the isolation boundary for portable compiled plugins; its fuel and resource-limiter facilities can enforce CPU and linear-memory budgets.
 
 References:
 - https://rhai.rs/book/
@@ -192,7 +192,7 @@ Obfuscation is a distribution option, not a security boundary. Do not promise th
 4. Implement typed packet events and raw packet read/write APIs with protocol-state safety.
 5. Build the mutable chunk/section overlay and transactional world-edit/schematic API.
 6. Add explicit async HTTP capability and external package/dependency resolution.
-7. Add Lua runtime adapter; evaluate Boa for JavaScript and Wasmtime Component Model for compiled portable plugins.
+7. Extend the Lua adapter with safe plugin-local module imports; evaluate Boa for JavaScript and Wasmtime Component Model for compiled portable plugins.
 8. Add the JVM plugin SDK and compatibility facades.
 9. Port TAB, Essentials-style utilities, LuckPerms-style permissions, and RustyConnector as separate projects/plugins with independent tests.
 

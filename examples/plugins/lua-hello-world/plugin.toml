@@ -1,0 +1,8 @@
+id = "lua-hello-world"
+name = "Lua Hello World"
+version = "1.0.0"
+api_version = 1
+runtime = "lua"
+entrypoint = "main.lua"
+commands = ["luahello"]
+permissions = ["logging", "commands.register", "player.read", "player.message"]
