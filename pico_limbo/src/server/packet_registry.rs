@@ -21,6 +21,7 @@ use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
 use minecraft_packets::play::open_screen_packet::OpenScreenPacket;
+use minecraft_packets::play::container_set_slot_packet::{ContainerSetDataPacket, ContainerSetSlotPacket};
 use minecraft_packets::play::use_item_on_packet::UseItemOnPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
@@ -286,6 +287,20 @@ pub enum PacketRegistry {
         name = "minecraft:open_screen"
     )]
     OpenScreen(OpenScreenPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:container_set_slot"
+    )]
+    ContainerSetSlot(ContainerSetSlotPacket),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:container_set_data"
+    )]
+    ContainerSetData(ContainerSetDataPacket),
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:light_update")]
     UpdateLight(Box<UpdateLightPacket>),

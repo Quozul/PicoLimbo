@@ -59,12 +59,12 @@ impl LecternBlockEntity {
         pages
             .iter()
             .filter_map(|page| {
-                if let Some(s) = page.get_string() {
+                if let Some(s) = page.get_str() {
                     return Some(strip_json_text(s));
                 }
                 // Component-ish compound with "text"
                 page.get_compound()
-                    .and_then(|c| c.get("text").and_then(|t| t.get_string()).map(|s| s.to_owned()))
+                    .and_then(|c| c.get("text").and_then(|t| t.get_str()).map(|s| s.to_owned()))
             })
             .filter(|s| !s.is_empty())
             .collect()
