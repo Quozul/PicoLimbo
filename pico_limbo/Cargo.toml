@@ -12,6 +12,10 @@ crate-type = ["cdylib"]
 name = "pico_limbo"
 path = "src/main.rs"
 
+[features]
+default = []
+plugin-lua = ["dep:mlua"]
+
 [dependencies]
 blocks_report = { path = "../crates/blocks_report" }
 macros = { path = "../crates/macros" }
@@ -30,6 +34,7 @@ futures = { workspace = true }
 hmac = { workspace = true }
 rand = { workspace = true }
 rhai = { workspace = true }
+mlua = { workspace = true, optional = true }
 regex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }

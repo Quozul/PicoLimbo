@@ -1,13 +1,17 @@
 //! `PicoLimbo`'s embedded plugin runtime.
 //!
-//! Plugins are isolated Rhai scripts with a small, capability-gated host API.
-//! No filesystem, network, process, or dynamic module APIs are registered.
+//! Plugins run through capability-gated script runtime adapters.
+//! No filesystem, network, process, or dynamic module APIs are ambient by default.
 
 use rhai::{AST, Array, Dynamic, Engine, Map, Scope};
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Component, Path};
+#[cfg(feature = "plugin-lua")]
+use std::sync::Arc;
+#[cfg(feature = "plugin-lua")]
+use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
@@ -25,16 +29,25 @@ struct PluginManifest {
     name: String,
     version: String,
     api_version: u32,
-    #[serde(default = "default_entrypoint")]
-    entrypoint: String,
+    #[serde(default = "default_runtime")]
+    runtime: String,
+    #[serde(default)]
+    entrypoint: Option<String>,
     #[serde(default)]
     commands: Vec<String>,
     #[serde(default)]
     permissions: Vec<String>,
 }
 
-fn default_entrypoint() -> String {
-    "main.rhai".to_owned()
+fn default_runtime() -> String {
+    "rhai".to_owned()
+}
+
+fn default_entrypoint(runtime: &str) -> &'static str {
+    match runtime {
+        "lua" => "main.lua",
+        _ => "main.rhai",
+    }
 }
 
 #[derive(Debug, Error)]
@@ -47,6 +60,10 @@ enum PluginLoadError {
     ApiVersion { found: u32, supported: u32 },
     #[error("plugin manifest must remain inside its plugin directory")]
     InvalidManifestPath,
+    #[error("plugin runtime '{0}' is not available in this build; enable its Cargo feature")]
+    RuntimeUnavailable(String),
+    #[error("plugin runtime initialization failed: {0}")]
+    Runtime(String),
     #[error("plugin entrypoint must be a relative path inside its plugin directory")]
     InvalidEntrypoint,
     #[error("plugin script exceeds the 262144-byte limit")]
@@ -71,9 +88,7 @@ struct LoadedPlugin {
     commands: HashSet<String>,
     permissions: PluginPermissions,
     hooks: PluginHooks,
-    engine: Engine,
-    ast: AST,
-    scope: Scope<'static>,
+    runtime: PluginRuntime,
     enabled: bool,
 }
 
@@ -86,6 +101,142 @@ struct PluginPermissions {
 struct PluginHooks {
     on_event: bool,
     on_disable: bool,
+}
+
+enum PluginRuntime {
+    Rhai {
+        engine: Engine,
+        ast: AST,
+        scope: Scope<'static>,
+    },
+    #[cfg(feature = "plugin-lua")]
+    Lua {
+        lua: mlua::Lua,
+        operation_budget: Arc<AtomicU64>,
+    },
+}
+
+impl PluginRuntime {
+    fn on_enable(&mut self) -> Result<(), String> {
+        match self {
+            Self::Rhai { engine, ast, scope } => engine
+                .call_fn::<()>(scope, ast, "on_enable", ())
+                .map_err(|error| error.to_string()),
+            #[cfg(feature = "plugin-lua")]
+            Self::Lua {
+                lua,
+                operation_budget,
+            } => {
+                operation_budget.store(0, Ordering::Relaxed);
+                let function = lua
+                    .globals()
+                    .get::<mlua::Function>("on_enable")
+                    .map_err(|error| error.to_string())?;
+                function.call::<()>(()).map_err(|error| error.to_string())
+            }
+        }
+    }
+
+    fn on_command(
+        &mut self,
+        command: &str,
+        player: &str,
+        args: &[String],
+    ) -> Result<String, String> {
+        match self {
+            Self::Rhai { engine, ast, scope } => engine
+                .call_fn::<String>(
+                    scope,
+                    ast,
+                    "on_command",
+                    (
+                        command.to_owned(),
+                        player.to_owned(),
+                        args.iter().cloned().map(Dynamic::from).collect::<Array>(),
+                    ),
+                )
+                .map_err(|error| error.to_string()),
+            #[cfg(feature = "plugin-lua")]
+            Self::Lua {
+                lua,
+                operation_budget,
+            } => {
+                operation_budget.store(0, Ordering::Relaxed);
+                let function = lua
+                    .globals()
+                    .get::<mlua::Function>("on_command")
+                    .map_err(|error| error.to_string())?;
+                let lua_args = lua
+                    .create_sequence_from(args.iter().cloned())
+                    .map_err(|error| error.to_string())?;
+                function
+                    .call::<String>((command, player, lua_args))
+                    .map_err(|error| error.to_string())
+            }
+        }
+    }
+
+    fn on_event(&mut self, event: &str, player: Option<(&str, &str)>) -> Result<(), String> {
+        match self {
+            Self::Rhai { engine, ast, scope } => {
+                let mut payload = Map::new();
+                payload.insert("event".into(), Dynamic::from(event.to_owned()));
+                if let Some((name, uuid)) = player {
+                    payload.insert("player".into(), Dynamic::from(name.to_owned()));
+                    payload.insert("uuid".into(), Dynamic::from(uuid.to_owned()));
+                }
+                engine
+                    .call_fn::<()>(scope, ast, "on_event", (payload,))
+                    .map_err(|error| error.to_string())
+            }
+            #[cfg(feature = "plugin-lua")]
+            Self::Lua {
+                lua,
+                operation_budget,
+            } => {
+                operation_budget.store(0, Ordering::Relaxed);
+                let function = lua
+                    .globals()
+                    .get::<mlua::Function>("on_event")
+                    .map_err(|error| error.to_string())?;
+                let payload = lua.create_table().map_err(|error| error.to_string())?;
+                payload
+                    .set("event", event)
+                    .map_err(|error| error.to_string())?;
+                if let Some((name, uuid)) = player {
+                    payload
+                        .set("player", name)
+                        .map_err(|error| error.to_string())?;
+                    payload
+                        .set("uuid", uuid)
+                        .map_err(|error| error.to_string())?;
+                }
+                function
+                    .call::<()>(payload)
+                    .map_err(|error| error.to_string())
+            }
+        }
+    }
+
+    fn on_disable(&mut self) -> Result<(), String> {
+        match self {
+            Self::Rhai { engine, ast, .. } => engine
+                .call_fn::<()>(&mut Scope::new(), ast, "on_disable", ())
+                .map_err(|error| error.to_string()),
+            #[cfg(feature = "plugin-lua")]
+            Self::Lua {
+                lua,
+                operation_budget,
+            } => {
+                operation_budget.store(0, Ordering::Relaxed);
+                let function = lua
+                    .globals()
+                    .get::<mlua::Function>("on_disable")
+                    .map_err(|error| error.to_string())?;
+                function.call::<()>(()).map_err(|error| error.to_string())
+            }
+        }
+    }
 }
 
 /// Owns the scripts loaded by one `PicoLimbo` server instance.
@@ -159,7 +310,11 @@ impl PluginManager {
             .map_err(|err| PluginLoadError::Manifest(err.to_string()))?;
         validate_manifest(&manifest, directory)?;
 
-        let entrypoint = Path::new(&manifest.entrypoint);
+        let entrypoint_name = manifest
+            .entrypoint
+            .as_deref()
+            .unwrap_or_else(|| default_entrypoint(&manifest.runtime));
+        let entrypoint = Path::new(entrypoint_name);
         if entrypoint.is_absolute()
             || entrypoint.components().any(|component| {
                 matches!(
@@ -182,50 +337,167 @@ impl PluginManager {
 
         let script = fs::read_to_string(&script_path)?;
         let id = manifest.id.clone();
-        let engine = create_engine(&id, &manifest.permissions);
-        let ast = engine
-            .compile(&script)
-            .map_err(|err| PluginLoadError::Compile(err.to_string()))?;
-        let has_function = |name: &str, parameters: usize| {
-            ast.iter_functions()
-                .any(|function| function.name == name && function.params.len() == parameters)
+        let (mut runtime, has_on_event, has_on_disable) = match manifest.runtime.as_str() {
+            "rhai" => {
+                let engine = create_engine(&id, &manifest.permissions);
+                let ast = engine
+                    .compile(&script)
+                    .map_err(|error| PluginLoadError::Compile(error.to_string()))?;
+                let has_function = |name: &str, parameters: usize| {
+                    ast.iter_functions().any(|function| {
+                        function.name == name && function.params.len() == parameters
+                    })
+                };
+                let declares_function =
+                    |name: &str| ast.iter_functions().any(|function| function.name == name);
+                if !has_function("on_enable", 0) {
+                    return Err(PluginLoadError::MissingFunction {
+                        name: "on_enable",
+                        parameters: 0,
+                    });
+                }
+                if !manifest.commands.is_empty() && !has_function("on_command", 3) {
+                    return Err(PluginLoadError::MissingFunction {
+                        name: "on_command",
+                        parameters: 3,
+                    });
+                }
+                let has_on_event = has_function("on_event", 1);
+                if declares_function("on_event") && !has_on_event {
+                    return Err(PluginLoadError::MissingFunction {
+                        name: "on_event",
+                        parameters: 1,
+                    });
+                }
+                let has_on_disable = has_function("on_disable", 0);
+                if declares_function("on_disable") && !has_on_disable {
+                    return Err(PluginLoadError::MissingFunction {
+                        name: "on_disable",
+                        parameters: 0,
+                    });
+                }
+                let mut scope = Scope::new();
+                scope.push("state", Map::new());
+                (
+                    PluginRuntime::Rhai { engine, ast, scope },
+                    has_on_event,
+                    has_on_disable,
+                )
+            }
+            "lua" => {
+                #[cfg(feature = "plugin-lua")]
+                {
+                    use mlua::{HookTriggers, Lua, LuaOptions, StdLib, VmState};
+                    let lua = Lua::new_with(StdLib::ALL_SAFE, LuaOptions::default())
+                        .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                    lua.set_memory_limit(16 * 1024 * 1024)
+                        .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                    let operation_budget = Arc::new(AtomicU64::new(0));
+                    let budget = Arc::clone(&operation_budget);
+                    lua.set_hook(
+                        HookTriggers::new().every_nth_instruction(1000),
+                        move |_, _| {
+                            let used = budget.fetch_add(1000, Ordering::Relaxed) + 1000;
+                            if used > MAX_OPERATIONS {
+                                return Err(mlua::Error::RuntimeError(
+                                    "plugin instruction budget exceeded".into(),
+                                ));
+                            }
+                            Ok(VmState::Continue)
+                        },
+                    )
+                    .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                    if manifest
+                        .permissions
+                        .iter()
+                        .any(|permission| permission == "logging")
+                    {
+                        let log_id = id.clone();
+                        lua.globals()
+                            .set(
+                                "log_info",
+                                lua.create_function(move |_, message: String| {
+                                    info!(plugin = %log_id, "{message}");
+                                    Ok(())
+                                })
+                                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+                            )
+                            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                        let log_id = id.clone();
+                        lua.globals()
+                            .set(
+                                "log_warn",
+                                lua.create_function(move |_, message: String| {
+                                    warn!(plugin = %log_id, "{message}");
+                                    Ok(())
+                                })
+                                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+                            )
+                            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                        let log_id = id.clone();
+                        lua.globals()
+                            .set(
+                                "log_error",
+                                lua.create_function(move |_, message: String| {
+                                    error!(plugin = %log_id, "{message}");
+                                    Ok(())
+                                })
+                                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+                            )
+                            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+                    }
+                    lua.load(&script)
+                        .set_name(&id)
+                        .exec()
+                        .map_err(|error| PluginLoadError::Compile(error.to_string()))?;
+                    let globals = lua.globals();
+                    if !matches!(
+                        globals.get::<mlua::Value>("on_enable"),
+                        Ok(mlua::Value::Function(_))
+                    ) {
+                        return Err(PluginLoadError::MissingFunction {
+                            name: "on_enable",
+                            parameters: 0,
+                        });
+                    }
+                    let has_on_command = matches!(
+                        globals.get::<mlua::Value>("on_command"),
+                        Ok(mlua::Value::Function(_))
+                    );
+                    if !manifest.commands.is_empty() && !has_on_command {
+                        return Err(PluginLoadError::MissingFunction {
+                            name: "on_command",
+                            parameters: 3,
+                        });
+                    }
+                    let has_on_event = matches!(
+                        globals.get::<mlua::Value>("on_event"),
+                        Ok(mlua::Value::Function(_))
+                    );
+                    let has_on_disable = matches!(
+                        globals.get::<mlua::Value>("on_disable"),
+                        Ok(mlua::Value::Function(_))
+                    );
+                    (
+                        PluginRuntime::Lua {
+                            lua,
+                            operation_budget,
+                        },
+                        has_on_event,
+                        has_on_disable,
+                    )
+                }
+                #[cfg(not(feature = "plugin-lua"))]
+                {
+                    return Err(PluginLoadError::RuntimeUnavailable(
+                        "lua (enable plugin-lua)".into(),
+                    ));
+                }
+            }
+            other => return Err(PluginLoadError::RuntimeUnavailable(other.to_owned())),
         };
-        let declares_function =
-            |name: &str| ast.iter_functions().any(|function| function.name == name);
 
-        if !has_function("on_enable", 0) {
-            return Err(PluginLoadError::MissingFunction {
-                name: "on_enable",
-                parameters: 0,
-            });
-        }
-        if !manifest.commands.is_empty() && !has_function("on_command", 3) {
-            return Err(PluginLoadError::MissingFunction {
-                name: "on_command",
-                parameters: 3,
-            });
-        }
-
-        let has_on_event = has_function("on_event", 1);
-        if declares_function("on_event") && !has_on_event {
-            return Err(PluginLoadError::MissingFunction {
-                name: "on_event",
-                parameters: 1,
-            });
-        }
-        let has_on_disable = has_function("on_disable", 0);
-        if declares_function("on_disable") && !has_on_disable {
-            return Err(PluginLoadError::MissingFunction {
-                name: "on_disable",
-                parameters: 0,
-            });
-        }
-
-        let mut scope = Scope::new();
-        scope.push("state", Map::new());
-        engine
-            .call_fn::<()>(&mut scope, &ast, "on_enable", ())
-            .map_err(|err| PluginLoadError::Enable(err.to_string()))?;
+        runtime.on_enable().map_err(PluginLoadError::Enable)?;
 
         Ok(LoadedPlugin {
             id,
@@ -246,9 +518,7 @@ impl PluginManager {
                 on_event: has_on_event,
                 on_disable: has_on_disable,
             },
-            engine,
-            ast,
-            scope,
+            runtime,
             enabled: true,
         })
     }
@@ -258,9 +528,7 @@ impl PluginManager {
     pub fn execute_command(&mut self, command_line: &str, player_name: &str) -> Option<String> {
         let mut parts = command_line.split_whitespace();
         let command = parts.next()?.trim_start_matches('/').to_ascii_lowercase();
-        let args = parts
-            .map(|part| Dynamic::from(part.to_owned()))
-            .collect::<Array>();
+        let args = parts.map(str::to_owned).collect::<Vec<_>>();
 
         for plugin in &mut self.plugins {
             if !plugin.enabled || !plugin.commands.contains(&command) {
@@ -273,12 +541,7 @@ impl PluginManager {
                 String::new()
             };
 
-            match plugin.engine.call_fn::<String>(
-                &mut plugin.scope,
-                &plugin.ast,
-                "on_command",
-                (command.clone(), player, args.clone()),
-            ) {
+            match plugin.runtime.on_command(&command, &player, &args) {
                 Ok(response) => {
                     if plugin.permissions.player_message && !response.is_empty() {
                         return Some(response);
@@ -305,17 +568,11 @@ impl PluginManager {
             if !plugin.enabled || !plugin.hooks.on_event {
                 continue;
             }
-            let mut payload = Map::new();
-            payload.insert("event".into(), Dynamic::from(event.to_owned()));
-            if plugin.permissions.player_read {
-                payload.insert("player".into(), Dynamic::from(player_name.to_owned()));
-                payload.insert("uuid".into(), Dynamic::from(player_uuid.to_owned()));
-            }
-            if let Err(err) =
-                plugin
-                    .engine
-                    .call_fn::<()>(&mut Scope::new(), &plugin.ast, "on_event", (payload,))
-            {
+            let player = plugin
+                .permissions
+                .player_read
+                .then_some((player_name, player_uuid));
+            if let Err(err) = plugin.runtime.on_event(event, player) {
                 warn!(
                     plugin = %plugin.id,
                     error = %err,
@@ -354,10 +611,7 @@ impl Drop for PluginManager {
         for plugin in &mut self.plugins {
             if plugin.enabled
                 && plugin.hooks.on_disable
-                && let Err(err) =
-                    plugin
-                        .engine
-                        .call_fn::<()>(&mut Scope::new(), &plugin.ast, "on_disable", ())
+                && let Err(err) = plugin.runtime.on_disable()
             {
                 warn!(plugin = %plugin.id, error = %err, "Plugin shutdown hook failed");
             }
@@ -386,6 +640,12 @@ fn validate_manifest(manifest: &PluginManifest, directory: &Path) -> Result<(), 
         return Err(PluginLoadError::Manifest(
             "name and version must not be empty".to_owned(),
         ));
+    }
+    if !matches!(manifest.runtime.as_str(), "rhai" | "lua") {
+        return Err(PluginLoadError::Manifest(format!(
+            "unsupported runtime '{}'; supported runtimes are rhai and lua",
+            manifest.runtime
+        )));
     }
     if manifest.api_version != PLUGIN_API_VERSION {
         return Err(PluginLoadError::ApiVersion {
@@ -579,6 +839,53 @@ fn on_command(command, player, args) {
             manager.execute_command("count", "PicoPlayer"),
             Some("again".to_owned())
         );
+        drop(manager);
+        fs::remove_dir_all(directory).expect("remove temporary directory");
+    }
+
+    #[cfg(feature = "plugin-lua")]
+    #[test]
+    fn loads_lua_plugin_and_dispatches_declared_command() {
+        let directory = temporary_directory();
+        let plugin_directory = directory.join("lua-hello");
+        fs::create_dir_all(&plugin_directory).expect("create plugin directory");
+        fs::write(
+            plugin_directory.join("plugin.toml"),
+            r#"
+id = "lua-hello"
+name = "Lua Hello"
+version = "1.0.0"
+api_version = 1
+runtime = "lua"
+commands = ["hello"]
+permissions = ["commands.register", "player.read", "player.message"]
+"#,
+        )
+        .expect("write manifest");
+        fs::write(
+            plugin_directory.join("main.lua"),
+            r#"
+function on_enable()
+    visits = 0
+end
+function on_command(command, player, args)
+    visits = visits + 1
+    return "Hello, " .. player .. " (" .. visits .. ")"
+end
+"#,
+        )
+        .expect("write Lua script");
+
+        let mut manager = PluginManager::load(&directory).expect("load plugin directory");
+        assert_eq!(
+            manager.execute_command("hello", "PicoPlayer"),
+            Some("Hello, PicoPlayer (1)".to_owned())
+        );
+        assert_eq!(
+            manager.execute_command("hello", "PicoPlayer"),
+            Some("Hello, PicoPlayer (2)".to_owned())
+        );
+
         drop(manager);
         fs::remove_dir_all(directory).expect("remove temporary directory");
     }

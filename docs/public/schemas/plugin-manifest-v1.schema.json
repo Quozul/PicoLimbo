@@ -5,7 +5,12 @@
   "description": "Manifest schema for PicoLimbo Plugin API version 1. Validate the parsed TOML document against this schema.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "name", "version", "api_version"],
+  "required": [
+    "id",
+    "name",
+    "version",
+    "api_version"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -32,7 +37,7 @@
       "type": "string",
       "minLength": 1,
       "default": "main.rhai",
-      "description": "Rhai entrypoint relative to the plugin directory. Parent-directory traversal and absolute paths are rejected."
+      "description": "Script entrypoint relative to the plugin directory. Defaults to main.rhai for Rhai and main.lua for Lua. Parent-directory traversal and absolute paths are rejected."
     },
     "commands": {
       "type": "array",
@@ -48,9 +53,23 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "enum": ["logging", "commands.register", "player.read", "player.message"]
+        "enum": [
+          "logging",
+          "commands.register",
+          "player.read",
+          "player.message"
+        ]
       },
       "description": "Explicit host capabilities. Unlisted permissions are denied."
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "rhai",
+        "lua"
+      ],
+      "default": "rhai",
+      "description": "Script runtime. Lua requires a PicoLimbo build with the plugin-lua Cargo feature."
     }
   }
 }

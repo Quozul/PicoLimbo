@@ -43,6 +43,7 @@ quick-xml = "0.42.0"
 quote = "1.0.47"
 rand = "0.10.3"
 rhai = { version = "1.27.0", features = ["sync"] }
+mlua = { version = "0.12.2", features = ["lua54", "vendored", "send", "serde"] }
 rayon = "1.12.0"
 regex = "1.13.1"
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls", "http2"] }
