@@ -26,6 +26,15 @@ pub struct Cli {
     )]
     pub config_path: PathBuf,
 
+    /// Directory containing `PicoLimbo` plugins.
+    #[arg(
+        long = "plugins-dir",
+        value_name = "PLUGINS_DIR",
+        default_value = "plugins",
+        help = "Directory containing installed PicoLimbo plugins"
+    )]
+    pub plugins_path: PathBuf,
+
     /// Path to where the log files will be stored; If not set, will disable file logging.
     #[arg(
         short = 'l',

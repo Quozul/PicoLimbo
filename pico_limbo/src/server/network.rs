@@ -35,17 +35,15 @@ impl Server {
         }
     }
 
-    pub async fn run(self, cancellation_token: Option<&CancellationToken>) {
-        let listener = match TcpListener::bind(&self.listen_address.tuple()).await {
-            Ok(sock) => sock,
-            Err(err) => {
-                error!("Failed to bind to {}: {}", self.listen_address, err);
-                std::process::exit(1);
-            }
-        };
+    pub async fn run(
+        self,
+        cancellation_token: Option<&CancellationToken>,
+    ) -> Result<(), std::io::Error> {
+        let listener = TcpListener::bind(&self.listen_address.tuple()).await?;
 
         info!("Listening on: {}", self.listen_address);
         self.accept(&listener, cancellation_token).await;
+        Ok(())
     }
 
     pub async fn accept(
@@ -343,4 +341,21 @@ async fn send_keep_alive(client_data: &ClientData) -> Result<(), PacketProcessin
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn bind_failure_is_returned_to_the_caller() {
+        let listener = TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .expect("reserve a local port");
+        let address = ServerAddress::parse(&listener.local_addr().unwrap().to_string())
+            .expect("parse reserved address");
+        let server = Server::new(&address, ServerState::default());
+
+        assert!(server.run(None).await.is_err());
+    }
 }

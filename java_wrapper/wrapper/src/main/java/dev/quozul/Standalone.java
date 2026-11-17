@@ -13,10 +13,12 @@ import java.nio.file.StandardCopyOption;
 
 public class Standalone {
 
+    private static volatile RustLib cachedLibrary;
+
     public interface RustLib extends Library {
 
         // C: void start_app(CancellationToken* ptr, int argc, char** argv);
-        void start_app(Pointer ptr, int argc, String[] argv);
+        int start_app(Pointer ptr, int argc, String[] argv);
 
         // C: void stop_app(CancellationToken* ptr);
         void stop_app(Pointer ptr);
@@ -30,7 +32,18 @@ public class Standalone {
     }
 
     public static RustLib loadLib() throws Exception {
-        String libName = BuildConstants.LIB_NAME;
+        RustLib current = cachedLibrary;
+        if (current != null) {
+            return current;
+        }
+
+        synchronized (Standalone.class) {
+            current = cachedLibrary;
+            if (current != null) {
+                return current;
+            }
+
+            String libName = BuildConstants.LIB_NAME;
         String resourcePath = getResourcePath(libName);
 
         String extension = resourcePath.substring(resourcePath.lastIndexOf('.'));
@@ -44,7 +57,10 @@ public class Standalone {
             Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
 
-        return Native.load(tempLib.getAbsolutePath(), RustLib.class);
+            current = Native.load(tempLib.getAbsolutePath(), RustLib.class);
+            cachedLibrary = current;
+            return current;
+        }
     }
 
     public static void main(String[] args) {
@@ -56,7 +72,10 @@ public class Standalone {
             RustLib lib = Standalone.loadLib();
             Pointer token = lib.get_cancellation_token();
             Runtime.getRuntime().addShutdownHook(new ShutdownHook(lib, token));
-            lib.start_app(token, effectiveArgs.length, effectiveArgs);
+            int exitCode = lib.start_app(token, effectiveArgs.length, effectiveArgs);
+            if (exitCode != 0) {
+                System.exit(exitCode);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

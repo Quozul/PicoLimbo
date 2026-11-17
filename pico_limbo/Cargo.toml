@@ -29,6 +29,7 @@ clap = { workspace = true }
 futures = { workspace = true }
 hmac = { workspace = true }
 rand = { workspace = true }
+rhai = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }

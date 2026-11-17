@@ -2,6 +2,7 @@ use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::fly_config::FlyConfig;
 use crate::floodgate::FloodgateSettings;
+use crate::plugins::PluginManager;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -14,8 +15,8 @@ use std::fs::File;
 use std::io::Read;
 use std::num::TryFromIntError;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use thiserror::Error;
 use tracing::debug;
@@ -131,6 +132,7 @@ pub struct ServerState {
     fly: Fly,
     server_commands: ServerCommands,
     keep_alive_interval_secs: u64,
+    plugins: Arc<Mutex<PluginManager>>,
 }
 
 impl ServerState {
@@ -293,6 +295,30 @@ impl ServerState {
         &self.server_commands
     }
 
+    /// Execute a plugin command, returning its optional `MiniMessage` response.
+    pub fn execute_plugin_command(&self, command: &str, player_name: &str) -> Option<String> {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .execute_command(command, player_name)
+    }
+
+    /// Notify plugins about a player lifecycle event.
+    pub fn emit_player_plugin_event(&self, event: &str, player_name: &str, player_uuid: &str) {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .emit_player_event(event, player_name, player_uuid);
+    }
+
+    /// Return commands registered by currently enabled plugins.
+    pub fn plugin_commands(&self) -> Vec<String> {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .command_names()
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
@@ -336,6 +362,7 @@ pub struct ServerStateBuilder {
     accept_transfers: bool,
     server_commands: ServerCommands,
     keep_alive_interval_secs: Option<u64>,
+    plugins: Option<PluginManager>,
 }
 
 #[derive(Debug, Error)]
@@ -625,6 +652,12 @@ impl ServerStateBuilder {
         self
     }
 
+    /// Attach the plugin manager for this server instance.
+    pub fn plugins(&mut self, plugins: PluginManager) -> &mut Self {
+        self.plugins = Some(plugins);
+        self
+    }
+
     /// Finish building, returning an error if any required fields are missing.
     pub fn build(self) -> Result<ServerState, ServerStateBuilderError> {
         let world = if self.schematic_file_path.is_empty() {
@@ -672,6 +705,7 @@ impl ServerStateBuilder {
             accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
             keep_alive_interval_secs: self.keep_alive_interval_secs.unwrap_or(15),
+            plugins: Arc::new(Mutex::new(self.plugins.unwrap_or_default())),
         })
     }
 }

@@ -66,6 +66,12 @@ See the [Floodgate documentation](https://picolimbo.quozul.dev/config/floodgate.
 Customize your server using a simple TOML configuration file, including welcome message, spawn dimension, server list
 MOTD, and more. [View configuration docs](https://picolimbo.quozul.dev/config/introduction.html).
 
+### 🧩 Community Plugin API
+
+Extend PicoLimbo with independently installed Rhai plugins. A fresh installation has an empty `plugins/` directory;
+plugin authors can use the versioned API, capability permissions, and machine-readable manifest schema without
+modifying the server. [Read the plugin development guide](https://picolimbo.quozul.dev/developer/plugins.html).
+
 ### 🌍 Schematic World (Experimental)
 
 Load a custom world from a schematic file and customize spawn location (1.13+ only).

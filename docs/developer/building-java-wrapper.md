@@ -75,6 +75,47 @@ After the build completes, you can find the resulting JAR file at:
 
 To verify the installation, you can try running the standalone version or loading it into your proxy server of choice.
 
+## Embedding API and multiple instances
+
+The wrapper exposes a small Java API for embedding PicoLimbo in another application or proxy plugin. Use one
+`PicoLimboManager` to own multiple independent server instances; each instance has its own native cancellation token
+and can be stopped without stopping its siblings.
+
+```java
+try (PicoLimboManager limbos = new PicoLimboManager()) {
+    PicoLimboRunner europe = limbos.start(
+        "europe",
+        Path.of("config/europe.toml"),
+        "--port", "25570",
+        "--plugins-dir", "plugins/europe"
+    );
+
+    PicoLimboRunner northAmerica = limbos.start(
+        "north-america",
+        Path.of("config/north-america.toml"),
+        "--port", "25571"
+    );
+
+    // Stop one instance without affecting the other.
+    limbos.stop("europe");
+
+    // Observe the native process result or wait for it to exit.
+    northAmerica.completion().whenComplete((ignored, error) -> {
+        if (error != null) {
+            error.printStackTrace();
+        }
+    });
+}
+```
+
+`PicoLimboManager.create(...)` creates an instance without starting it, which is useful when a proxy scheduler must own
+the worker thread. `PicoLimboRunner` implements `Runnable` for that purpose. `start(...)` starts it on a dedicated virtual
+thread. `close()` requests graceful shutdown of every instance managed by the manager.
+
+Native startup failures are returned to Java instead of calling `process::exit`; a failed bind or configuration no longer
+terminates the host JVM or unrelated PicoLimbo instances. A runner's `completion()` future completes exceptionally when
+the native server exits with a non-zero status.
+
 ## Publishing to Modrinth
 
 Set a Modrinth personal access token with the `CREATE_VERSION` scope and run the publishing task:

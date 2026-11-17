@@ -8,13 +8,14 @@ use crate::configuration::tab_list::TabListMode;
 use crate::configuration::title::TitleConfig;
 use crate::configuration::world_config::boundaries::BoundariesConfig;
 use crate::floodgate::FloodgateSettings;
+use crate::plugins::PluginManager;
 use crate::server::network::Server;
 use crate::server::server_address::ServerAddress;
 use crate::server_state::{ServerState, ServerStateBuilderError};
 use std::path::Path;
 use std::process::ExitCode;
 use tokio_util::sync::CancellationToken;
-use tracing::{Level, debug, error};
+use tracing::{Level, debug, error, info};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
@@ -32,15 +33,40 @@ pub async fn start_server(cli: &Cli, cancellation_token: Option<&CancellationTok
         bind.set_port(port);
     }
 
-    match build_state(cfg) {
+    let plugins = match PluginManager::load(&cli.plugins_path) {
+        Ok(plugins) => {
+            if plugins.is_empty() {
+                info!(path = %cli.plugins_path.display(), "No PicoLimbo plugins installed");
+            } else {
+                info!(
+                    count = plugins.len(),
+                    path = %cli.plugins_path.display(),
+                    "Plugin loading complete"
+                );
+            }
+            plugins
+        }
+        Err(err) => {
+            error!(path = %cli.plugins_path.display(), error = %err, "Failed to read plugin directory");
+            PluginManager::default()
+        }
+    };
+
+    match build_state(cfg, plugins) {
         Ok(server_state) => {
             if !cli.skip_banner {
                 banner::display_banner();
             }
-            Server::new(&bind, server_state)
+            match Server::new(&bind, server_state)
                 .run(cancellation_token)
-                .await;
-            ExitCode::SUCCESS
+                .await
+            {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(err) => {
+                    error!(address = %bind, error = %err, "Failed to bind PicoLimbo listener");
+                    ExitCode::FAILURE
+                }
+            }
         }
         Err(err) => {
             error!("Failed to start PicoLimbo: {err}");
@@ -69,8 +95,12 @@ fn load_configuration(config_path: &Path) -> Option<Config> {
     None
 }
 
-fn build_state(cfg: Config) -> Result<ServerState, ServerStateBuilderError> {
+fn build_state(
+    cfg: Config,
+    plugins: PluginManager,
+) -> Result<ServerState, ServerStateBuilderError> {
     let mut server_state_builder = ServerState::builder();
+    server_state_builder.plugins(plugins);
 
     let forwarding: TaggedForwarding = cfg.forwarding.into();
 
