@@ -20,9 +20,6 @@ use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
-use minecraft_packets::play::open_screen_packet::OpenScreenPacket;
-use minecraft_packets::play::container_set_slot_packet::{ContainerSetDataPacket, ContainerSetSlotPacket};
-use minecraft_packets::play::use_item_on_packet::UseItemOnPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
@@ -31,11 +28,15 @@ use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAliv
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::client_bound_plugin_message_packet::PlayClientBoundPluginMessagePacket;
 use minecraft_packets::play::commands_packet::CommandsPacket;
+use minecraft_packets::play::container_set_slot_packet::{
+    ContainerSetDataPacket, ContainerSetSlotPacket,
+};
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_packets::play::game_event_packet::GameEventPacket;
 use minecraft_packets::play::legacy_chat_message_packet::LegacyChatMessagePacket;
 use minecraft_packets::play::legacy_set_title_packet::LegacySetTitlePacket;
 use minecraft_packets::play::login_packet::LoginPacket;
+use minecraft_packets::play::open_screen_packet::OpenScreenPacket;
 use minecraft_packets::play::player_info_update_packet::PlayerInfoUpdatePacket;
 use minecraft_packets::play::server_bound_player_abilities_packet::ServerBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
@@ -53,6 +54,7 @@ use minecraft_packets::play::tab_list_packet::TabListPacket;
 use minecraft_packets::play::transfer_packet::TransferPacket;
 use minecraft_packets::play::update_light_packet::UpdateLightPacket;
 use minecraft_packets::play::update_time_packet::UpdateTimePacket;
+use minecraft_packets::play::use_item_on_packet::UseItemOnPacket;
 use minecraft_packets::status::ping_request_packet::PingRequestPacket;
 use minecraft_packets::status::ping_response_packet::PongResponsePacket;
 use minecraft_packets::status::status_request_packet::StatusRequestPacket;

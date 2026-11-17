@@ -42,7 +42,7 @@ pub fn written_book_protocol_id(protocol: ProtocolVersion) -> Option<i32> {
         ProtocolVersion::V1_14_2 => Some(758),
         ProtocolVersion::V1_14_1 => Some(758),
         ProtocolVersion::V1_14 => Some(758),
-        ProtocolVersion::Any | ProtocolVersion::Unsupported => None,
+        _ => None,
     }
 }
 
@@ -85,6 +85,6 @@ pub fn lectern_menu_protocol_id(protocol: ProtocolVersion) -> Option<i32> {
         ProtocolVersion::V1_14_2 => Some(16),
         ProtocolVersion::V1_14_1 => Some(16),
         ProtocolVersion::V1_14 => Some(16),
-        ProtocolVersion::Any | ProtocolVersion::Unsupported => None,
+        _ => None,
     }
 }

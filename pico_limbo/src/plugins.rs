@@ -49,7 +49,8 @@ fn shared_online_players() -> &'static std::sync::atomic::AtomicU32 {
 }
 
 fn shared_spawn_position() -> &'static std::sync::Mutex<(f64, f64, f64)> {
-    static SPAWN: std::sync::OnceLock<std::sync::Mutex<(f64, f64, f64)>> = std::sync::OnceLock::new();
+    static SPAWN: std::sync::OnceLock<std::sync::Mutex<(f64, f64, f64)>> =
+        std::sync::OnceLock::new();
     SPAWN.get_or_init(|| std::sync::Mutex::new((0.5, 64.0, 0.5)))
 }
 
@@ -59,7 +60,8 @@ fn shared_has_world() -> &'static std::sync::atomic::AtomicBool {
 }
 
 /// Sparse runtime block overlay (internal ids). Capped for memory.
-fn shared_world_overlay() -> &'static std::sync::Mutex<std::collections::HashMap<(i32, i32, i32), u16>> {
+fn shared_world_overlay()
+-> &'static std::sync::Mutex<std::collections::HashMap<(i32, i32, i32), u16>> {
     static OVERLAY: std::sync::OnceLock<
         std::sync::Mutex<std::collections::HashMap<(i32, i32, i32), u16>>,
     > = std::sync::OnceLock::new();
@@ -67,16 +69,14 @@ fn shared_world_overlay() -> &'static std::sync::Mutex<std::collections::HashMap
 }
 
 fn shared_dirty_chunks() -> &'static std::sync::Mutex<std::collections::HashSet<(i32, i32)>> {
-    static DIRTY: std::sync::OnceLock<
-        std::sync::Mutex<std::collections::HashSet<(i32, i32)>>,
-    > = std::sync::OnceLock::new();
+    static DIRTY: std::sync::OnceLock<std::sync::Mutex<std::collections::HashSet<(i32, i32)>>> =
+        std::sync::OnceLock::new();
     DIRTY.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
 }
 
 fn shared_online_names() -> &'static std::sync::Mutex<std::collections::HashSet<String>> {
-    static NAMES: std::sync::OnceLock<
-        std::sync::Mutex<std::collections::HashSet<String>>,
-    > = std::sync::OnceLock::new();
+    static NAMES: std::sync::OnceLock<std::sync::Mutex<std::collections::HashSet<String>>> =
+        std::sync::OnceLock::new();
     NAMES.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
 }
 
@@ -88,8 +88,6 @@ fn resolve_internal_id(block_state: &str) -> Option<u16> {
         .ok()
         .map(|state| state.internal_id())
 }
-
-
 
 #[derive(Clone)]
 struct ScheduledTask {
@@ -106,9 +104,8 @@ fn shared_schedule() -> &'static std::sync::Mutex<Vec<ScheduledTask>> {
 }
 
 fn shared_kick_requests() -> &'static std::sync::Mutex<std::collections::HashMap<String, String>> {
-    static KICKS: std::sync::OnceLock<
-        std::sync::Mutex<std::collections::HashMap<String, String>>,
-    > = std::sync::OnceLock::new();
+    static KICKS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<String, String>>> =
+        std::sync::OnceLock::new();
     KICKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
@@ -118,20 +115,26 @@ pub enum PluginClientAction {
     ActionBar(String),
     TeleportSpawn,
     /// Protocol block state id already mapped for a specific protocol is resolved at send time.
-    BlockUpdate { x: i32, y: i32, z: i32, internal_id: u16 },
+    BlockUpdate {
+        x: i32,
+        y: i32,
+        z: i32,
+        internal_id: u16,
+    },
     /// Request void-style chunk column refresh (clients still need block updates for overlay).
-    ResendChunk { chunk_x: i32, chunk_z: i32 },
+    ResendChunk {
+        chunk_x: i32,
+        chunk_z: i32,
+    },
 }
 
-fn shared_client_actions() -> &'static std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>> {
+fn shared_client_actions()
+-> &'static std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>> {
     static ACTIONS: std::sync::OnceLock<
         std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>>,
     > = std::sync::OnceLock::new();
     ACTIONS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
-
-
-
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -359,15 +362,29 @@ impl PluginRuntime {
                         } else {
                             // Try calling as () for legacy scripts.
                             engine
-                                .call_fn::<()>(scope, ast, "on_event", ({
-                                    let mut payload = Map::new();
-                                    payload.insert("event".into(), Dynamic::from(event.to_owned()));
-                                    if let Some((name, uuid)) = player {
-                                        payload.insert("player".into(), Dynamic::from(name.to_owned()));
-                                        payload.insert("uuid".into(), Dynamic::from(uuid.to_owned()));
-                                    }
-                                    payload
-                                },))
+                                .call_fn::<()>(
+                                    scope,
+                                    ast,
+                                    "on_event",
+                                    ({
+                                        let mut payload = Map::new();
+                                        payload.insert(
+                                            "event".into(),
+                                            Dynamic::from(event.to_owned()),
+                                        );
+                                        if let Some((name, uuid)) = player {
+                                            payload.insert(
+                                                "player".into(),
+                                                Dynamic::from(name.to_owned()),
+                                            );
+                                            payload.insert(
+                                                "uuid".into(),
+                                                Dynamic::from(uuid.to_owned()),
+                                            );
+                                        }
+                                        payload
+                                    },),
+                                )
                                 .map(|_| false)
                                 .map_err(|error| error.to_string())
                         }
@@ -765,9 +782,9 @@ impl PluginManager {
     }
 
     pub fn wants_inbound_packets(&self) -> bool {
-        self.plugins
-            .iter()
-            .any(|plugin| plugin.enabled && plugin.hooks.on_event && plugin.permissions.packets_inbound)
+        self.plugins.iter().any(|plugin| {
+            plugin.enabled && plugin.hooks.on_event && plugin.permissions.packets_inbound
+        })
     }
 
     pub fn queue_client_action(player_name: impl Into<String>, action: PluginClientAction) {
@@ -870,8 +887,6 @@ impl PluginManager {
             .unwrap_or_default()
     }
 
-
-
     pub fn register_service(&mut self, name: impl Into<String>, value: impl Into<String>) {
         self.services.register(name.into(), value.into());
     }
@@ -884,7 +899,13 @@ impl PluginManager {
         self.plugins
             .iter()
             .filter(|plugin| plugin.enabled)
-            .map(|plugin| (plugin.id.clone(), plugin.name.clone(), plugin.version.clone()))
+            .map(|plugin| {
+                (
+                    plugin.id.clone(),
+                    plugin.name.clone(),
+                    plugin.version.clone(),
+                )
+            })
             .collect()
     }
 
@@ -1079,7 +1100,10 @@ fn build_lua_runtime(
         register_lua_logger(&lua, id)?;
     }
 
-    if permissions.iter().any(|permission| permission == "services") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "services")
+    {
         let plugin_id = id.to_owned();
         lua.globals()
             .set(
@@ -1115,7 +1139,10 @@ fn build_lua_runtime(
             .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
-    if permissions.iter().any(|permission| permission == "server.info") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "server.info")
+    {
         lua.globals()
             .set(
                 "server_api_version",
@@ -1134,16 +1161,25 @@ fn build_lua_runtime(
             .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
-    if permissions.iter().any(|permission| permission == "player.kick") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "player.kick")
+    {
         engine.register_fn("player_kick", |player_name: &str, reason: &str| {
             PluginManager::request_kick(player_name, reason);
         });
     }
 
-    if permissions.iter().any(|permission| permission == "world.mutate") {
-        engine.register_fn("world_set_block", |x: i64, y: i64, z: i64, block_state: &str| -> bool {
-            PluginManager::world_set_block(x as i32, y as i32, z as i32, block_state)
-        });
+    if permissions
+        .iter()
+        .any(|permission| permission == "world.mutate")
+    {
+        engine.register_fn(
+            "world_set_block",
+            |x: i64, y: i64, z: i64, block_state: &str| -> bool {
+                PluginManager::world_set_block(x as i32, y as i32, z as i32, block_state)
+            },
+        );
         engine.register_fn("world_get_block", |x: i64, y: i64, z: i64| -> i64 {
             PluginManager::world_get_block(x as i32, y as i32, z as i32)
         });
@@ -1155,7 +1191,10 @@ fn build_lua_runtime(
         });
     }
 
-        if permissions.iter().any(|permission| permission == "player.effects") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "player.effects")
+    {
         engine.register_fn("player_title", |player_name: &str, text: &str| {
             PluginManager::queue_client_action(
                 player_name,
@@ -1173,8 +1212,10 @@ fn build_lua_runtime(
         });
     }
 
-
-        if permissions.iter().any(|permission| permission == "scheduler") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "scheduler")
+    {
         let plugin_id = id.to_owned();
         lua.globals()
             .set(
@@ -1431,7 +1472,10 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
         engine.disable_symbol("debug");
     }
 
-    if permissions.iter().any(|permission| permission == "services") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "services")
+    {
         let id = plugin_id.to_owned();
         engine.register_fn("service_register", move |name: &str, value: &str| {
             if value.len() > MAX_SERVICE_VALUE_BYTES {
@@ -1474,7 +1518,10 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
         });
     }
 
-    if permissions.iter().any(|permission| permission == "server.info") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "server.info")
+    {
         engine.register_fn("server_api_version", || PLUGIN_API_VERSION as i64);
         engine.register_fn("server_online_players", || {
             shared_online_players().load(std::sync::atomic::Ordering::SeqCst) as i64
@@ -1483,55 +1530,55 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
             shared_has_world().load(std::sync::atomic::Ordering::SeqCst)
         });
         engine.register_fn("world_spawn_x", || {
-            shared_spawn_position()
-                .lock()
-                .map(|g| g.0)
-                .unwrap_or(0.5)
+            shared_spawn_position().lock().map(|g| g.0).unwrap_or(0.5)
         });
         engine.register_fn("world_spawn_y", || {
-            shared_spawn_position()
-                .lock()
-                .map(|g| g.1)
-                .unwrap_or(64.0)
+            shared_spawn_position().lock().map(|g| g.1).unwrap_or(64.0)
         });
         engine.register_fn("world_spawn_z", || {
-            shared_spawn_position()
-                .lock()
-                .map(|g| g.2)
-                .unwrap_or(0.5)
+            shared_spawn_position().lock().map(|g| g.2).unwrap_or(0.5)
         });
     }
 
-    if permissions.iter().any(|permission| permission == "scheduler") {
+    if permissions
+        .iter()
+        .any(|permission| permission == "scheduler")
+    {
         let id = plugin_id.to_owned();
-        engine.register_fn("schedule_later", move |delay_ms: i64, function_name: &str| {
-            let delay_ms = delay_ms.max(0) as u64;
-            if let Ok(mut tasks) = shared_schedule().lock() {
-                if tasks.len() < MAX_SCHEDULED_TASKS {
-                    tasks.push(ScheduledTask {
-                        plugin_id: id.clone(),
-                        function_name: function_name.to_owned(),
-                        run_at: Instant::now() + Duration::from_millis(delay_ms),
-                        interval: None,
-                    });
+        engine.register_fn(
+            "schedule_later",
+            move |delay_ms: i64, function_name: &str| {
+                let delay_ms = delay_ms.max(0) as u64;
+                if let Ok(mut tasks) = shared_schedule().lock() {
+                    if tasks.len() < MAX_SCHEDULED_TASKS {
+                        tasks.push(ScheduledTask {
+                            plugin_id: id.clone(),
+                            function_name: function_name.to_owned(),
+                            run_at: Instant::now() + Duration::from_millis(delay_ms),
+                            interval: None,
+                        });
+                    }
                 }
-            }
-        });
+            },
+        );
         let id = plugin_id.to_owned();
-        engine.register_fn("schedule_every", move |interval_ms: i64, function_name: &str| {
-            let interval_ms = interval_ms.max(1) as u64;
-            let interval = Duration::from_millis(interval_ms);
-            if let Ok(mut tasks) = shared_schedule().lock() {
-                if tasks.len() < MAX_SCHEDULED_TASKS {
-                    tasks.push(ScheduledTask {
-                        plugin_id: id.clone(),
-                        function_name: function_name.to_owned(),
-                        run_at: Instant::now() + interval,
-                        interval: Some(interval),
-                    });
+        engine.register_fn(
+            "schedule_every",
+            move |interval_ms: i64, function_name: &str| {
+                let interval_ms = interval_ms.max(1) as u64;
+                let interval = Duration::from_millis(interval_ms);
+                if let Ok(mut tasks) = shared_schedule().lock() {
+                    if tasks.len() < MAX_SCHEDULED_TASKS {
+                        tasks.push(ScheduledTask {
+                            plugin_id: id.clone(),
+                            function_name: function_name.to_owned(),
+                            run_at: Instant::now() + interval,
+                            interval: Some(interval),
+                        });
+                    }
                 }
-            }
-        });
+            },
+        );
     }
 
     engine

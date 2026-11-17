@@ -91,11 +91,7 @@ impl BlockEntity {
         match &self.block_entity_data {
             BlockEntityData::Lectern(lectern) if lectern.has_book() => {
                 let pages = lectern.page_texts();
-                if pages.is_empty() {
-                    None
-                } else {
-                    Some(pages)
-                }
+                if pages.is_empty() { None } else { Some(pages) }
             }
             _ => None,
         }

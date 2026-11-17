@@ -63,8 +63,11 @@ impl LecternBlockEntity {
                     return Some(strip_json_text(s));
                 }
                 // Component-ish compound with "text"
-                page.get_compound()
-                    .and_then(|c| c.get("text").and_then(|t| t.get_str()).map(|s| s.to_owned()))
+                page.get_compound().and_then(|c| {
+                    c.get("text")
+                        .and_then(|t| t.get_str())
+                        .map(|s| s.to_owned())
+                })
             })
             .filter(|s| !s.is_empty())
             .collect()

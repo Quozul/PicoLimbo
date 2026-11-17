@@ -3,8 +3,12 @@ use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};
 use crate::server::packet_registry::PacketRegistry;
 use crate::server_state::ServerState;
-use minecraft_packets::play::container_set_slot_packet::{ContainerSetDataPacket, ContainerSetSlotPacket};
-use minecraft_packets::play::item_registry_ids::{lectern_menu_protocol_id, written_book_protocol_id};
+use minecraft_packets::play::container_set_slot_packet::{
+    ContainerSetDataPacket, ContainerSetSlotPacket,
+};
+use minecraft_packets::play::item_registry_ids::{
+    lectern_menu_protocol_id, written_book_protocol_id,
+};
 use minecraft_packets::play::open_screen_packet::OpenScreenPacket;
 use minecraft_packets::play::use_item_on_packet::UseItemOnPacket;
 

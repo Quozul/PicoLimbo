@@ -327,7 +327,6 @@ impl ServerState {
             .wants_inbound_packets()
     }
 
-
     /// Return commands registered by currently enabled plugins.
     pub fn plugin_commands(&self) -> Vec<String> {
         self.plugins

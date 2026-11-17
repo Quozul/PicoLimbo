@@ -9,18 +9,18 @@ use crate::server::shutdown_signal::shutdown_signal;
 use crate::server_state::ServerState;
 use futures::StreamExt;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
-use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
-use minecraft_packets::play::disconnect_packet::DisconnectPacket;
+use minecraft_packets::play::VoidChunkContext;
 use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
 use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
+use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
+use minecraft_packets::play::disconnect_packet::DisconnectPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
-use minecraft_packets::play::VoidChunkContext;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
-use pico_text_component::prelude::parse_mini_message;
 use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
+use pico_text_component::prelude::parse_mini_message;
 use std::num::TryFromIntError;
 use std::sync::Arc;
 use thiserror::Error;
@@ -262,8 +262,12 @@ async fn process_packet(
                                     if let Some(report_id) =
                                         blocks_report::get_block_id(&mapping, internal_id)
                                     {
-                                        let packet =
-                                            BlockUpdatePacket::new(bx, by, bz, i32::from(report_id));
+                                        let packet = BlockUpdatePacket::new(
+                                            bx,
+                                            by,
+                                            bz,
+                                            i32::from(report_id),
+                                        );
                                         batch.queue(|| PacketRegistry::BlockUpdate(packet));
                                     }
                                 }
@@ -414,7 +418,6 @@ async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>
             .emit_player_plugin_event("player_quit", &username, &uuid);
     }
 }
-
 
 async fn kick_client(
     client_data: &ClientData,
