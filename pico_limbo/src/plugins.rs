@@ -773,6 +773,97 @@ fn build_lua_runtime(
         register_lua_logger(&lua, id)?;
     }
 
+    if permissions.iter().any(|permission| permission == "services") {
+        let plugin_id = id.to_owned();
+        lua.globals()
+            .set(
+                "service_register",
+                lua.create_function(move |_, (name, value): (String, String)| {
+                    let key = format!("{plugin_id}:{name}");
+                    if let Ok(mut guard) = shared_services().lock() {
+                        guard.insert(key, value);
+                    }
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "service_get",
+                lua.create_function(|_, name: String| {
+                    Ok(shared_services()
+                        .lock()
+                        .ok()
+                        .and_then(|guard| guard.get(&name).cloned())
+                        .unwrap_or_default())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+    }
+
+    if permissions.iter().any(|permission| permission == "server.info") {
+        lua.globals()
+            .set(
+                "server_api_version",
+                lua.create_function(|_, ()| Ok(PLUGIN_API_VERSION as i64))
+                    .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "server_online_players",
+                lua.create_function(|_, ()| {
+                    Ok(shared_online_players().load(std::sync::atomic::Ordering::SeqCst) as i64)
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+    }
+
+    if permissions.iter().any(|permission| permission == "scheduler") {
+        let plugin_id = id.to_owned();
+        lua.globals()
+            .set(
+                "schedule_later",
+                lua.create_function(move |_, (delay_ms, function_name): (i64, String)| {
+                    let delay_ms = delay_ms.max(0) as u64;
+                    if let Ok(mut tasks) = shared_schedule().lock() {
+                        tasks.push(ScheduledTask {
+                            plugin_id: plugin_id.clone(),
+                            function_name,
+                            run_at: Instant::now() + Duration::from_millis(delay_ms),
+                            interval: None,
+                        });
+                    }
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        let plugin_id = id.to_owned();
+        lua.globals()
+            .set(
+                "schedule_every",
+                lua.create_function(move |_, (interval_ms, function_name): (i64, String)| {
+                    let interval_ms = interval_ms.max(1) as u64;
+                    let interval = Duration::from_millis(interval_ms);
+                    if let Ok(mut tasks) = shared_schedule().lock() {
+                        tasks.push(ScheduledTask {
+                            plugin_id: plugin_id.clone(),
+                            function_name,
+                            run_at: Instant::now() + interval,
+                            interval: Some(interval),
+                        });
+                    }
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+    }
+
     lua.load(script)
         .set_name(id)
         .exec()
