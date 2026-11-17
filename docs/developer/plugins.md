@@ -70,7 +70,7 @@ permissions = [
 | `commands` | No | Commands registered by the plugin, without a leading slash |
 | `permissions` | No | Host capabilities explicitly requested by the plugin |
 
-Unknown manifest fields and permissions are rejected. Entry points are canonicalized and must remain inside the plugin directory. The machine-readable [Plugin API v1 JSON Schema](/schemas/plugin-manifest-v1.schema.json) can validate the parsed TOML manifest and is suitable for editor and AI-tool integrations.
+Unknown manifest fields and permissions are rejected. Entry points are canonicalized and must remain inside the plugin directory. The machine-readable [Plugin API v1 JSON Schema](/schemas/plugin-manifest-v1.schema.json) can validate the parsed TOML manifest and can be used by editor integrations.
 
 ## Lifecycle and events
 
