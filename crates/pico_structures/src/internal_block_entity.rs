@@ -85,6 +85,35 @@ impl BlockEntity {
     pub fn get_position(&self) -> Coordinates {
         self.position
     }
+
+    /// Returns page texts if this is a lectern with a readable book.
+    pub fn lectern_page_texts(&self) -> Option<Vec<String>> {
+        match &self.block_entity_data {
+            BlockEntityData::Lectern(lectern) if lectern.has_book() => {
+                let pages = lectern.page_texts();
+                if pages.is_empty() {
+                    None
+                } else {
+                    Some(pages)
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn is_lectern_with_book(&self) -> bool {
+        matches!(
+            &self.block_entity_data,
+            BlockEntityData::Lectern(l) if l.has_book()
+        )
+    }
+
+    pub fn lectern_book_nbt(&self) -> Option<&pico_nbt::Value> {
+        match &self.block_entity_data {
+            BlockEntityData::Lectern(lectern) => lectern.book_nbt(),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]

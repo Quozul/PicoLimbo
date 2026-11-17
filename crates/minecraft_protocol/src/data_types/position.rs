@@ -13,6 +13,20 @@ impl Position {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Position { x, y, z }
     }
+
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+    pub fn z(&self) -> f64 {
+        self.z
+    }
+
+    pub fn block_coords(&self) -> (i32, i32, i32) {
+        (self.x as i32, self.y as i32, self.z as i32)
+    }
 }
 
 impl DecodePacket for Position {

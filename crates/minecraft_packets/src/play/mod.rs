@@ -31,5 +31,8 @@ pub mod tab_list_packet;
 pub mod transfer_packet;
 pub mod update_light_packet;
 pub mod update_time_packet;
+pub mod container_set_slot_packet;
+pub mod open_screen_packet;
+pub mod use_item_on_packet;
 
 pub use data::chunk_context::{VoidChunkContext, WorldContext};

@@ -20,6 +20,8 @@ use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
 use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
+use minecraft_packets::play::open_screen_packet::OpenScreenPacket;
+use minecraft_packets::play::use_item_on_packet::UseItemOnPacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
@@ -278,6 +280,13 @@ pub enum PacketRegistry {
     )]
     BlockUpdate(BlockUpdatePacket),
 
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:open_screen"
+    )]
+    OpenScreen(OpenScreenPacket),
+
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:light_update")]
     UpdateLight(Box<UpdateLightPacket>),
 
@@ -396,6 +405,7 @@ impl PacketHandler for PacketRegistry {
             Self::AcknowledgeConfiguration(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPositionAndRotation(packet) => packet.handle(client_state, server_state),
             Self::SetPlayerPosition(packet) => packet.handle(client_state, server_state),
+            Self::UseItemOn(packet) => packet.handle(client_state, server_state),
             Self::ChatCommand(packet) => packet.handle(client_state, server_state),
             Self::ChatMessage(packet) => packet.handle(client_state, server_state),
             Self::ServerBoundPlayerAbilities(packet) => packet.handle(client_state, server_state),
