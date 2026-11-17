@@ -1451,8 +1451,13 @@ fn validate_manifest(manifest: &PluginManifest, directory: &Path) -> Result<(), 
         "commands.register",
         "player.read",
         "player.message",
+        "player.kick",
+        "player.effects",
         "server.info",
         "services",
+        "scheduler",
+        "world.mutate",
+        "packets.inbound",
     ];
     let mut seen_permissions = HashSet::new();
     for permission in &manifest.permissions {
@@ -1639,6 +1644,57 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
                 }
             },
         );
+    }
+
+    if permissions
+        .iter()
+        .any(|permission| permission == "player.kick")
+    {
+        engine.register_fn("player_kick", |player_name: &str, reason: &str| {
+            PluginManager::request_kick(player_name, reason);
+        });
+    }
+
+    if permissions
+        .iter()
+        .any(|permission| permission == "world.mutate")
+    {
+        engine.register_fn(
+            "world_set_block",
+            |x: i64, y: i64, z: i64, block_state: &str| -> bool {
+                PluginManager::world_set_block(x as i32, y as i32, z as i32, block_state)
+            },
+        );
+        engine.register_fn("world_get_block", |x: i64, y: i64, z: i64| -> i64 {
+            PluginManager::world_get_block(x as i32, y as i32, z as i32)
+        });
+        engine.register_fn("world_clear_overlay", || {
+            PluginManager::world_clear_overlay();
+        });
+        engine.register_fn("world_resend_chunk", |chunk_x: i64, chunk_z: i64| {
+            PluginManager::world_resend_chunk(chunk_x as i32, chunk_z as i32);
+        });
+    }
+
+    if permissions
+        .iter()
+        .any(|permission| permission == "player.effects")
+    {
+        engine.register_fn("player_title", |player_name: &str, text: &str| {
+            PluginManager::queue_client_action(
+                player_name,
+                PluginClientAction::Title(text.to_owned()),
+            );
+        });
+        engine.register_fn("player_actionbar", |player_name: &str, text: &str| {
+            PluginManager::queue_client_action(
+                player_name,
+                PluginClientAction::ActionBar(text.to_owned()),
+            );
+        });
+        engine.register_fn("player_teleport_spawn", |player_name: &str| {
+            PluginManager::queue_client_action(player_name, PluginClientAction::TeleportSpawn);
+        });
     }
 
     engine
