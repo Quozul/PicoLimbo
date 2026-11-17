@@ -1,7 +1,7 @@
 use minecraft_protocol::prelude::*;
 
 /// Serverbound: right-click / use item on a block.
-#[derive(PacketIn, Debug)]
+#[derive(PacketIn)]
 pub struct UseItemOnPacket {
     pub hand: VarInt,
     pub location: Position,

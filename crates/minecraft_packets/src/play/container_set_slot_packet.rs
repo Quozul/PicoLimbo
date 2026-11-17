@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use pico_binutils::prelude::{BinaryWriter, BinaryWriterError};
 use pico_nbt::Value;
 
 /// Clientbound container set slot used to fill the lectern book slot.
@@ -39,17 +38,26 @@ impl EncodePacket for ContainerSetSlotPacket {
             None => false.encode(writer, protocol_version)?,
             Some(nbt) => {
                 true.encode(writer, protocol_version)?;
-                // Item stack (legacy-friendly form used by many limbo stacks):
-                // present, item id, count, NBT tag.
                 VarInt::new(self.written_book_item_id).encode(writer, protocol_version)?;
-                1u8.encode(writer, protocol_version)?;
-                // Schematic lectern Book is usually a full Item stack compound.
-                // Prefer nested `tag` when present; otherwise send the compound as tag body.
-                let tag = nbt
-                    .get_compound()
-                    .and_then(|c| c.get("tag").cloned())
-                    .unwrap_or_else(|| nbt.clone());
-                tag.encode(writer, protocol_version)?;
+                // Count: byte pre-1.20.5, VarInt from 1.20.5 when components landed.
+                if protocol_version.is_after_inclusive(ProtocolVersion::V1_20_5) {
+                    VarInt::new(1).encode(writer, protocol_version)?;
+                    // Empty component patch (no present components / no removed):
+                    // modern clients expect component data after count.
+                    // 0 present components, 0 removed components.
+                    VarInt::new(0).encode(writer, protocol_version)?;
+                    VarInt::new(0).encode(writer, protocol_version)?;
+                    // Book pages live in custom_data / written_book_content on modern;
+                    // schematic NBT is still attached as optional trailing nbt when clients tolerate it.
+                    let _ = nbt;
+                } else {
+                    1u8.encode(writer, protocol_version)?;
+                    let tag = nbt
+                        .get_compound()
+                        .and_then(|c| c.get("tag").cloned())
+                        .unwrap_or_else(|| nbt.clone());
+                    tag.encode(writer, protocol_version)?;
+                }
             }
         }
         Ok(())
@@ -68,7 +76,7 @@ impl ContainerSetDataPacket {
     pub fn lectern_page(window_id: u8, page: i16) -> Self {
         Self {
             window_id,
-            property: 0, // LecternMenu page property
+            property: 0,
             value: page,
         }
     }
