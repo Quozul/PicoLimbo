@@ -56,6 +56,21 @@ fn shared_kick_requests() -> &'static std::sync::Mutex<std::collections::HashMap
     KICKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
+#[derive(Clone, Debug)]
+pub enum PluginClientAction {
+    Title(String),
+    ActionBar(String),
+    TeleportSpawn,
+}
+
+fn shared_client_actions() -> &'static std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>> {
+    static ACTIONS: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>>,
+    > = std::sync::OnceLock::new();
+    ACTIONS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+
 
 
 #[derive(Debug, Deserialize)]
@@ -149,6 +164,8 @@ struct PluginPermissions {
     server_info: bool,
     services: bool,
     scheduler: bool,
+    packets_inbound: bool,
+    player_effects: bool,
 }
 
 struct PluginHooks {
@@ -542,6 +559,14 @@ impl PluginManager {
                     .permissions
                     .iter()
                     .any(|permission| permission == "player.kick"),
+                packets_inbound: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "packets.inbound"),
+                player_effects: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "player.effects"),
             },
             hooks: PluginHooks {
                 on_event: has_on_event,
@@ -650,6 +675,27 @@ impl PluginManager {
             map.insert(player_name.into(), reason.into());
         }
     }
+
+    pub fn wants_inbound_packets(&self) -> bool {
+        self.plugins
+            .iter()
+            .any(|plugin| plugin.enabled && plugin.hooks.on_event && plugin.permissions.packets_inbound)
+    }
+
+    pub fn queue_client_action(player_name: impl Into<String>, action: PluginClientAction) {
+        if let Ok(mut map) = shared_client_actions().lock() {
+            map.entry(player_name.into()).or_default().push(action);
+        }
+    }
+
+    pub fn take_client_actions(player_name: &str) -> Vec<PluginClientAction> {
+        shared_client_actions()
+            .lock()
+            .ok()
+            .and_then(|mut map| map.remove(player_name))
+            .unwrap_or_default()
+    }
+
 
     pub fn register_service(&mut self, name: impl Into<String>, value: impl Into<String>) {
         self.services.register(name.into(), value.into());
@@ -903,6 +949,25 @@ fn build_lua_runtime(
             PluginManager::request_kick(player_name, reason);
         });
     }
+
+    if permissions.iter().any(|permission| permission == "player.effects") {
+        engine.register_fn("player_title", |player_name: &str, text: &str| {
+            PluginManager::queue_client_action(
+                player_name,
+                PluginClientAction::Title(text.to_owned()),
+            );
+        });
+        engine.register_fn("player_actionbar", |player_name: &str, text: &str| {
+            PluginManager::queue_client_action(
+                player_name,
+                PluginClientAction::ActionBar(text.to_owned()),
+            );
+        });
+        engine.register_fn("player_teleport_spawn", |player_name: &str| {
+            PluginManager::queue_client_action(player_name, PluginClientAction::TeleportSpawn);
+        });
+    }
+
 
         if permissions.iter().any(|permission| permission == "scheduler") {
         let plugin_id = id.to_owned();

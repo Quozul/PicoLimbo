@@ -11,6 +11,10 @@ use futures::StreamExt;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
+use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
+use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
+use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
+use pico_text_component::prelude::parse_mini_message;
 use minecraft_protocol::prelude::State;
 use net::packet_stream::PacketStreamError;
 use net::raw_packet::RawPacket;
@@ -156,16 +160,64 @@ async fn process_packet(
         )
     };
     let decoded_packet = PacketRegistry::decode_packet(protocol_version, state, raw_packet)?;
-    trace!(
-        packet_name = decoded_packet.packet_name(),
-        "Packet received"
-    );
+    let packet_name = decoded_packet.packet_name();
+    trace!(packet_name, "Packet received");
 
-    let batch: Batch = {
+    // Opt-in inbound packet hooks. Cancel skips handler (mini-game friendly).
+    if state == State::Play {
+        let server_state_guard = server_state.read().await;
+        if server_state_guard.wants_inbound_packet_hooks() {
+            let client_state = client_data.client().await;
+            let username = client_state.get_username();
+            let uuid = client_state
+                .game_profile()
+                .map(|profile| profile.uuid().to_string())
+                .unwrap_or_default();
+            drop(client_state);
+            let event = format!("packet:{packet_name}");
+            if server_state_guard.emit_player_plugin_event(&event, &username, &uuid) {
+                return Ok(());
+            }
+        }
+    }
+
+    let mut batch: Batch = {
         let server_state_guard = server_state.read().await;
         let mut client_state = client_data.client().await;
         decoded_packet.handle(&mut client_state, &server_state_guard)?
     };
+
+    if state == State::Play {
+        let (username, spawn) = {
+            let client_state = client_data.client().await;
+            let server_state_guard = server_state.read().await;
+            (client_state.get_username(), server_state_guard.spawn_position())
+        };
+        if !username.is_empty() {
+            let actions = crate::plugins::PluginManager::take_client_actions(&username);
+            for action in actions {
+                match action {
+                    crate::plugins::PluginClientAction::Title(text) => {
+                        if let Ok(component) = parse_mini_message(&text) {
+                            let packet = SetTitleTextPacket::new(&component);
+                            batch.queue(|| PacketRegistry::SetTitleText(packet));
+                        }
+                    }
+                    crate::plugins::PluginClientAction::ActionBar(text) => {
+                        if let Ok(component) = parse_mini_message(&text) {
+                            let packet = SetActionBarTextPacket::new(&component);
+                            batch.queue(|| PacketRegistry::SetActionBarText(packet));
+                        }
+                    }
+                    crate::plugins::PluginClientAction::TeleportSpawn => {
+                        let (x, y, z) = spawn;
+                        let packet = SynchronizePlayerPositionPacket::new(x, y, z, 0.0, 0.0);
+                        batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
+                    }
+                }
+            }
+        }
+    }
 
     let (protocol_version, state) = {
         let client_state = client_data.client().await;

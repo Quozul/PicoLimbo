@@ -315,6 +315,14 @@ impl ServerState {
         crate::plugins::PluginManager::take_kick_request(player_name)
     }
 
+    pub fn wants_inbound_packet_hooks(&self) -> bool {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .wants_inbound_packets()
+    }
+
+
     /// Return commands registered by currently enabled plugins.
     pub fn plugin_commands(&self) -> Vec<String> {
         self.plugins

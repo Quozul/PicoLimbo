@@ -133,6 +133,8 @@ The v1 runtime exposes only a deliberately small host API:
 | `services` | `service_register`, `service_get`, `service_list`, `service_remove` (string KV, namespaced by plugin on register) |
 | `scheduler` | `schedule_later(ms, fn_name)` and `schedule_every(ms, fn_name)` |
 | `player.kick` | `player_kick(name, reason)` queues a disconnect processed on the client loop |
+| `packets.inbound` | Receive cancellable `packet:<name>` events for play-state serverbound packets |
+| `player.effects` | `player_title`, `player_actionbar`, `player_teleport_spawn` |
 
 No filesystem, network, process execution, native library loading, or dynamic module resolver is exposed to scripts. Permissions are default-deny. Do not assume a permission exists just because a future API version may add it.
 
@@ -181,3 +183,18 @@ Limbo does not expose inventory/world mutation. Available player interactions:
 - Built-in `/transfer` remains a server command, not a plugin host helper yet
 
 World/packet interception APIs are intentionally out of scope for this foundation.
+
+
+## Mini-games on limbo
+
+PicoLimbo is a lightweight void limbo, not a full world server. For mini-game style logic:
+
+- Use `packets.inbound` and cancel events like `packet:minecraft:move_player_pos` / `packet:minecraft:chat_command` when needed.
+- Use `player.effects` for titles, action bars, and teleport-to-spawn.
+- Use scheduler + services for match timers and shared state.
+
+### World mutation (honest limits)
+
+True block/entity world mutation is **not** available yet: the packet crate does not currently expose generic block-change packets, and the server serves static limbo chunks. Building a real mini-game *arena world* needs additional protocol support (block updates, optional custom chunk providers) as a follow-up milestone—not something to fake in the plugin host.
+
+What you *can* do today for mini-game UX on limbo: movement intercept, commands, kicks, titles/actionbars, teleports to configured spawn, timed logic, and transfers to another server for the real arena.
