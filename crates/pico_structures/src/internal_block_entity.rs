@@ -1,4 +1,5 @@
 use crate::block_entities::generic::GenericBlockEntity;
+use crate::block_entities::lectern::LecternBlockEntity;
 use crate::block_entities::sign::SignBlockEntity;
 use crate::block_entities::skull::SkullBlockEntity;
 use minecraft_protocol::prelude::{Coordinates, ProtocolVersion};
@@ -10,6 +11,7 @@ use tracing::{debug, warn};
 pub enum BlockEntityType {
     Sign,
     HangingSign,
+    Lectern,
     Generic(String),
 }
 
@@ -18,6 +20,7 @@ impl Display for BlockEntityType {
         let str = match self {
             BlockEntityType::Sign => "minecraft:sign".to_string(),
             BlockEntityType::HangingSign => "minecraft:hanging_sign".to_string(),
+            BlockEntityType::Lectern => "minecraft:lectern".to_string(),
             BlockEntityType::Generic(type_id) => type_id.clone(),
         };
         write!(f, "{str}")
@@ -29,6 +32,7 @@ impl From<&str> for BlockEntityType {
         match type_id {
             "sign" | "minecraft:sign" => BlockEntityType::Sign,
             "hanging_sign" | "minecraft:hanging_sign" => BlockEntityType::HangingSign,
+            "lectern" | "minecraft:lectern" => BlockEntityType::Lectern,
             other => BlockEntityType::Generic(if other.contains(':') {
                 other.to_string()
             } else {
@@ -81,12 +85,38 @@ impl BlockEntity {
     pub fn get_position(&self) -> Coordinates {
         self.position
     }
+
+    /// Returns page texts if this is a lectern with a readable book.
+    pub fn lectern_page_texts(&self) -> Option<Vec<String>> {
+        match &self.block_entity_data {
+            BlockEntityData::Lectern(lectern) if lectern.has_book() => {
+                let pages = lectern.page_texts();
+                if pages.is_empty() { None } else { Some(pages) }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn is_lectern_with_book(&self) -> bool {
+        matches!(
+            &self.block_entity_data,
+            BlockEntityData::Lectern(l) if l.has_book()
+        )
+    }
+
+    pub fn lectern_book_nbt(&self) -> Option<&pico_nbt::Value> {
+        match &self.block_entity_data {
+            BlockEntityData::Lectern(lectern) => lectern.book_nbt(),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
 pub enum BlockEntityData {
     Sign(Box<SignBlockEntity>),
     Skull(SkullBlockEntity),
+    Lectern(LecternBlockEntity),
     Generic { entity: GenericBlockEntity },
 }
 
@@ -103,6 +133,7 @@ impl BlockEntityData {
             }
 
             "minecraft:skull" => Ok(Self::Skull(SkullBlockEntity::from_nbt(entity_nbt))),
+            "minecraft:lectern" => Ok(Self::Lectern(LecternBlockEntity::from_nbt(entity_nbt))),
             _ => Ok(Self::Generic {
                 entity: GenericBlockEntity::from_nbt(entity_nbt),
             }),
@@ -113,6 +144,7 @@ impl BlockEntityData {
         match self {
             BlockEntityData::Sign(entity) => entity.to_version_value(protocol_version),
             BlockEntityData::Skull(entity) => Ok(entity.to_version_value(protocol_version)),
+            BlockEntityData::Lectern(entity) => Ok(entity.to_version_value(protocol_version)),
             BlockEntityData::Generic { entity } => Ok(entity.to_nbt().clone()),
         }
     }

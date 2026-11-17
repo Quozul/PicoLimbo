@@ -1,6 +1,12 @@
 # Community Projects
 
-Here is a list of PicoLimbo related community projects:
+Here is a list of PicoLimbo related community projects.
+
+## Community Plugins
+
+PicoLimbo plugins are independently installed packages. They are not bundled with the server. See the
+[Plugin Development guide](/developer/plugins.html) for the API, manifest schema, and instructions for publishing
+your own community plugin. Community submissions can be listed here after review.
 
 ## MinecraftDataDump
 A Minecraft mod for dumping various data from the game during run-time.

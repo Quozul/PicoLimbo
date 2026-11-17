@@ -41,7 +41,9 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
       - name: Run cargo test
-        run: cargo +stable test
+        run: |
+          cargo +stable test
+          cargo +stable test -p pico_limbo --features plugin-lua
 
   # Run cargo clippy -- -D warnings
   clippy_check:

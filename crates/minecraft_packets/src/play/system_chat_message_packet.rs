@@ -1,5 +1,4 @@
 use minecraft_protocol::prelude::*;
-use pico_nbt::Value;
 use pico_text_component::prelude::Component;
 
 /// Sends the client a raw system message.
@@ -9,7 +8,7 @@ pub struct SystemChatMessagePacket {
     #[protocol_version(max = V1_20_2)]
     content: String, // JSON encoded
     #[protocol_version(min = V1_20_3)]
-    v1_20_3_content: Value, // Nbt starting from 1.20.3 included
+    v1_20_3_content: Component, // Nbt starting from 1.20.3 included
     overlay: bool,
 }
 
@@ -17,7 +16,7 @@ impl SystemChatMessagePacket {
     pub fn component(component: &Component) -> Self {
         Self {
             content: component.to_json(),
-            v1_20_3_content: component.to_nbt(),
+            v1_20_3_content: component.clone(),
             overlay: false,
         }
     }

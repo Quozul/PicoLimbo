@@ -1,0 +1,12 @@
+id = "hello-world"
+name = "Hello World"
+version = "1.0.0"
+api_version = 1
+entrypoint = "main.rhai"
+commands = ["hello"]
+permissions = [
+    "logging",
+    "commands.register",
+    "player.read",
+    "player.message",
+]

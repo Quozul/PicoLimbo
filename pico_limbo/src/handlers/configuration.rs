@@ -393,6 +393,12 @@ fn send_commands_packet(
             1,
         ));
     }
+    commands.extend(
+        server_state
+            .plugin_commands()
+            .into_iter()
+            .map(Command::no_arguments),
+    );
     let packet = CommandsPacket::new(commands);
     batch.queue(|| PacketRegistry::Commands(packet));
 }

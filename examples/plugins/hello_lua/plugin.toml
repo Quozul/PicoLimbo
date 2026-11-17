@@ -1,0 +1,12 @@
+id = "hello_lua"
+name = "Hello Lua"
+version = "0.1.0"
+api_version = 1
+runtime = "lua"
+entrypoint = "main.lua"
+commands = ["hi"]
+permissions = ["logging", "commands.register", "player.message", "services", "server.info"]
+soft_depends = ["hello_rhai"]
+
+[command_descriptions]
+hi = "Say hi from the sample Lua plugin"

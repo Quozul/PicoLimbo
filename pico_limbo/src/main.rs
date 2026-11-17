@@ -6,6 +6,7 @@ mod floodgate;
 mod forwarding;
 mod handlers;
 mod kick_messages;
+mod plugins;
 mod registry_provider;
 mod server;
 mod server_brand;

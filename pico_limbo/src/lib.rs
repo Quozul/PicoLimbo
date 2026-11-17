@@ -5,6 +5,7 @@ mod floodgate;
 mod forwarding;
 mod handlers;
 mod kick_messages;
+mod plugins;
 mod registry_provider;
 mod server;
 mod server_brand;
@@ -13,6 +14,7 @@ mod server_state;
 use crate::cli::Cli;
 use clap::Parser;
 use std::ffi::{CStr, c_char, c_int};
+use std::process::ExitCode;
 use std::slice;
 use tokio_util::sync::CancellationToken;
 
@@ -20,7 +22,7 @@ use tokio_util::sync::CancellationToken;
 /// This token can be used only once.
 ///
 /// # Returns
-/// Raw pointer to a `CancellationToken` used for server shutdown,
+/// Raw pointer to a `CancellationToken` used for server shutdown.
 #[unsafe(no_mangle)]
 pub extern "C" fn get_cancellation_token() -> *mut CancellationToken {
     let token = CancellationToken::new();
@@ -45,23 +47,26 @@ pub unsafe extern "C" fn cleanup_token(token_ptr: *mut CancellationToken) {
 /// Initializes and starts the PicoLimbo server.
 ///
 /// # Arguments
-/// * `ptr` - The handle returned by [`get_cancellation_token`].
-/// * `argc` - The number of arguments in the `argv` array.
+/// * `token_ptr` - The handle returned by [`get_cancellation_token`].
+/// * `argc` - The number of arguments in the `argv` array (0 to 1024).
 /// * `argv` - A pointer to an array of C-style strings (null-terminated).
+///
+/// # Returns
+/// 0 on successful shutdown, 1 on runtime/startup failure, or 2 on CLI parsing failure.
 ///
 /// # Safety
 /// This function is unsafe because it dereferences raw pointers. The caller must
-/// ensure that `argv` is a valid pointer and that `argc` correctly represents
-/// the number of elements in the array.
+/// ensure that `token_ptr` is a live token returned by [`get_cancellation_token`],
+/// and that `argv` is valid and `argc` correctly represents the number of elements.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn start_app(
     token_ptr: *mut CancellationToken,
     argc: c_int,
     argv: *const *const c_char,
-) {
-    if argv.is_null() {
-        eprintln!("Error: argv is null");
-        return;
+) -> c_int {
+    if argv.is_null() || token_ptr.is_null() || !(0..=1024).contains(&argc) {
+        eprintln!("Error: invalid start_app arguments");
+        return 1;
     }
 
     let mut rust_args: Vec<String> = Vec::new();
@@ -77,7 +82,7 @@ pub unsafe extern "C" fn start_app(
             rust_args.push(str_slice.to_owned());
         } else {
             eprintln!("Error: Argument not valid UTF-8");
-            return;
+            return 1;
         }
     }
 
@@ -85,30 +90,41 @@ pub unsafe extern "C" fn start_app(
         Ok(cli) => {
             let cancellation_token = unsafe { &*token_ptr };
 
-            let rt = tokio::runtime::Builder::new_current_thread()
+            let rt = match tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
-                .unwrap();
+            {
+                Ok(runtime) => runtime,
+                Err(err) => {
+                    eprintln!("Error creating Tokio runtime: {err}");
+                    return 1;
+                }
+            };
 
-            let _ = rt.block_on(server::start_server::start_server(
+            match rt.block_on(server::start_server::start_server(
                 &cli,
                 Some(cancellation_token),
-            ));
+            )) {
+                ExitCode::SUCCESS => 0,
+                _ => 1,
+            }
         }
         Err(e) => {
             e.print().expect("Failed to print error");
+            2
         }
     }
 }
 
-/// Shuts down the PicoLimbo server and releases the allocation of the token.
+/// Requests graceful shutdown of the PicoLimbo server associated with the token.
 ///
 /// # Arguments
 /// * `token_ptr` - The handle returned by [`get_cancellation_token`].
 ///
 /// # Safety
 /// This function is unsafe because it reconstructs a `Box` from a raw pointer.
-/// The caller must ensure that `token_ptr` is a valid pointer previously returned by `start_app`.
+/// The caller must ensure that `token_ptr` is a live pointer returned by [`get_cancellation_token`]
+/// and must call [`cleanup_token`] exactly once after the server has stopped.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn stop_app(token_ptr: *mut CancellationToken) {
     if token_ptr.is_null() {

@@ -1,3 +1,4 @@
+use crate::handlers::configuration::send_message;
 use crate::handlers::play::set_player_position_and_rotation::teleport_player_to_spawn;
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
@@ -9,6 +10,7 @@ use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
 use minecraft_packets::play::client_bound_player_abilities_packet::ClientBoundPlayerAbilitiesPacket;
 use minecraft_packets::play::transfer_packet::TransferPacket;
 use minecraft_protocol::prelude::{ProtocolVersion, VarInt};
+use pico_text_component::prelude::parse_mini_message;
 use thiserror::Error;
 use tracing::{info, warn};
 
@@ -99,6 +101,24 @@ fn run_command(
                         client_state.protocol_version().humanize()
                     );
                 }
+            }
+        }
+    } else {
+        let username = client_state.get_username();
+        let uuid = client_state
+            .game_profile()
+            .map(|profile| profile.uuid().to_string())
+            .unwrap_or_default();
+        // Cancellable player_command event before plugin command dispatch.
+        if server_state.emit_player_plugin_event("player_command", &username, &uuid) {
+            return;
+        }
+        if let Some(response) = server_state.execute_plugin_command(command, &username)
+            && !response.is_empty()
+        {
+            match parse_mini_message(&response) {
+                Ok(component) => send_message(batch, &component, client_state.protocol_version()),
+                Err(err) => warn!(error = %err, "Plugin command returned invalid MiniMessage"),
             }
         }
     }

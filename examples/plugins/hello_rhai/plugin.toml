@@ -1,0 +1,11 @@
+id = "hello_rhai"
+name = "Hello Rhai"
+version = "0.1.0"
+api_version = 1
+runtime = "rhai"
+entrypoint = "main.rhai"
+commands = ["hello"]
+permissions = ["logging", "commands.register", "player.message", "server.info", "scheduler"]
+
+[command_descriptions]
+hello = "Say hello from the sample Rhai plugin"

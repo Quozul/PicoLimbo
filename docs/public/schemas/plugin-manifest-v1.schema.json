@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://picolimbo.quozul.dev/schemas/plugin-manifest-v1.schema.json",
+  "title": "PicoLimbo Plugin Manifest",
+  "description": "Manifest schema for PicoLimbo Plugin API version 1. Validate the parsed TOML document against this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "api_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique plugin identifier. It must match the plugin directory name."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable plugin name."
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plugin version, preferably semantic versioning."
+    },
+    "api_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "PicoLimbo Plugin API version targeted by this plugin."
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1,
+      "default": "main.rhai",
+      "description": "Script entrypoint relative to the plugin directory. Defaults to main.rhai for Rhai and main.lua for Lua. Parent-directory traversal and absolute paths are rejected."
+    },
+    "commands": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_-]+$"
+      },
+      "description": "Commands registered by this plugin. Requires commands.register."
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "logging",
+          "commands.register",
+          "player.read",
+          "player.message"
+        ]
+      },
+      "description": "Explicit host capabilities. Unlisted permissions are denied."
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "rhai",
+        "lua"
+      ],
+      "default": "rhai",
+      "description": "Script runtime. Lua requires a PicoLimbo build with the plugin-lua Cargo feature."
+    }
+  }
+}

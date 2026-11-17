@@ -2,6 +2,7 @@ use crate::configuration::boss_bar::EnabledBossBarConfig;
 use crate::configuration::commands::CommandsConfig;
 use crate::configuration::fly_config::FlyConfig;
 use crate::floodgate::FloodgateSettings;
+use crate::plugins::PluginManager;
 use crate::server::game_mode::GameMode;
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
@@ -14,8 +15,8 @@ use std::fs::File;
 use std::io::Read;
 use std::num::TryFromIntError;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use thiserror::Error;
 use tracing::debug;
@@ -68,8 +69,8 @@ pub enum TitleType {
     Title(Component),
     Subtitle(Component),
     Both {
-        title: Component,
-        subtitle: Component,
+        title: Box<Component>,
+        subtitle: Box<Component>,
     },
 }
 
@@ -131,6 +132,7 @@ pub struct ServerState {
     fly: Fly,
     server_commands: ServerCommands,
     keep_alive_interval_secs: u64,
+    plugins: Arc<Mutex<PluginManager>>,
 }
 
 impl ServerState {
@@ -293,12 +295,62 @@ impl ServerState {
         &self.server_commands
     }
 
+    /// Execute a plugin command, returning its optional `MiniMessage` response.
+    pub fn execute_plugin_command(&self, command: &str, player_name: &str) -> Option<String> {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .execute_command(command, player_name)
+    }
+
+    /// Notify plugins about a player lifecycle event.
+    pub fn emit_player_plugin_event(
+        &self,
+        event: &str,
+        player_name: &str,
+        player_uuid: &str,
+    ) -> bool {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .emit_player_event(event, player_name, player_uuid)
+    }
+
+    pub fn take_plugin_kick(&self, player_name: &str) -> Option<String> {
+        crate::plugins::PluginManager::take_kick_request(player_name)
+    }
+
+    pub fn wants_inbound_packet_hooks(&self) -> bool {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .wants_inbound_packets()
+    }
+
+    /// Return commands registered by currently enabled plugins.
+    pub fn plugin_commands(&self) -> Vec<String> {
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .command_names()
+    }
+
     pub fn increment(&self) {
         self.connected_clients.fetch_add(1, Ordering::SeqCst);
     }
 
     pub fn decrement(&self) {
         self.connected_clients.fetch_sub(1, Ordering::SeqCst);
+    }
+
+    pub fn tick_plugins(&self) {
+        let count = self.connected_clients.load(Ordering::SeqCst);
+        crate::plugins::PluginManager::set_online_players(count);
+        crate::plugins::PluginManager::set_world_meta(self.world.is_some(), self.spawn_position());
+        self.plugins
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .tick();
     }
 }
 
@@ -336,6 +388,7 @@ pub struct ServerStateBuilder {
     accept_transfers: bool,
     server_commands: ServerCommands,
     keep_alive_interval_secs: Option<u64>,
+    plugins: Option<PluginManager>,
 }
 
 #[derive(Debug, Error)]
@@ -603,7 +656,10 @@ impl ServerStateBuilder {
             optional_mini_message(title)?,
             optional_mini_message(subtitle)?,
         ) {
-            (Some(title), Some(subtitle)) => Some(TitleType::Both { title, subtitle }),
+            (Some(title), Some(subtitle)) => Some(TitleType::Both {
+                title: Box::new(title),
+                subtitle: Box::new(subtitle),
+            }),
             (Some(title), None) => Some(TitleType::Title(title)),
             (None, Some(subtitle)) => Some(TitleType::Subtitle(subtitle)),
             (None, None) => None,
@@ -622,6 +678,12 @@ impl ServerStateBuilder {
 
     pub fn server_commands(&mut self, commands_config: CommandsConfig) -> &mut Self {
         self.server_commands = commands_config.into();
+        self
+    }
+
+    /// Attach the plugin manager for this server instance.
+    pub fn plugins(&mut self, plugins: PluginManager) -> &mut Self {
+        self.plugins = Some(plugins);
         self
     }
 
@@ -672,6 +734,7 @@ impl ServerStateBuilder {
             accept_transfers: self.accept_transfers,
             server_commands: self.server_commands,
             keep_alive_interval_secs: self.keep_alive_interval_secs.unwrap_or(15),
+            plugins: Arc::new(Mutex::new(self.plugins.unwrap_or_default())),
         })
     }
 }

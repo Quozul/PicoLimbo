@@ -2,9 +2,7 @@
 
 ## Is PicoLimbo compatible with Bukkit, Spigot, or Paper plugins?
 
-No, PicoLimbo is not compatible with traditional Java-based plugins designed for Bukkit, Spigot, Paper, or other Java Minecraft server implementations. This is because PicoLimbo is not written in Java and does not implement the Bukkit API or similar plugin frameworks.
-
-While adding support for plugins is theoretically possible, this is not currently a planned feature. PicoLimbo is designed to be a lightweight limbo server with minimal resource usage, and plugin support would significantly increase complexity.
+No, PicoLimbo does not load Bukkit, Spigot, Paper, or other Java server plugins. It has its own lightweight plugin API for Rhai scripts. Plugins live in the `plugins/` directory and are loaded independently; a fresh installation includes no plugins. See [Plugin Development](/developer/plugins.html) to create one.
 
 ## Does PicoLimbo support modded clients?
 

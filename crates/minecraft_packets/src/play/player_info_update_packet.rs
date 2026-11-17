@@ -33,7 +33,7 @@ impl PlayerInfoUpdatePacket {
         };
 
         let actions = vec![
-            PlayerActions::AddPlayer(add_player_action.clone()),
+            PlayerActions::AddPlayer(Box::new(add_player_action.clone())),
             PlayerActions::UpdateListed { listed },
         ];
 
@@ -88,7 +88,7 @@ struct SigData {
 
 #[derive(Clone)]
 enum PlayerActions {
-    AddPlayer(AddPlayer),
+    AddPlayer(Box<AddPlayer>),
     UpdateListed { listed: bool },
 }
 

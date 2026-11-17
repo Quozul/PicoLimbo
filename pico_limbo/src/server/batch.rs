@@ -1,3 +1,4 @@
+#![allow(clippy::large_enum_variant)]
 use crate::server::packet_registry::PacketRegistry;
 use futures::stream::Stream;
 use minecraft_protocol::prelude::{Direction, State};
