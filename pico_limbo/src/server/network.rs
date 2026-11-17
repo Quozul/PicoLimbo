@@ -11,7 +11,10 @@ use futures::StreamExt;
 use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::play::client_bound_keep_alive_packet::ClientBoundKeepAlivePacket;
 use minecraft_packets::play::disconnect_packet::DisconnectPacket;
+use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
+use minecraft_packets::play::chunk_data_and_update_light_packet::ChunkDataAndUpdateLightPacket;
 use minecraft_packets::play::set_action_bar_text_packet::SetActionBarTextPacket;
+use minecraft_packets::play::VoidChunkContext;
 use minecraft_packets::play::set_title_text_packet::SetTitleTextPacket;
 use minecraft_packets::play::synchronize_player_position_packet::SynchronizePlayerPositionPacket;
 use pico_text_component::prelude::parse_mini_message;
@@ -214,6 +217,57 @@ async fn process_packet(
                         let packet = SynchronizePlayerPositionPacket::new(x, y, z, 0.0, 0.0);
                         batch.queue(|| PacketRegistry::SynchronizePlayerPosition(packet));
                     }
+                    crate::plugins::PluginClientAction::BlockUpdate {
+                        x,
+                        y,
+                        z,
+                        internal_id,
+                    } => {
+                        if let Ok(mapping) = blocks_report::get_block_report_id_mapping(protocol_version)
+                        {
+                            if let Some(report_id) =
+                                blocks_report::get_block_id(&mapping, internal_id)
+                            {
+                                let packet = BlockUpdatePacket::new(x, y, z, i32::from(report_id));
+                                batch.queue(|| PacketRegistry::BlockUpdate(packet));
+                            }
+                        }
+                    }
+                    crate::plugins::PluginClientAction::ResendChunk { chunk_x, chunk_z } => {
+                        let dimension_height = 384;
+                        let dimension_min_y = -64;
+                        let context = VoidChunkContext {
+                            chunk_x,
+                            chunk_z,
+                            biome_index: 0,
+                            dimension_height,
+                            dimension_min_y,
+                            has_sky_light: true,
+                            protocol_version,
+                        };
+                        let packet = ChunkDataAndUpdateLightPacket::void(context);
+                        batch.queue(|| {
+                            PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet))
+                        });
+                        // Re-apply sparse overlay blocks inside this chunk column.
+                        for ((bx, by, bz), internal_id) in
+                            crate::plugins::PluginManager::overlay_snapshot()
+                        {
+                            if bx >> 4 == chunk_x && bz >> 4 == chunk_z {
+                                if let Ok(mapping) =
+                                    blocks_report::get_block_report_id_mapping(protocol_version)
+                                {
+                                    if let Some(report_id) =
+                                        blocks_report::get_block_id(&mapping, internal_id)
+                                    {
+                                        let packet =
+                                            BlockUpdatePacket::new(bx, by, bz, i32::from(report_id));
+                                        batch.queue(|| PacketRegistry::BlockUpdate(packet));
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -240,6 +294,7 @@ async fn process_packet(
             protocol_version.humanize()
         );
         info!("{} joined the game", username);
+        crate::plugins::PluginManager::note_player_online(&username);
     }
 
     let mut stream = batch.into_stream();
@@ -349,6 +404,7 @@ async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>
             .map(|profile| profile.uuid().to_string())
             .unwrap_or_default();
         info!("{} left the game", username);
+        crate::plugins::PluginManager::note_player_offline(&username);
         drop(client);
         server_state
             .read()

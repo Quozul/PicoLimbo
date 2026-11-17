@@ -135,6 +135,7 @@ The v1 runtime exposes only a deliberately small host API:
 | `player.kick` | `player_kick(name, reason)` queues a disconnect processed on the client loop |
 | `packets.inbound` | Receive cancellable `packet:<name>` events for play-state serverbound packets |
 | `player.effects` | `player_title`, `player_actionbar`, `player_teleport_spawn` |
+| `world.mutate` | Sparse `world_set_block` / `world_get_block` / `world_resend_chunk` / `world_clear_overlay` |
 
 No filesystem, network, process execution, native library loading, or dynamic module resolver is exposed to scripts. Permissions are default-deny. Do not assume a permission exists just because a future API version may add it.
 

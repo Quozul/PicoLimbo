@@ -27,6 +27,8 @@ const MAX_SERVICE_ENTRIES: usize = 512;
 const MAX_SERVICE_VALUE_BYTES: usize = 4 * 1024;
 const MAX_CLIENT_ACTIONS_PER_PLAYER: usize = 16;
 const MAX_KICK_QUEUE: usize = 128;
+const MAX_WORLD_OVERLAY_BLOCKS: usize = 2048;
+const MAX_DIRTY_CHUNKS: usize = 64;
 /// High-frequency move packets are filtered unless this is true for a plugin path.
 const PACKET_MOVE_PREFIXES: &[&str] = &[
     "packet:minecraft:move_player_pos",
@@ -56,6 +58,38 @@ fn shared_has_world() -> &'static std::sync::atomic::AtomicBool {
     FLAG.get_or_init(|| std::sync::atomic::AtomicBool::new(false))
 }
 
+/// Sparse runtime block overlay (internal ids). Capped for memory.
+fn shared_world_overlay() -> &'static std::sync::Mutex<std::collections::HashMap<(i32, i32, i32), u16>> {
+    static OVERLAY: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashMap<(i32, i32, i32), u16>>,
+    > = std::sync::OnceLock::new();
+    OVERLAY.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+fn shared_dirty_chunks() -> &'static std::sync::Mutex<std::collections::HashSet<(i32, i32)>> {
+    static DIRTY: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashSet<(i32, i32)>>,
+    > = std::sync::OnceLock::new();
+    DIRTY.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
+}
+
+fn shared_online_names() -> &'static std::sync::Mutex<std::collections::HashSet<String>> {
+    static NAMES: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashSet<String>>,
+    > = std::sync::OnceLock::new();
+    NAMES.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
+}
+
+fn resolve_internal_id(block_state: &str) -> Option<u16> {
+    let mapping = blocks_report::load_internal_mapping().ok()?;
+    let lookup = blocks_report::BlockStateLookup::new(&mapping);
+    lookup
+        .parse_state_string(block_state)
+        .ok()
+        .map(|state| state.internal_id())
+}
+
+
 
 #[derive(Clone)]
 struct ScheduledTask {
@@ -83,6 +117,10 @@ pub enum PluginClientAction {
     Title(String),
     ActionBar(String),
     TeleportSpawn,
+    /// Protocol block state id already mapped for a specific protocol is resolved at send time.
+    BlockUpdate { x: i32, y: i32, z: i32, internal_id: u16 },
+    /// Request void-style chunk column refresh (clients still need block updates for overlay).
+    ResendChunk { chunk_x: i32, chunk_z: i32 },
 }
 
 fn shared_client_actions() -> &'static std::sync::Mutex<std::collections::HashMap<String, Vec<PluginClientAction>>> {
@@ -188,6 +226,7 @@ struct PluginPermissions {
     scheduler: bool,
     packets_inbound: bool,
     player_effects: bool,
+    world_mutate: bool,
 }
 
 struct PluginHooks {
@@ -589,6 +628,10 @@ impl PluginManager {
                     .permissions
                     .iter()
                     .any(|permission| permission == "player.effects"),
+                world_mutate: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "world.mutate"),
             },
             hooks: PluginHooks {
                 on_event: has_on_event,
@@ -743,6 +786,90 @@ impl PluginManager {
             .and_then(|mut map| map.remove(player_name))
             .unwrap_or_default()
     }
+
+    pub fn note_player_online(name: &str) {
+        if name.is_empty() {
+            return;
+        }
+        if let Ok(mut set) = shared_online_names().lock() {
+            set.insert(name.to_owned());
+        }
+    }
+
+    pub fn note_player_offline(name: &str) {
+        if let Ok(mut set) = shared_online_names().lock() {
+            set.remove(name);
+        }
+    }
+
+    /// Sparse mutator: stores internal block id and fans out block-update actions.
+    pub fn world_set_block(x: i32, y: i32, z: i32, block_state: &str) -> bool {
+        let Some(internal_id) = resolve_internal_id(block_state) else {
+            return false;
+        };
+        if let Ok(mut overlay) = shared_world_overlay().lock() {
+            if overlay.len() >= MAX_WORLD_OVERLAY_BLOCKS && !overlay.contains_key(&(x, y, z)) {
+                return false;
+            }
+            overlay.insert((x, y, z), internal_id);
+        } else {
+            return false;
+        }
+        let chunk = (x >> 4, z >> 4);
+        if let Ok(mut dirty) = shared_dirty_chunks().lock() {
+            if dirty.len() < MAX_DIRTY_CHUNKS {
+                dirty.insert(chunk);
+            }
+        }
+        let action = PluginClientAction::BlockUpdate {
+            x,
+            y,
+            z,
+            internal_id,
+        };
+        if let Ok(names) = shared_online_names().lock() {
+            for name in names.iter() {
+                Self::queue_client_action(name.clone(), action.clone());
+            }
+        }
+        true
+    }
+
+    pub fn world_get_block(x: i32, y: i32, z: i32) -> i64 {
+        shared_world_overlay()
+            .lock()
+            .ok()
+            .and_then(|o| o.get(&(x, y, z)).copied())
+            .map(i64::from)
+            .unwrap_or(-1)
+    }
+
+    pub fn world_clear_overlay() {
+        if let Ok(mut o) = shared_world_overlay().lock() {
+            o.clear();
+        }
+        if let Ok(mut d) = shared_dirty_chunks().lock() {
+            d.clear();
+        }
+    }
+
+    pub fn world_resend_chunk(chunk_x: i32, chunk_z: i32) {
+        let action = PluginClientAction::ResendChunk { chunk_x, chunk_z };
+        if let Ok(names) = shared_online_names().lock() {
+            for name in names.iter() {
+                Self::queue_client_action(name.clone(), action.clone());
+            }
+        }
+    }
+
+    pub fn overlay_snapshot() -> Vec<((i32, i32, i32), u16)> {
+        shared_world_overlay()
+            .lock()
+            .ok()
+            .map(|o| o.iter().map(|(k, v)| (*k, *v)).collect())
+            .unwrap_or_default()
+    }
+
 
 
     pub fn register_service(&mut self, name: impl Into<String>, value: impl Into<String>) {
@@ -1013,7 +1140,22 @@ fn build_lua_runtime(
         });
     }
 
-    if permissions.iter().any(|permission| permission == "player.effects") {
+    if permissions.iter().any(|permission| permission == "world.mutate") {
+        engine.register_fn("world_set_block", |x: i64, y: i64, z: i64, block_state: &str| -> bool {
+            PluginManager::world_set_block(x as i32, y as i32, z as i32, block_state)
+        });
+        engine.register_fn("world_get_block", |x: i64, y: i64, z: i64| -> i64 {
+            PluginManager::world_get_block(x as i32, y as i32, z as i32)
+        });
+        engine.register_fn("world_clear_overlay", || {
+            PluginManager::world_clear_overlay();
+        });
+        engine.register_fn("world_resend_chunk", |chunk_x: i64, chunk_z: i64| {
+            PluginManager::world_resend_chunk(chunk_x as i32, chunk_z as i32);
+        });
+    }
+
+        if permissions.iter().any(|permission| permission == "player.effects") {
         engine.register_fn("player_title", |player_name: &str, text: &str| {
             PluginManager::queue_client_action(
                 player_name,

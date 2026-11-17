@@ -1,3 +1,4 @@
+pub mod block_update_packet;
 pub mod boss_bar_packet;
 pub mod chat_command_packet;
 pub mod chat_message_packet;

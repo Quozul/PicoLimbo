@@ -19,6 +19,7 @@ use minecraft_packets::login::login_disconnect_packet::LoginDisconnectPacket;
 use minecraft_packets::login::login_state_packet::LoginStartPacket;
 use minecraft_packets::login::login_success_packet::LoginFinishedPacket;
 use minecraft_packets::login::set_compression_packet::SetCompressionPacket;
+use minecraft_packets::play::block_update_packet::BlockUpdatePacket;
 use minecraft_packets::play::boss_bar_packet::BossBarPacket;
 use minecraft_packets::play::chat_command_packet::ChatCommandPacket;
 use minecraft_packets::play::chat_message_packet::ChatMessagePacket;
@@ -269,6 +270,13 @@ pub enum PacketRegistry {
         name = "minecraft:level_chunk_with_light"
     )]
     ChunkDataAndUpdateLight(Box<ChunkDataAndUpdateLightPacket>),
+
+    #[protocol_id(
+        state = "play",
+        bound = "clientbound",
+        name = "minecraft:block_update"
+    )]
+    BlockUpdate(BlockUpdatePacket),
 
     #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:light_update")]
     UpdateLight(Box<UpdateLightPacket>),
