@@ -22,6 +22,14 @@ const MAX_OPERATIONS: u64 = 100_000;
 const MAX_STRING_BYTES: usize = 16 * 1024;
 const MAX_COLLECTION_ITEMS: usize = 256;
 
+/// Process-local service map so script plugins can share named string values.
+fn shared_services() -> &'static std::sync::Mutex<std::collections::HashMap<String, String>> {
+    static SERVICES: std::sync::OnceLock<
+        std::sync::Mutex<std::collections::HashMap<String, String>>,
+    > = std::sync::OnceLock::new();
+    SERVICES.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PluginManifest {
@@ -37,6 +45,15 @@ struct PluginManifest {
     commands: Vec<String>,
     #[serde(default)]
     permissions: Vec<String>,
+    /// Hard dependencies: plugin IDs that must load successfully before this plugin.
+    #[serde(default)]
+    depends_on: Vec<String>,
+    /// Soft dependencies: preferred load-before IDs; missing ones are ignored.
+    #[serde(default)]
+    soft_depends: Vec<String>,
+    /// Optional human-readable command descriptions keyed by command name.
+    #[serde(default)]
+    command_descriptions: std::collections::HashMap<String, String>,
 }
 
 fn default_runtime() -> String {
@@ -86,9 +103,13 @@ struct LoadedPlugin {
     name: String,
     version: String,
     commands: HashSet<String>,
+    command_descriptions: std::collections::HashMap<String, String>,
     permissions: PluginPermissions,
     hooks: PluginHooks,
     runtime: PluginRuntime,
+    event_priority: EventPriority,
+    depends_on: Vec<String>,
+    soft_depends: Vec<String>,
     enabled: bool,
 }
 
@@ -96,11 +117,39 @@ struct LoadedPlugin {
 struct PluginPermissions {
     player_read: bool,
     player_message: bool,
+    server_info: bool,
+    services: bool,
 }
 
 struct PluginHooks {
     on_event: bool,
     on_disable: bool,
+}
+
+/// Dispatch priority for plugin event handlers (higher runs first).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EventPriority {
+    Monitor = 5,
+    Highest = 4,
+    High = 3,
+    Normal = 2,
+    Low = 1,
+    Lowest = 0,
+}
+
+#[derive(Default)]
+struct ServiceRegistry {
+    services: std::collections::HashMap<String, String>,
+}
+
+impl ServiceRegistry {
+    fn register(&mut self, name: String, value: String) {
+        self.services.insert(name, value);
+    }
+
+    fn get(&self, name: &str) -> Option<String> {
+        self.services.get(name).cloned()
+    }
 }
 
 enum PluginRuntime {
@@ -243,6 +292,7 @@ impl PluginRuntime {
 #[derive(Default)]
 pub struct PluginManager {
     plugins: Vec<LoadedPlugin>,
+    services: ServiceRegistry,
 }
 
 impl PluginManager {
@@ -290,6 +340,33 @@ impl PluginManager {
                 ),
             }
         }
+
+        // Drop plugins whose hard dependencies are missing, then stable-sort so
+        // dependency-free plugins come first (soft + hard deps influence order).
+        let available: HashSet<String> = manager.plugins.iter().map(|p| p.id.clone()).collect();
+        manager.plugins.retain(|plugin| {
+            let missing: Vec<_> = plugin
+                .depends_on
+                .iter()
+                .filter(|dep| !available.contains(dep.as_str()))
+                .cloned()
+                .collect();
+            if missing.is_empty() {
+                true
+            } else {
+                warn!(
+                    plugin = %plugin.id,
+                    missing = ?missing,
+                    "Skipping plugin because hard dependencies are missing"
+                );
+                false
+            }
+        });
+        manager.plugins.sort_by(|a, b| {
+            let a_deps = a.depends_on.len() + a.soft_depends.len();
+            let b_deps = b.depends_on.len() + b.soft_depends.len();
+            a_deps.cmp(&b_deps).then_with(|| a.id.cmp(&b.id))
+        });
 
         Ok(manager)
     }
@@ -361,12 +438,24 @@ impl PluginManager {
                     .permissions
                     .iter()
                     .any(|permission| permission == "player.message"),
+                server_info: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "server.info"),
+                services: manifest
+                    .permissions
+                    .iter()
+                    .any(|permission| permission == "services"),
             },
             hooks: PluginHooks {
                 on_event: has_on_event,
                 on_disable: has_on_disable,
             },
             runtime,
+            event_priority: EventPriority::Normal,
+            depends_on: manifest.depends_on,
+            soft_depends: manifest.soft_depends,
+            command_descriptions: manifest.command_descriptions,
             enabled: true,
         })
     }
@@ -412,7 +501,17 @@ impl PluginManager {
 
     /// Dispatch a server event to every enabled plugin with an `on_event(event)` function.
     pub fn emit_player_event(&mut self, event: &str, player_name: &str, player_uuid: &str) {
-        for plugin in &mut self.plugins {
+        // Deterministic order: higher EventPriority first, then plugin id.
+        let mut order: Vec<usize> = (0..self.plugins.len()).collect();
+        order.sort_by(|&a, &b| {
+            self.plugins[b]
+                .event_priority
+                .cmp(&self.plugins[a].event_priority)
+                .then_with(|| self.plugins[a].id.cmp(&self.plugins[b].id))
+        });
+
+        for index in order {
+            let plugin = &mut self.plugins[index];
             if !plugin.enabled || !plugin.hooks.on_event {
                 continue;
             }
@@ -429,6 +528,22 @@ impl PluginManager {
                 plugin.enabled = false;
             }
         }
+    }
+
+    pub fn register_service(&mut self, name: impl Into<String>, value: impl Into<String>) {
+        self.services.register(name.into(), value.into());
+    }
+
+    pub fn get_service(&self, name: &str) -> Option<String> {
+        self.services.get(name)
+    }
+
+    pub fn plugin_summaries(&self) -> Vec<(String, String, String)> {
+        self.plugins
+            .iter()
+            .filter(|plugin| plugin.enabled)
+            .map(|plugin| (plugin.id.clone(), plugin.name.clone(), plugin.version.clone()))
+            .collect()
     }
 
     /// Command names registered by enabled plugins.
@@ -689,6 +804,8 @@ fn validate_manifest(manifest: &PluginManifest, directory: &Path) -> Result<(), 
         "commands.register",
         "player.read",
         "player.message",
+        "server.info",
+        "services",
     ];
     let mut seen_permissions = HashSet::new();
     for permission in &manifest.permissions {
@@ -766,6 +883,27 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
     } else {
         engine.disable_symbol("print");
         engine.disable_symbol("debug");
+    }
+
+    if permissions.iter().any(|permission| permission == "services") {
+        let id = plugin_id.to_owned();
+        engine.register_fn("service_register", move |name: &str, value: &str| {
+            let key = format!("{id}:{name}");
+            if let Ok(mut guard) = shared_services().lock() {
+                guard.insert(key, value.to_owned());
+            }
+        });
+        engine.register_fn("service_get", |name: &str| -> String {
+            shared_services()
+                .lock()
+                .ok()
+                .and_then(|guard| guard.get(name).cloned())
+                .unwrap_or_default()
+        });
+    }
+
+    if permissions.iter().any(|permission| permission == "server.info") {
+        engine.register_fn("server_api_version", || PLUGIN_API_VERSION as i64);
     }
 
     engine

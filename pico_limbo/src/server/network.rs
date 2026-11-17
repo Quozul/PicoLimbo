@@ -279,10 +279,21 @@ async fn handle_client(socket: TcpStream, server_state: Arc<RwLock<ServerState>>
 
     if was_in_play_state {
         server_state.write().await.decrement();
-        let username = client_data.client().await.get_username();
+        let client = client_data.client().await;
+        let username = client.get_username();
+        let uuid = client
+            .game_profile()
+            .map(|profile| profile.uuid().to_string())
+            .unwrap_or_default();
         info!("{} left the game", username);
+        drop(client);
+        server_state
+            .read()
+            .await
+            .emit_player_plugin_event("player_quit", &username, &uuid);
     }
 }
+
 
 async fn kick_client(
     client_data: &ClientData,

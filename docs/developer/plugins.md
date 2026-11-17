@@ -95,7 +95,9 @@ fn on_disable() {
 
 Every plugin receives a mutable `state` map. Values persist between that plugin's callbacks for the lifetime of the server process, but are reset when PicoLimbo restarts. Use it for counters, settings and other small in-memory plugin state; it is not a disk-backed database.
 
-Current event: `player_login`.
+Current events: `player_login`, `player_quit`.
+
+Event handlers run in priority order (Highest → Lowest). Script plugins currently share Normal priority; load order is influenced by `depends_on` / `soft_depends`.
 
 ## Commands
 
@@ -125,6 +127,8 @@ The v1 runtime exposes only a deliberately small host API:
 | `commands.register` | Allows the plugin to declare manifest commands |
 | `player.read` | Makes the invoking player's username available to `on_command` and adds `player` / `uuid` to player event payloads |
 | `player.message` | Allows a command callback's returned MiniMessage to be sent to the player |
+| `server.info` | `server_api_version()` host helper |
+| `services` | `service_register(name, value)` and `service_get(name)` for cross-plugin string services |
 
 No filesystem, network, process execution, native library loading, or dynamic module resolver is exposed to scripts. Permissions are default-deny. Do not assume a permission exists just because a future API version may add it.
 
