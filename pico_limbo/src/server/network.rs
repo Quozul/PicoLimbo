@@ -194,7 +194,10 @@ async fn process_packet(
         let (username, spawn) = {
             let client_state = client_data.client().await;
             let server_state_guard = server_state.read().await;
-            (client_state.get_username(), server_state_guard.spawn_position())
+            (
+                client_state.get_username(),
+                server_state_guard.spawn_position(),
+            )
         };
         if !username.is_empty() {
             let actions = crate::plugins::PluginManager::take_client_actions(&username);
@@ -223,7 +226,8 @@ async fn process_packet(
                         z,
                         internal_id,
                     } => {
-                        if let Ok(mapping) = blocks_report::get_block_report_id_mapping(protocol_version)
+                        if let Ok(mapping) =
+                            blocks_report::get_block_report_id_mapping(protocol_version)
                         {
                             if let Some(report_id) =
                                 blocks_report::get_block_id(&mapping, internal_id)
@@ -246,9 +250,7 @@ async fn process_packet(
                             protocol_version,
                         };
                         let packet = ChunkDataAndUpdateLightPacket::void(context);
-                        batch.queue(|| {
-                            PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet))
-                        });
+                        batch.queue(|| PacketRegistry::ChunkDataAndUpdateLight(Box::new(packet)));
                         // Re-apply sparse overlay blocks inside this chunk column.
                         for ((bx, by, bz), internal_id) in
                             crate::plugins::PluginManager::overlay_snapshot()

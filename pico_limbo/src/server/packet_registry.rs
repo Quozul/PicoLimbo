@@ -274,18 +274,10 @@ pub enum PacketRegistry {
     )]
     ChunkDataAndUpdateLight(Box<ChunkDataAndUpdateLightPacket>),
 
-    #[protocol_id(
-        state = "play",
-        bound = "clientbound",
-        name = "minecraft:block_update"
-    )]
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:block_update")]
     BlockUpdate(BlockUpdatePacket),
 
-    #[protocol_id(
-        state = "play",
-        bound = "clientbound",
-        name = "minecraft:open_screen"
-    )]
+    #[protocol_id(state = "play", bound = "clientbound", name = "minecraft:open_screen")]
     OpenScreen(OpenScreenPacket),
 
     #[protocol_id(

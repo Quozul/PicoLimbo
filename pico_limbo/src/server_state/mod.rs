@@ -304,7 +304,12 @@ impl ServerState {
     }
 
     /// Notify plugins about a player lifecycle event.
-    pub fn emit_player_plugin_event(&self, event: &str, player_name: &str, player_uuid: &str) -> bool {
+    pub fn emit_player_plugin_event(
+        &self,
+        event: &str,
+        player_name: &str,
+        player_uuid: &str,
+    ) -> bool {
         self.plugins
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
