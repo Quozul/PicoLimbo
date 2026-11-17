@@ -69,8 +69,8 @@ pub enum TitleType {
     Title(Component),
     Subtitle(Component),
     Both {
-        title: Component,
-        subtitle: Component,
+        title: Box<Component>,
+        subtitle: Box<Component>,
     },
 }
 
@@ -652,7 +652,10 @@ impl ServerStateBuilder {
             optional_mini_message(title)?,
             optional_mini_message(subtitle)?,
         ) {
-            (Some(title), Some(subtitle)) => Some(TitleType::Both { title, subtitle }),
+            (Some(title), Some(subtitle)) => Some(TitleType::Both {
+                title: Box::new(title),
+                subtitle: Box::new(subtitle),
+            }),
             (Some(title), None) => Some(TitleType::Title(title)),
             (None, Some(subtitle)) => Some(TitleType::Subtitle(subtitle)),
             (None, None) => None,
