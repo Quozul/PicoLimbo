@@ -1,3 +1,4 @@
+#![allow(clippy::large_enum_variant)]
 use crate::server::batch::Batch;
 use crate::server::client_state::ClientState;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};

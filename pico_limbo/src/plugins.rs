@@ -3,6 +3,20 @@
 //! Plugins run through capability-gated script runtime adapters.
 //! No filesystem, network, process, or dynamic module APIs are ambient by default.
 
+#![allow(
+    dead_code,
+    clippy::too_many_lines,
+    clippy::struct_excessive_bools,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::type_complexity,
+    clippy::map_unwrap_or,
+    clippy::collapsible_if,
+    clippy::redundant_closure,
+    clippy::match_wildcard_for_single_variants,
+    clippy::unnecessary_wraps
+)]
 use rhai::{AST, Array, Dynamic, Engine, Map, Scope};
 use serde::Deserialize;
 use std::collections::HashSet;

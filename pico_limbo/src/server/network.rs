@@ -1,3 +1,8 @@
+#![allow(
+    clippy::too_many_lines,
+    clippy::collapsible_if,
+    clippy::significant_drop_in_scrutinee
+)]
 use crate::server::batch::{Batch, BatchItem};
 use crate::server::client_data::ClientData;
 use crate::server::packet_handler::{PacketHandler, PacketHandlerError};

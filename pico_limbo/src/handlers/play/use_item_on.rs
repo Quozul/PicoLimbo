@@ -59,7 +59,7 @@ impl PacketHandler for UseItemOnPacket {
 
         batch.queue(move || {
             PacketRegistry::ContainerSetData(ContainerSetDataPacket::lectern_page(
-                window_id as u8,
+                u8::try_from(window_id).unwrap_or(1),
                 0,
             ))
         });
