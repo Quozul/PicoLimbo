@@ -342,6 +342,7 @@ impl ServerState {
     pub fn tick_plugins(&self) {
         let count = self.connected_clients.load(Ordering::SeqCst);
         crate::plugins::PluginManager::set_online_players(count);
+        crate::plugins::PluginManager::set_world_meta(self.world.is_some(), self.spawn_position());
         self.plugins
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

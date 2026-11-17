@@ -129,7 +129,7 @@ The v1 runtime exposes only a deliberately small host API:
 | `commands.register` | Allows the plugin to declare manifest commands |
 | `player.read` | Makes the invoking player's username available to `on_command` and adds `player` / `uuid` to player event payloads |
 | `player.message` | Allows a command callback's returned MiniMessage to be sent to the player |
-| `server.info` | `server_api_version()`, `server_online_players()` |
+| `server.info` | `server_api_version()`, `server_online_players()`, `world_has_schematic()`, `world_spawn_x/y/z()` |
 | `services` | `service_register`, `service_get`, `service_list`, `service_remove` (string KV, namespaced by plugin on register) |
 | `scheduler` | `schedule_later(ms, fn_name)` and `schedule_every(ms, fn_name)` |
 | `player.kick` | `player_kick(name, reason)` queues a disconnect processed on the client loop |
@@ -198,3 +198,22 @@ PicoLimbo is a lightweight void limbo, not a full world server. For mini-game st
 True block/entity world mutation is **not** available yet: the packet crate does not currently expose generic block-change packets, and the server serves static limbo chunks. Building a real mini-game *arena world* needs additional protocol support (block updates, optional custom chunk providers) as a follow-up milestone—not something to fake in the plugin host.
 
 What you *can* do today for mini-game UX on limbo: movement intercept, commands, kicks, titles/actionbars, teleports to configured spawn, timed logic, and transfers to another server for the real arena.
+
+
+## Memory and performance
+
+The plugin host is designed so a normal limbo process can stay well under **1 GiB** even with several scripts loaded:
+
+- Instruction budgets and sandboxing on Rhai/Lua (existing)
+- Caps: scheduled tasks (256), service entries (512), service value size (4 KiB), kick queue (128), client effects per player (16)
+- `packet:*` events are delivered only to plugins with `packets.inbound`
+- World schematic data stays in the existing `World` structure; plugins get read-only spawn/world metadata helpers under `server.info`
+
+### World protocol / mutation
+
+PicoLimbo already loads optional schematics into `pico_structures::World` and streams chunk data. **Runtime block mutation** (set block → multi-version block-change packets → resend sections) is a separate protocol milestone: the packet crate does not yet expose general block-update packets. Do not expect `set_block` until that lands.
+
+Available now under `server.info`:
+
+- `world_has_schematic()`
+- `world_spawn_x()` / `world_spawn_y()` / `world_spawn_z()`

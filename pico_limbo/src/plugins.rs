@@ -21,6 +21,17 @@ const MAX_SCRIPT_BYTES: u64 = 256 * 1024;
 const MAX_OPERATIONS: u64 = 100_000;
 const MAX_STRING_BYTES: usize = 16 * 1024;
 const MAX_COLLECTION_ITEMS: usize = 256;
+/// Hard caps to keep plugin host memory predictable (target: server stays << 1 GiB).
+const MAX_SCHEDULED_TASKS: usize = 256;
+const MAX_SERVICE_ENTRIES: usize = 512;
+const MAX_SERVICE_VALUE_BYTES: usize = 4 * 1024;
+const MAX_CLIENT_ACTIONS_PER_PLAYER: usize = 16;
+const MAX_KICK_QUEUE: usize = 128;
+/// High-frequency move packets are filtered unless this is true for a plugin path.
+const PACKET_MOVE_PREFIXES: &[&str] = &[
+    "packet:minecraft:move_player_pos",
+    "packet:minecraft:move_player_pos_rot",
+];
 
 /// Process-local service map so script plugins can share named string values.
 fn shared_services() -> &'static std::sync::Mutex<std::collections::HashMap<String, String>> {
@@ -34,6 +45,17 @@ fn shared_online_players() -> &'static std::sync::atomic::AtomicU32 {
     static COUNT: std::sync::OnceLock<std::sync::atomic::AtomicU32> = std::sync::OnceLock::new();
     COUNT.get_or_init(|| std::sync::atomic::AtomicU32::new(0))
 }
+
+fn shared_spawn_position() -> &'static std::sync::Mutex<(f64, f64, f64)> {
+    static SPAWN: std::sync::OnceLock<std::sync::Mutex<(f64, f64, f64)>> = std::sync::OnceLock::new();
+    SPAWN.get_or_init(|| std::sync::Mutex::new((0.5, 64.0, 0.5)))
+}
+
+fn shared_has_world() -> &'static std::sync::atomic::AtomicBool {
+    static FLAG: std::sync::OnceLock<std::sync::atomic::AtomicBool> = std::sync::OnceLock::new();
+    FLAG.get_or_init(|| std::sync::atomic::AtomicBool::new(false))
+}
+
 
 #[derive(Clone)]
 struct ScheduledTask {
@@ -632,12 +654,25 @@ impl PluginManager {
                 .then_with(|| self.plugins[a].id.cmp(&self.plugins[b].id))
         });
 
+        let is_packet_event = event.starts_with("packet:");
+        let is_move_packet = PACKET_MOVE_PREFIXES
+            .iter()
+            .any(|prefix| event.starts_with(prefix));
+
         let mut cancelled = false;
         for index in order {
             let plugin = &mut self.plugins[index];
             if !plugin.enabled || !plugin.hooks.on_event {
                 continue;
             }
+            // Packet hooks are opt-in per plugin — avoids waking every script on each packet.
+            if is_packet_event && !plugin.permissions.packets_inbound {
+                continue;
+            }
+            // Movement packets are high-frequency; only deliver if the plugin opted into packets.
+            // (Already gated above; kept explicit for clarity.)
+            let _ = is_move_packet;
+
             // Monitor priority observes only; cannot cancel.
             let can_cancel = plugin.event_priority != EventPriority::Monitor;
             let player = plugin
@@ -671,8 +706,18 @@ impl PluginManager {
     }
 
     pub fn request_kick(player_name: impl Into<String>, reason: impl Into<String>) {
+        let player_name = player_name.into();
         if let Ok(mut map) = shared_kick_requests().lock() {
-            map.insert(player_name.into(), reason.into());
+            if map.len() >= MAX_KICK_QUEUE && !map.contains_key(&player_name) {
+                return;
+            }
+            let reason = reason.into();
+            let reason = if reason.len() > 512 {
+                reason.chars().take(512).collect()
+            } else {
+                reason
+            };
+            map.insert(player_name, reason);
         }
     }
 
@@ -684,7 +729,10 @@ impl PluginManager {
 
     pub fn queue_client_action(player_name: impl Into<String>, action: PluginClientAction) {
         if let Ok(mut map) = shared_client_actions().lock() {
-            map.entry(player_name.into()).or_default().push(action);
+            let entry = map.entry(player_name.into()).or_default();
+            if entry.len() < MAX_CLIENT_ACTIONS_PER_PLAYER {
+                entry.push(action);
+            }
         }
     }
 
@@ -716,6 +764,13 @@ impl PluginManager {
     /// Update the process-local online player counter used by `server.info` helpers.
     pub fn set_online_players(count: u32) {
         shared_online_players().store(count, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    pub fn set_world_meta(has_world: bool, spawn: (f64, f64, f64)) {
+        shared_has_world().store(has_world, std::sync::atomic::Ordering::SeqCst);
+        if let Ok(mut guard) = shared_spawn_position().lock() {
+            *guard = spawn;
+        }
     }
 
     /// Run due scheduled tasks. Safe to call frequently (e.g. keep-alive path).
@@ -756,12 +811,14 @@ impl PluginManager {
             }
             if let Some(interval) = task.interval {
                 if let Ok(mut tasks) = shared_schedule().lock() {
-                    tasks.push(ScheduledTask {
-                        plugin_id: task.plugin_id,
-                        function_name: task.function_name,
-                        run_at: Instant::now() + interval,
-                        interval: Some(interval),
-                    });
+                    if tasks.len() < MAX_SCHEDULED_TASKS {
+                        tasks.push(ScheduledTask {
+                            plugin_id: task.plugin_id,
+                            function_name: task.function_name,
+                            run_at: Instant::now() + interval,
+                            interval: Some(interval),
+                        });
+                    }
                 }
             }
         }
@@ -901,8 +958,14 @@ fn build_lua_runtime(
             .set(
                 "service_register",
                 lua.create_function(move |_, (name, value): (String, String)| {
+                    if value.len() > MAX_SERVICE_VALUE_BYTES {
+                        return Ok(());
+                    }
                     let key = format!("{plugin_id}:{name}");
                     if let Ok(mut guard) = shared_services().lock() {
+                        if guard.len() >= MAX_SERVICE_ENTRIES && !guard.contains_key(&key) {
+                            return Ok(());
+                        }
                         guard.insert(key, value);
                     }
                     Ok(())
@@ -977,12 +1040,14 @@ fn build_lua_runtime(
                 lua.create_function(move |_, (delay_ms, function_name): (i64, String)| {
                     let delay_ms = delay_ms.max(0) as u64;
                     if let Ok(mut tasks) = shared_schedule().lock() {
-                        tasks.push(ScheduledTask {
-                            plugin_id: plugin_id.clone(),
-                            function_name,
-                            run_at: Instant::now() + Duration::from_millis(delay_ms),
-                            interval: None,
-                        });
+                        if tasks.len() < MAX_SCHEDULED_TASKS {
+                            tasks.push(ScheduledTask {
+                                plugin_id: plugin_id.clone(),
+                                function_name,
+                                run_at: Instant::now() + Duration::from_millis(delay_ms),
+                                interval: None,
+                            });
+                        }
                     }
                     Ok(())
                 })
@@ -997,12 +1062,14 @@ fn build_lua_runtime(
                     let interval_ms = interval_ms.max(1) as u64;
                     let interval = Duration::from_millis(interval_ms);
                     if let Ok(mut tasks) = shared_schedule().lock() {
-                        tasks.push(ScheduledTask {
-                            plugin_id: plugin_id.clone(),
-                            function_name,
-                            run_at: Instant::now() + interval,
-                            interval: Some(interval),
-                        });
+                        if tasks.len() < MAX_SCHEDULED_TASKS {
+                            tasks.push(ScheduledTask {
+                                plugin_id: plugin_id.clone(),
+                                function_name,
+                                run_at: Instant::now() + interval,
+                                interval: Some(interval),
+                            });
+                        }
                     }
                     Ok(())
                 })
@@ -1225,8 +1292,14 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
     if permissions.iter().any(|permission| permission == "services") {
         let id = plugin_id.to_owned();
         engine.register_fn("service_register", move |name: &str, value: &str| {
+            if value.len() > MAX_SERVICE_VALUE_BYTES {
+                return;
+            }
             let key = format!("{id}:{name}");
             if let Ok(mut guard) = shared_services().lock() {
+                if guard.len() >= MAX_SERVICE_ENTRIES && !guard.contains_key(&key) {
+                    return;
+                }
                 guard.insert(key, value.to_owned());
             }
         });
@@ -1264,6 +1337,27 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
         engine.register_fn("server_online_players", || {
             shared_online_players().load(std::sync::atomic::Ordering::SeqCst) as i64
         });
+        engine.register_fn("world_has_schematic", || {
+            shared_has_world().load(std::sync::atomic::Ordering::SeqCst)
+        });
+        engine.register_fn("world_spawn_x", || {
+            shared_spawn_position()
+                .lock()
+                .map(|g| g.0)
+                .unwrap_or(0.5)
+        });
+        engine.register_fn("world_spawn_y", || {
+            shared_spawn_position()
+                .lock()
+                .map(|g| g.1)
+                .unwrap_or(64.0)
+        });
+        engine.register_fn("world_spawn_z", || {
+            shared_spawn_position()
+                .lock()
+                .map(|g| g.2)
+                .unwrap_or(0.5)
+        });
     }
 
     if permissions.iter().any(|permission| permission == "scheduler") {
@@ -1271,12 +1365,14 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
         engine.register_fn("schedule_later", move |delay_ms: i64, function_name: &str| {
             let delay_ms = delay_ms.max(0) as u64;
             if let Ok(mut tasks) = shared_schedule().lock() {
-                tasks.push(ScheduledTask {
-                    plugin_id: id.clone(),
-                    function_name: function_name.to_owned(),
-                    run_at: Instant::now() + Duration::from_millis(delay_ms),
-                    interval: None,
-                });
+                if tasks.len() < MAX_SCHEDULED_TASKS {
+                    tasks.push(ScheduledTask {
+                        plugin_id: id.clone(),
+                        function_name: function_name.to_owned(),
+                        run_at: Instant::now() + Duration::from_millis(delay_ms),
+                        interval: None,
+                    });
+                }
             }
         });
         let id = plugin_id.to_owned();
@@ -1284,12 +1380,14 @@ fn create_engine(plugin_id: &str, permissions: &[String]) -> Engine {
             let interval_ms = interval_ms.max(1) as u64;
             let interval = Duration::from_millis(interval_ms);
             if let Ok(mut tasks) = shared_schedule().lock() {
-                tasks.push(ScheduledTask {
-                    plugin_id: id.clone(),
-                    function_name: function_name.to_owned(),
-                    run_at: Instant::now() + interval,
-                    interval: Some(interval),
-                });
+                if tasks.len() < MAX_SCHEDULED_TASKS {
+                    tasks.push(ScheduledTask {
+                        plugin_id: id.clone(),
+                        function_name: function_name.to_owned(),
+                        run_at: Instant::now() + interval,
+                        interval: Some(interval),
+                    });
+                }
             }
         });
     }
