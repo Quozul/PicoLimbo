@@ -2,11 +2,11 @@
 
 PicoLimbo has a small embedded plugin runtime. A fresh installation creates a `plugins/` directory, but **ships with no installed plugins**. Plugins are independent packages: they are not compiled into the PicoLimbo executable and can be added or removed without rebuilding the server.
 
-The first runtime is [Rhai](https://rhai.rs/), a Rust-embedded scripting language with a syntax that is approachable for people and code-generation tools. The host API is versioned separately from PicoLimbo's Minecraft protocol support.
+The default runtime is [Rhai](https://rhai.rs/), a Rust-embedded scripting language. The plugin API is versioned separately from PicoLimbo's Minecraft protocol support.
 
 Lua is also available as an optional runtime. Build PicoLimbo with the `plugin-lua` Cargo feature to enable Lua 5.4 scripts. The Lua VM uses the safe standard-library set, a 16 MiB VM memory limit, and an instruction budget. Filesystem, process, and ambient network access are not implicitly exposed. Both runtimes use the same plugin lifecycle and host API.
 
-The current runtime is an initial foundation, not a Bukkit-equivalent API yet. The [Plugin API Expansion architecture](/developer/plugin-api-expansion.html) documents the intended multi-runtime API, raw packet access, networking capabilities, mutable world API, JVM plugins, compatibility ports, and implementation stages. It clearly separates implemented features from the expansion target.
+The current host API provides plugin lifecycle callbacks, player-login events, manifest-declared commands, logging, player information, and MiniMessage replies. It does not provide Bukkit compatibility or general-purpose world, packet, or networking APIs.
 
 ## Install a plugin
 
@@ -131,16 +131,6 @@ No filesystem, network, process execution, native library loading, or dynamic mo
 ## Runtime limits
 
 Each plugin gets its own Rhai engine. The host applies limits to script operations, call depth, string size, arrays, maps, variables and functions. Manifests and scripts also have size limits. These are resource controls, not a claim that an embedded scripting language is a complete security boundary; only install plugins you trust.
-
-## AI-assisted plugin authoring
-
-The API is intentionally small and explicit so an AI coding tool can generate plugins reliably. Give your coding tool:
-
-1. This page and the `examples/plugins/hello-world/` directory.
-2. The plugin's goal and the Minecraft protocol versions your server supports.
-3. The exact permissions the plugin needs.
-
-Ask it to create `plugin.toml` and `main.rhai` for API version 1, use only documented host functions, avoid filesystem/network access, and explain every permission it requests. Have it validate the manifest and test the plugin on a staging server before production.
 
 ## Compatibility
 
