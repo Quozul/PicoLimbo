@@ -236,6 +236,9 @@ pub enum PacketRegistry {
     )]
     SetPlayerPosition(SetPlayerPositionPacket),
 
+    #[protocol_id(state = "play", bound = "serverbound", name = "minecraft:use_item_on")]
+    UseItemOn(UseItemOnPacket),
+
     #[protocol_id(
         state = "play",
         bound = "serverbound",

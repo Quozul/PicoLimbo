@@ -12,6 +12,7 @@ use std::path::{Component, Path};
 use std::sync::Arc;
 #[cfg(feature = "plugin-lua")]
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use tracing::{error, info, warn};
 
@@ -1165,51 +1166,110 @@ fn build_lua_runtime(
         .iter()
         .any(|permission| permission == "player.kick")
     {
-        engine.register_fn("player_kick", |player_name: &str, reason: &str| {
-            PluginManager::request_kick(player_name, reason);
-        });
+        lua.globals()
+            .set(
+                "player_kick",
+                lua.create_function(|_, (player_name, reason): (String, String)| {
+                    PluginManager::request_kick(&player_name, &reason);
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
     if permissions
         .iter()
         .any(|permission| permission == "world.mutate")
     {
-        engine.register_fn(
-            "world_set_block",
-            |x: i64, y: i64, z: i64, block_state: &str| -> bool {
-                PluginManager::world_set_block(x as i32, y as i32, z as i32, block_state)
-            },
-        );
-        engine.register_fn("world_get_block", |x: i64, y: i64, z: i64| -> i64 {
-            PluginManager::world_get_block(x as i32, y as i32, z as i32)
-        });
-        engine.register_fn("world_clear_overlay", || {
-            PluginManager::world_clear_overlay();
-        });
-        engine.register_fn("world_resend_chunk", |chunk_x: i64, chunk_z: i64| {
-            PluginManager::world_resend_chunk(chunk_x as i32, chunk_z as i32);
-        });
+        lua.globals()
+            .set(
+                "world_set_block",
+                lua.create_function(|_, (x, y, z, block_state): (i64, i64, i64, String)| {
+                    Ok(PluginManager::world_set_block(
+                        x as i32,
+                        y as i32,
+                        z as i32,
+                        &block_state,
+                    ))
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "world_get_block",
+                lua.create_function(|_, (x, y, z): (i64, i64, i64)| {
+                    Ok(PluginManager::world_get_block(x as i32, y as i32, z as i32))
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "world_clear_overlay",
+                lua.create_function(|_, ()| {
+                    PluginManager::world_clear_overlay();
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "world_resend_chunk",
+                lua.create_function(|_, (chunk_x, chunk_z): (i64, i64)| {
+                    PluginManager::world_resend_chunk(chunk_x as i32, chunk_z as i32);
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
     if permissions
         .iter()
         .any(|permission| permission == "player.effects")
     {
-        engine.register_fn("player_title", |player_name: &str, text: &str| {
-            PluginManager::queue_client_action(
-                player_name,
-                PluginClientAction::Title(text.to_owned()),
-            );
-        });
-        engine.register_fn("player_actionbar", |player_name: &str, text: &str| {
-            PluginManager::queue_client_action(
-                player_name,
-                PluginClientAction::ActionBar(text.to_owned()),
-            );
-        });
-        engine.register_fn("player_teleport_spawn", |player_name: &str| {
-            PluginManager::queue_client_action(player_name, PluginClientAction::TeleportSpawn);
-        });
+        lua.globals()
+            .set(
+                "player_title",
+                lua.create_function(|_, (player_name, text): (String, String)| {
+                    PluginManager::queue_client_action(
+                        &player_name,
+                        PluginClientAction::Title(text),
+                    );
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "player_actionbar",
+                lua.create_function(|_, (player_name, text): (String, String)| {
+                    PluginManager::queue_client_action(
+                        &player_name,
+                        PluginClientAction::ActionBar(text),
+                    );
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
+        lua.globals()
+            .set(
+                "player_teleport_spawn",
+                lua.create_function(|_, player_name: String| {
+                    PluginManager::queue_client_action(
+                        &player_name,
+                        PluginClientAction::TeleportSpawn,
+                    );
+                    Ok(())
+                })
+                .map_err(|error| PluginLoadError::Runtime(error.to_string()))?,
+            )
+            .map_err(|error| PluginLoadError::Runtime(error.to_string()))?;
     }
 
     if permissions
